@@ -1,0 +1,28 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-desktop
+spec:
+  defaults:
+    windows:
+      buttons: [close]
+    appearance:
+      wallpaper:
+        light: ../assets/example-org.svg
+      loginLogo: ../assets/example-org-login-logo.svg
+      fonts:
+        interface: { family: Noto Sans, size: 11 }
+        document: { family: Noto Sans, size: 11 }
+        monospace: { family: Noto Sans Mono, size: 10 }
+    session:
+      idle:
+        blankAfter: 5m
+      lock:
+        enabled: true
+        delay: 0s
+    dock:
+      enabled: true
+      position: bottom
+      behavior: intellihide
+      iconSize: 40
+      showTrash: false

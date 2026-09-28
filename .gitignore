@@ -1,0 +1,19 @@
+/bin/
+/dist/
+/output/
+
+# Disk images and build outputs
+*.qcow2
+*.raw
+*.iso
+*.img
+*.tar
+
+# Local credentials never belong in the repository
+.env
+.env.*
+*.pem
+*.key
+
+# Python bytecode from the VM harness tests
+__pycache__/

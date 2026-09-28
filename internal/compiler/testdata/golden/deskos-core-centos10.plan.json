@@ -1,0 +1,581 @@
+{
+  "format": "plan.deskos.org/v1alpha1",
+  "workstation": {
+    "name": "deskos-core-centos10",
+    "displayName": "DeskOS Core (CentOS Stream 10)",
+    "source": "resources/workstations/deskos-core-centos10.yaml:1"
+  },
+  "platform": {
+    "name": "centos-stream-10",
+    "displayName": "CentOS Stream 10",
+    "family": "centos",
+    "release": "10",
+    "architectures": [
+      "x86_64"
+    ],
+    "redistributable": true,
+    "requiresSubscription": false,
+    "source": "resources/platforms/centos-stream-10.yaml:1"
+  },
+  "profiles": [
+    {
+      "name": "deskos-core",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-core.yaml:1"
+    },
+    {
+      "name": "deskos-reference-apps",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-reference-apps.yaml:1"
+    }
+  ],
+  "artifact": {
+    "baseImage": {
+      "image": "quay.io/centos-bootc/centos-bootc:stream10",
+      "ref": "quay.io/centos-bootc/centos-bootc:stream10"
+    },
+    "labels": [
+      {
+        "name": "org.deskos.platform",
+        "value": "centos-stream-10"
+      },
+      {
+        "name": "org.deskos.workstation",
+        "value": "deskos-core-centos10"
+      },
+      {
+        "name": "org.opencontainers.image.title",
+        "value": "DeskOS Core (CentOS Stream 10)"
+      }
+    ],
+    "rpmRepositories": [],
+    "rpmGroups": [
+      {
+        "name": "workstation",
+        "rpmGroups": [
+          "workstation-product-environment"
+        ],
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "rpmPackages": [
+      {
+        "name": "NetworkManager",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "bootc",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "firefox",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "firewalld",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "flatpak",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "gnome-shell-extension-dash-to-dock",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-scripts",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-system-theme",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-theme-spinner",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "binaries": [],
+    "files": [
+      {
+        "path": "/usr/share/deskos/backgrounds/deskos-dark.svg",
+        "mode": "0644",
+        "sha256": "ff9141324c4f269ffe5f517ca87e81aedadd714f5758634b40649b5e5093b36f",
+        "asset": "resources/assets/deskos/deskos-dark.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/deskos/backgrounds/deskos-light.svg",
+        "mode": "0644",
+        "sha256": "0d8ad476b5e6eb29f2e3906cb1a939472b1a17fad0e373625346493c87ef4da7",
+        "asset": "resources/assets/deskos/deskos-light.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/deskos/branding/deskos-login-logo.svg",
+        "mode": "0644",
+        "sha256": "f15e480e7a59d51fed52aa580d214900d2b42d792fcc67b7697d740d7633298e",
+        "asset": "resources/assets/deskos/deskos-login-logo.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/plymouth/themes/deskos/watermark.png",
+        "mode": "0644",
+        "sha256": "e286d8294944c47850e6cec864fb444edeca62205e2aa8c54b26f39fe79c78c2",
+        "asset": "resources/assets/deskos/deskos-splash-watermark.png",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "dconf": {
+      "name": "distro",
+      "defaults": [
+        {
+          "key": "/org/gnome/desktop/background/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/background/picture-uri-dark",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-dark.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/lock-delay",
+          "type": "u",
+          "value": "uint32 0",
+          "setting": "session.lock.delay",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/lock-enabled",
+          "type": "b",
+          "value": "true",
+          "setting": "session.lock.enabled",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/session/idle-delay",
+          "type": "u",
+          "value": "uint32 600",
+          "setting": "session.idle.blankAfter",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/wm/preferences/button-layout",
+          "type": "s",
+          "value": "'appmenu:minimize,maximize,close'",
+          "setting": "windows.buttons",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            },
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/login-screen/logo",
+          "type": "s",
+          "value": "'/usr/share/deskos/branding/deskos-login-logo.svg'",
+          "setting": "appearance.loginLogo",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/enabled-extensions",
+          "type": "as",
+          "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']",
+          "setting": "dock.enabled",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/favorite-apps",
+          "type": "as",
+          "value": "['firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Settings.desktop']",
+          "setting": "shell.favorites",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        }
+      ],
+      "locks": null
+    },
+    "gsettingsVendorDefaults": [
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri-dark",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/deskos-dark.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "kernelArguments": [
+      {
+        "arg": "quiet",
+        "setting": "boot.quiet",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "arg": "rhgb",
+        "setting": "boot.splash",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "initramfs": {
+      "dracutModules": [
+        "plymouth"
+      ],
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/system/deskos-core.yaml:1"
+        }
+      ]
+    },
+    "plymouthTheme": {
+      "name": "deskos",
+      "dir": "/usr/share/plymouth/themes/deskos",
+      "framesFrom": "/usr/share/plymouth/themes/spinner",
+      "watermark": "/usr/share/plymouth/themes/deskos/watermark.png",
+      "setting": "boot.watermark",
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/system/deskos-core.yaml:1"
+        }
+      ]
+    },
+    "systemdUnits": [
+      {
+        "unit": "deskos-flatpak-preinstall.service",
+        "provenance": [
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "firewalld.service",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "gdm.service",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "defaultTarget": {
+      "target": "graphical.target",
+      "provenance": [
+        {
+          "resource": "PackageSet/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/software/deskos-core.yaml:1"
+        }
+      ]
+    }
+  },
+  "provisioning": {
+    "flatpakRemotes": [
+      {
+        "name": "flathub",
+        "title": "Flathub",
+        "url": "https://dl.flathub.org/repo/",
+        "homepage": "https://flathub.org/",
+        "comment": "Central repository of Flatpak applications",
+        "collectionID": "org.flathub.Stable",
+        "gpgKey": "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",
+        "gpgKeySHA256": "8bdc20abc4e19c0796460beb5bfe0e7aa4138716999e19c6f2dbdd78cc41aeaa",
+        "provenance": [
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          }
+        ]
+      }
+    ],
+    "flatpakApplications": [
+      {
+        "id": "io.github.kolunmi.Bazaar",
+        "branch": "stable",
+        "remote": "flathub",
+        "collectionID": "org.flathub.Stable",
+        "provenance": [
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      }
+    ],
+    "flatpakPreinstallUnit": "deskos-flatpak-preinstall.service"
+  },
+  "enrollment": {},
+  "warnings": [
+    "base image quay.io/centos-bootc/centos-bootc:stream10 is not pinned by digest; it resolves at build time"
+  ]
+}

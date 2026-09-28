@@ -1,0 +1,18 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: openshift-client
+spec:
+  # OpenShift stable channel on 2026-09-27. The checksum matches
+  # sha256sum.txt in the same directory, whose inline signature
+  # (sha256sum.txt.gpg) verifies with the Red Hat release key 2
+  # (fingerprint 567E347AD0044ADE55BA8A5F199E2F91FD431D51).
+  version: 4.22.14
+  source:
+    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz
+    sha256: 73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b
+  archive: tar.gz
+  files:
+    - path: oc
+      destination: /usr/local/bin/oc
+      mode: "0755"

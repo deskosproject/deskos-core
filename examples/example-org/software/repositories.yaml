@@ -1,0 +1,49 @@
+# Official vendor RPM repositories, as documented by each vendor.
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: hashicorp
+spec:
+  # https://developer.hashicorp.com/terraform/install
+  id: hashicorp
+  displayName: HashiCorp Stable - $basearch
+  baseURL: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+  gpgKeys:
+    - https://rpm.releases.hashicorp.com/gpg
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: kubernetes
+spec:
+  # https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
+  # The repository is per Kubernetes minor release.
+  id: kubernetes
+  displayName: Kubernetes v1.37
+  baseURL: https://pkgs.k8s.io/core:/stable:/v1.37/rpm/
+  gpgKeys:
+    - https://pkgs.k8s.io/core:/stable:/v1.37/rpm/repodata/repomd.xml.key
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: vscode
+spec:
+  # https://code.visualstudio.com/docs/setup/linux
+  id: code
+  displayName: Visual Studio Code
+  baseURL: https://packages.microsoft.com/yumrepos/vscode
+  gpgKeys:
+    - https://packages.microsoft.com/keys/microsoft.asc
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: google-chrome
+spec:
+  # https://www.google.com/linuxrepositories/
+  id: google-chrome
+  displayName: google-chrome
+  baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
+  gpgKeys:
+    - https://dl.google.com/linux/linux_signing_key.pub

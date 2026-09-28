@@ -1,0 +1,9 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-baseline
+spec:
+  packages:
+    - google-noto-sans-fonts
+    - google-noto-sans-mono-fonts
+    - vim-enhanced

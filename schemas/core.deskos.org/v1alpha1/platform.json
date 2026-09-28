@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/core.deskos.org/v1alpha1/platform.json",
+  "title": "core.deskos.org/v1alpha1 Platform",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "core.deskos.org/v1alpha1" },
+    "kind": { "const": "Platform" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayName", "family", "release", "architectures", "bootc", "distribution", "flatpak"],
+      "properties": {
+        "displayName": { "$ref": "../../common/definitions.json#/$defs/singleLine" },
+        "family": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "release": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z.-]*$" },
+        "architectures": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "enum": ["x86_64"] }
+        },
+        "bootc": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["image"],
+          "properties": {
+            "image": { "type": "string", "minLength": 1 },
+            "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+          }
+        },
+        "distribution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["redistributable", "requiresSubscription"],
+          "properties": {
+            "redistributable": { "type": "boolean" },
+            "requiresSubscription": { "type": "boolean" }
+          }
+        },
+        "packageGroups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "rpmGroups"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+              "rpmGroups": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "graphical": { "type": "boolean" }
+            }
+          }
+        },
+        "unavailablePackages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "reason"],
+            "properties": {
+              "name": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+              "reason": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 }
+            }
+          }
+        },
+        "displayManager": { "type": "string", "pattern": "\\.service$" },
+        "gnome": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dconfDatabase"],
+          "properties": {
+            "dconfDatabase": { "$ref": "../../common/definitions.json#/$defs/name" },
+            "loginScreen": { "type": "boolean" },
+            "enabledExtensions": { "type": "array", "items": { "type": "string" } },
+            "extensions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "package", "uuid"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+                  "uuid": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "boot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["splashKernelArgument", "quietKernelArgument", "plymouthPackages", "plymouthDracutModule"],
+          "properties": {
+            "splashKernelArgument": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
+            "quietKernelArgument": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
+            "plymouthPackages": { "type": "array", "minItems": 1, "items": { "$ref": "../../common/definitions.json#/$defs/packageName" } },
+            "plymouthDracutModule": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+            "spinnerFrames": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["package", "imageDir"],
+              "properties": {
+                "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+                "imageDir": { "type": "string", "pattern": "^/usr/share/plymouth/themes/[a-z0-9][a-z0-9_.-]*$" }
+              }
+            }
+          }
+        },
+        "flatpak": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["preinstall"],
+          "properties": {
+            "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+            "preinstall": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

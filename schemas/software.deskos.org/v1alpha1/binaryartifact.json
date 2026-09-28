@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/software.deskos.org/v1alpha1/binaryartifact.json",
+  "title": "software.deskos.org/v1alpha1 BinaryArtifact",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "software.deskos.org/v1alpha1" },
+    "kind": { "const": "BinaryArtifact" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "source", "archive", "files"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._+-]*$" },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["url", "sha256"],
+          "properties": {
+            "url": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        },
+        "archive": { "enum": ["none", "tar.gz"] },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["destination"],
+            "properties": {
+              "path": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+              "destination": { "type": "string", "pattern": "^/usr/local/bin/[A-Za-z0-9][A-Za-z0-9._+-]*$" },
+              "mode": { "enum": ["0755", "0555"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

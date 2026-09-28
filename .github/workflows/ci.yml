@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    # Cheap checks only: no image builds, registry logins or QEMU.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        # The assignment fails the step if gofmt cannot run.
+        run: |
+          out=$(gofmt -l .)
+          test -z "$out" || { echo "$out"; exit 1; }
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./...
+      - name: VM boot check harness unit tests
+        run: python3 -m unittest discover -s tests/vm
+      - name: build deskosctl
+        run: go build -o bin/deskosctl ./cmd/deskosctl
+      - name: validate resources
+        run: ./bin/deskosctl validate ./resources ./examples/example-org
+      - name: plan CentOS reference workstation
+        run: ./bin/deskosctl plan ./resources --workstation deskos-core-centos10
+      - name: plan example RHEL workstation
+        run: ./bin/deskosctl plan ./resources ./examples/example-org --workstation example-devops-rhel10
+      - name: render twice and compare
+        run: |
+          for ws in deskos-core-centos10 example-devops-rhel10; do
+            ./bin/deskosctl render ./resources ./examples/example-org --workstation "$ws" --output "dist/a/$ws"
+            ./bin/deskosctl render ./examples/example-org ./resources --workstation "$ws" --output "dist/b/$ws"
+          done
+          diff -r dist/a dist/b

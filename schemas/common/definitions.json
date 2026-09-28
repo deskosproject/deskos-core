@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/common/definitions.json",
+  "title": "Shared DeskOS definitions",
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "objectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name"],
+      "properties": {
+        "apiVersion": { "type": "string", "pattern": "^[a-z0-9.-]+/[a-z0-9]+$" },
+        "kind": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
+        "name": { "$ref": "#/$defs/name" }
+      }
+    },
+    "httpsURL": {
+      "type": "string",
+      "pattern": "^https://[^\\s'\"`\\\\]+$"
+    },
+    "singleLine": {
+      "type": "string",
+      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\][^\\\\]*$"
+    },
+    "packageName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+    }
+  }
+}

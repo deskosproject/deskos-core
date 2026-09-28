@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/software.deskos.org/v1alpha1/packageset.json",
+  "title": "software.deskos.org/v1alpha1 PackageSet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "software.deskos.org/v1alpha1" },
+    "kind": { "const": "PackageSet" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [{ "required": ["groups"] }, { "required": ["packages"] }],
+      "properties": {
+        "groups": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
+        "packages": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/packageName" } },
+        "repositories": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/name" } },
+        "enableUnits": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9@_.:-]+\\.(service|socket|timer|path)$" }
+        }
+      }
+    }
+  }
+}

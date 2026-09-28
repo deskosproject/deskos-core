@@ -1,0 +1,15 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-core
+spec:
+  groups:
+    - workstation
+  packages:
+    - bootc
+    - NetworkManager
+    - firefox
+    - flatpak
+    - firewalld
+  enableUnits:
+    - firewalld.service

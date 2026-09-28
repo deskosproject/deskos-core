@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/desktop.deskos.org/v1alpha1/gnomeprofile.json",
+  "title": "desktop.deskos.org/v1alpha1 GnomeProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "desktop.deskos.org/v1alpha1" },
+    "kind": { "const": "GnomeProfile" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["defaults"],
+      "properties": {
+        "defaults": { "$ref": "#/$defs/settings" },
+        "locks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": [
+            "windows.buttons", "windows.buttonPlacement",
+            "appearance.wallpaper", "appearance.loginLogo",
+            "appearance.fonts.interface", "appearance.fonts.document", "appearance.fonts.monospace",
+            "appearance.iconTheme", "appearance.cursorTheme",
+            "shell.favorites",
+            "session.idle.blankAfter", "session.lock.enabled", "session.lock.delay",
+            "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash"
+          ] }
+        }
+      }
+    },
+    "duration": { "type": "string", "pattern": "^([0-9]+(h|m|s))+$" },
+    "font": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "size"],
+      "properties": {
+        "family": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 _-]*$" },
+        "size": { "type": "number", "minimum": 6, "maximum": 72 }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "windows": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "buttons": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["minimize", "maximize", "close"] } },
+            "buttonPlacement": { "enum": ["left", "right"] }
+          }
+        },
+        "appearance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "wallpaper": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["light"],
+              "properties": {
+                "light": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+                "dark": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+              }
+            },
+            "fonts": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "interface": { "$ref": "#/$defs/font" },
+                "document": { "$ref": "#/$defs/font" },
+                "monospace": { "$ref": "#/$defs/font" }
+              }
+            },
+            "loginLogo": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+            "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
+            "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" }
+          }
+        },
+        "shell": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "favorites": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.desktop$" } }
+          }
+        },
+        "session": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "idle": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "blankAfter": { "anyOf": [{ "const": "never" }, { "$ref": "#/$defs/duration" }] }
+              }
+            },
+            "lock": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean" },
+                "delay": { "$ref": "#/$defs/duration" }
+              }
+            }
+          }
+        },
+        "dock": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "position": { "enum": ["bottom", "left", "right", "top"] },
+            "behavior": { "enum": ["fixed", "autohide", "intellihide"] },
+            "iconSize": { "type": "integer", "minimum": 16, "maximum": 64 },
+            "showTrash": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

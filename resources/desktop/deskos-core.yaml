@@ -1,0 +1,30 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-core
+spec:
+  defaults:
+    windows:
+      buttons: [minimize, maximize, close]
+      buttonPlacement: right
+    appearance:
+      wallpaper:
+        light: ../assets/deskos/deskos-light.svg
+        dark: ../assets/deskos/deskos-dark.svg
+      loginLogo: ../assets/deskos/deskos-login-logo.svg
+    shell:
+      favorites:
+        - firefox.desktop
+        - org.gnome.Nautilus.desktop
+        - org.gnome.Ptyxis.desktop
+        - org.gnome.TextEditor.desktop
+        - org.gnome.Settings.desktop
+    # Dash to Dock with its upstream defaults; favorites stay native GNOME state.
+    dock:
+      enabled: true
+    session:
+      idle:
+        blankAfter: 10m
+      lock:
+        enabled: true
+        delay: 0s

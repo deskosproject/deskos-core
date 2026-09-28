@@ -1,0 +1,13 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakRemote
+metadata:
+  name: flathub
+spec:
+  title: Flathub
+  url: https://dl.flathub.org/repo/
+  homepage: https://flathub.org/
+  comment: Central repository of Flatpak applications
+  collectionID: org.flathub.Stable
+  # Binary key decoded from https://dl.flathub.org/repo/flathub.flatpakrepo;
+  # identical to https://dl.flathub.org/repo/flathub.gpg.
+  gpgKeyFile: keys/flathub.gpg

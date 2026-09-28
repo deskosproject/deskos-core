@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-reference-apps
+spec:
+  layer: foundation
+  description: Public reference applications from Flathub, for the public reference workstation.
+  resources:
+    - kind: FlatpakSet
+      name: deskos-reference-apps

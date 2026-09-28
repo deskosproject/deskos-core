@@ -1,0 +1,12 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-baseline
+spec:
+  layer: organization
+  description: Example organization baseline for every workstation.
+  resources:
+    - kind: PackageSet
+      name: example-baseline
+    - kind: GnomeProfile
+      name: example-desktop

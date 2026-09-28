@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/core.deskos.org/v1alpha1/profile.json",
+  "title": "core.deskos.org/v1alpha1 Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "core.deskos.org/v1alpha1" },
+    "kind": { "const": "Profile" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layer", "resources"],
+      "properties": {
+        "layer": { "enum": ["foundation", "organization", "role", "workstation"] },
+        "description": { "$ref": "../../common/definitions.json#/$defs/singleLine" },
+        "resources": {
+          "type": "array",
+          "items": { "$ref": "../../common/definitions.json#/$defs/objectRef" }
+        }
+      }
+    }
+  }
+}

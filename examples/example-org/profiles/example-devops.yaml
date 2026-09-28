@@ -1,0 +1,18 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-devops
+spec:
+  layer: role
+  description: Example DevOps role; containers, virtualization and platform tooling.
+  resources:
+    - kind: PackageSet
+      name: example-containers
+    - kind: PackageSet
+      name: example-virtualization
+    - kind: PackageSet
+      name: example-platform-tools
+    - kind: BinaryArtifact
+      name: openshift-client
+    - kind: GnomeProfile
+      name: example-devops-desktop

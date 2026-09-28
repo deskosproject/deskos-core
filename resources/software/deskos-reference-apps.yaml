@@ -1,0 +1,9 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: deskos-reference-apps
+spec:
+  remote: flathub
+  applications:
+    - id: io.github.kolunmi.Bazaar
+      branch: stable

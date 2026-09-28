@@ -1,0 +1,48 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  name: centos-stream-10
+spec:
+  displayName: CentOS Stream 10
+  family: centos
+  release: "10"
+  architectures: [x86_64]
+  bootc:
+    image: quay.io/centos-bootc/centos-bootc:stream10
+  distribution:
+    redistributable: true
+    requiresSubscription: false
+  packageGroups:
+    - name: workstation
+      rpmGroups: [workstation-product-environment]
+      graphical: true
+  unavailablePackages:
+    - name: virt-manager
+      reason: only in the CentOS Stream CRB repository, which is disabled by default and not enabled by DeskOS; RHEL 10 moved it to its unsupported CodeReady Linux Builder repository
+  displayManager: gdm.service
+  gnome:
+    # /etc/dconf/profile/user from the dconf package reads user, local, site
+    # and distro; distro is the vendor-defaults slot, below local and site.
+    dconfDatabase: distro
+    # GDM's dconf profile (user, gdm, local, site, distro) reads it too.
+    loginScreen: true
+    # Default of org.gnome.shell enabled-extensions on this platform.
+    enabledExtensions: [background-logo@fedorahosted.org]
+    extensions:
+      - name: dash-to-dock
+        package: gnome-shell-extension-dash-to-dock
+        uuid: dash-to-dock@micxgx.gmail.com
+  boot:
+    # Plymouth shows its graphical splash only with rhgb, splash or
+    # plymouth.graphical on the kernel command line.
+    splashKernelArgument: rhgb
+    quietKernelArgument: quiet
+    plymouthPackages: [plymouth, plymouth-scripts, plymouth-system-theme]
+    plymouthDracutModule: plymouth
+    # Stock two-step spinner frames reused by a DeskOS-owned theme.
+    spinnerFrames:
+      package: plymouth-theme-spinner
+      imageDir: /usr/share/plymouth/themes/spinner
+  flatpak:
+    package: flatpak
+    preinstall: true

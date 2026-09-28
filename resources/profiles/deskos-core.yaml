@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-core
+spec:
+  layer: foundation
+  description: DeskOS Core, the distribution-independent GNOME workstation foundation.
+  resources:
+    - kind: PackageSet
+      name: deskos-core
+    - kind: GnomeProfile
+      name: deskos-core
+    - kind: BootProfile
+      name: deskos-core

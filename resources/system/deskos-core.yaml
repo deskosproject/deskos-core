@@ -1,0 +1,11 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: BootProfile
+metadata:
+  name: deskos-core
+spec:
+  # Plymouth splash instead of scrolling boot messages; ESC shows
+  # details, and failures are still printed.
+  splash: graphical
+  quiet: true
+  # Provisional DeskOS mark at the bottom of the splash (DeskOS theme).
+  watermark: ../assets/deskos/deskos-splash-watermark.png

@@ -1,0 +1,13 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-devops-desktop
+spec:
+  defaults:
+    shell:
+      favorites:
+        - google-chrome.desktop
+        - firefox.desktop
+        - org.gnome.Nautilus.desktop
+        - org.gnome.Ptyxis.desktop
+        - com.microsoft.VSCode.desktop

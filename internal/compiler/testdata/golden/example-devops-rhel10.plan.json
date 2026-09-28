@@ -1,0 +1,944 @@
+{
+  "format": "plan.deskos.org/v1alpha1",
+  "workstation": {
+    "name": "example-devops-rhel10",
+    "displayName": "Example Org DevOps Workstation",
+    "source": "example-org/workstations/example-devops.yaml:1"
+  },
+  "platform": {
+    "name": "rhel-10",
+    "displayName": "Red Hat Enterprise Linux 10",
+    "family": "rhel",
+    "release": "10",
+    "architectures": [
+      "x86_64"
+    ],
+    "redistributable": false,
+    "requiresSubscription": true,
+    "source": "resources/platforms/rhel-10.yaml:1"
+  },
+  "profiles": [
+    {
+      "name": "deskos-core",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-core.yaml:1"
+    },
+    {
+      "name": "example-baseline",
+      "layer": "organization",
+      "source": "example-org/profiles/example-baseline.yaml:1"
+    },
+    {
+      "name": "example-devops",
+      "layer": "role",
+      "source": "example-org/profiles/example-devops.yaml:1"
+    }
+  ],
+  "artifact": {
+    "baseImage": {
+      "image": "registry.redhat.io/rhel10/rhel-bootc:10.2",
+      "ref": "registry.redhat.io/rhel10/rhel-bootc:10.2"
+    },
+    "labels": [
+      {
+        "name": "org.deskos.platform",
+        "value": "rhel-10"
+      },
+      {
+        "name": "org.deskos.workstation",
+        "value": "example-devops-rhel10"
+      },
+      {
+        "name": "org.opencontainers.image.title",
+        "value": "Example Org DevOps Workstation"
+      }
+    ],
+    "rpmRepositories": [
+      {
+        "id": "code",
+        "displayName": "Visual Studio Code",
+        "baseURL": "https://packages.microsoft.com/yumrepos/vscode",
+        "enabled": true,
+        "gpgCheck": true,
+        "gpgKeys": [
+          "https://packages.microsoft.com/keys/microsoft.asc"
+        ],
+        "provenance": [
+          {
+            "resource": "RpmRepository/vscode",
+            "via": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/repositories.yaml:27"
+          }
+        ]
+      },
+      {
+        "id": "google-chrome",
+        "displayName": "google-chrome",
+        "baseURL": "https://dl.google.com/linux/chrome/rpm/stable/x86_64",
+        "enabled": true,
+        "gpgCheck": true,
+        "gpgKeys": [
+          "https://dl.google.com/linux/linux_signing_key.pub"
+        ],
+        "provenance": [
+          {
+            "resource": "RpmRepository/google-chrome",
+            "via": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/repositories.yaml:39"
+          }
+        ]
+      },
+      {
+        "id": "hashicorp",
+        "displayName": "HashiCorp Stable - $basearch",
+        "baseURL": "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable",
+        "enabled": true,
+        "gpgCheck": true,
+        "gpgKeys": [
+          "https://rpm.releases.hashicorp.com/gpg"
+        ],
+        "provenance": [
+          {
+            "resource": "RpmRepository/hashicorp",
+            "via": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/repositories.yaml:2"
+          }
+        ]
+      },
+      {
+        "id": "kubernetes",
+        "displayName": "Kubernetes v1.37",
+        "baseURL": "https://pkgs.k8s.io/core:/stable:/v1.37/rpm/",
+        "enabled": true,
+        "gpgCheck": true,
+        "gpgKeys": [
+          "https://pkgs.k8s.io/core:/stable:/v1.37/rpm/repodata/repomd.xml.key"
+        ],
+        "provenance": [
+          {
+            "resource": "RpmRepository/kubernetes",
+            "via": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/repositories.yaml:14"
+          }
+        ]
+      }
+    ],
+    "rpmGroups": [
+      {
+        "name": "workstation",
+        "rpmGroups": [
+          "workstation-product-environment"
+        ],
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "rpmPackages": [
+      {
+        "name": "NetworkManager",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "bootc",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "buildah",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-containers",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "cockpit",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "cockpit-machines",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "code",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:42"
+          }
+        ]
+      },
+      {
+        "name": "firefox",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "firewalld",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "flatpak",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "git",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-containers",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "gnome-shell-extension-dash-to-dock",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/desktop/example-desktop.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-chrome-stable",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:42"
+          }
+        ]
+      },
+      {
+        "name": "google-noto-sans-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-baseline",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/software/example-baseline.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-noto-sans-mono-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-baseline",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/software/example-baseline.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "kubectl",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:42"
+          }
+        ]
+      },
+      {
+        "name": "libvirt",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "plymouth",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-scripts",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-system-theme",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-theme-spinner",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "podman",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-containers",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "qemu-kvm",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "skopeo",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-containers",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "terraform",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-platform-tools",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:42"
+          }
+        ]
+      },
+      {
+        "name": "toolbox",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-containers",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "vim-enhanced",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-baseline",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/software/example-baseline.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "virt-install",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "virt-viewer",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      }
+    ],
+    "binaries": [
+      {
+        "artifact": "openshift-client",
+        "version": "4.22.14",
+        "url": "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz",
+        "sha256": "73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b",
+        "archive": "tar.gz",
+        "member": "oc",
+        "destination": "/usr/local/bin/oc",
+        "mode": "0755",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/openshift-client",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/openshift-client.yaml:1"
+          }
+        ]
+      }
+    ],
+    "files": [
+      {
+        "path": "/usr/share/deskos/backgrounds/example-org.svg",
+        "mode": "0644",
+        "sha256": "0a32d5c09021dba7525d0aed0934e59d2f68e87836d15a1dcaf87fdc1a42a37f",
+        "asset": "example-org/assets/example-org.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/desktop/example-desktop.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/deskos/branding/example-org-login-logo.svg",
+        "mode": "0644",
+        "sha256": "1860119bfa8a4b6171a1b3adc27888c71c9f859521913aaa8082b23570caa942",
+        "asset": "example-org/assets/example-org-login-logo.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/desktop/example-desktop.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/plymouth/themes/deskos/watermark.png",
+        "mode": "0644",
+        "sha256": "e286d8294944c47850e6cec864fb444edeca62205e2aa8c54b26f39fe79c78c2",
+        "asset": "resources/assets/deskos/deskos-splash-watermark.png",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "dconf": {
+      "name": "distro",
+      "defaults": [
+        {
+          "key": "/org/gnome/desktop/background/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/background/picture-uri-dark",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/interface/document-font-name",
+          "type": "s",
+          "value": "'Noto Sans 11'",
+          "setting": "appearance.fonts.document",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/interface/font-name",
+          "type": "s",
+          "value": "'Noto Sans 11'",
+          "setting": "appearance.fonts.interface",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/interface/monospace-font-name",
+          "type": "s",
+          "value": "'Noto Sans Mono 10'",
+          "setting": "appearance.fonts.monospace",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/lock-delay",
+          "type": "u",
+          "value": "uint32 0",
+          "setting": "session.lock.delay",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/lock-enabled",
+          "type": "b",
+          "value": "true",
+          "setting": "session.lock.enabled",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/screensaver/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/session/idle-delay",
+          "type": "u",
+          "value": "uint32 300",
+          "setting": "session.idle.blankAfter",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/wm/preferences/button-layout",
+          "type": "s",
+          "value": "'appmenu:close'",
+          "setting": "windows.buttons",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            },
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/login-screen/logo",
+          "type": "s",
+          "value": "'/usr/share/deskos/branding/example-org-login-logo.svg'",
+          "setting": "appearance.loginLogo",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/enabled-extensions",
+          "type": "as",
+          "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']",
+          "setting": "dock.enabled",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/autohide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size",
+          "type": "i",
+          "value": "40",
+          "setting": "dock.iconSize",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-fixed",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-position",
+          "type": "s",
+          "value": "'BOTTOM'",
+          "setting": "dock.position",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/intellihide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/show-trash",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.showTrash",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-desktop",
+              "profile": "example-baseline",
+              "layer": "organization",
+              "source": "example-org/desktop/example-desktop.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/favorite-apps",
+          "type": "as",
+          "value": "['google-chrome.desktop', 'firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'com.microsoft.VSCode.desktop']",
+          "setting": "shell.favorites",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-devops-desktop",
+              "profile": "example-devops",
+              "layer": "role",
+              "source": "example-org/desktop/example-devops-desktop.yaml:1"
+            }
+          ]
+        }
+      ],
+      "locks": null
+    },
+    "gsettingsVendorDefaults": [
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/desktop/example-desktop.yaml:1"
+          }
+        ]
+      },
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri-dark",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/desktop/example-desktop.yaml:1"
+          }
+        ]
+      }
+    ],
+    "kernelArguments": [
+      {
+        "arg": "quiet",
+        "setting": "boot.quiet",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "arg": "rhgb",
+        "setting": "boot.splash",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "initramfs": {
+      "dracutModules": [
+        "plymouth"
+      ],
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/system/deskos-core.yaml:1"
+        }
+      ]
+    },
+    "plymouthTheme": {
+      "name": "deskos",
+      "dir": "/usr/share/plymouth/themes/deskos",
+      "framesFrom": "/usr/share/plymouth/themes/spinner",
+      "watermark": "/usr/share/plymouth/themes/deskos/watermark.png",
+      "setting": "boot.watermark",
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/system/deskos-core.yaml:1"
+        }
+      ]
+    },
+    "systemdUnits": [
+      {
+        "unit": "cockpit.socket",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-virtualization",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "example-org/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "unit": "firewalld.service",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "gdm.service",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "defaultTarget": {
+      "target": "graphical.target",
+      "provenance": [
+        {
+          "resource": "PackageSet/deskos-core",
+          "profile": "deskos-core",
+          "layer": "foundation",
+          "source": "resources/software/deskos-core.yaml:1"
+        }
+      ]
+    }
+  },
+  "provisioning": {
+    "flatpakRemotes": [],
+    "flatpakApplications": []
+  },
+  "enrollment": {},
+  "warnings": [
+    "artifacts built on Platform/rhel-10 must not be publicly redistributed",
+    "base image registry.redhat.io/rhel10/rhel-bootc:10.2 is not pinned by digest; it resolves at build time"
+  ]
+}

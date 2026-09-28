@@ -1,0 +1,56 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-containers
+spec:
+  packages:
+    - git
+    - podman
+    - buildah
+    - skopeo
+    - toolbox
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-virtualization
+spec:
+  # virt-manager is also required; see PackageSet/example-virt-manager.
+  # cockpit-machines is an additional tool, not a replacement for it.
+  packages:
+    - qemu-kvm
+    - libvirt
+    - virt-install
+    - virt-viewer
+    - cockpit
+    - cockpit-machines
+  enableUnits:
+    - cockpit.socket
+---
+# The organization requires virt-manager, but neither EL10 platform supplies it from a
+# supported repository (see the platforms' unavailablePackages). Adding this
+# set to Profile/example-devops makes composition fail with that reason, so it
+# stays unreferenced until the organization decides how to close the gap.
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-virt-manager
+spec:
+  packages:
+    - virt-manager
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-platform-tools
+spec:
+  packages:
+    - terraform
+    - kubectl
+    - code
+    - google-chrome-stable
+  repositories:
+    - hashicorp
+    - kubernetes
+    - vscode
+    - google-chrome

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/software.deskos.org/v1alpha1/rpmrepository.json",
+  "title": "software.deskos.org/v1alpha1 RpmRepository",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "software.deskos.org/v1alpha1" },
+    "kind": { "const": "RpmRepository" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "baseURL"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+        "displayName": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+        "baseURL": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
+        "enabled": { "type": "boolean" },
+        "gpgCheck": { "type": "boolean" },
+        "gpgKeys": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/httpsURL" } }
+      }
+    }
+  }
+}
