@@ -212,12 +212,15 @@ def run(args):
         "-device", "virtio-rng-pci",
         "-serial", f"file:{os.path.join(out, 'serial.log')}",
         "-qmp", f"unix:{qmp_path},server=on,wait=off",
-    ]
+    ] + list(getattr(args, "extra_qemu", None) or [])
+    serial_path = os.path.join(out, "serial.log")
+    marker = getattr(args, "until_serial", None)
     summary = {
         "disk": disk, "disk_sha256": sha256(disk) if args.hash_disk else None,
         "qemu": qemu, "ovmf_code": code, "memory_mib": args.memory, "cpus": args.cpus,
         "boot_timeout_s": args.boot_timeout, "shutdown_timeout_s": args.shutdown_timeout,
-        "expect_splash": args.expect_splash, "frames": [], "result": "error", "failures": [],
+        "expect_splash": args.expect_splash, "until_serial": marker,
+        "frames": [], "result": "error", "failures": [],
     }
     log = open(os.path.join(out, "qemu.log"), "wb")
     proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT)
@@ -226,6 +229,14 @@ def run(args):
         qmp = QMP(qmp_path, 30)
         t0 = time.monotonic()
         last_digest, stable, graphical_at, splash_at, stable_digest = None, 0, None, None, None
+        marker_at = None
+
+        def marker_seen():
+            try:
+                with open(serial_path, "rb") as f:
+                    return marker.encode() in f.read()
+            except OSError:
+                return False
 
         def capture(phase):
             nonlocal last_digest
@@ -261,14 +272,22 @@ def run(args):
                     stable_digest = e["digest"]
                 else:
                     stable, stable_digest = 0, None
-                if stable >= args.stable_frames:
+                if not marker and stable >= args.stable_frames:
                     break
+            if marker and marker_seen():
+                marker_at = round(time.monotonic() - t0, 1)
+                capture("boot")
+                break
             if proc.poll() is not None:
                 raise HarnessError(f"QEMU exited during boot with status {proc.returncode}")
             time.sleep(args.interval)
         summary["splash_first_s"] = splash_at
         summary["graphical_first_s"] = graphical_at
-        if stable < args.stable_frames:
+        if marker:
+            summary["serial_marker_s"] = marker_at
+            if marker_at is None:
+                summary["failures"].append(f"serial marker {marker!r} not seen within {args.boot_timeout}s")
+        elif stable < args.stable_frames:
             summary["failures"].append(f"no stable graphical screen within {args.boot_timeout}s")
         if args.expect_splash and splash_at is None:
             summary["failures"].append("the graphical boot splash never appeared")
@@ -276,13 +295,16 @@ def run(args):
             summary["text_frames_between_splash_and_graphical"] = sum(
                 1 for f in summary["frames"] if f["phase"] == "boot" and f["class"] == "text" and splash_at < f["t"] < graphical_at)
 
-        qmp.command("system_powerdown")
+        # An instrumented guest powers itself off after reporting.
+        if not getattr(args, "guest_powers_off", False):
+            qmp.command("system_powerdown")
         t1 = time.monotonic()
         while proc.poll() is None and time.monotonic() - t1 < args.shutdown_timeout:
             capture("shutdown")
             time.sleep(min(args.interval, 0.3))
         if proc.poll() is None:
-            summary["failures"].append(f"ACPI shutdown did not power off within {args.shutdown_timeout}s")
+            how = "guest poweroff" if getattr(args, "guest_powers_off", False) else "ACPI shutdown"
+            summary["failures"].append(f"{how} did not power off within {args.shutdown_timeout}s")
         else:
             summary["shutdown_s"] = round(time.monotonic() - t1, 1)
         summary["shutdown_text_frames"] = sum(1 for f in summary["frames"] if f["phase"] == "shutdown" and f["class"] == "text")

@@ -1,9 +1,10 @@
 name: vm-bootcheck (experimental)
 
 # Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
-# makes a QCOW2 and runs tests/vm/bootcheck.py. Nested virtualization on
-# GitHub-hosted runners is not officially supported, so a failure here is
-# not by itself evidence of an artifact defect.
+# makes a QCOW2, runs tests/vm/bootcheck.py on the unmodified disk, then
+# tests/vm/sessioncheck.py on an instrumented boot of the same disk. Nested
+# virtualization on GitHub-hosted runners is not officially supported, so a
+# failure here is not by itself evidence of an artifact defect.
 on:
   workflow_dispatch:
 
@@ -23,7 +24,7 @@ env:
 jobs:
   core-centos10:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -61,6 +62,16 @@ jobs:
         timeout-minutes: 40
         run: sudo podman build --pull=missing -t "$IMAGE" ctx
 
+      - name: Record image evidence
+        run: |
+          mkdir -p "$WORK/evidence"
+          cp ctx/plan.json ctx/generated-manifest.json "$WORK/evidence/"
+          grep '^FROM ' ctx/Containerfile > "$WORK/evidence/base.txt"
+          sudo podman image inspect "$IMAGE" --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' | tee "$WORK/evidence/image.txt"
+          sudo podman run --rm --network=none "$IMAGE" rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort > "$WORK/evidence/rpm-qa.txt"
+          cat "$WORK/evidence/base.txt"
+          wc -l < "$WORK/evidence/rpm-qa.txt"
+
       - name: Build a QCOW2 without the builder's kernel arguments
         timeout-minutes: 30
         run: |
@@ -72,26 +83,47 @@ jobs:
             "$BIB" build --type qcow2 --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
-          sha256sum "$WORK/output/qcow2/disk.qcow2"
+          sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
           df -h / /mnt
 
-      - name: Boot check
+      - name: Boot check (unmodified disk)
+        id: boot
         timeout-minutes: 15
         run: |
           python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/bootcheck" --expect-splash --hash-disk \
+            --out "$WORK/bootcheck" --expect-splash --hash-disk --keep-overlay \
             --boot-timeout 420 --shutdown-timeout 120
+
+      - name: Journal of the failed boot (diagnostic boot of the kept overlay)
+        if: failure() && steps.boot.outcome == 'failure'
+        timeout-minutes: 15
+        run: |
+          python3 tests/vm/sessioncheck.py --mode journal --disk "$WORK/bootcheck/overlay.qcow2" \
+            --out "$WORK/journal-failed-boot" --boot-timeout 600
+
+      - name: Session check (instrumented boot)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
 
       - name: Summary
         if: always()
         run: |
-          if [ -f "$WORK/bootcheck/summary.md" ]; then cat "$WORK/bootcheck/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" "$WORK/journal-failed-boot/session.md"; do
+            if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
 
       - name: Upload boot check evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: bootcheck-core-centos10
-          path: ${{ env.WORK }}/bootcheck
+          name: vm-evidence-core-centos10
+          path: |
+            ${{ env.WORK }}/evidence
+            ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/session
+            ${{ env.WORK }}/journal-failed-boot
+            !${{ env.WORK }}/**/*.qcow2
           retention-days: 14
           if-no-files-found: warn

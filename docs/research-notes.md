@@ -247,5 +247,51 @@ centos-logos 100.5-1, dracut 107-11, bootc 1.16.13, kernel
 
 The `deskosproject` GitHub organization (2016 to 2018) holds RPM packaging
 repositories under mixed licenses: GPL-2.0, GPL-3.0, NOASSERTION and
-unlicensed. There is no project-wide license to inherit. License: pending
-maintainer decision.
+unlicensed. There is no project-wide license to inherit; this repository
+is Apache-2.0.
+
+## Kernel warnings: cnic / bnx2i at boot (tracking)
+
+Every CS10 boot prints four kernel lines, "Warning: Unmaintained driver is
+detected: cnic / cnic_init / bnx2i / bnx2i_mod_init", before the splash;
+they are visible again briefly at shutdown. DeskOS leaves them in place
+and does not blacklist the drivers.
+
+- Cause: dracut's iSCSI module (`dracut-network-107-11.el10`,
+  `95iscsi/parse-iscsiroot.sh`, lines 100 to 104) runs `modprobe -b -q`
+  for `qla4xxx`, `cxgb3i`, `cxgb4i`, `bnx2i` and `be2iscsi` on every boot
+  whose initramfs includes the module, with or without an iSCSI root.
+  dracut-ng `main` (`modules.d/74iscsi/parse-iscsiroot.sh`) is the same;
+  those lines come from commit `5850486fbc3e` (2024-03-31, which split an
+  earlier single `modprobe --all`). PRs #1121 and #1233 (2025, iSCSI
+  offload boot fixes) do not change them.
+- The warning text comes from the EL10 kernel marking these drivers
+  unmaintained (inferred; not checked in kernel source).
+- Existing reports, searched on 2026-09-29: none about this behavior.
+  - dracut-ng/dracut issues and PRs for `bnx2i` and `parse-iscsiroot`:
+    only #1121, #1233 and unrelated items.
+  - Red Hat Jira (`redhat.atlassian.net`): RHEL-58078 shows the lines in
+    an unrelated boot log (closed, Cannot Reproduce); nothing under the
+    dracut component.
+- Follow-up: a report to dracut-ng, and possibly to RHEL (component
+  dracut), asking that the offload modprobes run only when iSCSI root or
+  firmware boot is configured. Not filed yet.
+
+## Distribution issues seen by the session check (tracking)
+
+Seen on kvm3, AMD Ryzen 5 3600 with host-passthrough CPU, instrumented
+session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
+
+- `mcelog.service` fails: "AMD Processor family 23: mcelog does not
+  support this processor. Please use the edac_mce_amd module instead."
+  mcelog comes from the distribution package group, so it fails on any AMD
+  workstation. It is known: RHEL-3674, "Installer adds mcelog on
+  unsupported AMD systems", closed Won't Do.
+- SELinux AVC denials. They produce the SELinux Troubleshooter "AVC
+  denial" notification on first login.
+  - `bootupd_t` (`lsblk` reading `/etc/group` and `/run/mount`),
+    permissive. Known: RHEL-174888 and RHEL-219156 (selinux-policy,
+    Release Pending).
+  - `tuned_t` (`chcon`, capability `mac_admin`), denied. No existing
+    report found (Red Hat Jira, 2026-09-29).
+  - None came from the test instrumentation.

@@ -42,4 +42,32 @@ are pixel heuristics: the harness does not identify which graphical
 screen it sees (GNOME Initial Setup, GDM or a desktop) and does not test
 applications. The frames are the evidence.
 
+## Session check (instrumented boot)
+
+`sessioncheck.py` boots the same unmodified disk (again through an
+overlay) with systemd credentials passed as SMBIOS type 11 strings. They
+add:
+
+- a test user `deskos-qa` with GDM autologin;
+- a session script that records what GNOME reports;
+- a unit that writes the results and the kernel, Plymouth and GDM
+  journal to the serial port, then powers the machine off.
+
+Kernel arguments and Plymouth are unchanged, but this is an instrumented
+boot and is reported as one.
+
+    python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.json --out session-1
+
+Expected values come from the image's `plan.json`: the enabled
+extensions (including Dash to Dock), the favorites order and the
+wallpaper. The check also requires `disable-user-extensions` to be false,
+Firefox to run headless, and no failed system or user units. Results are
+in `session.md`, `session.json` and `journal.txt`, with frames as for the
+boot check.
+
+`--mode journal --disk <kept overlay>` adds no user. It boots a disk kept
+with `bootcheck.py --keep-overlay` again and writes the journal of the
+previous (tested) boot, which is how a failed unmodified boot is
+diagnosed.
+
 Unit tests: `python3 -m unittest discover -s tests/vm`.

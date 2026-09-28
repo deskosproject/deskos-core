@@ -47,7 +47,10 @@ What Milestone 0 has shown:
   boot check: the pixel classifier sees the graphical splash, then a
   stable graphical screen, then an ACPI power-off. The captured frames
   show the DeskOS splash and GNOME Initial Setup. The check does not
-  identify screens or test applications.
+  identify screens or test applications. `tests/vm/sessioncheck.py`, an
+  instrumented boot of the same disk with a test user, checks the GNOME
+  session against the Plan (Dash to Dock active, favorites, wallpaper,
+  Firefox headless, failed units).
 
 RHEL 10: one entitled build of an earlier revision of
 `example-devops-rhel10` passed `bootc container lint`, confirming the comps

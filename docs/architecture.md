@@ -175,7 +175,7 @@ repository (unsupported on RHEL 10); see `examples/example-org/README.md`.
 | Image builds, `bootc container lint` passes | validated | validated: `81bdfeec...` lint passed with 3 warnings; every layer free of build-host subscription state |
 | Packages install from the declared sources | validated | validated in that build (package presence; apps not launched) |
 | Build layers free of build-host identity | not rechecked since the fix | validated (all 73 layers scanned, 0 findings) |
-| Boots to GNOME with DeskOS defaults | local QEMU/UEFI boot check passes on Core disks (pixel classes; frames show the DeskOS splash and GNOME Initial Setup); no session or application test | one manual, owner-observed boot of the clean QCOW2; that image predates the example rename and later Core changes; no automated boot or E2E test |
+| Boots to GNOME with DeskOS defaults | local QEMU/UEFI boot check passes on Core disks (pixel classes; frames show the DeskOS splash and GNOME Initial Setup); instrumented session check on kvm3 confirms Dash to Dock active, favorites and wallpaper as planned, and Firefox running headless; `mcelog.service` fails on AMD CPUs (distribution package, RHEL-3674) | one manual, owner-observed boot of the clean QCOW2; that image predates the example rename and later Core changes; no automated boot or E2E test |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | not done |
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
