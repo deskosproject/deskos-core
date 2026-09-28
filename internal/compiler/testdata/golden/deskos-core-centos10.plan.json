@@ -32,7 +32,8 @@
   "artifact": {
     "baseImage": {
       "image": "quay.io/centos-bootc/centos-bootc:stream10",
-      "ref": "quay.io/centos-bootc/centos-bootc:stream10"
+      "digest": "sha256:39ee41e7f87c09484603bc7f37550f0a45ccd01c30b1adf1d2cd0666f9c0ca98",
+      "ref": "quay.io/centos-bootc/centos-bootc:stream10@sha256:39ee41e7f87c09484603bc7f37550f0a45ccd01c30b1adf1d2cd0666f9c0ca98"
     },
     "labels": [
       {
@@ -574,8 +575,5 @@
     ],
     "flatpakPreinstallUnit": "deskos-flatpak-preinstall.service"
   },
-  "enrollment": {},
-  "warnings": [
-    "base image quay.io/centos-bootc/centos-bootc:stream10 is not pinned by digest; it resolves at build time"
-  ]
+  "enrollment": {}
 }

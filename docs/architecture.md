@@ -188,7 +188,8 @@ Chrome from their vendor repositories, and the rhel9 `oc` 4.22.14 build
 
 Compilation is deterministic; builds are not yet reproducible bit for bit.
 External inputs that can still change between builds: the base image tag
-(unless `bootc.digest` is set), RPM repository metadata and packages, and
+(unless `bootc.digest` is set; CentOS Stream 10 pins its x86_64 manifest,
+RHEL 10 is not pinned yet), RPM repository metadata and packages, and
 RPM repository GPG keys, which are fetched by URL with no independent
 identity. BinaryArtifact already pins an exact version and SHA-256. The
 goal is that every external input has an immutable, verifiable identity;

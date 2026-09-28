@@ -9,6 +9,8 @@ spec:
   architectures: [x86_64]
   bootc:
     image: quay.io/centos-bootc/centos-bootc:stream10
+    # x86_64 manifest (config sha256:9e1984db...), created 2026-09-27; move it deliberately.
+    digest: sha256:39ee41e7f87c09484603bc7f37550f0a45ccd01c30b1adf1d2cd0666f9c0ca98
   distribution:
     redistributable: true
     requiresSubscription: false

@@ -39,7 +39,8 @@ reviewed on its own:
 
 - CI builds the public CentOS image from the rendered context on changes
   to image inputs, independent of any developer machine.
-- Digest-pinned base image, updated deliberately.
+- Digest-pinned base image, updated deliberately. Done for CentOS Stream
+  10; RHEL 10 pending.
 - Decide how to treat `bootc container lint` warnings from packages.
 
 ## Milestone 3: VM boot and desktop tests
