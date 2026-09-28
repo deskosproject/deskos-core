@@ -50,10 +50,12 @@ type Distribution struct {
 }
 
 // PackageGroup maps a DeskOS package-group name to platform RPM groups.
+// ExcludePackages are group members the platform does not install with it.
 type PackageGroup struct {
-	Name      string   `json:"name"`
-	RpmGroups []string `json:"rpmGroups"`
-	Graphical bool     `json:"graphical,omitempty"`
+	Name            string   `json:"name"`
+	RpmGroups       []string `json:"rpmGroups"`
+	ExcludePackages []string `json:"excludePackages,omitempty"`
+	Graphical       bool     `json:"graphical,omitempty"`
 }
 
 // BootPlatform holds the platform's boot splash facts: kernel arguments that
@@ -210,6 +212,16 @@ func (platformProvider) Decode(res *model.Resource) error {
 			if !rpmGroupRE.MatchString(rg) {
 				errs.Add(model.Errorf(res, "package group %q: invalid RPM group id %q", g.Name, rg))
 			}
+		}
+		excluded := map[string]bool{}
+		for _, x := range g.ExcludePackages {
+			if !pkgRE.MatchString(x) {
+				errs.Add(model.Errorf(res, "package group %q: invalid excluded package %q", g.Name, x))
+			}
+			if excluded[x] {
+				errs.Add(model.Errorf(res, "package group %q: package %q is excluded twice", g.Name, x))
+			}
+			excluded[x] = true
 		}
 		if g.Graphical && s.DisplayManager == "" {
 			errs.Add(model.Errorf(res, "package group %q is graphical but displayManager is not set", g.Name))

@@ -11,5 +11,6 @@ spec:
     - firefox
     - flatpak
     - firewalld
+    - xdg-utils
   enableUnits:
     - firewalld.service

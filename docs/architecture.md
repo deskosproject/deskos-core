@@ -166,6 +166,12 @@ substituting the package. The example organization shows this with
 `virt-manager`, which EL10 ships only in the CodeReady Linux Builder
 repository (unsupported on RHEL 10); see `examples/example-org/README.md`.
 
+A Platform package group may list `excludePackages`: group members the
+platform does not install with the group. They become `--exclude` options
+of the single group transaction only, so a PackageSet that names one still
+installs it. The CS10 Platform excludes setroubleshoot this way; see
+`docs/research-notes.md`.
+
 ## Validation status
 
 | Claim | CentOS Stream 10 | RHEL 10 |

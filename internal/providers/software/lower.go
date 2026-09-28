@@ -35,7 +35,9 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 				m.Name, c.Platform.ID(), strings.Join(known, ", "), describe(m.Provenance)))
 			continue
 		}
-		p.Artifact.RpmGroups = append(p.Artifact.RpmGroups, plan.RpmGroupInstall{Name: m.Name, RpmGroups: g.RpmGroups, Provenance: m.Provenance})
+		p.Artifact.RpmGroups = append(p.Artifact.RpmGroups, plan.RpmGroupInstall{
+			Name: m.Name, RpmGroups: g.RpmGroups, ExcludePackages: g.ExcludePackages, Provenance: m.Provenance,
+		})
 		if g.Graphical {
 			graphical = append(graphical, m.Provenance...)
 		}

@@ -56,6 +56,11 @@
         "rpmGroups": [
           "workstation-product-environment"
         ],
+        "excludePackages": [
+          "setroubleshoot",
+          "setroubleshoot-plugins",
+          "setroubleshoot-server"
+        ],
         "provenance": [
           {
             "resource": "PackageSet/deskos-core",
@@ -187,6 +192,17 @@
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/system/deskos-core.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "xdg-utils",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
           }
         ]
       }

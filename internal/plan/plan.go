@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/deskosproject/deskos-core/internal/compose"
@@ -95,10 +96,12 @@ type RpmRepository struct {
 	Provenance  []model.Provenance `json:"provenance"`
 }
 
+// RpmGroupInstall installs platform RPM groups; ExcludePackages are group members excluded from that install.
 type RpmGroupInstall struct {
-	Name       string             `json:"name"`
-	RpmGroups  []string           `json:"rpmGroups"`
-	Provenance []model.Provenance `json:"provenance"`
+	Name            string             `json:"name"`
+	RpmGroups       []string           `json:"rpmGroups"`
+	ExcludePackages []string           `json:"excludePackages,omitempty"`
+	Provenance      []model.Provenance `json:"provenance"`
 }
 
 type RpmInstall struct {
@@ -263,6 +266,9 @@ func (p *Plan) Normalize() error {
 	sort.Slice(a.Labels, func(i, j int) bool { return a.Labels[i].Name < a.Labels[j].Name })
 	sort.Slice(a.RpmRepositories, func(i, j int) bool { return a.RpmRepositories[i].ID < a.RpmRepositories[j].ID })
 	sort.Slice(a.RpmGroups, func(i, j int) bool { return a.RpmGroups[i].Name < a.RpmGroups[j].Name })
+	for i := range a.RpmGroups {
+		a.RpmGroups[i].ExcludePackages = sortedUnique(a.RpmGroups[i].ExcludePackages)
+	}
 	a.RpmPackages = mergeByName(a.RpmPackages, func(x RpmInstall) string { return x.Name },
 		func(x *RpmInstall) *[]model.Provenance { return &x.Provenance })
 	a.SystemdUnits = mergeByName(a.SystemdUnits, func(x SystemdEnable) string { return x.Unit },
@@ -430,4 +436,13 @@ func hasFile(files []FileInstall, p string) bool {
 		}
 	}
 	return false
+}
+
+func sortedUnique(in []string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := append([]string(nil), in...)
+	sort.Strings(out)
+	return slices.Compact(out)
 }

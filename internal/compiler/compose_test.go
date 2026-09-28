@@ -7,9 +7,11 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 	"github.com/deskosproject/deskos-core/internal/compiler"
 	"github.com/deskosproject/deskos-core/internal/plan"
 )
@@ -984,4 +986,78 @@ func TestBootWatermark(t *testing.T) {
 			mustFail(t, err, "BootProfile/b", "boot.watermark", tc.want)
 		})
 	}
+}
+
+func TestPackageGroupExcludePackages(t *testing.T) {
+	platform := func(groups string) string {
+		return strings.Replace(platformYAML, "  packageGroups:\n    - {name: workstation, rpmGroups: [workstation-product-environment], graphical: true}\n", groups, 1)
+	}
+	excluding := platform("  packageGroups:\n" +
+		"    - {name: workstation, rpmGroups: [workstation-product-environment], graphical: true, excludePackages: [setroubleshoot-server, setroubleshoot]}\n" +
+		"    - {name: office, rpmGroups: [office-suite], excludePackages: [setroubleshoot, libreoffice-help-en]}\n")
+	fx := fixture{
+		"platform.yaml": excluding,
+		"ws.yaml":       workstation("ws", "core"),
+		"core.yaml":     profile("core", "foundation", "PackageSet/a"),
+		"a.yaml":        "apiVersion: software.deskos.org/v1alpha1\nkind: PackageSet\nmetadata:\n  name: a\nspec:\n  groups: [workstation, office]\n  packages: [git]\n",
+	}
+	p := mustPlan(t, "ws", fx.dir(t))
+	got := map[string]string{}
+	for _, g := range p.Artifact.RpmGroups {
+		got[g.Name] = strings.Join(g.ExcludePackages, " ")
+	}
+	if got["workstation"] != "setroubleshoot setroubleshoot-server" || got["office"] != "libreoffice-help-en setroubleshoot" {
+		t.Errorf("excludePackages in the plan = %v", got)
+	}
+
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cf := string(fileData(t, files, containerfile.ContainerfilePath))
+	group, rest, _ := strings.Cut(cf[strings.Index(cf, "dnf -y group install"):], "\n\n")
+	want := "'--exclude=libreoffice-help-en' \\\n        '--exclude=setroubleshoot' \\\n        '--exclude=setroubleshoot-server' \\\n        'office-suite' \\\n        'workstation-product-environment'"
+	if !strings.Contains(group, want) {
+		t.Errorf("group transaction does not exclude the union of excludePackages before the groups:\n%s", group)
+	}
+	if strings.Contains(rest, "--exclude") {
+		t.Error("an exclusion leaks outside the group transaction")
+	}
+
+	// Explicit intent still installs an excluded group member.
+	fx["a.yaml"] = "apiVersion: software.deskos.org/v1alpha1\nkind: PackageSet\nmetadata:\n  name: a\nspec:\n  groups: [workstation]\n  packages: [setroubleshoot]\n"
+	if !slices.Contains(packages(mustPlan(t, "ws", fx.dir(t))), "setroubleshoot") {
+		t.Error("an explicitly requested package was dropped")
+	}
+
+	bad := base.with(fixture{"platform.yaml": platform("  packageGroups:\n    - {name: workstation, rpmGroups: [workstation-product-environment], graphical: true, excludePackages: [setroubleshoot, setroubleshoot]}\n")}).dir(t)
+	_, err = newCompiler(t).Load([]string{bad})
+	mustFail(t, err, "excludePackages")
+	bad = base.with(fixture{"platform.yaml": platform("  packageGroups:\n    - {name: workstation, rpmGroups: [workstation-product-environment], graphical: true, excludePackages: ['rm -rf /']}\n")}).dir(t)
+	_, err = newCompiler(t).Load([]string{bad})
+	mustFail(t, err, "excludePackages")
+}
+
+func TestPackageGroupExcludePackagesTypedValidationWithoutSchema(t *testing.T) {
+	c := newCompiler(t)
+	doc := `{"displayName":"T","family":"t","release":"1","architectures":["x86_64"],"bootc":{"image":"example.org/t:1"},
+"distribution":{"redistributable":true,"requiresSubscription":false},"displayManager":"gdm.service",
+"packageGroups":[{"name":"workstation","rpmGroups":["g"],"graphical":true,"excludePackages":["ok","ok","bad name"]}]}`
+	res := rawResource("core.deskos.org/v1alpha1", "Platform", "t", doc)
+	prov, err := c.Registry.Lookup(res.GVK())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustFail(t, prov.Decode(res), `package "ok" is excluded twice`, `invalid excluded package "bad name"`)
+}
+
+func fileData(t *testing.T, files []containerfile.File, path string) []byte {
+	t.Helper()
+	for _, f := range files {
+		if f.Path == path {
+			return f.Data
+		}
+	}
+	t.Fatalf("%s not rendered", path)
+	return nil
 }

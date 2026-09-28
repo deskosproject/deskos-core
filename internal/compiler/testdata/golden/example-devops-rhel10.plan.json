@@ -455,6 +455,17 @@
             "source": "example-org/software/example-devops.yaml:13"
           }
         ]
+      },
+      {
+        "name": "xdg-utils",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
       }
     ],
     "binaries": [

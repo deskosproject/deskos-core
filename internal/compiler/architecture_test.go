@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"bytes"
 	"go/parser"
 	"go/token"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 	"github.com/deskosproject/deskos-core/internal/plan"
 	"github.com/deskosproject/deskos-core/internal/schema"
 )
@@ -228,5 +230,34 @@ func TestMakeFmtCheckFailsWithoutGofmt(t *testing.T) {
 	cmd := exec.Command("make", "-s", "-C", "../..", "fmt-check", "GOFMT=/nonexistent/gofmt")
 	if out, err := cmd.CombinedOutput(); err == nil {
 		t.Fatalf("fmt-check passed without gofmt:\n%s", out)
+	}
+}
+
+// CS10 Core leaves out setroubleshoot only through the group exclusion, and no
+// rendered file weakens SELinux enforcement or audit logging.
+func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
+	cs10, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cf := string(fileData(t, cs10, containerfile.ContainerfilePath))
+	group, _, _ := strings.Cut(cf[strings.Index(cf, "dnf -y group install"):], "\n\n")
+	for _, x := range []string{"setroubleshoot", "setroubleshoot-plugins", "setroubleshoot-server"} {
+		if !strings.Contains(group, "'--exclude="+x+"' \\\n") {
+			t.Errorf("the CS10 group transaction does not exclude %s", x)
+		}
+	}
+	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	if err != nil {
+		t.Fatal(err)
+	}
+	forbidden := []string{"setenforce", "SELINUX=disabled", "SELINUX=permissive", "selinux=0", "enforcing=0",
+		"permissive", "dontaudit", "semodule", "semanage", "auditctl", "audit=0", "auditd", "audit.rules", "/etc/selinux"}
+	for _, f := range append(cs10, rhel...) {
+		for _, bad := range forbidden {
+			if bytes.Contains(bytes.ToLower(f.Data), []byte(strings.ToLower(bad))) || strings.Contains(f.Path, bad) {
+				t.Errorf("%s contains %q", f.Path, bad)
+			}
+		}
 	}
 }

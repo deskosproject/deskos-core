@@ -54,6 +54,25 @@ else is marked as not verified.
   `org.mozilla.Firefox.desktop` does not exist), `org.gnome.Nautilus.desktop`,
   `org.gnome.Ptyxis.desktop`, `org.gnome.TextEditor.desktop`,
   `org.gnome.Settings.desktop`, `org.gnome.Software.desktop`.
+- `setroubleshoot` is a mandatory package of comps group
+  `workstation-product` (dnf 4.20, CS10, 2026-09-29) and pulls
+  `setroubleshoot-server` and `setroubleshoot-plugins`; no other package
+  requires or recommends them. Image `0b238c0a` carried
+  `setroubleshoot-3.3.37-3.el10`, `setroubleshoot-server-3.3.37-3.el10`
+  and `setroubleshoot-plugins-3.3.15-3.el10`. With the three excluded the
+  group transaction resolves (dnf warns `No match for group package
+  "setroubleshoot"`) and also drops `python3-dasbus` and `xdg-utils`,
+  which only setroubleshoot pulled in. The CS10 Platform excludes the
+  three; audit logging and SELinux enforcement are unchanged. Core
+  installs `xdg-utils` explicitly.
+- `xdg-utils-1.2.0-4.el10.noarch`: CS10 `appstream` (dnf repoquery,
+  2026-09-29); present in RHEL 10.2 image `81bdfeec`, vendor Red Hat,
+  signed with key `199e2f91fd431d51`. The RHEL repository id is not
+  verified.
+- RHEL 10.2 image `81bdfeec` carries `setroubleshoot-3.3.35-4`,
+  `setroubleshoot-server-3.3.35-4` and `setroubleshoot-plugins-3.3.14-11`.
+  The RHEL comps membership is **not verified**; the `rhel-10` Platform
+  keeps them until it is.
 
 ## GNOME administration
 
@@ -287,8 +306,10 @@ session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
   mcelog comes from the distribution package group, so it fails on any AMD
   workstation. It is known: RHEL-3674, "Installer adds mcelog on
   unsupported AMD systems", closed Won't Do.
-- SELinux AVC denials. They produce the SELinux Troubleshooter "AVC
-  denial" notification on first login.
+- SELinux AVC denials, recorded in `audit.log`. With setroubleshoot
+  installed they appear as the SELinux Troubleshooter "AVC denial"
+  notification on first login; the CS10 Platform excludes it (see
+  Packages).
   - `bootupd_t` (`lsblk` reading `/etc/group` and `/run/mount`),
     permissive. Known: RHEL-174888 and RHEL-219156 (selinux-policy,
     Release Pending).

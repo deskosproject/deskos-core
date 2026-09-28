@@ -51,6 +51,10 @@
             "properties": {
               "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
               "rpmGroups": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "excludePackages": {
+                "type": "array", "uniqueItems": true,
+                "items": { "$ref": "../../common/definitions.json#/$defs/packageName" }
+              },
               "graphical": { "type": "boolean" }
             }
           }

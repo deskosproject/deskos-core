@@ -10,6 +10,9 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y group install \
+        '--exclude=setroubleshoot' \
+        '--exclude=setroubleshoot-plugins' \
+        '--exclude=setroubleshoot-server' \
         'workstation-product-environment' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
@@ -29,6 +32,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth-scripts' \
         'plymouth-system-theme' \
         'plymouth-theme-spinner' \
+        'xdg-utils' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 

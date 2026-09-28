@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -393,12 +394,18 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	w("\nFROM %s\n", a.BaseImage.Ref)
 
 	if len(a.RpmGroups) > 0 {
-		var ids []string
+		var ids, excluded []string
 		for _, g := range a.RpmGroups {
 			ids = append(ids, g.RpmGroups...)
+			excluded = append(excluded, g.ExcludePackages...)
+		}
+		sort.Strings(excluded)
+		var args []string
+		for _, x := range slices.Compact(excluded) {
+			args = append(args, "--exclude="+x)
 		}
 		w("\n# RPM groups\n")
-		rpmTransaction(w, "dnf -y group install", ids)
+		rpmTransaction(w, "dnf -y group install", append(args, ids...))
 	}
 
 	if hasRepos {

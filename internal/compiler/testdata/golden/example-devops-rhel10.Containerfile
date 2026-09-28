@@ -54,6 +54,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'vim-enhanced' \
         'virt-install' \
         'virt-viewer' \
+        'xdg-utils' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 

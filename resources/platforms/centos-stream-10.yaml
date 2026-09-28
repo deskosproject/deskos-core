@@ -18,6 +18,8 @@ spec:
     - name: workstation
       rpmGroups: [workstation-product-environment]
       graphical: true
+      # Mandatory in workstation-product; its first-login AVC notification is not wanted on a workstation.
+      excludePackages: [setroubleshoot, setroubleshoot-plugins, setroubleshoot-server]
   unavailablePackages:
     - name: virt-manager
       reason: only in the CentOS Stream CRB repository, which is disabled by default and not enabled by DeskOS; RHEL 10 moved it to its unsupported CodeReady Linux Builder repository

@@ -59,7 +59,11 @@ func Write(out io.Writer, p *plan.Plan) error {
 	}
 	section(w, "RPM groups", len(a.RpmGroups))
 	for _, g := range a.RpmGroups {
-		pf("    %s\t-> %s\t%s\n", g.Name, strings.Join(g.RpmGroups, ", "), origins(g.Provenance))
+		excl := ""
+		if len(g.ExcludePackages) > 0 {
+			excl = " (without " + strings.Join(g.ExcludePackages, ", ") + ")"
+		}
+		pf("    %s\t-> %s%s\t%s\n", g.Name, strings.Join(g.RpmGroups, ", "), excl, origins(g.Provenance))
 	}
 	section(w, "RPM packages", len(a.RpmPackages))
 	for _, pkg := range a.RpmPackages {
