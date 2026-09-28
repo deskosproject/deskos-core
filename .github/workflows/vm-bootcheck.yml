@@ -1,0 +1,97 @@
+name: vm-bootcheck (experimental)
+
+# Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
+# makes a QCOW2 and runs tests/vm/bootcheck.py. Nested virtualization on
+# GitHub-hosted runners is not officially supported, so a failure here is
+# not by itself evidence of an artifact defect.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vm-bootcheck
+  cancel-in-progress: false
+
+env:
+  IMAGE: localhost/deskos-core-centos10:ci
+  # bootc-image-builder pinned to the digest used for local test disks.
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+  WORK: /mnt/deskos-work
+
+jobs:
+  core-centos10:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the Core build context
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Put container storage and outputs on /mnt
+        # The root disk is small; the same layout as bootc-image-builder's own CI.
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+
+      - name: Build the image
+        timeout-minutes: 40
+        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+
+      - name: Build a QCOW2 without the builder's kernel arguments
+        timeout-minutes: 30
+        run: |
+          mkdir -p "$WORK/output"
+          sudo podman run --rm --privileged --pull=missing \
+            --security-opt label=type:unconfined_t \
+            -v "$WORK/output:/output" \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --no-default-kernel-args \
+            --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
+          sha256sum "$WORK/output/qcow2/disk.qcow2"
+          df -h / /mnt
+
+      - name: Boot check
+        timeout-minutes: 15
+        run: |
+          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/bootcheck" --expect-splash --hash-disk \
+            --boot-timeout 420 --shutdown-timeout 120
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ -f "$WORK/bootcheck/summary.md" ]; then cat "$WORK/bootcheck/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Upload boot check evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bootcheck-core-centos10
+          path: ${{ env.WORK }}/bootcheck
+          retention-days: 14
+          if-no-files-found: warn
