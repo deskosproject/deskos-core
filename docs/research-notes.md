@@ -303,9 +303,27 @@ session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
 
 - `mcelog.service` fails: "AMD Processor family 23: mcelog does not
   support this processor. Please use the edac_mce_amd module instead."
-  mcelog comes from the distribution package group, so it fails on any AMD
-  workstation. It is known: RHEL-3674, "Installer adds mcelog on
-  unsupported AMD systems", closed Won't Do.
+  mcelog comes from the distribution package group and does not support
+  newer AMD families. Its unit normally skips it when `edac_mce_amd` is
+  loaded (`ConditionPathExists=!/sys/module/edac_mce_amd/initstate`), and
+  also requires `/dev/mcelog`. In this CS10 guest, `/dev/mcelog` was
+  present and `edac_mce_amd` was absent, so mcelog ran and exited 1; on the
+  kvm3 host, EDAC was live and the unit was skipped. Public reports:
+  - [Red Hat KCS 158503](https://access.redhat.com/solutions/158503),
+    "Why mcelogd fails to start", Solution Verified, updated 2026-09-17,
+    lists RHEL 10, same family 23 error.
+  - [Red Hat KCS 5673601](https://access.redhat.com/solutions/5673601),
+    "mcelog and edac_mce_amd kernel module does not work on a virtual
+    machine with AMD CPU", Solution Verified 2024-06-14; it covers RHEL 7
+    and 8 virtual machines (VMware, Azure), not CS10.
+  - [Fedora Bugzilla 1827890](https://bugzilla.redhat.com/show_bug.cgi?id=1827890),
+    component mcelog, Fedora 32, same message, CLOSED NOTABUG; the
+    discussion notes the service is skipped when EDAC is loaded.
+
+  No public CS10-specific report was found. The project also tracks
+  RHEL-3674 ("Installer adds mcelog on unsupported AMD systems", closed
+  Won't Do) as an internal note; it is not verified here as public or as
+  the same issue.
 - SELinux AVC denials, recorded in `audit.log`. With setroubleshoot
   installed they appear as the SELinux Troubleshooter "AVC denial"
   notification on first login; the CS10 Platform excludes it (see
@@ -316,3 +334,36 @@ session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
   - `tuned_t` (`chcon`, capability `mac_admin`), denied. No existing
     report found (Red Hat Jira, 2026-09-29).
   - None came from the test instrumentation.
+
+### mcelog on AMD: kvm3 host vs CS10 guest (2026-09-29)
+
+Virtualized CS10 test observation, not a bare-metal CS10 result. The guest
+is Core from commit `7650192` (image `77832d5c`), booted on kvm3 with
+`-cpu host`, and the session check records `platform_diagnostics`.
+
+- Host (kvm3 bare metal, RHEL 10.2, kernel `6.12.0-211.51.1.el10_2`,
+  `mcelog-202-1.el10`, AMD Ryzen 5 3600, family 23): `edac_mce_amd`
+  `initstate=live`, `/dev/mcelog` present, `mcelog.service`
+  `ConditionResult=no`, inactive/dead, `Result=success`. The unit's
+  `ConditionPathExists=!/sys/module/edac_mce_amd/initstate` skips it.
+  Kernel: `EDAC MC: Ver: 3.0.0`, `MCE: In-kernel MCE decoding enabled.`
+- Guest (CS10, kernel `6.12.0-271.el10`, `mcelog-210-1.el10`, same CPU
+  family 23): `edac_mce_amd` absent, `/dev/mcelog` present,
+  `mcelog.service` `ConditionResult=yes`, failed, `Result=exit-code`,
+  `ExecMainStatus=1` ("CPU is unsupported"). Kernel: only
+  `EDAC MC: Ver: 3.0.0`.
+- `mcelog.service` stays failed, and the session report shows it as
+  "FAIL (known, non-blocking)" with the raw `system_failed_units`. The
+  session result is pass only for this verified signature (see
+  `tests/vm/README.md`); any other failed unit, or mcelog failing
+  differently, is a FAIL. The desktop checks (Wayland, Dash to Dock,
+  favorites, wallpaper, Firefox, user units) pass.
+- Not established:
+  - why the guest does not load `edac_mce_amd`;
+  - a controlled comparison: host and guest differ in kernel and mcelog
+    versions;
+  - CS10 Core on bare-metal AMD, and any RHEL guest;
+  - whether the GitHub-hosted run (AMD family 25) has the same cause: it
+    predates these diagnostics.
+- Local evidence, not part of the repository:
+  `/tmp/deskos-mcediag-evidence-20260929/` and `/tmp/deskos-mcediag-report.md`.

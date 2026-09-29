@@ -65,6 +65,20 @@ Firefox to run headless, and no failed system or user units. Results are
 in `session.md`, `session.json` and `journal.txt`, with frames as for the
 boot check.
 
+`platform_diagnostics` in `session.json` (and its section in
+`session.md`) records the guest CPU vendor, family and model,
+`edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at
+most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
+
+Any failed system unit fails the check, with one exception: the known AMD
+guest signature, where `mcelog.service` is the only failed unit, the CPU
+is `AuthenticAMD`, `/dev/mcelog` is present, `edac_mce_amd` is not live,
+the unit is loaded and failed with `exit-code` and status 1, and its
+journal says "does not support this processor" and names
+`edac_mce_amd`. It is then reported as "FAIL (known, non-blocking)" and
+the raw `system_failed_units` is kept. If any condition cannot be
+verified, the check fails. The image still ships and starts mcelog.
+
 `--mode journal --disk <kept overlay>` adds no user. It boots a disk kept
 with `bootcheck.py --keep-overlay` again and writes the journal of the
 previous (tested) boot, which is how a failed unmodified boot is
