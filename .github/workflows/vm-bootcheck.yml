@@ -2,8 +2,8 @@ name: vm-bootcheck (experimental)
 
 # Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
 # makes a QCOW2, runs tests/vm/bootcheck.py on the unmodified disk, then
-# tests/vm/sessioncheck.py on an instrumented boot of the same disk; a disk that
-# passes both is uploaded as a temporary download artifact. Nested
+# tests/vm/sessioncheck.py on an instrumented boot of the same disk. The QCOW2
+# is test input only and is not uploaded. Nested
 # virtualization on GitHub-hosted runners is not officially supported, so a
 # failure here is not by itself evidence of an artifact defect.
 on:
@@ -108,60 +108,6 @@ jobs:
         run: |
           python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
             --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
-
-      # Only a disk that passed the boot and session checks is offered for download.
-      - name: Prepare the QCOW2 download
-        id: download
-        if: success() && steps.boot.outcome == 'success' && steps.session.outcome == 'success'
-        run: |
-          name="deskos-core-centos10-qcow2-${GITHUB_SHA::12}-run${GITHUB_RUN_ID}"
-          dir="$WORK/download/$name"
-          mkdir -p "$dir"
-          mv "$WORK/output/qcow2/disk.qcow2" "$dir/disk.qcow2"
-          (cd "$dir" && sha256sum disk.qcow2 > disk.qcow2.sha256)
-          [ "$(cut -d' ' -f1 "$dir/disk.qcow2.sha256")" = "$(cut -d' ' -f1 "$WORK/evidence/qcow2.sha256")" ]
-          OUT="$dir/provenance.json" python3 - <<'EOF'
-          import datetime, hashlib, json, os
-          work = os.environ["WORK"]
-          def sha(p):
-              return hashlib.sha256(open(p, "rb").read()).hexdigest()
-          def result(p):
-              return json.load(open(p))["result"]
-          image = dict(kv.split("=", 1) for kv in open(f"{work}/evidence/image.txt").read().split() if "=" in kv)
-          prov = {
-              "workstation": "deskos-core-centos10",
-              "repository": os.environ["GITHUB_REPOSITORY"],
-              "commit": os.environ["GITHUB_SHA"],
-              "run_id": os.environ["GITHUB_RUN_ID"],
-              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
-              "created_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-              "plan_sha256": sha(f"{work}/evidence/plan.json"),
-              "manifest_sha256": sha(f"{work}/evidence/generated-manifest.json"),
-              "base": open(f"{work}/evidence/base.txt").read().strip(),
-              "image_id": image.get("id"),
-              "bootc_image_builder": os.environ["BIB"],
-              "qcow2_sha256": open(os.path.join(os.path.dirname(os.environ["OUT"]), "disk.qcow2.sha256")).read().split()[0],
-              "bootcheck": result(f"{work}/bootcheck/summary.json"),
-              "sessioncheck": result(f"{work}/session/session.json"),
-              "note": "Observed identities of this build; RPM content is not pinned, so rebuilds are not bit-for-bit identical.",
-          }
-          if (prov["bootcheck"], prov["sessioncheck"]) != ("pass", "pass"):
-              raise SystemExit(f"refusing to package a disk with bootcheck={prov['bootcheck']} sessioncheck={prov['sessioncheck']}")
-          json.dump(prov, open(os.environ["OUT"], "w"), indent=2)
-          open(os.environ["OUT"], "a").write("\n")
-          EOF
-          cat "$dir/provenance.json"
-          echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "dir=$dir" >> "$GITHUB_OUTPUT"
-
-      - name: Upload the QCOW2 (tested disk, temporary download)
-        if: success() && steps.download.outcome == 'success'
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ steps.download.outputs.name }}
-          path: ${{ steps.download.outputs.dir }}
-          retention-days: 14
-          if-no-files-found: error
 
       - name: Summary
         if: always()
