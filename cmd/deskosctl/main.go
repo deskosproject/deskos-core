@@ -24,6 +24,7 @@ Usage:
   deskosctl validate ROOT...
   deskosctl plan ROOT... --workstation NAME [--format text|json]
   deskosctl render ROOT... --workstation NAME --backend containerfile --output DIR
+  deskosctl version
 
 A ROOT is a directory (searched recursively for *.yaml and *.yml) or a
 single resource file. Several roots can be combined, for example the DeskOS
@@ -61,6 +62,12 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = cmdPlan(args[1:], stdout)
 	case "render":
 		err = cmdRender(args[1:], stdout)
+	case "version":
+		if len(args) > 1 {
+			err = usageError{"version takes no arguments"}
+			break
+		}
+		fmt.Fprint(stdout, versionString())
 	default:
 		err = usageError{fmt.Sprintf("unknown command %q", args[0])}
 	}

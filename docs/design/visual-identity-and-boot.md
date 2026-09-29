@@ -1,15 +1,16 @@
-# Visual identity, boot splash and VM QA (proposed)
+# Visual identity, boot splash and VM QA
 
-Status: **proposal for review.** Slices 1 (first-boot wallpaper), 2 (GDM
-login logo), 3 (BootProfile kind, ADR 0006), 4 (stock quiet graphical
-boot) and 5 (DeskOS splash watermark) are implemented at the plan/render
-level; slice 5 is not verified on a booted image. Everything else is
-proposed. Evidence
-was gathered on 2026-09-28 from the built CentOS reference image
-(`localhost/deskos-core-centos10:freeze`), upstream sources and one
-disposable experiment; see `docs/research-notes.md` ("Visual identity and
-boot"). "Verified" below means checked in the image or in primary source,
-not seen on a booted screen.
+Status: slices 1 (first-boot wallpaper), 2 (GDM login logo), 3
+(BootProfile kind, ADR 0006), 4 (stock quiet graphical boot) and 5
+(DeskOS splash watermark) are implemented and seen in CS10 Core VMs.
+Slice 6, the session desktop logo and the remaining VM QA tiers are
+proposals. Evidence was gathered on 2026-09-28 from the built CentOS
+reference image (`localhost/deskos-core-centos10:freeze`), upstream
+sources and one disposable experiment, then on booted CS10 Core VMs; see
+`docs/research-notes.md` ("Visual identity and boot"). "Verified" below
+means checked in the image or in primary source; "seen" means observed
+on a booted screen. Nothing here is verified on RHEL with the current
+Core.
 
 ## Goal
 
@@ -25,9 +26,9 @@ distribution's logo packages are never replaced or falsified.
 | Surface | Mechanism on EL10 | Status |
 |---|---|---|
 | Session wallpaper | `org.gnome.desktop.background` in DeskOS `distro` dconf db | implemented; seen booted (owner screenshots) |
-| First-boot (GIS) wallpaper | GIS dconf profile is `user-db:user` + `file-db:/usr/share/gnome-initial-setup/initial-setup-dconf-defaults` (only a lockdown key), so GIS falls back to the schema default, which `centos-logos` sets in `10_org.gnome.desktop.background.default.gschema.override` (`centos-day.png`). A `50_` vendor override compiled with `glib-compile-schemas --strict` changes what the GIS profile resolves (experiment) | supported GLib mechanism; GSettings-level verified; not seen on screen |
+| First-boot (GIS) wallpaper | GIS dconf profile is `user-db:user` + `file-db:/usr/share/gnome-initial-setup/initial-setup-dconf-defaults` (only a lockdown key), so GIS falls back to the schema default, which `centos-logos` sets in `10_org.gnome.desktop.background.default.gschema.override` (`centos-day.png`). A `50_` vendor override compiled with `glib-compile-schemas --strict` changes what the GIS profile resolves (experiment) | supported GLib mechanism; GSettings-level verified; seen in a CS10 Core VM |
 | First-boot (GIS) logo | Welcome page image is a compiled resource (`resource:///org/gnome/initial-setup/initial-setup-welcome.svg`, GIS 46.7); title uses os-release `PRETTY_NAME`; `vendor.conf` only skips pages | **no supported hook**; not changeable without patching GIS or falsifying os-release |
-| GDM logo | GDM profile is `user, gdm, local, site, distro` + greeter file-db, so DeskOS `distro` db applies; gdm ships an override `logo='/usr/share/pixmaps/fedora-gdm-logo.png'`; a `distro` value wins (experiment) | GSettings-level verified; not seen on screen |
+| GDM logo | GDM profile is `user, gdm, local, site, distro` + greeter file-db, so DeskOS `distro` db applies; gdm ships an override `logo='/usr/share/pixmaps/fedora-gdm-logo.png'`; a `distro` value wins (experiment) | GSettings-level verified; seen in a CS10 Core VM |
 | GDM background | GNOME Shell theme, not a GSettings key | out of scope (would need a Shell theme patch) |
 | Session logo | `background-logo@fedorahosted.org` enabled by default; its schema defaults point at `/usr/share/fedora-logos/*.svg`, absent on CS10, so it draws nothing today; keys `logo-file`, `logo-file-dark`, `logo-position`, `logo-size`, `logo-border`, `logo-opacity`, `logo-always-visible` | settable via `distro` db (experiment); not seen on screen |
 | Boot splash theme | Plymouth 24.004.60; default theme `bgrt` (two-step module, `ImageDir` spinner, watermark = `spinner/watermark.png` owned by `centos-logos`); admin selection in `/etc/plymouth/plymouthd.conf` | verified in image |
@@ -35,9 +36,9 @@ distribution's logo packages are never replaced or falsified.
 | Graphical vs text splash | Plymouth shows the graphical splash only with `rhgb`, `splash`, `splash=silent` or `plymouth.graphical`; `single`, `splash=verbose` force details; ESC toggles details (`src/main.c`) | verified in source |
 | Quiet boot | `/usr/lib/bootc/kargs.d/*.toml` (`kargs = [...]`); base image ships none; bootc applies kargs.d at install and applies the kargs.d diff on each update, keeping machine-local args (`bootc_kargs.rs`, `install.rs`, docs) | verified in source/docs; `quiet` makes systemd `show_status` default to `error` (systemd(1)) |
 | Rollback | initramfs and kargs.d are image content; each deployment has its own boot entry | inferred, not tested |
-| Dock | `gnome-shell-extension-dash-to-dock` is an optional package of the `gnome-desktop` comps group (not installed by it); DeskOS installs and enables it only when the effective `dock.enabled` is true | verified in the CS10 group and images |
+| Dock | `gnome-shell-extension-dash-to-dock` is an optional package of the `gnome-desktop` comps group (not installed by it); DeskOS installs and enables it only when the effective `dock.enabled` is true | verified in the CS10 group and images; active in the CS10 instrumented session check |
 
-## Decisions proposed
+## Decisions
 
 1. **GIS wallpaper follows the effective wallpaper.** Lower
    `appearance.wallpaper` a second time into a GSettings vendor override
@@ -80,9 +81,8 @@ distribution's logo packages are never replaced or falsified.
    of the dock.
 5. **Boot is not GNOME.** Plymouth and kernel arguments are independent of
    the desktop, so they do not belong in GnomeProfile, and Platform only
-   holds facts. None of the nine kinds fits; the clean option is a tenth
-   kind decided explicitly, for example `system.deskos.org/v1alpha1
-   BootProfile`:
+   holds facts. Boot intent is the tenth kind,
+   `system.deskos.org/v1alpha1 BootProfile` (ADR 0006):
 
        spec:
          splash: graphical | text     # graphical: rhgb + Plymouth in initramfs
@@ -91,8 +91,6 @@ distribution's logo packages are never replaced or falsified.
 
    Scalars with the usual layering. Raw kernel arguments are not exposed.
    The platform supplies the karg names, dracut module and theme base.
-   If a tenth kind is rejected for now, slices 1, 2 and 6 proceed and boot
-   waits.
 
 ## Typed IR (additions)
 
@@ -179,6 +177,12 @@ dracut-ng `main`) loads those offload drivers unconditionally. Unresolved;
 DeskOS does not disable hardware support to hide the warning.
 
 ## VM QA
+
+Implemented for CS10 in `tests/vm/`: Tier A without reference matching
+(`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
+systemd credentials over SMBIOS and a serial report, no SSH or qecore);
+see `docs/roadmap.md` Milestone 3 for what remains. The rest of this
+section is the proposal.
 
 Two tiers, reported separately, each result tied to the candidate image
 digest, QCOW2 SHA-256, harness commit, test-suite commit and runner image

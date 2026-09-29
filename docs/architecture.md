@@ -95,9 +95,11 @@ implement it.
 `internal/plan` is the typed intermediate representation, independent of
 YAML and of Containerfile syntax. `deskosctl plan --format json` prints it.
 
-- **Artifact**: base image, labels, RpmRepository, RpmGroupInstall,
-  RpmInstall, VerifiedBinaryInstall, FileInstall, DconfDatabase (defaults
-  and locks), SystemdEnable, DefaultTarget.
+- **Artifact**: base image, labels, RpmRepository, RpmGroupInstall (with
+  `excludePackages`), RpmInstall, VerifiedBinaryInstall, FileInstall,
+  DconfDatabase (defaults and locks), GSettingsVendorDefault,
+  KernelArgument, InitramfsRegeneration, PlymouthTheme, SystemdEnable,
+  DefaultTarget.
 - **Provisioning**: system Flatpak remotes and applications, materialized
   on the machine by upstream `flatpak preinstall`.
 - **Enrollment**: reserved and empty.
@@ -115,11 +117,13 @@ no timestamps.
     repos/etc/yum.repos.d/    one file per RpmRepository
     rootfs/                   image files, copied after package installation
 
-The Containerfile runs one group transaction, then copies repository files
-and runs one package transaction,
-one verified download per binary artifact, copies `rootfs/`, runs
-`dconf update`, enables units, sets the default target, cleans package
-caches and ends with `bootc container lint`. Every generated command
+The Containerfile runs one group transaction (with the platform's
+`--exclude` options), then copies repository files and runs one package
+transaction, one verified download per binary artifact, copies `rootfs/`,
+runs `glib-compile-schemas --strict` and `dconf update`, enables units,
+sets the default target, installs the Plymouth theme and rebuilds the
+initramfs when boot intent needs them (see Boot), cleans package caches
+and ends with `bootc container lint`. Every generated command
 comes from a typed operation; values are validated upstream and quoted
 again. The plan is also installed as `/usr/share/deskos/plan.json`, so a
 future endpoint tool can report what the image was built from.
@@ -139,15 +143,16 @@ rejects an RpmRepository with id `redhat`, so declared content is never
 removed. subscription-manager's own tmpfiles.d entries recreate the
 `/var/lib/rhsm` and `/var/log/rhsm` directories at boot.
 
-`bootc container lint` passed on the builds so far with four warnings,
-all produced by distribution package scriptlets rather than by DeskOS:
-content in `/run` (cockpit, cups), a non-empty `/var/log/rhsm/rhsm.log`,
-users without sysusers.d entries (libstoragemgmt, wsdd; on RHEL also avahi
-and libvirtdbus) and `/var` directories without tmpfiles.d entries. The
-`rhsm.log` warning is expected to disappear with the RHSM tmpfs mounts
-described below; that is not yet verified by a build. They are non-blocking for Milestone 0. Whether to seek
-upstream fixes, declare exceptions or use `--fatal-warnings` is a release
-decision; DeskOS does not alter package behavior to silence them.
+`bootc container lint` passes with three warnings, all produced by
+distribution package scriptlets rather than by DeskOS: content in `/run`
+(cockpit, cups), users without sysusers.d entries (libstoragemgmt, wsdd;
+on RHEL also avahi and libvirtdbus) and `/var` content without tmpfiles.d
+entries. Seen on CS10 Core builds `50f8892a` and `77832d5c` (11 passed, 1
+skipped) and the RHEL 10.2 build `81bdfeec`, where the RHSM tmpfs mounts
+removed the earlier non-empty `/var/log/rhsm/rhsm.log` warning. They are
+non-blocking. Whether to seek upstream fixes, declare exceptions or use
+`--fatal-warnings` is a release decision; DeskOS does not alter package
+behavior to silence them.
 
 ## Public CentOS, private RHEL
 
@@ -181,7 +186,9 @@ installs it. The CS10 Platform excludes setroubleshoot this way; see
 | Image builds, `bootc container lint` passes | validated | validated: `81bdfeec...` lint passed with 3 warnings; every layer free of build-host subscription state |
 | Packages install from the declared sources | validated | validated in that build (package presence; apps not launched) |
 | Build layers free of build-host identity | not rechecked since the fix | validated (all 73 layers scanned, 0 findings) |
-| Boots to GNOME with DeskOS defaults | local QEMU/UEFI boot check passes on Core disks (pixel classes; frames show the DeskOS splash and GNOME Initial Setup); instrumented session check on kvm3 confirms Dash to Dock active, favorites and wallpaper as planned, and Firefox running headless; `mcelog.service` fails on AMD CPUs (distribution package, RHEL-3674) | one manual, owner-observed boot of the clean QCOW2; that image predates the example rename and later Core changes; no automated boot or E2E test |
+| Boots to GNOME with DeskOS defaults | `bootcheck.py` on Core disks passes (pixel classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS wallpaper); instrumented `sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper as planned and Firefox running headless; GDM login logo seen in a Core VM; no full E2E | one manual, owner-observed boot of the clean QCOW2; that image predates the example rename and later Core changes; no automated boot or E2E test |
+| Manual GitHub workflow (`vm-bootcheck.yml`: build, QCOW2, boot and session checks) | passed (run `36514763190`, commit `7f79951`); manual only | not run |
+| Failed system units in the session check | none except, in AMD QEMU guests without `edac_mce_amd`, `mcelog.service`: reported as a known, non-blocking diagnostic with its raw failed state (see `tests/vm/README.md`, `docs/research-notes.md`) | not run |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | not done |
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
@@ -280,8 +287,8 @@ GNOME Initial Setup uses its own dconf profile, which does not read
 `distro`, so the effective wallpaper is also written as a GLib vendor
 override (`/usr/share/glib-2.0/schemas/50_deskos.gschema.override`, above
 the distribution's `10_` override) and schemas are compiled in the build.
-Verified by GSettings resolution under the `gnome-initial-setup` profile;
-not yet observed on a booted first-boot screen.
+Verified by GSettings resolution under the `gnome-initial-setup` profile
+and seen on the first-boot screen of a CS10 Core VM.
 
 The EL10 profile reads `user`, `local`, `site`, `distro`, highest first.
 Verified on the built image:
@@ -360,7 +367,11 @@ in the Plan and not implemented.
 
 The OCI image is the primary artifact; QCOW2 and ISO derive from it. Build
 once, then promote the same digest through channels (candidate, canary,
-pilot, stable) and copy it to mirrors (`quay.io/deskos/deskos-core`,
-later `ghcr.io/deskosproject/deskos-core`) without rebuilding. GitHub
-Actions is the reference CI; it is an adapter, not part of DeskOS
-semantics.
+pilot, stable) without rebuilding. Decided destinations, not yet
+published: the OCI image on `quay.io/deskos/deskos-core`; QCOW2 and ISO
+on S3-compatible object storage, not on GitHub. A mirror on
+`ghcr.io/deskosproject/deskos-core` is possible and not decided. The CI
+builds QCOW2 disks only as test input and does not upload them.
+`deskosctl` itself is released as a linux/amd64 binary on GitHub Releases
+when a `vX.Y.Z` tag is pushed. GitHub Actions is the reference CI; it is
+an adapter, not part of DeskOS semantics.

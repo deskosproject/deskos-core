@@ -51,4 +51,5 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
 ## Checks
 
     make check        # gofmt, go vet, go test, validate
+    python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
     go test ./internal/compiler -update   # refresh goldens, then review the diff

@@ -1,0 +1,89 @@
+name: release
+
+# A pushed tag vX.Y.Z (optionally vX.Y.Z-<prerelease>) runs the CI checks,
+# builds deskosctl for linux/amd64 and creates a GitHub Release with the
+# binary and SHA256SUMS. Nothing else is published.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      prerelease: ${{ steps.semver.outputs.prerelease }}
+    steps:
+      - name: Require a semver tag
+        id: semver
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          re='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$'
+          [[ "$TAG" =~ $re ]] || { echo "::error::$TAG is not vX.Y.Z or vX.Y.Z-<prerelease>"; exit 1; }
+          if [[ "$TAG" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+
+  ci:
+    needs: tag
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Build deskosctl for linux/amd64
+        env:
+          TAG: ${{ github.ref_name }}
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p release
+          asset="deskosctl-${TAG}-linux-amd64"
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "release/$asset" ./cmd/deskosctl
+          out=$("release/$asset" version)
+          echo "$out"
+          [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
+          (cd release && sha256sum "$asset" > SHA256SUMS && sha256sum -c SHA256SUMS)
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-assets
+          path: release/
+          retention-days: 1
+          if-no-files-found: error
+
+  release:
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-assets
+          path: release
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.tag.outputs.prerelease }}
+        run: |
+          (cd release && sha256sum -c SHA256SUMS)
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" release/deskosctl-"$TAG"-linux-amd64 release/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
+            --notes "deskosctl ${TAG} for linux/amd64, built from ${GITHUB_SHA}. Verify with: sha256sum -c SHA256SUMS" \
+            "${flags[@]}"

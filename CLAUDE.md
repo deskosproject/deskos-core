@@ -350,11 +350,18 @@ At the end of substantial work, explain:
 - `internal/loader`: YAML roots to resources; no kind knowledge.
 - `internal/schema`: embedded JSON Schema validation (`schemas/`).
 - `internal/registry`: GVK to provider dispatch.
-- `internal/providers/{core,software,desktop}`: typed decoding,
-  contributions and lowering per API group.
+- `internal/providers/{core,software,desktop,system}`: typed decoding,
+  contributions and lowering per API group; `internal/providers/assets`:
+  asset reads confined to the resource root.
 - `internal/compose`: reference resolution and layered composition.
 - `internal/plan`: the typed Plan (IR).
 - `internal/backends/containerfile`: Plan to build context.
+- `internal/textplan`: the text form of `deskosctl plan`.
 - `internal/compiler`: pipeline wiring and the architecture, golden and
   composition tests. Refresh goldens with
   `go test ./internal/compiler -update` and review the diff.
+- `tests/vm`: QEMU boot and instrumented session checks for built disks
+  (`python3 -m unittest discover -s tests/vm` for their unit tests).
+- `.github/workflows`: `ci.yml` (checks on push and pull requests),
+  `vm-bootcheck.yml` (manual CS10 build, boot and session checks) and
+  `release.yml` (tag-driven `deskosctl` release).

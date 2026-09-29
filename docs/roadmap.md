@@ -21,42 +21,55 @@ Proposal in `docs/design/visual-identity-and-boot.md`; each slice is
 reviewed on its own:
 
 1. First-boot (GIS) wallpaper from the effective wallpaper (vendor
-   GSettings override). No API change. Implemented.
-2. `appearance.loginLogo` for GDM. Implemented, with provisional marks.
-   Dock semantics (masking, `dock.showTrash`) implemented; Core enables
-   Dash to Dock by default (render level; not yet seen in a VM).
-   A session `desktopLogo` (background-logo extension) is separate and
-   not started.
+   GSettings override). No API change. Implemented; seen in a CS10 Core
+   VM.
+2. `appearance.loginLogo` for GDM. Implemented, with provisional marks;
+   seen in a CS10 Core VM. Dock semantics (masking, `dock.showTrash`)
+   implemented; Core enables Dash to Dock by default, active in the CS10
+   instrumented session check. A session `desktopLogo` (background-logo
+   extension) is separate and not started.
 3. Decide where boot intent lives. Decided: BootProfile (ADR 0006).
 4. Quiet graphical boot with the stock Plymouth theme (kargs.d, Plymouth
-   in the initramfs). Implemented at render level; needs an image build
-   and VM boot.
+   in the initramfs). Implemented; seen on CS10 Core UEFI VMs
+   (`bootcheck.py`). Not booted on RHEL with the current Core.
 5. DeskOS and organization splash watermark (`BootProfile.watermark`,
    DeskOS-owned theme), with a provisional DeskOS mark. Seen at boot and
    shutdown on UEFI VMs. Organization marks only with recorded provenance.
 
 ## Milestone 2: independent CentOS CI build
 
-- CI builds the public CentOS image from the rendered context on changes
-  to image inputs, independent of any developer machine.
+- A manual GitHub workflow (`vm-bootcheck.yml`, `workflow_dispatch` only)
+  builds the CS10 Core image, a test QCOW2 that is not uploaded, and runs
+  the boot and session checks; it passed on commit `7f79951`. Triggering
+  it automatically on changes to image inputs is not decided.
 - Digest-pinned base image, updated deliberately. Done for CentOS Stream
   10; RHEL 10 pending.
 - Decide how to treat `bootc container lint` warnings from packages.
 
 ## Milestone 3: VM boot and desktop tests
 
-Details in `docs/design/visual-identity-and-boot.md` ("VM QA"):
+Details in `docs/design/visual-identity-and-boot.md` ("VM QA").
 
-- Tier A, unmodified artifact: boot the exact QCOW2, screendumps of
-  splash and first boot, shutdown/reboot; the only proof of untouched
-  first boot.
-- Tier B, instrumented session: disposable test user, autologin, SSH and
-  qecore, perturbations listed; GDM logo, wallpaper, favorites launch,
-  browser against harness-served content, offline login, reboot splash.
-- Evidence tied to image digest, QCOW2 SHA-256 and harness revisions;
-  finite timeouts; required checks fail closed.
-- Check in the built image that every declared favorite desktop id exists
-  in `/usr/share/applications` (the compiler cannot know package contents).
+Existing, CS10 only (`tests/vm/`):
+
+- Tier A, unmodified artifact: `bootcheck.py` boots the exact QCOW2
+  through an overlay, classifies screendumps (splash, graphical) and
+  checks ACPI shutdown. It does not match screens against references.
+- Tier B subset, instrumented session: `sessioncheck.py` adds a test user
+  and GDM autologin through systemd credentials (SMBIOS type 11); a
+  report unit writes the results and journal to the serial port. No SSH
+  or qecore. Checks the dock, favorites, wallpaper, headless Firefox and
+  failed units against the Plan; required checks fail closed.
+
+Remaining:
+
+- Check that every declared favorite desktop id exists in
+  `/usr/share/applications` (the compiler cannot know package contents),
+  and that favorites launch.
+- Browser against harness-served content, offline login, GDM logo check.
+- Reboot and shutdown splash in the session run; Tier C lifecycle
+  (upgrade, rollback).
+- RHEL: no automated boot or session check.
 
 ## Later
 
@@ -85,7 +98,10 @@ Details in `docs/design/visual-identity-and-boot.md` ("VM QA"):
 ## Milestone 7: release promotion and update UX
 
 - Channels (candidate, canary, pilot, stable) promoting one digest.
-- Endpoint `deskos status`, `deskos update`, `deskos rollback`: staged OS
-  updates without forced reboots, system Flatpak updates, fwupd checks.
+- A local endpoint command (`deskos status`, `deskos update`,
+  `deskos rollback`) that a user or administrator runs on one machine to
+  inspect the deployment and invoke bootc's own staged update and
+  rollback, system Flatpak updates and fwupd checks. No controller,
+  reconciliation loop or automatic enforcement (ADR 0001).
 - Candidate resources: UpdatePolicy, TimeSyncPolicy, PerformancePolicy,
   FirmwarePolicy, IdentityProvider, WebApplication.

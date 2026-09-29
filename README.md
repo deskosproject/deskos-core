@@ -33,7 +33,7 @@ role-specific requirements.
 
 The APIs are currently `v1alpha1` and will change.
 
-What Milestone 0 has shown:
+What has been shown so far:
 
 - Loading, composition, the Plan and rendering are deterministic:
   identical inputs give byte-identical plans and build contexts. Built
@@ -50,7 +50,11 @@ What Milestone 0 has shown:
   identify screens or test applications. `tests/vm/sessioncheck.py`, an
   instrumented boot of the same disk with a test user, checks the GNOME
   session against the Plan (Dash to Dock active, favorites, wallpaper,
-  Firefox headless, failed units).
+  Firefox headless, failed units). In AMD QEMU guests `mcelog.service`
+  fails because `edac_mce_amd` is not loaded; the check reports that
+  exact signature as a known, non-blocking diagnostic and keeps the raw
+  failed state. A manual GitHub workflow runs the same build, boot and
+  session checks; it is not a full E2E test.
 
 RHEL 10: one entitled build of an earlier revision of
 `example-devops-rhel10` passed `bootc container lint`, confirming the comps
@@ -212,12 +216,39 @@ The initial workflow is:
     deskosctl validate ...
     deskosctl plan ...
     deskosctl render ...
+    deskosctl version
 
 `validate` checks resources and composition.
 
 `plan` shows the effective workstation before anything is built.
 
 `render` produces a deterministic build context.
+
+`version` prints the release version and commit (`dev` and the Git
+revision for local builds).
+
+## Releases
+
+Pushing a tag `vX.Y.Z` (or `vX.Y.Z-<prerelease>`) runs the CI checks and
+creates a GitHub Release with `deskosctl-vX.Y.Z-linux-amd64` and
+`SHA256SUMS` (`.github/workflows/release.yml`). Only linux/amd64 is built.
+The binary is not signed.
+
+    git tag -a v0.1.0 -m "deskosctl v0.1.0"
+    git push origin v0.1.0
+
+To download and verify (the first tag, `v0.1.0`, is planned and not yet
+created):
+
+    gh release download v0.1.0 --repo deskosproject/deskos-core
+    sha256sum -c SHA256SUMS
+    chmod +x deskosctl-v0.1.0-linux-amd64
+
+or without `gh`:
+
+    base=https://github.com/deskosproject/deskos-core/releases/download/v0.1.0
+    curl -fL -O "$base/deskosctl-v0.1.0-linux-amd64" -O "$base/SHA256SUMS"
+    sha256sum -c SHA256SUMS
 
 ## Development
 
@@ -231,6 +262,7 @@ Build the CLI:
 Run tests:
 
     go test ./...
+    python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
 
 Validate the included resources:
 
@@ -254,8 +286,9 @@ and build it locally with Podman:
 
     podman build -t localhost/deskos-core-centos10 ./dist/deskos-core-centos10
 
-An example organization (`example-org`) with a RHEL 10 developer workstation is included separately to
-prove organization- and role-specific composition. It lives in its own
+An example organization (`example-org`) with a RHEL 10 developer
+workstation is included separately to prove organization- and
+role-specific composition. It lives in its own
 resource root and reuses DeskOS resources without copying them:
 
     ./bin/deskosctl plan ./resources ./examples/example-org \
@@ -273,16 +306,16 @@ The `Makefile` wraps these commands for convenience (`make check`,
 
 ## Reference artifacts
 
-The intended public OCI namespace for DeskOS Core is:
+The decided public OCI namespace for DeskOS Core is:
 
     quay.io/deskos/deskos-core
 
-A future mirror may be published to GitHub Container Registry.
-
-Future releases are expected to provide OCI plus derived QCOW2 and ISO
-artifacts.
-
-Publication is not part of the initial compiler milestone.
+A mirror on GitHub Container Registry is possible and not decided.
+Derived QCOW2 and ISO images are to be distributed from S3-compatible
+object storage, not from GitHub. None of these is published yet; the CI
+builds QCOW2 disks only as test input and does not upload them. The
+`deskosctl` binary is published separately through GitHub Releases (see
+Releases).
 
 ## Design principles
 

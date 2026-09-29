@@ -123,3 +123,18 @@ spec:
 		t.Errorf("current resources report masked dock options:\n%s", errOut)
 	}
 }
+
+func TestVersion(t *testing.T) {
+	code, out, _ := runCLI("version")
+	if code != exitOK || !strings.HasPrefix(out, "deskosctl dev (commit ") {
+		t.Errorf("exit %d: %q", code, out)
+	}
+	defer func(v, c string) { version, commit = v, c }(version, commit)
+	version, commit = "v1.2.3", "0123456789abcdef"
+	if _, out, _ = runCLI("version"); out != "deskosctl v1.2.3 (commit 0123456789abcdef)\n" {
+		t.Errorf("release build output %q", out)
+	}
+	if code, _, _ = runCLI("version", "extra"); code != exitUsage {
+		t.Errorf("version with an argument: exit %d", code)
+	}
+}

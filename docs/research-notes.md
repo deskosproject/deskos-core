@@ -1,6 +1,7 @@
 # Research notes
 
-Retrieved 2026-09-27. "Verified" means checked against a primary source
+Sections are dated where they were checked; undated sections were
+retrieved on 2026-09-27. "Verified" means checked against a primary source
 (vendor docs, upstream source, or the actual package or image); anything
 else is marked as not verified.
 
@@ -95,7 +96,7 @@ else is marked as not verified.
   fonts.
 - dconf also supports `file-db:` and profiles under `/usr/share/dconf`, but
   `/etc/dconf/profile/user` wins, so using them would still require
-  replacing an `/etc` file. Not used in v0.1.
+  replacing an `/etc` file. DeskOS does not use them.
 
 ## Flatpak
 
