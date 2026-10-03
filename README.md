@@ -285,6 +285,9 @@ and build it locally with Podman:
 
     podman build -t localhost/deskos-core-centos10 ./dist/deskos-core-centos10
 
+To make an installer ISO from it, see
+[docs/installer-iso.md](docs/installer-iso.md).
+
 An example organization (`example-org`) with a RHEL 10 developer
 workstation is included separately to prove organization- and
 role-specific composition. It lives in its own
