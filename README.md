@@ -24,44 +24,11 @@ that artifact.
 
 ## Status
 
-DeskOS is currently an experimental architectural implementation.
-
-The first milestone is deliberately narrow: prove that one semantic
-DeskOS Core definition can be composed onto both CentOS Stream 10 and
-RHEL 10, while allowing an organization to add its own baseline and
-role-specific requirements.
-
-The APIs are currently `v1alpha1` and will change.
-
-What has been shown so far:
-
-- Loading, composition, the Plan and rendering are deterministic:
-  identical inputs give byte-identical plans and build contexts. Built
-  images are not yet bit-for-bit reproducible, because base image tags,
-  repository metadata, vendor packages and remote GPG keys can still move.
-- The same DeskOS Core composes and renders for CentOS Stream 10 and
-  RHEL 10.
-- The CentOS Stream 10 contexts build with Podman and pass `bootc container
-  lint` (with non-fatal warnings from distribution packages). A disk of
-  the reference image passes `tests/vm/bootcheck.py`, a local QEMU/UEFI
-  boot check: the pixel classifier sees the graphical splash, then a
-  stable graphical screen, then an ACPI power-off. The captured frames
-  show the DeskOS splash and GNOME Initial Setup. The check does not
-  identify screens or test applications. `tests/vm/sessioncheck.py`, an
-  instrumented boot of the same disk with a test user, checks the GNOME
-  session against the Plan (Dash to Dock active, favorites, wallpaper,
-  Firefox headless, failed units). In AMD QEMU guests `mcelog.service`
-  fails because `edac_mce_amd` is not loaded; the check reports that
-  exact signature as a known, non-blocking diagnostic and keeps the raw
-  failed state. A manual GitHub workflow runs the same build, boot and
-  session checks; it is not a full E2E test.
-
-RHEL 10: `example-devops-rhel10`, built on an entitled factory VM from a
-digest-pinned RHEL 10.2 base, passes `bootc container lint` with every
-layer free of build-host subscription state, and its QCOW2 passes
-`bootcheck.py` and `sessioncheck.py` there under nested KVM. These checks
-run manually; there is no RHEL CI and no E2E test. See
-[docs/architecture.md](docs/architecture.md#validation-status).
+DeskOS is an experimental architectural implementation; the APIs are
+`v1alpha1` and will change. The first milestone proves that one DeskOS
+Core definition composes onto both CentOS Stream 10 and RHEL 10, with an
+organization's own baseline and roles on top. What is validated so far is
+under [Validation](#validation).
 
 License: [Apache License 2.0](LICENSE).
 
@@ -572,6 +539,40 @@ distributed from S3-compatible object storage, not from GitHub; until then
 they are built locally (see [Getting DeskOS](#getting-deskos)). The CI
 builds QCOW2 disks only as test input and does not upload them. The
 `deskosctl` binary is published through GitHub Releases (see Releases).
+
+## Validation
+
+- Loading, composition, the Plan and rendering are deterministic:
+  identical inputs give byte-identical plans and build contexts. Built
+  images are not yet bit-for-bit reproducible, because base image tags,
+  repository metadata, vendor packages and remote GPG keys can still move.
+- The same DeskOS Core composes and renders for CentOS Stream 10 and
+  RHEL 10.
+- The CentOS Stream 10 contexts build with Podman and pass `bootc container
+  lint` (with non-fatal warnings from distribution packages). A disk of
+  the reference image passes `tests/vm/bootcheck.py`, a local QEMU/UEFI
+  boot check: the pixel classifier sees the graphical splash, then a
+  stable graphical screen, then an ACPI power-off. The captured frames
+  show the DeskOS splash and GNOME Initial Setup. The check does not
+  identify screens or test applications. `tests/vm/sessioncheck.py`, an
+  instrumented boot of the same disk with a test user, checks the GNOME
+  session against the Plan (Dash to Dock active, favorites, wallpaper,
+  Firefox headless, failed units). In AMD QEMU guests `mcelog.service`
+  fails because `edac_mce_amd` is not loaded; the check reports that
+  exact signature as a known, non-blocking diagnostic and keeps the raw
+  failed state. A manual GitHub workflow runs the same build, boot and
+  session checks; it is not a full E2E test.
+
+RHEL 10: `example-devops-rhel10`, built on an entitled factory VM from a
+digest-pinned RHEL 10.2 base, passes `bootc container lint` with every
+layer free of build-host subscription state, and its QCOW2 passes
+`bootcheck.py` and `sessioncheck.py` there under nested KVM.
+`tests/rhel/factory.py` repeats this for the head of `main` on that host
+and publishes the result as the `deskos/rhel10` commit status; nothing
+built from RHEL leaves the host. There is no E2E test on either platform.
+
+The full record, with image IDs and runs, is in
+[docs/architecture.md](docs/architecture.md#validation-status).
 
 ## Design principles
 
