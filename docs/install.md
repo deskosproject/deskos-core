@@ -1,20 +1,26 @@
 # Installing DeskOS
 
-Downloadable QCOW2 and ISO images are not published yet. Until they are,
-create them from the container image with bootc-image-builder. You need
-Linux with rootful Podman and about 20 GB free.
+How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
+published CentOS Stream 10 image or from a private RHEL 10 build.
+
+> [!NOTE]
+> Downloadable QCOW2 and ISO images are not published yet. Until they
+> are, create them from the container image with `bootc-image-builder`.
+> You need **Linux with rootful Podman** and about **20 GB free**.
 
 ## CentOS Stream 10
 
 DeskOS Core for CentOS Stream 10 is published as a bootable container
-image. Each published image is the one that passed the boot and session
-checks for that commit; it is tagged with the commit ID and `latest`:
+image. Each published image is **the one that passed the boot and session
+checks** for that commit; it is tagged with the commit ID and `latest`.
+
+**1. Pull the image:**
 
 ```bash
 sudo podman pull quay.io/deskos/deskos-core:latest
 ```
 
-A QCOW2 disk for a virtual machine:
+**2. Make a QCOW2 disk** for a virtual machine:
 
 ```bash
 mkdir -p output
@@ -28,36 +34,44 @@ sudo podman run --rm -it --privileged --pull=missing \
     quay.io/deskos/deskos-core:latest
 ```
 
-The disk is `output/qcow2/disk.qcow2` (10.5 GiB virtual by default). It
-has no user account: GNOME Initial Setup creates the first one at first
-boot.
-`--no-default-kernel-args` keeps the image's own boot arguments (quiet
-graphical splash) instead of the builder's serial console. For a larger
-root filesystem, mount a `config.toml` (`-v ./config.toml:/config.toml:ro`
-and `--config /config.toml` after `build`) containing:
+The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 
-```toml
-[[customizations.filesystem]]
-mountpoint = "/"
-minsize = "40 GiB"
-```
+- **No user account is baked in:** GNOME Initial Setup creates the first
+  one at first boot.
+- `--no-default-kernel-args` keeps the image's own boot arguments (quiet
+  graphical splash) instead of the builder's serial console.
 
-An installer ISO uses `--type anaconda-iso` with a kickstart in
-`config.toml`; the kickstart DeskOS needs, and the warning that it erases
-every disk, are in [installer-iso.md](installer-iso.md).
-Machines installed from it update from the image reference it was built
-from (`quay.io/deskos/deskos-core:latest`) with `bootc upgrade`.
+> [!TIP]
+> For a larger root filesystem, mount a `config.toml`
+> (`-v ./config.toml:/config.toml:ro` and `--config /config.toml` after
+> `build`) containing:
+>
+> ```toml
+> [[customizations.filesystem]]
+> mountpoint = "/"
+> minsize = "40 GiB"
+> ```
+
+**Or make an installer ISO:** use `--type anaconda-iso` with a kickstart
+in `config.toml`. The kickstart DeskOS needs is in
+[installer-iso.md](installer-iso.md), together with the warning that it
+**erases every disk**. Machines installed from it update from the image
+reference it was built from (`quay.io/deskos/deskos-core:latest`) with
+`bootc upgrade`.
 
 ## RHEL 10 (private builds only)
 
-DeskOS publishes only CentOS Stream 10 artifacts. RHEL-based images, disks
-and ISOs must never be published: the RHEL EULA forbids public
-redistribution. An organization with RHEL subscriptions builds its own,
-on a registered RHEL 10 host logged in to `registry.redhat.io` (as root,
-since the build runs as root), and keeps the result inside the
-organization.
+> [!IMPORTANT]
+> DeskOS publishes **only CentOS Stream 10** artifacts. RHEL-based images,
+> disks and ISOs must **never be published**: the RHEL EULA forbids public
+> redistribution. An organization with RHEL subscriptions builds its own
+> and keeps the result inside the organization.
 
-Get the DeskOS resources and build `deskosctl` from source (Go 1.26):
+Build on a **registered RHEL 10 host** logged in to `registry.redhat.io`,
+as root (the build runs as root).
+
+**1. Get the DeskOS resources and build `deskosctl`** from source
+(Go 1.26):
 
 ```bash
 git clone https://github.com/deskosproject/deskos-core.git
@@ -65,8 +79,8 @@ cd deskos-core
 go build -o bin/deskosctl ./cmd/deskosctl
 ```
 
-Declare a RHEL 10 workstation in a resource root of your own, for example
-`my-org/workstations/core-rhel10.yaml`:
+**2. Declare a RHEL 10 workstation** in a resource root of your own, for
+example `my-org/workstations/core-rhel10.yaml`:
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
@@ -80,8 +94,9 @@ spec:
     - deskos-core
 ```
 
-Render and build it. Tag it with the reference your machines should update
-from, in a registry that is private to your organization:
+**3. Render and build it.** Tag it with the reference your machines
+should update from, in a registry that is **private to your
+organization**:
 
 ```bash
 ./bin/deskosctl render ./resources ./my-org \
@@ -90,7 +105,7 @@ sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
     ./dist/deskos-core-rhel10
 ```
 
-Then create the QCOW2 (or the ISO, as above) with the RHEL builder:
+**4. Make the QCOW2** (or the ISO, as above) with the **RHEL** builder:
 
 ```bash
 mkdir -p output
@@ -105,6 +120,6 @@ sudo podman run --rm -it --privileged --pull=missing \
 ```
 
 Every layer of the build is free of the build host's subscription state
-(see [architecture.md](architecture.md#validation-status)), but
-the image, disks and ISOs are still RHEL derivatives: push them only to
+(see [validation status](architecture.md#validation-status)), but the
+image, disks and ISOs are **still RHEL derivatives**: push them only to
 registries and storage that are private to your organization.

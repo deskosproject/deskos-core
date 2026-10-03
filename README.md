@@ -24,7 +24,12 @@ from which QCOW2 disks and installer ISOs are built.
 
 ## How it works
 
-    resources ──▶ validation ──▶ composition ──▶ typed plan ──▶ Containerfile ──▶ bootc image ──▶ QCOW2 / ISO
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform, CentOS Stream 10 published to quay.io and RHEL 10 built privately, then bootc-image-builder makes QCOW2 disks and installer ISOs" src="docs/images/deskos-flow-light.svg" width="900">
+  </picture>
+</p>
 
 A `Workstation` names a **platform** and the **profiles** it is made of:
 
@@ -47,6 +52,13 @@ the same inputs always give the same bytes. Every resource kind, with an
 example, is in [**docs/resources.md**](docs/resources.md).
 
 ## Composition
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-composition-dark.svg">
+    <img alt="DeskOS composition: layers foundation, organization, role and workstation with explicit precedence; set, keyed and scalar composition classes; example where the organization's 5m screen blank overrides Core's 10m; the Plan keeps the provenance of every value" src="docs/images/deskos-composition-light.svg" width="900">
+  </picture>
+</p>
 
 Profiles sit at explicit layers,
 `foundation` < `organization` < `role` < `workstation`, so an

@@ -1,7 +1,14 @@
 # Resources
 
-DeskOS configuration uses versioned, Kubernetes-inspired resource
-envelopes:
+The DeskOS resource model: every kind with a real example from this
+repository, how layers compose, and the software and GNOME model behind
+them.
+
+## Envelope
+
+DeskOS configuration uses **versioned, Kubernetes-inspired resource
+envelopes**. DeskOS borrows the useful API ideas (Group, Version, Kind,
+schemas and composition) *without requiring Kubernetes*.
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
@@ -16,26 +23,56 @@ spec:
     - acme-developer
 ```
 
-DeskOS borrows the useful API ideas (Group, Version, Kind, schemas and
-composition) without requiring Kubernetes.
+| Group | Kinds |
+|---|---|
+| `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
+| `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
+| `desktop.deskos.org` | `GnomeProfile` |
+| `system.deskos.org` | `BootProfile` |
 
-The v1alpha1 kinds are `Platform`, `Profile` and `Workstation`
-(`core.deskos.org`); `PackageSet`, `RpmRepository`, `BinaryArtifact`,
-`FlatpakRemote` and `FlatpakSet` (`software.deskos.org`);
-`GnomeProfile` (`desktop.deskos.org`); and `BootProfile`
-(`system.deskos.org`). Their JSON Schemas are in
+All kinds are `v1alpha1`. Their JSON Schemas are in
 [`schemas/`](../schemas/).
 
-## Examples
+## Resource roots
 
-Resources live in YAML files under one or more resource roots. DeskOS
+Resources live in YAML files under **one or more resource roots**. DeskOS
 ships `./resources`; an organization keeps its own root and references
-DeskOS resources by kind and name without copying them. File and directory
-names have no meaning, and asset paths are relative to the YAML file. All
-examples below are files from this repository
-([`resources/`](../resources/) and [`examples/example-org/`](../examples/example-org/)).
+DeskOS resources by kind and name **without copying them**.
 
-A Profile places resources at one semantic layer:
+- File and directory names have no meaning.
+- Asset paths are relative to the YAML file.
+- Every example below is a file from this repository
+  ([`resources/`](../resources/) and
+  [`examples/example-org/`](../examples/example-org/)).
+
+## Resource kinds
+
+### `Workstation`
+
+A concrete build target: **one platform plus profiles**. Profile order is
+*not* precedence.
+
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-devops-centos10
+spec:
+  displayName: Example Org DevOps Workstation
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - example-baseline
+    - example-devops
+```
+
+`deskosctl plan ./resources ./examples/example-org --workstation
+example-devops-centos10` shows the composed result, including **which
+layer won each setting**.
+
+### `Profile`
+
+Places resources at **one semantic layer**:
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
@@ -51,6 +88,15 @@ spec:
     - kind: GnomeProfile
       name: example-desktop
 ```
+
+### `Platform`
+
+Facts about an OS target (bootc base image, RPM groups, GNOME and Flatpak
+capabilities, redistribution). DeskOS ships `centos-stream-10` and
+`rhel-10` in [`resources/platforms/`](../resources/platforms/); see
+[architecture.md](architecture.md#core-organizations-and-roles).
+
+### `PackageSet`
 
 Packages, RPM groups (named by the Platform) and units to enable:
 
@@ -73,7 +119,9 @@ spec:
     - firewalld.service
 ```
 
-An official vendor repository:
+### `RpmRepository`
+
+An **official vendor repository**:
 
 ```yaml
 apiVersion: software.deskos.org/v1alpha1
@@ -88,7 +136,9 @@ spec:
     - https://packages.microsoft.com/keys/microsoft.asc
 ```
 
-A verified upstream binary, pinned by version and SHA-256:
+### `BinaryArtifact`
+
+A verified upstream binary, **pinned by version and SHA-256**:
 
 ```yaml
 apiVersion: software.deskos.org/v1alpha1
@@ -107,7 +157,9 @@ spec:
       mode: "0755"
 ```
 
-A system Flatpak remote and applications preinstalled from it:
+### `FlatpakRemote` and `FlatpakSet`
+
+A **system** Flatpak remote, and applications preinstalled from it:
 
 ```yaml
 apiVersion: software.deskos.org/v1alpha1
@@ -119,7 +171,9 @@ spec:
   url: https://dl.flathub.org/repo/
   collectionID: org.flathub.Stable
   gpgKeyFile: keys/flathub.gpg
----
+```
+
+```yaml
 apiVersion: software.deskos.org/v1alpha1
 kind: FlatpakSet
 metadata:
@@ -131,8 +185,10 @@ spec:
       branch: stable
 ```
 
-GNOME intent; an organization layer overrides the Core defaults it
-names:
+### `GnomeProfile`
+
+**GNOME intent** in administrator vocabulary. An organization layer
+overrides the Core defaults it names:
 
 ```yaml
 apiVersion: desktop.deskos.org/v1alpha1
@@ -161,7 +217,10 @@ spec:
       showTrash: false
 ```
 
-Boot appearance:
+### `BootProfile`
+
+**Boot appearance**: graphical splash, quiet boot and the splash
+watermark.
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
@@ -174,86 +233,56 @@ spec:
   watermark: ../assets/deskos/deskos-splash-watermark.png
 ```
 
-The organization's workstation then composes Core, its baseline and a
-role on a platform; profile order is not precedence:
-
-```yaml
-apiVersion: core.deskos.org/v1alpha1
-kind: Workstation
-metadata:
-  name: example-devops-centos10
-spec:
-  displayName: Example Org DevOps Workstation
-  platformRef: centos-stream-10
-  profiles:
-    - deskos-core
-    - example-baseline
-    - example-devops
-```
-
-`deskosctl plan ./resources ./examples/example-org --workstation
-example-devops-centos10` shows the composed result, including which layer
-won each setting.
-
 ## Composition
 
-A workstation is composed from explicit semantic layers:
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/deskos-composition-dark.svg">
+    <img alt="DeskOS composition: layers foundation, organization, role and workstation with explicit precedence; set, keyed and scalar composition classes; example where the organization's 5m screen blank overrides Core's 10m; the Plan keeps the provenance of every value" src="images/deskos-composition-light.svg" width="900">
+  </picture>
+</p>
 
-```text
-foundation
-    <
-organization
-    <
-role
-    <
-workstation
-```
+A workstation is composed from **explicit semantic layers**:
+`foundation` < `organization` < `role` < `workstation`.
 
-DeskOS Core provides defaults.
+- **DeskOS Core provides defaults**; organizations *intentionally*
+  override them.
+- **Conflicting settings at the same layer are errors.**
+- **File order is never precedence.**
 
-Organizations intentionally override them.
-
-Conflicting settings at the same semantic layer are errors.
-
-File order is never used as an implicit precedence mechanism.
+The full rules (set, keyed and scalar classes, provenance) are in
+[architecture.md](architecture.md#composition).
 
 ## DeskOS Core
 
-DeskOS Core is the reusable workstation foundation maintained by the
+**DeskOS Core** is the reusable workstation foundation maintained by the
 project.
 
-The public reference workstation uses CentOS Stream 10.
-
-Organizations that require RHEL can compile the same DeskOS Core
-semantics directly onto the official RHEL 10 bootc base.
-
-The RHEL artifact is not derived from the CentOS image.
+- The public reference workstation uses **CentOS Stream 10**.
+- Organizations that require **RHEL** compile the same Core semantics
+  directly onto the official RHEL 10 bootc base.
+- The RHEL artifact is **not derived** from the CentOS image.
 
 ## Software model
 
-DeskOS deliberately avoids becoming a universal package manager.
+DeskOS deliberately **avoids becoming a universal package manager**. The
+managed baseline uses the delivery mechanism appropriate to the
+software, in this order of preference:
 
-The managed baseline can use the delivery mechanism appropriate to the
-software:
+1. distribution RPM;
+2. official vendor RPM;
+3. verified upstream binary;
+4. system Flatpak;
+5. future managed web applications.
 
-```text
-distribution RPM
-official vendor RPM
-verified upstream binary
-system Flatpak
-future managed web applications
-```
-
-User/project environments such as mise, SDKMAN, Homebrew, language
-version managers, dotfiles and personal Toolboxes are outside the DeskOS
-managed baseline.
+User and project environments (mise, SDKMAN, Homebrew, language version
+managers, dotfiles, personal Toolboxes) are **outside the DeskOS managed
+baseline**.
 
 ## GNOME
 
-DeskOS exposes administrator intent rather than dconf implementation
-details.
-
-An administrator should be able to describe things such as:
+DeskOS exposes **administrator intent**, not dconf implementation details.
+An administrator describes things such as:
 
 - window controls;
 - wallpapers and branding;
@@ -264,7 +293,6 @@ An administrator should be able to describe things such as:
 - idle timeout;
 - lock behavior;
 
-without knowing which GNOME schema or dconf key implements them.
-
-DeskOS Core ships reasonable defaults, but organizations can override
-those defaults declaratively.
+*without knowing* which GNOME schema or dconf key implements them. DeskOS
+Core ships reasonable defaults, and organizations override them
+declaratively.

@@ -30,11 +30,12 @@ backend, and what has been validated on each platform.
 DeskOS **compiles desired artifact state**. It does not continuously
 reconcile deployed endpoint state.
 
-```text
-organizational intent -> resources -> validation -> composition
-  -> typed Plan -> backend -> build context -> bootc OCI image
-                                                 -> QCOW2, ISO
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform, CentOS Stream 10 published to quay.io and RHEL 10 built privately, then bootc-image-builder makes QCOW2 disks and installer ISOs" src="images/deskos-flow-light.svg" width="900">
+  </picture>
+</p>
 
 DeskOS is finished once the artifact exists. Keeping 4,000 running
 machines in a given state is the job of configuration management
@@ -108,6 +109,13 @@ RHEL workstation starts from `registry.redhat.io/rhel10/rhel-bootc`,
 platforms produce the same Core content.
 
 ## Composition
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/deskos-composition-dark.svg">
+    <img alt="DeskOS composition: layers foundation, organization, role and workstation with explicit precedence; set, keyed and scalar composition classes; example where the organization's 5m screen blank overrides Core's 10m; the Plan keeps the provenance of every value" src="images/deskos-composition-light.svg" width="900">
+  </picture>
+</p>
 
 Layers: `foundation` < `organization` < `role` < `workstation`.
 
