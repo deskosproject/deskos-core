@@ -44,6 +44,9 @@ reviewed on its own:
   builds the CS10 Core image, a test QCOW2 that is not uploaded, and runs
   the boot and session checks; it passed on commit `3876414` (base pinned to the 2026-09-28 stream10 build). Triggering
   it automatically on changes to image inputs is not decided.
+- Publishing: the same workflow, run with `publish` on `main`, pushes the
+  image that passed its checks to `quay.io/deskos/deskos-core` as
+  `:<commit>` and `:latest`. CentOS Stream 10 only.
 - Digest-pinned base image, updated deliberately. Done for CentOS Stream
   10 and RHEL 10.
 - Decide how to treat `bootc container lint` warnings from packages.
