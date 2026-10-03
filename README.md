@@ -233,11 +233,10 @@ creates a GitHub Release with `deskosctl-vX.Y.Z-linux-amd64` and
 `SHA256SUMS` (`.github/workflows/release.yml`). Only linux/amd64 is built.
 The binary is not signed.
 
-    git tag -a v0.1.0 -m "deskosctl v0.1.0"
-    git push origin v0.1.0
+    git tag -a vX.Y.Z -m "deskosctl vX.Y.Z"
+    git push origin vX.Y.Z
 
-To download and verify (the first tag, `v0.1.0`, is planned and not yet
-created):
+To download and verify `v0.1.0`, the current release:
 
     gh release download v0.1.0 --repo deskosproject/deskos-core
     sha256sum -c SHA256SUMS
