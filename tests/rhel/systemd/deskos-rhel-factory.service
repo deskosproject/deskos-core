@@ -5,6 +5,8 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# Go caches and the registry.redhat.io credential resolve under HOME.
+Environment=HOME=/root
 ExecStart=/usr/bin/python3 /var/lib/deskos-factory/tools/tests/rhel/factory.py poll --publish
 LoadCredentialEncrypted=github-token:/etc/credstore.encrypted/deskos-github-token
 TimeoutStartSec=4h
