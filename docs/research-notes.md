@@ -269,6 +269,28 @@ centos-logos 100.5-1, dracut 107-11, bootc 1.16.13, kernel
   `podman-auto-update.timer`; ends with `bootc container lint`; ISO via
   bootc-image-builder `anaconda-iso`.
 
+## Comparable tools
+
+None of these combines layered organizational precedence, typed IR,
+provenance and one Core for CentOS and RHEL.
+
+- BlueBuild (blue-build.org, checked 2026-10-03): `recipe.yml` compiled to
+  a Containerfile for bootc images. Modules become scripts run in recipe
+  order; a `containerfile` module allows raw instructions. No typed IR or
+  layer precedence. The closest in form.
+- osbuild / Image Builder blueprints (TOML): declarative RHEL images; for
+  image mode, `bootc-image-builder` takes only disk and user
+  customizations, and content goes in a Containerfile. Flat, no layering.
+- NixOS modules: composition with explicit priorities (`mkDefault`,
+  `mkForce`) and reproducible builds; not RHEL.
+- mkosi: declarative image builds from INI files and drop-ins; no
+  organizational layers.
+- Butane/Ignition: declarative first-boot provisioning, not a compiled
+  artifact.
+
+Only BlueBuild was checked against its current documentation; the others
+are from general knowledge.
+
 ## License history
 
 The `deskosproject` GitHub organization (2016 to 2018) holds RPM packaging
