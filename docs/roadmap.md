@@ -25,7 +25,7 @@ reviewed on its own:
 1. First-boot (GIS) wallpaper from the effective wallpaper (vendor
    GSettings override). No API change. Implemented; seen in a CS10 Core
    VM.
-2. `appearance.loginLogo` for GDM. Implemented, with provisional marks;
+2. `appearance.loginLogo` for GDM. Implemented, with the DeskOS lockup;
    seen in a CS10 Core VM. Dock semantics (masking, `dock.showTrash`)
    implemented; Core enables Dash to Dock by default, active in the CS10
    instrumented session check. A session `desktopLogo` (background-logo
@@ -35,7 +35,7 @@ reviewed on its own:
    in the initramfs). Implemented; seen on CS10 Core UEFI VMs
    (`bootcheck.py`). Not booted on RHEL with the current Core.
 5. DeskOS and organization splash watermark (`BootProfile.watermark`,
-   DeskOS-owned theme), with a provisional DeskOS mark. Seen at boot and
+   DeskOS-owned theme), with the DeskOS lockup. Seen at boot and
    shutdown on UEFI VMs. Organization marks only with recorded provenance.
 
 ## Milestone 2: independent CentOS CI build

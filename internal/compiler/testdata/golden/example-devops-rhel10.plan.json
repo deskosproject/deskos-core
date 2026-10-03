@@ -521,7 +521,7 @@
       {
         "path": "/usr/share/plymouth/themes/deskos/watermark.png",
         "mode": "0644",
-        "sha256": "e286d8294944c47850e6cec864fb444edeca62205e2aa8c54b26f39fe79c78c2",
+        "sha256": "0c5746f4613eb72c7a2d7c39d27d127ec74aec04c96de14a6afec160c0c85ac1",
         "asset": "resources/assets/deskos/deskos-splash-watermark.png",
         "provenance": [
           {

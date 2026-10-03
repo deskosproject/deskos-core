@@ -212,7 +212,7 @@
       {
         "path": "/usr/share/deskos/backgrounds/deskos-dark.svg",
         "mode": "0644",
-        "sha256": "ff9141324c4f269ffe5f517ca87e81aedadd714f5758634b40649b5e5093b36f",
+        "sha256": "518eab796895af4f43d534cea4a3c53d171141d576a985d0c987ac2e7cb0feec",
         "asset": "resources/assets/deskos/deskos-dark.svg",
         "provenance": [
           {
@@ -226,7 +226,7 @@
       {
         "path": "/usr/share/deskos/backgrounds/deskos-light.svg",
         "mode": "0644",
-        "sha256": "0d8ad476b5e6eb29f2e3906cb1a939472b1a17fad0e373625346493c87ef4da7",
+        "sha256": "2b10b6144731e0a8264b054db88a05182549737819aebb905ce5d8c2e4df713d",
         "asset": "resources/assets/deskos/deskos-light.svg",
         "provenance": [
           {
@@ -240,7 +240,7 @@
       {
         "path": "/usr/share/deskos/branding/deskos-login-logo.svg",
         "mode": "0644",
-        "sha256": "f15e480e7a59d51fed52aa580d214900d2b42d792fcc67b7697d740d7633298e",
+        "sha256": "ec20a63277d6ea9616005cf160c9ebac5aea0b8ba12838c862db61e4895fd839",
         "asset": "resources/assets/deskos/deskos-login-logo.svg",
         "provenance": [
           {
@@ -254,7 +254,7 @@
       {
         "path": "/usr/share/plymouth/themes/deskos/watermark.png",
         "mode": "0644",
-        "sha256": "e286d8294944c47850e6cec864fb444edeca62205e2aa8c54b26f39fe79c78c2",
+        "sha256": "0c5746f4613eb72c7a2d7c39d27d127ec74aec04c96de14a6afec160c0c85ac1",
         "asset": "resources/assets/deskos/deskos-splash-watermark.png",
         "provenance": [
           {

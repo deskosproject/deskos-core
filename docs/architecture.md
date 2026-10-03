@@ -332,7 +332,7 @@ spinner frames copied in the build except their `watermark.png`.
 rebuild, and the build fails unless each initramfs contains the theme and
 selects it. A higher-layer `splash: text` masks a lower-layer watermark
 with a plan warning; a watermark at or above a `text` layer, or with no
-splash set, is an error. Core sets a provisional DeskOS mark; without a
+splash set, is an error. Core sets the DeskOS lockup; without a
 watermark the platform's default theme stays.
 
 Diagnostics stay available: ESC switches Plymouth to details, systemd

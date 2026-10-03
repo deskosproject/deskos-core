@@ -7,5 +7,5 @@ spec:
   # details, and failures are still printed.
   splash: graphical
   quiet: true
-  # Provisional DeskOS mark at the bottom of the splash (DeskOS theme).
+  # DeskOS lockup at the bottom of the splash (DeskOS theme).
   watermark: ../assets/deskos/deskos-splash-watermark.png

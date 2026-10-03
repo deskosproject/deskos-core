@@ -1,10 +1,17 @@
 # Asset provenance
 
-| File | Origin | Status |
-|---|---|---|
-| `deskos-light.svg`, `deskos-dark.svg` | drawn in this repository (gradient and circles) | placeholder wallpapers |
-| `deskos-login-logo.svg` | drawn in this repository (outline square and text "DeskOS") | provisional placeholder; not an approved DeskOS logo |
-| `deskos-splash-watermark.png` | rendered from `deskos-login-logo.svg` with `rsvg-convert -w 240 -h 48 -f png` (librsvg2-tools 2.57.1-9.el10, font Red Hat Display) in `localhost/deskos-core-centos10:freeze`, then cropped to its content plus a 2 px margin (`magick -crop 126x48+0+0 +repage -strip PNG32:`) so Plymouth centers the mark; 126x48 RGBA, transparent background, sha256 `e286d8294944c47850e6cec864fb444edeca62205e2aa8c54b26f39fe79c78c2` | provisional placeholder; Plymouth splash watermark |
+The DeskOS visual identity: project-owned artwork, no third-party
+artwork. Licensed under CC BY-SA 4.0 (`LICENSE` in this directory); the
+DeskOS name and logo are not licensed as identifiers of other products.
+The wordmark is outlined from Manrope 700 (SIL Open Font License 1.1); no
+font file is shipped.
 
-No third-party artwork. A permanent DeskOS identity needs a maintainer
-decision, including its license.
+Source: `deskosproject/deskos-brand` (private), commit `7cf486f`, built
+reproducibly by `design/tools/build.sh`.
+
+| File | Source in deskos-brand | Format | sha256 |
+|---|---|---|---|
+| `deskos-light.svg` | `design/wallpapers/deskos-plano-light.svg` | SVG, 3840x2160 | `2b10b6144731e0a8264b054db88a05182549737819aebb905ce5d8c2e4df713d` |
+| `deskos-dark.svg` | `design/wallpapers/deskos-plano-dark.svg` | SVG, 3840x2160 | `518eab796895af4f43d534cea4a3c53d171141d576a985d0c987ac2e7cb0feec` |
+| `deskos-login-logo.svg` | `design/gdm/deskos-gdm-logo.svg` | SVG, 249x38 intrinsic, light on the GDM background | `ec20a63277d6ea9616005cf160c9ebac5aea0b8ba12838c862db61e4895fd839` |
+| `deskos-splash-watermark.png` | `design/plymouth/deskos-splash-watermark.png` | PNG RGBA, 255x48, transparent | `0c5746f4613eb72c7a2d7c39d27d127ec74aec04c96de14a6afec160c0c85ac1` |

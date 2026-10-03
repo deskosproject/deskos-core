@@ -142,8 +142,8 @@ needed, are a typed PNG frame set, never a script theme.
 2. **GDM login logo** (`appearance.loginLogo`). *Implemented:* asset
    installed under `/usr/share/deskos/branding/`, dconf default
    `/org/gnome/login-screen/logo` in the `distro` db, platform capability
-   `gnome.loginScreen`. Core and the example organization ship placeholder
-   wordmarks (`PROVENANCE.md` next to each). Verified by GSettings under
+   `gnome.loginScreen`. Core ships the DeskOS lockup and the example
+   organization a placeholder wordmark (`PROVENANCE.md` next to each). Verified by GSettings under
    the `gdm` profile and seen on the login screen of a Core VM.
    A session `desktopLogo` is a later, separate slice.
 3. **Kind decision** for boot intent (decision 5). *Decided:* ADR 0006.
@@ -154,8 +154,8 @@ needed, are a typed PNG frame set, never a script theme.
    Seen on UEFI VMs; a QCOW2 from bootc-image-builder with its default
    `console=ttyS0` shows text instead (see "Test disks" below).
 5. **DeskOS/organization splash** (watermark theme). *Implemented:*
-   `BootProfile.watermark`; Core ships a provisional 126x48 PNG rendered
-   from the provisional login wordmark; an organization replaces it with
+   `BootProfile.watermark`; Core ships the DeskOS lockup as a 255x48 RGBA
+   PNG (`resources/assets/deskos/PROVENANCE.md`); an organization replaces it with
    its own BootProfile at a higher layer. Boot and shutdown on UEFI VMs
    show the DeskOS splash with no firmware or CentOS mark.
 6. **Favorite ids and asset checks** in the built image (roadmap item).

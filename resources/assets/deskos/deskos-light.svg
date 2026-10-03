@@ -1,12 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="3840" height="2160" viewBox="0 0 3840 2160">
-  <!-- DeskOS placeholder wallpaper (light). Project-owned, no third-party artwork. -->
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3d6fa8"/>
-      <stop offset="1" stop-color="#9cc3e6"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" width="3840" height="2160">
+  <!-- DeskOS Core wallpaper (plano, light). Project-owned, no third-party artwork. -->
+  <defs><linearGradient id="bg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="1800"><stop offset="0" stop-color="#F5F3EE"/><stop offset="1" stop-color="#EBECE8"/></linearGradient><linearGradient id="pc" gradientUnits="userSpaceOnUse" x1="0" y1="900" x2="0" y2="1500"><stop offset="0" stop-color="#88A3B2"/><stop offset="1" stop-color="#AABCC5"/></linearGradient></defs>
   <rect width="3840" height="2160" fill="url(#bg)"/>
-  <circle cx="2880" cy="1620" r="900" fill="#ffffff" fill-opacity="0.12"/>
-  <circle cx="960" cy="540" r="520" fill="#ffffff" fill-opacity="0.08"/>
+  <rect y="1800" width="3840" height="360" fill="#DEE2E1"/>
+  <path fill="#C6D1D4" d="M2040 1200H2240V1600H3040V1200H3240V1800H2040Z"/>
+  <path fill="url(#pc)" d="M2340 900H2940V1500H2340Z"/>
 </svg>

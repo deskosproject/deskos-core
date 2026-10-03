@@ -30,7 +30,8 @@ Core definition composes onto both CentOS Stream 10 and RHEL 10, with an
 organization's own baseline and roles on top. What is validated so far is
 under [Validation](#validation).
 
-License: [Apache License 2.0](LICENSE).
+License: [Apache License 2.0](LICENSE). The DeskOS artwork in
+`resources/assets/deskos/` is CC BY-SA 4.0 (see its `PROVENANCE.md`).
 
 ## What DeskOS builds
 
