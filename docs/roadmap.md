@@ -42,7 +42,7 @@ reviewed on its own:
 
 - A manual GitHub workflow (`vm-bootcheck.yml`, `workflow_dispatch` only)
   builds the CS10 Core image, a test QCOW2 that is not uploaded, and runs
-  the boot and session checks; it passed on commit `7f79951`. Triggering
+  the boot and session checks; it passed on commit `3876414` (base pinned to the 2026-09-28 stream10 build). Triggering
   it automatically on changes to image inputs is not decided.
 - Digest-pinned base image, updated deliberately. Done for CentOS Stream
   10 and RHEL 10.
