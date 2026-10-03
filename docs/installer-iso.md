@@ -59,7 +59,7 @@ The ISO is `output/bootiso/install.iso`.
 
 ## RHEL
 
-The same steps work for a RHEL workstation on an entitled host logged in
+The same steps apply to a RHEL workstation (untested) on an entitled host logged in
 to `registry.redhat.io`, with
 `registry.redhat.io/rhel10/bootc-image-builder` instead of the CentOS
 builder. RHEL ISOs must not be publicly redistributed.
