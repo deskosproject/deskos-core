@@ -211,13 +211,13 @@ RHEL-derived bootc images must not be publicly redistributed.
 Rendering RHEL build contexts without credentials must remain possible.
 
 RHEL evidence is exactly what `docs/architecture.md`, "Validation
-status", records: composition and rendering are validated; one entitled
-RHEL 10.2 build of the example workstation (image `81bdfeec...`) passed
-`bootc container lint` with every layer free of build-host subscription
-state, and its QCOW2 was booted once, manually, by the owner. That image
-predates the example's rename and later Core changes, so the current
-example has not been built on RHEL. There is no automated boot or E2E
-test on RHEL. Do not claim more until an entitled build shows it.
+status", records: composition and rendering are validated; the entitled
+RHEL 10.2 build of the example workstation (image `0e65bf4b...`, pinned
+base) passed `bootc container lint` with every layer free of build-host
+subscription state, and its QCOW2 passed `bootcheck.py` and
+`sessioncheck.py` on the factory VM under nested KVM, run manually. There
+is no RHEL CI, no E2E test, and Flatpak preinstall is not exercised on
+RHEL. Do not claim more until an entitled build shows it.
 
 Do not weaken architecture merely because the current developer machine
 cannot perform an authenticated RHEL build.

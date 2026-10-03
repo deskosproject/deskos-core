@@ -56,12 +56,11 @@ What has been shown so far:
   failed state. A manual GitHub workflow runs the same build, boot and
   session checks; it is not a full E2E test.
 
-RHEL 10: one entitled build of an earlier revision of
-`example-devops-rhel10` passed `bootc container lint`, confirming the comps
-group, Dash to Dock, the vendor repositories and `oc`, with every layer
-free of build-host subscription-manager state; its QCOW2 was booted once,
-manually. The current example is not built on RHEL, and there is no
-automated boot or E2E test on RHEL. See
+RHEL 10: `example-devops-rhel10`, built on an entitled factory VM from a
+digest-pinned RHEL 10.2 base, passes `bootc container lint` with every
+layer free of build-host subscription state, and its QCOW2 passes
+`bootcheck.py` and `sessioncheck.py` there under nested KVM. These checks
+run manually; there is no RHEL CI and no E2E test. See
 [docs/architecture.md](docs/architecture.md#validation-status).
 
 License: [Apache License 2.0](LICENSE).

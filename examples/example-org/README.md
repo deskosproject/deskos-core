@@ -25,11 +25,11 @@ installed as an additional tool and is not an equivalent.
 
 ## Status
 
-Composition and rendering are validated for both targets. Earlier
-revisions of both workstations were built: the CentOS Stream 10 one with
-Podman, the RHEL 10.2 one on an entitled host, where it passed `bootc
-container lint` with no build-host subscription state and its QCOW2 was
-booted once, manually. The current revision is not built, and neither
-target has an automated boot or E2E test.
+Composition and rendering are validated for both targets. The RHEL 10.2
+workstation is built on an entitled factory VM, passes `bootc container
+lint` with no build-host subscription state, and its QCOW2 passes the boot
+and session checks there, run manually. An earlier revision of the CentOS
+Stream 10 workstation was built with Podman; the current one is not
+built. Neither target has an E2E test.
 
 `assets/` holds placeholder artwork; see `assets/PROVENANCE.md`.

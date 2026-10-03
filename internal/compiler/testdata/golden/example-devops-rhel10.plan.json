@@ -37,7 +37,8 @@
   "artifact": {
     "baseImage": {
       "image": "registry.redhat.io/rhel10/rhel-bootc:10.2",
-      "ref": "registry.redhat.io/rhel10/rhel-bootc:10.2"
+      "digest": "sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90",
+      "ref": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
     },
     "labels": [
       {
@@ -949,7 +950,6 @@
   },
   "enrollment": {},
   "warnings": [
-    "artifacts built on Platform/rhel-10 must not be publicly redistributed",
-    "base image registry.redhat.io/rhel10/rhel-bootc:10.2 is not pinned by digest; it resolves at build time"
+    "artifacts built on Platform/rhel-10 must not be publicly redistributed"
   ]
 }

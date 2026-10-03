@@ -10,10 +10,12 @@ backend, DeskOS Core on CentOS Stream 10 and RHEL 10, the example organization.
 
 ## Milestone 1: entitled RHEL 10 build and boot validation
 
-Done: clean entitled build of `example-devops-rhel10` (image `81bdfeec...`),
-lint passed, all layers scanned free of build-host identity, QCOW2 booted
-manually. Left: rebuild with the corrected VS Code favorite, and whether
-RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`.
+Done: entitled build of `example-devops-rhel10` on a pinned base (image
+`0e65bf4b...`), lint passed, all layers scanned free of build-host
+identity, `bootcheck.py` and `sessioncheck.py` passed on its QCOW2 in the
+factory VM. Left: whether RHEL's flatpak 1.16 reads
+`/usr/share/flatpak/preinstall.d`, which needs a RHEL workstation that
+declares Flatpaks.
 
 ## Milestone 1b: visual identity and boot
 
@@ -43,7 +45,7 @@ reviewed on its own:
   the boot and session checks; it passed on commit `7f79951`. Triggering
   it automatically on changes to image inputs is not decided.
 - Digest-pinned base image, updated deliberately. Done for CentOS Stream
-  10; RHEL 10 pending.
+  10 and RHEL 10.
 - Decide how to treat `bootc container lint` warnings from packages.
 
 ## Milestone 3: VM boot and desktop tests

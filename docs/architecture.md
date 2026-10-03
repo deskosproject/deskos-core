@@ -150,8 +150,9 @@ distribution package scriptlets rather than by DeskOS: content in `/run`
 (cockpit, cups), users without sysusers.d entries (libstoragemgmt, wsdd;
 on RHEL also avahi and libvirtdbus) and `/var` content without tmpfiles.d
 entries. Seen on CS10 Core builds `50f8892a` and `77832d5c` (11 passed, 1
-skipped) and the RHEL 10.2 build `81bdfeec`, where the RHSM tmpfs mounts
-removed the earlier non-empty `/var/log/rhsm/rhsm.log` warning. They are
+skipped) and the RHEL 10.2 builds `81bdfeec` and `0e65bf4b` (10 passed, 1
+skipped), where the RHSM tmpfs mounts keep `/var/log/rhsm/rhsm.log` out of
+the image. They are
 non-blocking. Whether to seek upstream fixes, declare exceptions or use
 `--fatal-warnings` is a release decision; DeskOS does not alter package
 behavior to silence them.
@@ -185,26 +186,27 @@ installs it. The CS10 Platform excludes setroubleshoot this way; see
 |---|---|---|
 | Core and the example organization compose and render | validated | validated |
 | Same Core content on both platforms | validated (test) | validated (test) |
-| Image builds, `bootc container lint` passes | validated | validated: `81bdfeec...` lint passed with 3 warnings; every layer free of build-host subscription state |
-| Packages install from the declared sources | validated | validated in that build (package presence; apps not launched) |
-| Build layers free of build-host identity | not rechecked since the fix | validated (all 73 layers scanned, 0 findings) |
-| Boots to GNOME with DeskOS defaults | `bootcheck.py` on Core disks passes (pixel classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS wallpaper); instrumented `sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper as planned and Firefox running headless; GDM login logo seen in a Core VM; no full E2E | one manual, owner-observed boot of the clean QCOW2; that image predates the example rename and later Core changes; no automated boot or E2E test |
-| Manual GitHub workflow (`vm-bootcheck.yml`: build, QCOW2, boot and session checks) | passed (run `36514763190`, commit `7f79951`); manual only | not run |
-| Failed system units in the session check | none except, in AMD QEMU guests without `edac_mce_amd`, `mcelog.service`: reported as a known, non-blocking diagnostic with its raw failed state (see `tests/vm/README.md`, `docs/research-notes.md`) | not run |
-| Flatpak preinstall materializes apps | remote and ref resolution checked | not done |
+| Image builds, `bootc container lint` passes | validated | validated: `0e65bf4b...` (RHEL 10.2, base `d13af792...`) lint passed with 3 warnings |
+| Packages install from the declared sources | validated | validated in that build (package presence; only Firefox launched) |
+| Build layers free of build-host identity | not rechecked since the fix | validated (all 75 layers of `0e65bf4b` scanned for RHSM paths and the build host's entitlement serial, consumer UUID and hostname; 0 findings) |
+| Boots to GNOME with DeskOS defaults | `bootcheck.py` on Core disks passes (pixel classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS wallpaper); instrumented `sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper as planned and Firefox running headless; GDM login logo seen in a Core VM; no full E2E | `bootcheck.py` on the `0e65bf4b` disk passes (frames show the DeskOS splash and GNOME Initial Setup over the example wallpaper); `sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper as planned and Firefox running headless; run on an entitled factory VM with nested KVM, not in CI; no full E2E |
+| Manual GitHub workflow (`vm-bootcheck.yml`: build, QCOW2, boot and session checks) | passed (run `36514763190`, commit `7f79951`); manual only | not applicable: RHEL builds need an entitled host; the same steps run manually on the factory VM |
+| Failed system units in the session check | none except, in AMD QEMU guests without `edac_mce_amd`, `mcelog.service`: reported as a known, non-blocking diagnostic with its raw failed state (see `tests/vm/README.md`, `docs/research-notes.md`) | same as CentOS Stream 10 |
+| Flatpak preinstall materializes apps | remote and ref resolution checked | not exercised: `example-devops-rhel10` declares no Flatpaks |
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
-`gnome-shell-extension-dash-to-dock` 102, Terraform, kubectl, VS Code and
-Chrome from their vendor repositories, and the rhel9 `oc` 4.22.14 build
-(needs at most GLIBC_2.34). Still open: whether RHEL's flatpak 1.16 reads
-`/usr/share/flatpak/preinstall.d`, and automated boot/E2E checks.
+`gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
+1.37.1, VS Code 1.140.0 and Chrome 154 from their vendor repositories, and
+the rhel9 `oc` 4.22.14 build (needs at most GLIBC_2.34). Still open:
+whether RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, and
+automated RHEL boot/E2E checks.
 
 ## Supply-chain inputs
 
 Compilation is deterministic; builds are not yet reproducible bit for bit.
 External inputs that can still change between builds: the base image tag
-(unless `bootc.digest` is set; CentOS Stream 10 pins its x86_64 manifest,
-RHEL 10 is not pinned yet), RPM repository metadata and packages, and
+(unless `bootc.digest` is set; CentOS Stream 10 and RHEL 10 pin their
+x86_64 manifests), RPM repository metadata and packages, and
 RPM repository GPG keys, which are fetched by URL with no independent
 identity. BinaryArtifact already pins an exact version and SHA-256. The
 goal is that every external input has an immutable, verifiable identity;
