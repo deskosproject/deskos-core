@@ -362,6 +362,9 @@ At the end of substantial work, explain:
   `go test ./internal/compiler -update` and review the diff.
 - `tests/vm`: QEMU boot and instrumented session checks for built disks
   (`python3 -m unittest discover -s tests/vm` for their unit tests).
+- `tests/rhel`: `factory.py`, the RHEL build, layer scan, boot and
+  session validation run on an entitled host; it publishes only a commit
+  status (`python3 -m unittest discover -s tests/rhel`).
 - `.github/workflows`: `ci.yml` (checks on push and pull requests),
   `vm-bootcheck.yml` (manual CS10 build, boot and session checks) and
   `release.yml` (tag-driven `deskosctl` release).

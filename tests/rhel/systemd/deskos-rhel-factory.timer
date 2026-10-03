@@ -1,0 +1,9 @@
+[Unit]
+Description=Poll the deskos-core main branch for the RHEL factory
+
+[Timer]
+OnBootSec=10min
+OnUnitInactiveSec=15min
+
+[Install]
+WantedBy=timers.target

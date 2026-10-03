@@ -30,6 +30,8 @@ jobs:
         run: go test ./...
       - name: VM boot check harness unit tests
         run: python3 -m unittest discover -s tests/vm
+      - name: RHEL factory harness unit tests
+        run: python3 -m unittest discover -s tests/rhel
       - name: build deskosctl
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources

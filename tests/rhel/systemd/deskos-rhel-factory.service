@@ -1,0 +1,12 @@
+[Unit]
+Description=Validate the deskos-core main branch on the RHEL factory
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /var/lib/deskos-factory/tools/tests/rhel/factory.py poll --publish
+LoadCredentialEncrypted=github-token:/etc/credstore.encrypted/deskos-github-token
+TimeoutStartSec=4h
+# Return space freed by the run to a thin-provisioned disk.
+ExecStopPost=/usr/sbin/fstrim -a
