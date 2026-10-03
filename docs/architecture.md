@@ -120,7 +120,9 @@ no timestamps.
 The Containerfile runs one group transaction (with the platform's
 `--exclude` options), then copies repository files and runs one package
 transaction, one verified download per binary artifact, copies `rootfs/`,
-runs `glib-compile-schemas --strict` and `dconf update`, enables units,
+checks the DeskOS GSettings override with `glib-compile-schemas --strict`
+against the installed schemas, compiles them without `--strict` as the
+packages do, runs `dconf update`, enables units,
 sets the default target, installs the Plymouth theme and rebuilds the
 initramfs when boot intent needs them (see Boot), cleans package caches
 and ends with `bootc container lint`. Every generated command

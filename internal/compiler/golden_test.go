@@ -306,9 +306,13 @@ func TestWallpaperReachesInitialSetupAsSchemaDefault(t *testing.T) {
 		if override != want {
 			t.Errorf("%s: override\n%s\nwant\n%s", tc.ws, override, want)
 		}
-		compile := strings.Index(cf, "RUN glib-compile-schemas --strict /usr/share/glib-2.0/schemas")
-		if compile < 0 || compile < strings.Index(cf, "COPY rootfs/ /") || compile > strings.Index(cf, "dconf update") {
-			t.Errorf("%s: glib-compile-schemas must run after COPY rootfs and before dconf update", tc.ws)
+		strict := strings.Index(cf, `cp /usr/share/glib-2.0/schemas/*.xml /usr/share/glib-2.0/schemas/50_deskos.gschema.override "$tmp"/`+" \\\n    && glib-compile-schemas --strict --dry-run \"$tmp\"")
+		compile := strings.Index(cf, "&& glib-compile-schemas /usr/share/glib-2.0/schemas \\\n")
+		if strict < 0 || strict < strings.Index(cf, "COPY rootfs/ /") || compile < strict || compile > strings.Index(cf, "dconf update") {
+			t.Errorf("%s: the DeskOS override must be checked strictly, then schemas compiled, after COPY rootfs and before dconf update", tc.ws)
+		}
+		if strings.Contains(cf, "glib-compile-schemas --strict /usr/share/glib-2.0/schemas") {
+			t.Errorf("%s: distribution overrides must not be compiled strictly", tc.ws)
 		}
 	}
 }

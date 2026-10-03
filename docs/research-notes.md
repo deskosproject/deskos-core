@@ -74,6 +74,12 @@ else is marked as not verified.
   `setroubleshoot-server-3.3.35-4` and `setroubleshoot-plugins-3.3.14-11`.
   The RHEL comps membership is **not verified**; the `rhel-10` Platform
   keeps them until it is.
+- RHEL 10.2: `redhat-backgrounds-100.3-2` ships
+  `10_org.gnome.desktop.screensaver.default.gschema.override` with
+  `picture-uri-dark`, a key `gsettings-desktop-schemas-47.1-4` does not
+  define for `org.gnome.desktop.screensaver`. `glib-compile-schemas
+  --strict` on the full directory fails; without `--strict` only that key
+  is ignored. Hence only the DeskOS override is compiled strictly.
 
 ## GNOME administration
 

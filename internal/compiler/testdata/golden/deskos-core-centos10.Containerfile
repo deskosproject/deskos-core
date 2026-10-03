@@ -40,7 +40,11 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
 COPY rootfs/ /
 
 # System configuration
-RUN glib-compile-schemas --strict /usr/share/glib-2.0/schemas \
+RUN tmp="$(mktemp -d)" \
+    && cp /usr/share/glib-2.0/schemas/*.xml /usr/share/glib-2.0/schemas/50_deskos.gschema.override "$tmp"/ \
+    && glib-compile-schemas --strict --dry-run "$tmp" \
+    && rm -rf "$tmp" \
+    && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'firewalld.service' 'gdm.service' \
     && systemctl set-default 'graphical.target'

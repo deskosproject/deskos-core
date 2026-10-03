@@ -35,8 +35,9 @@ const (
 	rootfsDir         = "rootfs"
 	imagePlanPath     = "/usr/share/deskos/plan.json"
 	dconfFileName     = "50-deskos"
+	schemasDir        = "/usr/share/glib-2.0/schemas"
 	// Numbered above distribution overrides (for example 10_ from centos-logos).
-	gsettingsOverridePath = "/usr/share/glib-2.0/schemas/50_deskos.gschema.override"
+	gsettingsOverridePath = schemasDir + "/50_deskos.gschema.override"
 	kargsPath             = "/usr/lib/bootc/kargs.d/50-deskos.toml"
 	dracutConfPath        = "/usr/lib/dracut/dracut.conf.d/50-deskos.conf"
 )
@@ -449,7 +450,13 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 
 	var steps []string
 	if len(a.GSettings) > 0 {
-		steps = append(steps, "glib-compile-schemas --strict /usr/share/glib-2.0/schemas")
+		// Strict only for the DeskOS override; distribution overrides keep the RPM's non-strict behavior.
+		steps = append(steps,
+			`tmp="$(mktemp -d)"`,
+			fmt.Sprintf(`cp %s/*.xml %s "$tmp"/`, schemasDir, gsettingsOverridePath),
+			`glib-compile-schemas --strict --dry-run "$tmp"`,
+			`rm -rf "$tmp"`,
+			"glib-compile-schemas "+schemasDir)
 	}
 	if a.Dconf != nil {
 		steps = append(steps, "dconf update")
