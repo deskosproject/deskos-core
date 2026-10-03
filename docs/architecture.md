@@ -15,6 +15,19 @@ machines in a given state is the job of configuration management
 baseline those systems operate on. There is no controller, agent or
 reconciliation loop, and none is planned.
 
+## Design principles
+
+- Intent is data.
+- Compilation is deterministic.
+- File order does not define precedence.
+- Providers emit typed IR, not arbitrary shell.
+- DeskOS Core provides capabilities and defaults.
+- Organizations provide policy and content.
+- DeskOS owns the artifact, not the running machine.
+- CI is an adapter, not the product.
+- AI may assist development, but it is not part of compiler semantics.
+- Existing Linux technologies should be composed rather than reinvented.
+
 ## Resource model
 
 Every resource is a versioned envelope:
