@@ -5,16 +5,14 @@
   </picture>
 </p>
 
+<p align="center"><strong>Managed Linux workstations, built like infrastructure.</strong></p>
+
 <p align="center">
   <a href="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml"><img alt="vm-bootcheck" src="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/deskosproject/deskos-core/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/deskosproject/deskos-core"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/deskosproject/deskos-core"></a>
 </p>
-
-# DeskOS
-
-**Managed Linux workstations, built like infrastructure.**
 
 DeskOS is an open workstation artifact factory. An organization describes
 its workstation as declarative resources (applications, desktop
