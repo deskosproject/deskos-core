@@ -10,19 +10,23 @@ DeskOS Core for CentOS Stream 10 is published as a bootable container
 image. Each published image is the one that passed the boot and session
 checks for that commit; it is tagged with the commit ID and `latest`:
 
-    sudo podman pull quay.io/deskos/deskos-core:latest
+```bash
+sudo podman pull quay.io/deskos/deskos-core:latest
+```
 
 A QCOW2 disk for a virtual machine:
 
-    mkdir -p output
-    sudo podman run --rm -it --privileged --pull=missing \
-        --security-opt label=type:unconfined_t \
-        -v ./output:/output \
-        -v /var/lib/containers/storage:/var/lib/containers/storage \
-        quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
-        build --type qcow2 --no-default-kernel-args \
-        --chown "$(id -u):$(id -g)" \
-        quay.io/deskos/deskos-core:latest
+```bash
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" \
+    quay.io/deskos/deskos-core:latest
+```
 
 The disk is `output/qcow2/disk.qcow2` (10.5 GiB virtual by default). It
 has no user account: GNOME Initial Setup creates the first one at first
@@ -32,9 +36,11 @@ graphical splash) instead of the builder's serial console. For a larger
 root filesystem, mount a `config.toml` (`-v ./config.toml:/config.toml:ro`
 and `--config /config.toml` after `build`) containing:
 
-    [[customizations.filesystem]]
-    mountpoint = "/"
-    minsize = "40 GiB"
+```toml
+[[customizations.filesystem]]
+mountpoint = "/"
+minsize = "40 GiB"
+```
 
 An installer ISO uses `--type anaconda-iso` with a kickstart in
 `config.toml`; the kickstart DeskOS needs, and the warning that it erases
@@ -53,42 +59,50 @@ organization.
 
 Get the DeskOS resources and build `deskosctl` from source (Go 1.26):
 
-    git clone https://github.com/deskosproject/deskos-core.git
-    cd deskos-core
-    go build -o bin/deskosctl ./cmd/deskosctl
+```bash
+git clone https://github.com/deskosproject/deskos-core.git
+cd deskos-core
+go build -o bin/deskosctl ./cmd/deskosctl
+```
 
 Declare a RHEL 10 workstation in a resource root of your own, for example
 `my-org/workstations/core-rhel10.yaml`:
 
-    apiVersion: core.deskos.org/v1alpha1
-    kind: Workstation
-    metadata:
-      name: deskos-core-rhel10
-    spec:
-      displayName: DeskOS Core (RHEL 10)
-      platformRef: rhel-10
-      profiles:
-        - deskos-core
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-core-rhel10
+spec:
+  displayName: DeskOS Core (RHEL 10)
+  platformRef: rhel-10
+  profiles:
+    - deskos-core
+```
 
 Render and build it. Tag it with the reference your machines should update
 from, in a registry that is private to your organization:
 
-    ./bin/deskosctl render ./resources ./my-org \
-        --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
-    sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
-        ./dist/deskos-core-rhel10
+```bash
+./bin/deskosctl render ./resources ./my-org \
+    --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
+sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
+    ./dist/deskos-core-rhel10
+```
 
 Then create the QCOW2 (or the ISO, as above) with the RHEL builder:
 
-    mkdir -p output
-    sudo podman run --rm -it --privileged --pull=missing \
-        --security-opt label=type:unconfined_t \
-        -v ./output:/output \
-        -v /var/lib/containers/storage:/var/lib/containers/storage \
-        registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
-        build --type qcow2 --no-default-kernel-args \
-        --chown "$(id -u):$(id -g)" \
-        registry.example.internal/deskos/core-rhel10:latest
+```bash
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" \
+    registry.example.internal/deskos/core-rhel10:latest
+```
 
 Every layer of the build is free of the build host's subscription state
 (see [architecture.md](architecture.md#validation-status)), but
