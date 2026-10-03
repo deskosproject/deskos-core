@@ -8,10 +8,12 @@ Requirements: Linux with rootful Podman and about 15 GB free.
 
 ## Build
 
-Render and build the image. Tag it with the registry reference the
-installed machines should update from: the installer runs
-`bootc switch` to that reference, so a `localhost/` tag leaves machines
-without an update source.
+The installer runs `bootc switch` to the image reference the ISO is built
+from, so that reference is where installed machines update from. With the
+published CentOS Stream 10 image, pull it and use
+`quay.io/deskos/deskos-core:latest` in the build command below. For your
+own build, tag it with the registry reference machines should update from;
+a `localhost/` tag leaves them without an update source:
 
     deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
     sudo podman build -t quay.io/example/deskos-core:stable ctx
@@ -62,7 +64,8 @@ The ISO is `output/bootiso/install.iso`.
 The same steps apply to a RHEL workstation (untested) on an entitled host logged in
 to `registry.redhat.io`, with
 `registry.redhat.io/rhel10/bootc-image-builder` instead of the CentOS
-builder. RHEL ISOs must not be publicly redistributed.
+builder. RHEL ISOs must never be published: keep them inside the
+organization that builds them.
 
 ## Validation status
 

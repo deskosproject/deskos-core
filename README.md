@@ -108,6 +108,103 @@ DeskOS builds the baseline those systems operate on.
 A deployed workstation may contain mutable state, and runtime drift is a
 separate operational concern.
 
+## Getting DeskOS
+
+Downloadable QCOW2 and ISO images are not published yet. Until they are,
+create them from the container image with bootc-image-builder. You need
+Linux with rootful Podman and about 20 GB free.
+
+### CentOS Stream 10
+
+DeskOS Core for CentOS Stream 10 is published as a bootable container
+image. Each published image is the one that passed the boot and session
+checks for that commit; it is tagged with the commit ID and `latest`:
+
+    sudo podman pull quay.io/deskos/deskos-core:latest
+
+A QCOW2 disk for a virtual machine:
+
+    mkdir -p output
+    sudo podman run --rm -it --privileged --pull=missing \
+        --security-opt label=type:unconfined_t \
+        -v ./output:/output \
+        -v /var/lib/containers/storage:/var/lib/containers/storage \
+        quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+        build --type qcow2 --no-default-kernel-args \
+        --chown "$(id -u):$(id -g)" \
+        quay.io/deskos/deskos-core:latest
+
+The disk is `output/qcow2/disk.qcow2` (10.5 GiB virtual by default). It
+has no user account: GNOME Initial Setup creates the first one at first
+boot.
+`--no-default-kernel-args` keeps the image's own boot arguments (quiet
+graphical splash) instead of the builder's serial console. For a larger
+root filesystem, mount a `config.toml` (`-v ./config.toml:/config.toml:ro`
+and `--config /config.toml` after `build`) containing:
+
+    [[customizations.filesystem]]
+    mountpoint = "/"
+    minsize = "40 GiB"
+
+An installer ISO uses `--type anaconda-iso` with a kickstart in
+`config.toml`; the kickstart DeskOS needs, and the warning that it erases
+every disk, are in [docs/installer-iso.md](docs/installer-iso.md).
+Machines installed from it update from the image reference it was built
+from (`quay.io/deskos/deskos-core:latest`) with `bootc upgrade`.
+
+### RHEL 10 (private builds only)
+
+DeskOS publishes only CentOS Stream 10 artifacts. RHEL-based images, disks
+and ISOs must never be published: the RHEL EULA forbids public
+redistribution. An organization with RHEL subscriptions builds its own,
+on a registered RHEL 10 host logged in to `registry.redhat.io` (as root,
+since the build runs as root), and keeps the result inside the
+organization.
+
+Get the DeskOS resources and build `deskosctl` from source (Go 1.26):
+
+    git clone https://github.com/deskosproject/deskos-core.git
+    cd deskos-core
+    go build -o bin/deskosctl ./cmd/deskosctl
+
+Declare a RHEL 10 workstation in a resource root of your own, for example
+`my-org/workstations/core-rhel10.yaml`:
+
+    apiVersion: core.deskos.org/v1alpha1
+    kind: Workstation
+    metadata:
+      name: deskos-core-rhel10
+    spec:
+      displayName: DeskOS Core (RHEL 10)
+      platformRef: rhel-10
+      profiles:
+        - deskos-core
+
+Render and build it. Tag it with the reference your machines should update
+from, in a registry that is private to your organization:
+
+    ./bin/deskosctl render ./resources ./my-org \
+        --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
+    sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
+        ./dist/deskos-core-rhel10
+
+Then create the QCOW2 (or the ISO, as above) with the RHEL builder:
+
+    mkdir -p output
+    sudo podman run --rm -it --privileged --pull=missing \
+        --security-opt label=type:unconfined_t \
+        -v ./output:/output \
+        -v /var/lib/containers/storage:/var/lib/containers/storage \
+        registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
+        build --type qcow2 --no-default-kernel-args \
+        --chown "$(id -u):$(id -g)" \
+        registry.example.internal/deskos/core-rhel10:latest
+
+Every layer of the build is free of the build host's subscription state
+(see [docs/architecture.md](docs/architecture.md#validation-status)), but
+the image, disks and ISOs are still RHEL derivatives: push them only to
+registries and storage that are private to your organization.
+
 ## Resource model
 
 DeskOS configuration uses versioned, Kubernetes-inspired resource
@@ -133,6 +230,159 @@ The v1alpha1 kinds are `Platform`, `Profile` and `Workstation`
 `GnomeProfile` (`desktop.deskos.org`); and `BootProfile`
 (`system.deskos.org`). Their JSON Schemas are in
 [`schemas/`](schemas/).
+
+### Examples
+
+Resources live in YAML files under one or more resource roots. DeskOS
+ships `./resources`; an organization keeps its own root and references
+DeskOS resources by kind and name without copying them. File and directory
+names have no meaning, and asset paths are relative to the YAML file. All
+examples below are files from this repository
+([`resources/`](resources/) and [`examples/example-org/`](examples/example-org/)).
+
+A Profile places resources at one semantic layer:
+
+    apiVersion: core.deskos.org/v1alpha1
+    kind: Profile
+    metadata:
+      name: example-baseline
+    spec:
+      layer: organization
+      description: Example organization baseline for every workstation.
+      resources:
+        - kind: PackageSet
+          name: example-baseline
+        - kind: GnomeProfile
+          name: example-desktop
+
+Packages, RPM groups (named by the Platform) and units to enable:
+
+    apiVersion: software.deskos.org/v1alpha1
+    kind: PackageSet
+    metadata:
+      name: deskos-core
+    spec:
+      groups:
+        - workstation
+      packages:
+        - bootc
+        - NetworkManager
+        - firefox
+        - flatpak
+        - firewalld
+        - xdg-utils
+      enableUnits:
+        - firewalld.service
+
+An official vendor repository:
+
+    apiVersion: software.deskos.org/v1alpha1
+    kind: RpmRepository
+    metadata:
+      name: vscode
+    spec:
+      id: code
+      displayName: Visual Studio Code
+      baseURL: https://packages.microsoft.com/yumrepos/vscode
+      gpgKeys:
+        - https://packages.microsoft.com/keys/microsoft.asc
+
+A verified upstream binary, pinned by version and SHA-256:
+
+    apiVersion: software.deskos.org/v1alpha1
+    kind: BinaryArtifact
+    metadata:
+      name: openshift-client
+    spec:
+      version: 4.22.14
+      source:
+        url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz
+        sha256: 73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b
+      archive: tar.gz
+      files:
+        - path: oc
+          destination: /usr/local/bin/oc
+          mode: "0755"
+
+A system Flatpak remote and applications preinstalled from it:
+
+    apiVersion: software.deskos.org/v1alpha1
+    kind: FlatpakRemote
+    metadata:
+      name: flathub
+    spec:
+      title: Flathub
+      url: https://dl.flathub.org/repo/
+      collectionID: org.flathub.Stable
+      gpgKeyFile: keys/flathub.gpg
+    ---
+    apiVersion: software.deskos.org/v1alpha1
+    kind: FlatpakSet
+    metadata:
+      name: deskos-reference-apps
+    spec:
+      remote: flathub
+      applications:
+        - id: io.github.kolunmi.Bazaar
+          branch: stable
+
+GNOME intent; an organization layer overrides the Core defaults it
+names:
+
+    apiVersion: desktop.deskos.org/v1alpha1
+    kind: GnomeProfile
+    metadata:
+      name: example-desktop
+    spec:
+      defaults:
+        windows:
+          buttons: [close]
+        appearance:
+          wallpaper:
+            light: ../assets/example-org.svg
+          loginLogo: ../assets/example-org-login-logo.svg
+        session:
+          idle:
+            blankAfter: 5m
+          lock:
+            enabled: true
+            delay: 0s
+        dock:
+          enabled: true
+          position: bottom
+          behavior: intellihide
+          iconSize: 40
+          showTrash: false
+
+Boot appearance:
+
+    apiVersion: system.deskos.org/v1alpha1
+    kind: BootProfile
+    metadata:
+      name: deskos-core
+    spec:
+      splash: graphical
+      quiet: true
+      watermark: ../assets/deskos/deskos-splash-watermark.png
+
+The organization's workstation then composes Core, its baseline and a
+role on a platform; profile order is not precedence:
+
+    apiVersion: core.deskos.org/v1alpha1
+    kind: Workstation
+    metadata:
+      name: example-devops-centos10
+    spec:
+      displayName: Example Org DevOps Workstation
+      platformRef: centos-stream-10
+      profiles:
+        - deskos-core
+        - example-baseline
+        - example-devops
+
+`deskosctl plan ./resources ./examples/example-org --workstation
+example-devops-centos10` shows the composed result, including which layer
+won each setting.
 
 ## Composition
 
@@ -274,19 +524,25 @@ Inspect the public CentOS reference workstation:
 
 Add `--format json` to print the canonical plan.
 
-Render it:
+### Build the image yourself
+
+Contributors build the image from their checkout instead of pulling it.
+Render the build context:
 
     ./bin/deskosctl render ./resources \
       --workstation deskos-core-centos10 \
       --backend containerfile \
       --output ./dist/deskos-core-centos10
 
-and build it locally with Podman:
+and build it with rootful Podman, so bootc-image-builder can read it:
 
-    podman build -t localhost/deskos-core-centos10 ./dist/deskos-core-centos10
+    sudo podman build -t localhost/deskos-core-centos10 ./dist/deskos-core-centos10
 
-To make an installer ISO from it, see
-[docs/installer-iso.md](docs/installer-iso.md).
+The QCOW2 and ISO commands in [Getting DeskOS](#getting-deskos) work
+unchanged with `localhost/deskos-core-centos10` as the image reference.
+[tests/vm/README.md](tests/vm/README.md) boots the disk and checks the
+GNOME session against the plan; `tests/rhel/` does the same for RHEL on
+an entitled host.
 
 An example organization (`example-org`) with a RHEL 10 developer
 workstation is included separately to prove organization- and
@@ -308,16 +564,14 @@ The `Makefile` wraps these commands for convenience (`make check`,
 
 ## Reference artifacts
 
-The decided public OCI namespace for DeskOS Core is:
-
-    quay.io/deskos/deskos-core
-
-A mirror on GitHub Container Registry is possible and not decided.
-Derived QCOW2 and ISO images are to be distributed from S3-compatible
-object storage, not from GitHub. None of these is published yet; the CI
+DeskOS Core for CentOS Stream 10 is published at
+`quay.io/deskos/deskos-core` by `vm-bootcheck.yml` run with `publish` on
+`main`: the job pushes the exact image that passed its boot and session
+checks, as `:<commit>` and `:latest`. Derived QCOW2 and ISO images will be
+distributed from S3-compatible object storage, not from GitHub; until then
+they are built locally (see [Getting DeskOS](#getting-deskos)). The CI
 builds QCOW2 disks only as test input and does not upload them. The
-`deskosctl` binary is published separately through GitHub Releases (see
-Releases).
+`deskosctl` binary is published through GitHub Releases (see Releases).
 
 ## Design principles
 
