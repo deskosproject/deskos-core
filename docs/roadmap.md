@@ -96,6 +96,9 @@ Details in
   after real release experience shows which inputs need them.
 - Immutable identity for RPM repository GPG keys (mechanism undecided).
 - A decision by the example organization on the `virt-manager` gap.
+- RHEL's Red Hat logo in the Activities button (see
+  [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
+  replacing `fedora-logo-icon` through an icon theme is untried.
 
 ## Milestone 4: workstation E2E
 
@@ -123,6 +126,11 @@ Details in
   in Core, and the bootc timer that reboots is masked. Validated on a CentOS
   Stream 10 VM: the image service staged a new image without rebooting,
   and a manual reboot booted it with the previous one as rollback.
+- **Next release (v0.6.0):** the `GnomeProfile` shell, clock and keyboard
+  settings of [ADR 0008](adr/0008-gnome-shell-clock-keyboard.md) are on
+  `main` and not yet released.
+- A staged update skipped on battery waits for the next schedule; a
+  catch-up run on AC connect (Bluefin's `uupd-on-ac.service`) is open.
 - A local endpoint command (`deskos status`, `deskos update`,
   `deskos rollback`) that a user or administrator runs on one machine to
   inspect the deployment and invoke bootc's own staged update and
