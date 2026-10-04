@@ -290,6 +290,33 @@ spec:
       showTrash: false
 ```
 
+Shell, clock and keyboard settings use the same mechanism:
+
+```yaml
+spec:
+  defaults:
+    shell:
+      hotCorners: false
+      workspaces: 4                # dynamic | 1 to 36
+      appFolders:
+        - id: Development
+          name: Development
+          apps: [code.desktop]
+          categories: [Development]
+    clock:
+      showWeekday: true
+      format: 24h                  # 24h | 12h
+    keyboard:
+      numLock: true
+      terminal: com.mitchellh.ghostty.desktop   # Ctrl+Alt+T
+```
+
+- **`appFolders`** replaces GNOME's built-in folders (such as
+  *Utilities*); declare every folder the app grid should have. A higher
+  layer replaces the whole list.
+- **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
+  through the Platform's application launcher (`gtk-launch` on EL10).
+
 ### `BootProfile`
 
 **Boot appearance**: graphical splash, quiet boot and the splash
@@ -397,6 +424,9 @@ An administrator describes things such as:
 - idle timeout;
 - lock behavior;
 - whether GNOME Software applies updates;
+- hot corners, workspaces and app folders;
+- the clock and Num Lock at login;
+- the terminal shortcut;
 
 *without knowing* which GNOME schema or dconf key implements them. DeskOS
 Core ships reasonable defaults, and organizations override them

@@ -2,7 +2,7 @@
 //
 // GnomeProfile exposes administrator concepts (window controls, favorites,
 // idle and lock behavior, wallpaper, fonts, color scheme, dock, GNOME
-// Software updates). The provider validates
+// Software updates, hot corners, workspaces, app folders, clock, keyboard). The provider validates
 // them as semantic settings; the lowerer translates the composed settings to
 // dconf using only facts declared by the Platform.
 package desktop
@@ -54,6 +54,13 @@ const (
 	KeyDockIconSize    = "dock.iconSize"
 	KeyDockShowTrash   = "dock.showTrash"
 	KeySoftwareUpdates = "software.updates"
+	KeyHotCorners      = "shell.hotCorners"
+	KeyWorkspaces      = "shell.workspaces"
+	KeyAppFolders      = "shell.appFolders"
+	KeyClockWeekday    = "clock.showWeekday"
+	KeyClockFormat     = "clock.format"
+	KeyNumLock         = "keyboard.numLock"
+	KeyTerminal        = "keyboard.terminal"
 )
 
 var knownKeys = map[string]bool{
@@ -62,7 +69,8 @@ var knownKeys = map[string]bool{
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockEnabled: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
-	KeySoftwareUpdates: true,
+	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWorkspaces: true, KeyAppFolders: true,
+	KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
 }
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
@@ -70,7 +78,11 @@ var (
 	colorSchemes = []string{"default", "prefer-dark", "prefer-light"}
 	accentColors = []string{"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
 	updateModes  = []string{"automatic", "manual", "disabled"}
+	clockFormats = []string{"24h", "12h"}
 )
+
+// MaxWorkspaces is mutter's limit for num-workspaces.
+const MaxWorkspaces = 36
 
 // GnomeProfileSpec is the public GnomeProfile spec.
 type GnomeProfileSpec struct {
@@ -85,6 +97,8 @@ type Settings struct {
 	Session    *Session    `json:"session,omitempty"`
 	Dock       *Dock       `json:"dock,omitempty"`
 	Software   *Software   `json:"software,omitempty"`
+	Clock      *Clock      `json:"clock,omitempty"`
+	Keyboard   *Keyboard   `json:"keyboard,omitempty"`
 }
 
 type Windows struct {
@@ -119,7 +133,33 @@ type Font struct {
 }
 
 type Shell struct {
-	Favorites []string `json:"favorites,omitempty"`
+	Favorites  []string    `json:"favorites,omitempty"`
+	HotCorners *bool       `json:"hotCorners,omitempty"`
+	Workspaces any         `json:"workspaces,omitempty"`
+	AppFolders []AppFolder `json:"appFolders,omitempty"`
+}
+
+// AppFolder is an app grid folder; declared folders replace GNOME's built-in ones.
+type AppFolder struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Apps       []string `json:"apps,omitempty"`
+	Categories []string `json:"categories,omitempty"`
+}
+
+type Clock struct {
+	ShowWeekday *bool  `json:"showWeekday,omitempty"`
+	Format      string `json:"format,omitempty"`
+}
+
+type Keyboard struct {
+	NumLock  *bool  `json:"numLock,omitempty"`
+	Terminal string `json:"terminal,omitempty"`
+}
+
+// Workspaces is the composed workspace mode; Count is 0 for dynamic workspaces.
+type Workspaces struct {
+	Count int `json:"count"`
 }
 
 type Session struct {
@@ -182,6 +222,9 @@ var (
 	desktopIDRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.desktop$`)
 	assetNameRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|svg)$`)
 	logoNameRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|svg)$`)
+	folderIDRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	categoryRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	folderNameRE = regexp.MustCompile(`^[^\x00-\x1f\x7f]+$`)
 )
 
 // Providers returns the desktop.deskos.org providers.
@@ -303,18 +346,102 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		enum(KeyAccentColor, a.AccentColor, accentColors)
 	}
 
-	if sh := s.Shell; sh != nil && sh.Favorites != nil {
-		seen := map[string]bool{}
-		for _, f := range sh.Favorites {
-			if !desktopIDRE.MatchString(f) {
-				bad("%s: %q is not a desktop file id (for example firefox.desktop)", KeyFavorites, f)
+	if sh := s.Shell; sh != nil {
+		if sh.Favorites != nil {
+			seen := map[string]bool{}
+			for _, f := range sh.Favorites {
+				if !desktopIDRE.MatchString(f) {
+					bad("%s: %q is not a desktop file id (for example firefox.desktop)", KeyFavorites, f)
+				}
+				if seen[f] {
+					bad("%s: %q is listed twice", KeyFavorites, f)
+				}
+				seen[f] = true
 			}
-			if seen[f] {
-				bad("%s: %q is listed twice", KeyFavorites, f)
-			}
-			seen[f] = true
+			set(KeyFavorites, sh.Favorites, strings.Join(sh.Favorites, ", "))
 		}
-		set(KeyFavorites, sh.Favorites, strings.Join(sh.Favorites, ", "))
+		if sh.HotCorners != nil {
+			set(KeyHotCorners, *sh.HotCorners, strconv.FormatBool(*sh.HotCorners))
+		}
+		if sh.Workspaces != nil {
+			switch w := sh.Workspaces.(type) {
+			case string:
+				if w != "dynamic" {
+					bad("%s: expected dynamic or a number from 1 to %d, got %q", KeyWorkspaces, MaxWorkspaces, w)
+				}
+				set(KeyWorkspaces, Workspaces{}, "dynamic")
+			case float64:
+				if w != float64(int(w)) || w < 1 || w > MaxWorkspaces {
+					bad("%s: expected dynamic or a number from 1 to %d, got %v", KeyWorkspaces, MaxWorkspaces, w)
+				}
+				set(KeyWorkspaces, Workspaces{Count: int(w)}, strconv.Itoa(int(w)))
+			default:
+				bad("%s: expected dynamic or a number from 1 to %d", KeyWorkspaces, MaxWorkspaces)
+			}
+		}
+		if sh.AppFolders != nil {
+			var ids []string
+			seenID := map[string]bool{}
+			for _, f := range sh.AppFolders {
+				if !folderIDRE.MatchString(f.ID) {
+					bad("%s: invalid folder id %q (letters, digits, _ and -)", KeyAppFolders, f.ID)
+				}
+				if seenID[f.ID] {
+					bad("%s: folder %q is listed twice", KeyAppFolders, f.ID)
+				}
+				seenID[f.ID] = true
+				ids = append(ids, f.ID)
+				if !folderNameRE.MatchString(f.Name) {
+					bad("%s: folder %q needs a single-line name", KeyAppFolders, f.ID)
+				}
+				if len(f.Apps) == 0 && len(f.Categories) == 0 {
+					bad("%s: folder %q needs apps or categories", KeyAppFolders, f.ID)
+				}
+				seenApp := map[string]bool{}
+				for _, a := range f.Apps {
+					if !desktopIDRE.MatchString(a) {
+						bad("%s: folder %q: %q is not a desktop file id", KeyAppFolders, f.ID, a)
+					}
+					if seenApp[a] {
+						bad("%s: folder %q: %q is listed twice", KeyAppFolders, f.ID, a)
+					}
+					seenApp[a] = true
+				}
+				for _, c := range f.Categories {
+					if !categoryRE.MatchString(c) {
+						bad("%s: folder %q: invalid category %q", KeyAppFolders, f.ID, c)
+					}
+				}
+			}
+			if len(sh.AppFolders) == 0 {
+				bad("%s: at least one folder is required", KeyAppFolders)
+			}
+			set(KeyAppFolders, sh.AppFolders, strings.Join(ids, ", "))
+		}
+	}
+
+	if c := s.Clock; c != nil {
+		if c.ShowWeekday != nil {
+			set(KeyClockWeekday, *c.ShowWeekday, strconv.FormatBool(*c.ShowWeekday))
+		}
+		if c.Format != "" {
+			if !slices.Contains(clockFormats, c.Format) {
+				bad("%s: expected 24h or 12h, got %q", KeyClockFormat, c.Format)
+			}
+			set(KeyClockFormat, c.Format, c.Format)
+		}
+	}
+
+	if k := s.Keyboard; k != nil {
+		if k.NumLock != nil {
+			set(KeyNumLock, *k.NumLock, strconv.FormatBool(*k.NumLock))
+		}
+		if k.Terminal != "" {
+			if !desktopIDRE.MatchString(k.Terminal) {
+				bad("%s: %q is not a desktop file id (for example org.gnome.Ptyxis.desktop)", KeyTerminal, k.Terminal)
+			}
+			set(KeyTerminal, k.Terminal, k.Terminal+" (Ctrl+Alt+T)")
+		}
 	}
 
 	if se := s.Session; se != nil {

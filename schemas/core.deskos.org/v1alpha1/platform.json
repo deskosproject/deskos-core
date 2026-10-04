@@ -92,6 +92,15 @@
                   "uuid": { "type": "string" }
                 }
               }
+            },
+            "appLauncher": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["package", "command"],
+              "properties": {
+                "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+                "command": { "type": "string", "pattern": "^/usr/[a-z0-9/._-]+$" }
+              }
             }
           }
         },

@@ -138,6 +138,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeySoftwareUpdates, "/org/gnome/software/download-updates", "b", strconv.FormatBool(mode == "automatic"), v.Provenance)
 	}
 
+	l.lowerShell(get)
 	l.lowerDock(get)
 
 	for _, lk := range locks {
@@ -155,6 +156,67 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 	p.Artifact.Dconf = l.db
 	return nil
+}
+
+// TerminalBinding is the accelerator of keyboard.terminal.
+const TerminalBinding = "<Control><Alt>t"
+
+const (
+	foldersPath  = "/org/gnome/desktop/app-folders/"
+	mediaKeys    = "/org/gnome/settings-daemon/plugins/media-keys/"
+	terminalPath = mediaKeys + "custom-keybindings/deskos-terminal/"
+)
+
+// lowerShell lowers hot corners, workspaces, app folders, clock and keyboard.
+func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
+	for key, gkey := range map[string]string{
+		KeyHotCorners:   "/org/gnome/desktop/interface/enable-hot-corners",
+		KeyClockWeekday: "/org/gnome/desktop/interface/clock-show-weekday",
+		KeyNumLock:      "/org/gnome/desktop/peripherals/keyboard/numlock-state",
+	} {
+		if v, ok := get(key); ok {
+			l.set(key, gkey, "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
+		}
+	}
+	if v, ok := get(KeyClockFormat); ok {
+		l.set(KeyClockFormat, "/org/gnome/desktop/interface/clock-format", "s", gvString(v.Value.(string)), v.Provenance)
+	}
+	if v, ok := get(KeyWorkspaces); ok {
+		n := v.Value.(Workspaces).Count
+		l.set(KeyWorkspaces, "/org/gnome/mutter/dynamic-workspaces", "b", strconv.FormatBool(n == 0), v.Provenance)
+		if n > 0 {
+			l.set(KeyWorkspaces, "/org/gnome/desktop/wm/preferences/num-workspaces", "i", strconv.Itoa(n), v.Provenance)
+		}
+	}
+	if v, ok := get(KeyAppFolders); ok {
+		folders := v.Value.([]AppFolder)
+		var ids []string
+		for _, f := range folders {
+			ids = append(ids, f.ID)
+		}
+		l.set(KeyAppFolders, foldersPath+"folder-children", "as", gvStrings(ids), v.Provenance)
+		for _, f := range folders {
+			base := foldersPath + "folders/" + f.ID + "/"
+			l.set(KeyAppFolders, base+"name", "s", gvString(f.Name), v.Provenance)
+			l.set(KeyAppFolders, base+"translate", "b", "false", v.Provenance)
+			l.set(KeyAppFolders, base+"apps", "as", gvStrings(f.Apps), v.Provenance)
+			l.set(KeyAppFolders, base+"categories", "as", gvStrings(f.Categories), v.Provenance)
+		}
+	}
+	if v, ok := get(KeyTerminal); ok {
+		pl := l.c.PlatformSpec
+		if pl.Gnome.AppLauncher == nil {
+			l.errs.Add(fmt.Errorf("%s declares no GNOME application launcher, which %s needs\n  set by: %s",
+				l.c.Platform.ID(), KeyTerminal, describe(v.Provenance)))
+			return
+		}
+		l.p.AddPackage(pl.Gnome.AppLauncher.Package, v.Provenance...)
+		id := strings.TrimSuffix(v.Value.(string), ".desktop")
+		l.set(KeyTerminal, mediaKeys+"custom-keybindings", "as", gvStrings([]string{terminalPath}), v.Provenance)
+		l.set(KeyTerminal, terminalPath+"name", "s", gvString("Terminal"), v.Provenance)
+		l.set(KeyTerminal, terminalPath+"command", "s", gvString(pl.Gnome.AppLauncher.Command+" "+id), v.Provenance)
+		l.set(KeyTerminal, terminalPath+"binding", "s", gvString(TerminalBinding), v.Provenance)
+	}
 }
 
 // dockOptions are settings that only exist while the dock extension runs.

@@ -98,6 +98,13 @@ type GnomePlatform struct {
 	LoginScreen       bool             `json:"loginScreen,omitempty"`
 	EnabledExtensions []string         `json:"enabledExtensions,omitempty"`
 	Extensions        []GnomeExtension `json:"extensions,omitempty"`
+	AppLauncher       *AppLauncher     `json:"appLauncher,omitempty"`
+}
+
+// AppLauncher is the command that starts an application by desktop file id.
+type AppLauncher struct {
+	Package string `json:"package"`
+	Command string `json:"command"`
 }
 
 // GnomeExtension is a GNOME Shell extension shipped by the platform.

@@ -30,11 +30,15 @@
             "shell.favorites",
             "session.idle.blankAfter", "session.lock.enabled", "session.lock.delay",
             "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
-            "software.updates"
+            "software.updates",
+            "shell.hotCorners", "shell.workspaces", "shell.appFolders",
+            "clock.showWeekday", "clock.format",
+            "keyboard.numLock", "keyboard.terminal"
           ] }
         }
       }
     },
+    "desktopId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.desktop$" },
     "duration": { "type": "string", "pattern": "^([0-9]+(h|m|s))+$" },
     "font": {
       "type": "object",
@@ -90,7 +94,41 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "favorites": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.desktop$" } }
+            "favorites": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/desktopId" } },
+            "hotCorners": { "type": "boolean" },
+            "workspaces": { "anyOf": [{ "const": "dynamic" }, { "type": "integer", "minimum": 1, "maximum": 36 }] },
+            "appFolders": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "name"],
+                "anyOf": [{ "required": ["apps"] }, { "required": ["categories"] }],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$" },
+                  "name": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+                  "apps": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/desktopId" } },
+                  "categories": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$" } }
+                }
+              }
+            }
+          }
+        },
+        "clock": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "showWeekday": { "type": "boolean" },
+            "format": { "enum": ["24h", "12h"] }
+          }
+        },
+        "keyboard": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numLock": { "type": "boolean" },
+            "terminal": { "$ref": "#/$defs/desktopId" }
           }
         },
         "session": {

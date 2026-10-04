@@ -35,6 +35,10 @@ spec:
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+    # Starts an application by desktop file id (keyboard shortcuts).
+    appLauncher:
+      package: gtk3
+      command: /usr/bin/gtk-launch
   boot:
     # Plymouth shows its graphical splash only with rhgb, splash or
     # plymouth.graphical on the kernel command line.
