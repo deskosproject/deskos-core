@@ -1,16 +1,22 @@
 # Visual identity, boot splash and VM QA
 
-Status: slices 1 (first-boot wallpaper), 2 (GDM login logo), 3
-(BootProfile kind, ADR 0006), 4 (stock quiet graphical boot) and 5
-(DeskOS splash watermark) are implemented and seen in CS10 Core VMs.
-Slice 6, the session desktop logo and the remaining VM QA tiers are
-proposals. Evidence was gathered on 2026-09-28 from the built CentOS
-reference image (`localhost/deskos-core-centos10:freeze`), upstream
-sources and one disposable experiment, then on booted CS10 Core VMs; see
-`docs/research-notes.md` ("Visual identity and boot"). "Verified" below
-means checked in the image or in primary source; "seen" means observed
-on a booted screen. Nothing here is verified on RHEL with the current
-Core.
+**Status:** slices 1 (first-boot wallpaper), 2 (GDM login logo), 3
+(`BootProfile` kind, [ADR 0006](../adr/0006-bootprofile-tenth-kind.md)),
+4 (stock quiet graphical boot) and 5 (DeskOS splash watermark) are
+**implemented** and seen in CS10 Core VMs. Slice 6, the session desktop
+logo and the remaining VM QA tiers are *proposals*.
+
+Evidence was gathered on 2026-09-28 from the built CentOS reference image
+(`localhost/deskos-core-centos10:freeze`), upstream sources and one
+disposable experiment, then on booted CS10 Core VMs; see
+[research-notes.md](../research-notes.md#visual-identity-and-boot-2026-09-28)
+("Visual identity and boot"). **"Verified"** below means checked in the
+image or in primary source; **"seen"** means observed on a booted screen.
+
+> [!NOTE]
+> Verified on CS10 unless stated. On RHEL 10.2, the factory host boots
+> `example-devops-rhel10` (Core plus the example organization) through
+> the same boot and session checks (`tests/rhel/factory.py`).
 
 ## Goal
 
@@ -18,8 +24,8 @@ A DeskOS workstation should look like the organization's workstation from
 power-on to desktop: boot splash, first-boot setup (GNOME Initial Setup),
 login screen (GDM) and session. DeskOS Core supplies neutral defaults; an
 organization overrides them with its own assets through the usual layers.
-Distribution identity stays truthful: os-release, legal notices and the
-distribution's logo packages are never replaced or falsified.
+**Distribution identity stays truthful:** os-release, legal notices and
+the distribution's logo packages are never replaced or falsified.
 
 ## Evidence matrix
 
@@ -82,12 +88,15 @@ distribution's logo packages are never replaced or falsified.
 5. **Boot is not GNOME.** Plymouth and kernel arguments are independent of
    the desktop, so they do not belong in GnomeProfile, and Platform only
    holds facts. Boot intent is the tenth kind,
-   `system.deskos.org/v1alpha1 BootProfile` (ADR 0006):
+   `system.deskos.org/v1alpha1 BootProfile`
+   ([ADR 0006](../adr/0006-bootprofile-tenth-kind.md)):
 
-       spec:
-         splash: graphical | text     # graphical: rhgb + Plymouth in initramfs
-         quiet: true | false          # quiet
-         watermark: ./example-mark.png # optional; two-step watermark (PNG)
+   ```yaml
+   spec:
+     splash: graphical | text     # graphical: rhgb + Plymouth in initramfs
+     quiet: true | false          # quiet
+     watermark: ./example-mark.png # optional; two-step watermark (PNG)
+   ```
 
    Scalars with the usual layering. Raw kernel arguments are not exposed.
    The platform supplies the karg names, dracut module and theme base.
@@ -106,20 +115,20 @@ distribution's logo packages are never replaced or falsified.
   copied in the build, and `plymouth-set-default-theme deskos`
   (`Theme=` in `/etc/plymouth/plymouthd.conf`) before the initramfs rebuild.
 
-No user-authored Plymouth script themes, raw dconf or shell.
+**No user-authored Plymouth script themes, raw dconf or shell.**
 
 ## Boot safety
 
-- Passphrase prompts: two-step renders ask-password dialogs; without
+- **Passphrase prompts**: two-step renders ask-password dialogs; without
   Plymouth in the initramfs, systemd's console prompt is used. Both must
   be exercised (LUKS VM) before enabling by default.
-- Diagnostics stay reachable: ESC shows details; with `quiet` systemd
+- **Diagnostics stay reachable**: ESC shows details; with `quiet` systemd
   still prints failures (`show_status=error`); editing the boot entry to
   remove `rhgb quiet` or adding `plymouth.enable=0` gives full text.
   Document these for operators.
-- Not everything disappears: firmware, bootloader and early kernel
+- **Not everything disappears**: firmware, bootloader and early kernel
   messages before Plymouth can still show.
-- Accessibility: text mode stays available (`splash: text`); verify
+- **Accessibility**: text mode stays available (`splash: text`); verify
   Plymouth's keyboard/braille behavior before a default change.
 
 ## Example organization assets
@@ -143,51 +152,55 @@ needed, are a typed PNG frame set, never a script theme.
    installed under `/usr/share/deskos/branding/`, dconf default
    `/org/gnome/login-screen/logo` in the `distro` db, platform capability
    `gnome.loginScreen`. Core ships the DeskOS lockup and the example
-   organization a placeholder wordmark (`PROVENANCE.md` next to each). Verified by GSettings under
-   the `gdm` profile and seen on the login screen of a Core VM.
+   organization a placeholder wordmark (`PROVENANCE.md` next to each).
+   Verified by GSettings under the `gdm` profile and seen on the login screen of a Core VM.
    A session `desktopLogo` is a later, separate slice.
 3. **Kind decision** for boot intent (decision 5). *Decided:* ADR 0006.
 4. **Quiet graphical boot** with the stock theme. *Implemented:*
    `BootProfile{splash, quiet}`; Core sets `graphical` + `quiet: true`;
    kargs.d `["quiet", "rhgb"]`; dracut drop-in `add_dracutmodules+=" plymouth "`;
    initramfs rebuilt per image kernel with an in-build `lsinitrd` check.
-   Seen on UEFI VMs; a QCOW2 from bootc-image-builder with its default
-   `console=ttyS0` shows text instead (see "Test disks" below).
+   Seen on UEFI VMs; a QCOW2 from `bootc-image-builder` with its default
+   `console=ttyS0` shows text instead (see [Test disks](#test-disks) below).
 5. **DeskOS/organization splash** (watermark theme). *Implemented:*
    `BootProfile.watermark`; Core ships the DeskOS lockup as a 255x48 RGBA
-   PNG (`resources/assets/deskos/PROVENANCE.md`); an organization replaces it with
-   its own BootProfile at a higher layer. Boot and shutdown on UEFI VMs
+   PNG ([`resources/assets/deskos/PROVENANCE.md`](../../resources/assets/deskos/PROVENANCE.md));
+   an organization replaces it with its own `BootProfile` at a higher
+   layer. Boot and shutdown on UEFI VMs
    show the DeskOS splash with no firmware or CentOS mark.
 6. **Favorite ids and asset checks** in the built image (roadmap item).
 
 ## Test disks
 
-bootc-image-builder adds `rw console=tty0 console=ttyS0` to QCOW2 images
+`bootc-image-builder` adds `rw console=tty0 console=ttyS0` to QCOW2 images
 (`osbuild/images` `bootc_kernel_options`). With a serial console active,
 Plymouth forces details mode. `build --no-default-kernel-args` omits those
 arguments; bootc still adds `rw`, and the disk boots with the image's own
-`quiet rhgb`, as an installed workstation does. DeskOS test disks use it;
-the artifact is unchanged.
+`quiet rhgb`, as an installed workstation does. **DeskOS test disks use
+it; the artifact is unchanged.**
 
 Known remaining text on CS10: the firmware logo, the GRUB menu and its
 "Booting" line, and four kernel lines "Unmaintained driver is detected:
 cnic / bnx2i" at boot, visible again briefly at shutdown. The dracut
 `iscsi` hook (`parse-iscsiroot.sh`, dracut-network 107-11.el10 and
-dracut-ng `main`) loads those offload drivers unconditionally. Unresolved;
-DeskOS does not disable hardware support to hide the warning.
+dracut-ng `main`) loads those offload drivers unconditionally.
+*Unresolved*; DeskOS does not disable hardware support to hide the
+warning (see
+[research-notes.md](../research-notes.md#kernel-warnings-cnic--bnx2i-at-boot-tracking)).
 
 ## VM QA
 
-Implemented for CS10 in `tests/vm/`: Tier A without reference matching
+Implemented in `tests/vm/` (CS10 in CI; RHEL through
+`tests/rhel/factory.py` on the factory host): Tier A without reference matching
 (`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
 systemd credentials over SMBIOS and a serial report, no SSH or qecore);
-see `docs/roadmap.md` Milestone 3 for what remains. The rest of this
-section is the proposal.
+see [`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)
+Milestone 3 for what remains. *The rest of this section is the proposal.*
 
 Two tiers, reported separately, each result tied to the candidate image
 digest, QCOW2 SHA-256, harness commit, test-suite commit and runner image
-digest; finite timeouts; required checks fail closed; nothing is
-published unless the required tier passes. An AI assistant may triage
+digest; finite timeouts; required checks fail closed; **nothing is
+published unless the required tier passes**. An AI assistant may triage
 failures and propose fixes; it cannot mark a failing gate as passed.
 
 - **Tier A, unmodified artifact.** Boot the exact QCOW2 in QEMU/KVM with
@@ -196,7 +209,7 @@ failures and propose fixes; it cannot mark a failing gate as passed.
   the console log if the image itself enables one. Checks: reaches GIS on
   first boot within the timeout; the splash and GIS screens match approved
   references within a tolerance; shutdown and reboot complete. This is
-  the only tier that proves untouched first boot.
+  the only tier that proves *untouched* first boot.
 - **Tier B, instrumented session.** A disposable derived test layer or
   first-boot test provisioning adds a test user, SSH key, autologin and
   qecore; every perturbation is listed in the report. Scenarios: GDM logo

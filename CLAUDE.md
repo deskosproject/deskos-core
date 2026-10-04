@@ -215,9 +215,10 @@ status", records: composition and rendering are validated; the entitled
 RHEL 10.2 build of the example workstation (image `0e65bf4b...`, pinned
 base) passed `bootc container lint` with every layer free of build-host
 subscription state, and its QCOW2 passed `bootcheck.py` and
-`sessioncheck.py` on the factory VM under nested KVM, run manually. There
-is no RHEL CI, no E2E test, and Flatpak preinstall is not exercised on
-RHEL. Do not claim more until an entitled build shows it.
+`sessioncheck.py` on the factory VM under nested KVM; `tests/rhel/factory.py`
+repeats this for each head of `main` and publishes the `deskos/rhel10`
+commit status. There is no RHEL job in GitHub Actions, no E2E test, and
+Flatpak preinstall is not exercised on RHEL. Do not claim more until an entitled build shows it.
 
 Do not weaken architecture merely because the current developer machine
 cannot perform an authenticated RHEL build.

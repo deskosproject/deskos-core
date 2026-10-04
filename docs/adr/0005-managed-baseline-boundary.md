@@ -1,6 +1,6 @@
 # ADR 0005: Managed baseline boundary
 
-Status: accepted
+**Status:** accepted
 
 ## Context
 
@@ -9,11 +9,16 @@ them would turn DeskOS into a meta package manager.
 
 ## Decision
 
-DeskOS manages machine-wide software an organization requires for any
-authorized user, complete before any user's home directory exists:
-distribution RPMs, vendor RPM repositories, checksum-pinned binaries and
-system Flatpaks. Personal and project tooling (Homebrew, mise, SDKMAN,
-language version managers, dotfiles, personal Toolboxes) is out of scope.
+DeskOS manages **machine-wide software an organization requires for any
+authorized user**, complete before any user's home directory exists:
+
+- distribution RPMs;
+- vendor RPM repositories;
+- checksum-pinned binaries;
+- system Flatpaks.
+
+Personal and project tooling (Homebrew, mise, SDKMAN, language version
+managers, dotfiles, personal Toolboxes) is **out of scope**.
 
 ## Consequences
 
