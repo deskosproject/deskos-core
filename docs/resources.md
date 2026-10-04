@@ -119,6 +119,31 @@ spec:
     - firewalld.service
 ```
 
+`rpmFiles` installs **signed RPMs that the vendor publishes without a
+repository**. Each entry needs an https URL that is not a floating
+location, the file's SHA-256 and `gpgKeyFile`, the vendor's ASCII-armored
+public key as a file inside the resource root, relative to the YAML file.
+The build fails unless the checksum matches and the RPM is signed by that
+key. Identical entries from several resources deduplicate; the same URL
+with another checksum or key is a conflict at any layer.
+
+An example for Zoom (organization content, not part of DeskOS; the
+organization provides `keys/zoom.asc`, here the key from
+`https://zoom.us/linux/download/pubkey?version=6-7-5`, fingerprint
+`84C3 65D6 CC9A 4886 CA92 6BCC 4F21 9739 9706 AC24`):
+
+```yaml
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: zoom
+spec:
+  rpmFiles:
+    - url: https://zoom.us/client/7.2.1.5760/zoom_x86_64.rpm
+      sha256: 79b6fc1ffd9fd2e2d136e898aed9c8ed6ab672a83841de4220ca4c14005d76fd
+      gpgKeyFile: keys/zoom.asc
+```
+
 ### `RpmRepository`
 
 An **official vendor repository**:
@@ -270,7 +295,8 @@ managed baseline uses the delivery mechanism appropriate to the
 software, in this order of preference:
 
 1. distribution RPM;
-2. official vendor RPM;
+2. official vendor RPM, from its repository or, when the vendor publishes
+   none, as a signed RPM file;
 3. verified upstream binary;
 4. system Flatpak;
 5. future managed web applications.

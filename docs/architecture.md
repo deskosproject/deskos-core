@@ -122,7 +122,7 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 | Class | Used for | Rule |
 |---|---|---|
 | **set** | RPM packages, package groups, systemd units, GNOME locks | deterministic union; duplicates collapse |
-| **keyed** | RPM repositories (by repo id), binary destinations, Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
+| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
 | **scalar** | GNOME settings | highest layer wins; different values *at one layer* conflict |
 
 **Profile order and file order never matter.** Every contribution carries
@@ -154,7 +154,7 @@ YAML and of Containerfile syntax. `deskosctl plan --format json` prints
 it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
-  (with `excludePackages`), `RpmInstall`, `VerifiedBinaryInstall`,
+  (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
   `FileInstall`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
   `PlymouthTheme`, `SystemdEnable`, `DefaultTarget`.
@@ -174,6 +174,7 @@ Containerfile
 plan.json                 canonical Plan
 generated-manifest.json   every file with mode and sha256
 repos/etc/yum.repos.d/    one file per RpmRepository
+rpm-keys/                 public keys of RPM files, named by sha256
 rootfs/                   image files, copied after package installation
 ```
 
@@ -181,15 +182,20 @@ The Containerfile, in order:
 
 1. one group transaction, with the platform's `--exclude` options;
 2. copies repository files and runs one package transaction;
-3. one verified download per binary artifact;
-4. copies `rootfs/`;
-5. checks the DeskOS GSettings override with
+3. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
+   downloads every RPM file, checks its SHA-256, checks its signature
+   against its own key in a temporary rpm keyring (an unsigned package or
+   another key fails the build), and installs them in one package
+   transaction; the image's rpm keyring is not changed;
+4. one verified download per binary artifact;
+5. copies `rootfs/`;
+6. checks the DeskOS GSettings override with
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
-6. runs `dconf update`, enables units and sets the default target;
-7. installs the Plymouth theme and rebuilds the initramfs when boot intent
+7. runs `dconf update`, enables units and sets the default target;
+8. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
-8. cleans package caches and ends with `bootc container lint`.
+9. cleans package caches and ends with `bootc container lint`.
 
 Every generated command comes from a typed operation; values are
 validated upstream and quoted again. The plan is also installed as
@@ -313,7 +319,8 @@ bit.** External inputs that can still change between builds:
 - RPM repository GPG keys, which are fetched by URL with no independent
   identity.
 
-`BinaryArtifact` already pins an exact version and SHA-256. The goal is
+`BinaryArtifact` already pins an exact version and SHA-256, and RPM
+files pin a SHA-256 and a repository-local signing key. The goal is
 that every external input has an immutable, verifiable identity;
 candidate mechanisms (repository-local key assets, SHA-256, expected
 fingerprints, lockfile entries) are not chosen yet.
@@ -329,6 +336,9 @@ Acquisition order:
 
 1. distribution RPM;
 2. official vendor RPM repository;
+   - 2b. signed vendor RPM file, when the vendor publishes no repository:
+     it is still a vendor-signed RPM managed by the package manager, but
+     updates need a new URL and checksum in the resources;
 3. checksum-pinned upstream binary;
 4. system Flatpak;
 5. in the future, managed web applications.
@@ -336,6 +346,10 @@ Acquisition order:
 `BinaryArtifact` requires an exact version, an https URL that is not a
 floating location, a SHA-256 checksum, and installs only directly into
 `/usr/local/bin` with mode `0755` or `0555`.
+
+`PackageSet.rpmFiles` requires the same kind of URL and checksum plus an
+ASCII-armored public key file inside the resource root; the build fails
+unless the RPM is signed by that key.
 
 ## System Flatpaks
 

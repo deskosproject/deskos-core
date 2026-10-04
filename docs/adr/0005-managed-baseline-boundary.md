@@ -14,6 +14,7 @@ authorized user**, complete before any user's home directory exists:
 
 - distribution RPMs;
 - vendor RPM repositories;
+- signed vendor RPM files, pinned by checksum;
 - checksum-pinned binaries;
 - system Flatpaks.
 
