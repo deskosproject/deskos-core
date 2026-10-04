@@ -1,6 +1,6 @@
 # ADR 0007: UpdatePolicy as the eleventh public kind
 
-**Status:** accepted (requested by Ricardo, 2026-10-04)
+**Status:** accepted (2026-10-04)
 
 ## Context
 

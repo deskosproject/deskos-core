@@ -123,7 +123,7 @@ Details in
   and update system Flatpaks from DeskOS timers, daily and on AC power
   in Core, and the bootc timer that reboots is masked. Units checked with
   `systemd-analyze verify` and a booted container; an update staged and
-  applied on a VM is **left**.
+  applied on a VM is **still pending**.
 - A local endpoint command (`deskos status`, `deskos update`,
   `deskos rollback`) that a user or administrator runs on one machine to
   inspect the deployment and invoke bootc's own staged update and
