@@ -127,6 +127,17 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 	}
 
+	for key, gkey := range map[string]string{KeyColorScheme: "color-scheme", KeyAccentColor: "accent-color"} {
+		if v, ok := get(key); ok {
+			l.set(key, "/org/gnome/desktop/interface/"+gkey, "s", gvString(v.Value.(string)), v.Provenance)
+		}
+	}
+	if v, ok := get(KeySoftwareUpdates); ok {
+		mode := v.Value.(string)
+		l.set(KeySoftwareUpdates, "/org/gnome/software/allow-updates", "b", strconv.FormatBool(mode != "disabled"), v.Provenance)
+		l.set(KeySoftwareUpdates, "/org/gnome/software/download-updates", "b", strconv.FormatBool(mode == "automatic"), v.Provenance)
+	}
+
 	l.lowerDock(get)
 
 	for _, lk := range locks {

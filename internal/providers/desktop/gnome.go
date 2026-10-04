@@ -1,7 +1,8 @@
 // Package desktop provides desktop.deskos.org/GnomeProfile.
 //
 // GnomeProfile exposes administrator concepts (window controls, favorites,
-// idle and lock behavior, wallpaper, fonts, dock). The provider validates
+// idle and lock behavior, wallpaper, fonts, color scheme, dock, GNOME
+// Software updates). The provider validates
 // them as semantic settings; the lowerer translates the composed settings to
 // dconf using only facts declared by the Platform.
 package desktop
@@ -10,6 +11,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -40,6 +42,8 @@ const (
 	KeyFontMonospace   = "appearance.fonts.monospace"
 	KeyIconTheme       = "appearance.iconTheme"
 	KeyCursorTheme     = "appearance.cursorTheme"
+	KeyColorScheme     = "appearance.colorScheme"
+	KeyAccentColor     = "appearance.accentColor"
 	KeyFavorites       = "shell.favorites"
 	KeyBlankAfter      = "session.idle.blankAfter"
 	KeyLockEnabled     = "session.lock.enabled"
@@ -49,6 +53,7 @@ const (
 	KeyDockBehavior    = "dock.behavior"
 	KeyDockIconSize    = "dock.iconSize"
 	KeyDockShowTrash   = "dock.showTrash"
+	KeySoftwareUpdates = "software.updates"
 )
 
 var knownKeys = map[string]bool{
@@ -56,8 +61,16 @@ var knownKeys = map[string]bool{
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockEnabled: true, KeyDockPosition: true, KeyDockBehavior: true,
-	KeyDockIconSize: true, KeyDockShowTrash: true,
+	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
+	KeySoftwareUpdates: true,
 }
+
+// Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
+var (
+	colorSchemes = []string{"default", "prefer-dark", "prefer-light"}
+	accentColors = []string{"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
+	updateModes  = []string{"automatic", "manual", "disabled"}
+)
 
 // GnomeProfileSpec is the public GnomeProfile spec.
 type GnomeProfileSpec struct {
@@ -71,6 +84,7 @@ type Settings struct {
 	Shell      *Shell      `json:"shell,omitempty"`
 	Session    *Session    `json:"session,omitempty"`
 	Dock       *Dock       `json:"dock,omitempty"`
+	Software   *Software   `json:"software,omitempty"`
 }
 
 type Windows struct {
@@ -84,6 +98,8 @@ type Appearance struct {
 	Fonts       *Fonts     `json:"fonts,omitempty"`
 	IconTheme   string     `json:"iconTheme,omitempty"`
 	CursorTheme string     `json:"cursorTheme,omitempty"`
+	ColorScheme string     `json:"colorScheme,omitempty"`
+	AccentColor string     `json:"accentColor,omitempty"`
 }
 
 type Wallpaper struct {
@@ -126,6 +142,11 @@ type Dock struct {
 	Behavior  string `json:"behavior,omitempty"`
 	IconSize  *int   `json:"iconSize,omitempty"`
 	ShowTrash *bool  `json:"showTrash,omitempty"`
+}
+
+// Software is GNOME Software behavior.
+type Software struct {
+	Updates string `json:"updates,omitempty"`
 }
 
 // Asset is a composed image asset value.
@@ -269,6 +290,17 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			}
 			set(key, v, v)
 		}
+		enum := func(key, v string, allowed []string) {
+			if v == "" {
+				return
+			}
+			if !slices.Contains(allowed, v) {
+				bad("%s: expected %s, got %q", key, strings.Join(allowed, ", "), v)
+			}
+			set(key, v, v)
+		}
+		enum(KeyColorScheme, a.ColorScheme, colorSchemes)
+		enum(KeyAccentColor, a.AccentColor, accentColors)
 	}
 
 	if sh := s.Shell; sh != nil && sh.Favorites != nil {
@@ -336,6 +368,13 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		if dk.ShowTrash != nil {
 			set(KeyDockShowTrash, *dk.ShowTrash, strconv.FormatBool(*dk.ShowTrash))
 		}
+	}
+
+	if sw := s.Software; sw != nil && sw.Updates != "" {
+		if !slices.Contains(updateModes, sw.Updates) {
+			bad("%s: expected %s, got %q", KeySoftwareUpdates, strings.Join(updateModes, ", "), sw.Updates)
+		}
+		set(KeySoftwareUpdates, sw.Updates, sw.Updates)
 	}
 
 	seenLock := map[string]bool{}

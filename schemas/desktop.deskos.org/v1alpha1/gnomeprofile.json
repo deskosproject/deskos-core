@@ -26,9 +26,11 @@
             "appearance.wallpaper", "appearance.loginLogo",
             "appearance.fonts.interface", "appearance.fonts.document", "appearance.fonts.monospace",
             "appearance.iconTheme", "appearance.cursorTheme",
+            "appearance.colorScheme", "appearance.accentColor",
             "shell.favorites",
             "session.idle.blankAfter", "session.lock.enabled", "session.lock.delay",
-            "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash"
+            "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
+            "software.updates"
           ] }
         }
       }
@@ -79,7 +81,9 @@
             },
             "loginLogo": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
             "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
-            "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" }
+            "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
+            "colorScheme": { "enum": ["default", "prefer-dark", "prefer-light"] },
+            "accentColor": { "enum": ["blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"] }
           }
         },
         "shell": {
@@ -119,6 +123,13 @@
             "behavior": { "enum": ["fixed", "autohide", "intellihide"] },
             "iconSize": { "type": "integer", "minimum": 16, "maximum": 64 },
             "showTrash": { "type": "boolean" }
+          }
+        },
+        "software": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "updates": { "enum": ["automatic", "manual", "disabled"] }
           }
         }
       }
