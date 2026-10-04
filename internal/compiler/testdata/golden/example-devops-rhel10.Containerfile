@@ -78,7 +78,8 @@ RUN tmp="$(mktemp -d)" \
     && rm -rf "$tmp" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
-    && systemctl enable 'cockpit.socket' 'firewalld.service' 'gdm.service' \
+    && systemctl enable 'cockpit.socket' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'firewalld.service' 'gdm.service' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'
 
 # Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default

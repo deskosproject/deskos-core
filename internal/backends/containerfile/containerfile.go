@@ -15,6 +15,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -41,6 +42,7 @@ const (
 	gsettingsOverridePath = schemasDir + "/50_deskos.gschema.override"
 	kargsPath             = "/usr/lib/bootc/kargs.d/50-deskos.toml"
 	dracutConfPath        = "/usr/lib/dracut/dracut.conf.d/50-deskos.conf"
+	systemdUnitDir        = "/usr/lib/systemd/system"
 )
 
 // File is one file of the build context.
@@ -117,7 +119,15 @@ func Render(p *plan.Plan) ([]File, error) {
 		r.addImage(path.Join("/usr/share/flatpak/preinstall.d", app.ID+".preinstall"), 0o644, preinstallFile(app))
 	}
 	if u := p.Provisioning.FlatpakPreinstallUnit; u != "" {
-		r.addImage(path.Join("/usr/lib/systemd/system", u), 0o644, preinstallUnit())
+		r.addImage(path.Join(systemdUnitDir, u), 0o644, preinstallUnit())
+	}
+	for _, u := range p.Artifact.ScheduledUpdates {
+		svc, timer, err := updateUnits(u)
+		if err != nil {
+			return nil, err
+		}
+		r.addImage(path.Join(systemdUnitDir, u.Service), 0o644, svc)
+		r.addImage(path.Join(systemdUnitDir, u.Timer), 0o644, timer)
 	}
 	r.addImage(imagePlanPath, 0o644, planJSON)
 
@@ -407,6 +417,61 @@ WantedBy=multi-user.target
 `)
 }
 
+var (
+	updateUnitRE  = regexp.MustCompile(`^deskos-[a-z0-9-]+\.(service|timer)$`)
+	updateDelayRE = regexp.MustCompile(`^[1-9][0-9]*(min|h)$`)
+)
+
+// updateUnits renders the service and timer of one scheduled update. The
+// commands are fixed per kind and only stage or update; none reboots.
+func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
+	var desc, doc, exec, cond string
+	switch u.Kind {
+	case plan.UpdateImage:
+		desc, doc = "Download and stage the next image without rebooting", "man:bootc-upgrade(8)"
+		exec = "/usr/bin/bootc upgrade --quiet"
+		cond = "ConditionPathExists=/run/ostree-booted\n"
+	case plan.UpdateFlatpak:
+		desc, doc = "Update system Flatpak applications and runtimes", "man:flatpak-update(1)"
+		exec = "/usr/bin/flatpak update --system --noninteractive --assumeyes"
+	default:
+		return nil, nil, fmt.Errorf("scheduled update kind %q is not supported", u.Kind)
+	}
+	if u.Schedule != "daily" && u.Schedule != "weekly" {
+		return nil, nil, fmt.Errorf("scheduled %s update: schedule %q is not daily or weekly", u.Kind, u.Schedule)
+	}
+	if !updateUnitRE.MatchString(u.Service) || !updateUnitRE.MatchString(u.Timer) ||
+		!strings.HasSuffix(u.Service, ".service") || !strings.HasSuffix(u.Timer, ".timer") {
+		return nil, nil, fmt.Errorf("scheduled %s update: invalid unit names %q and %q", u.Kind, u.Service, u.Timer)
+	}
+	if !updateDelayRE.MatchString(u.RandomizedDelay) {
+		return nil, nil, fmt.Errorf("scheduled %s update: invalid randomized delay %q", u.Kind, u.RandomizedDelay)
+	}
+	if u.RequireACPower {
+		cond += "ConditionACPower=true\n"
+	}
+	service = []byte(generatedHeader + "[Unit]\n" +
+		"Description=" + desc + "\n" +
+		"Documentation=" + doc + "\n" +
+		cond +
+		"Wants=network-online.target\n" +
+		"After=network-online.target\n\n" +
+		"[Service]\n" +
+		"Type=oneshot\n" +
+		"ExecStart=" + exec + "\n")
+	timer = []byte(generatedHeader + "[Unit]\n" +
+		"Description=" + desc + " (" + u.Schedule + ")\n" +
+		"Documentation=" + doc + "\n\n" +
+		"[Timer]\n" +
+		"OnCalendar=" + u.Schedule + "\n" +
+		"RandomizedDelaySec=" + u.RandomizedDelay + "\n" +
+		"Persistent=true\n" +
+		"Unit=" + u.Service + "\n\n" +
+		"[Install]\n" +
+		"WantedBy=timers.target\n")
+	return service, timer, nil
+}
+
 func boolInt(b bool) int {
 	if b {
 		return 1
@@ -524,6 +589,13 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 			units = append(units, shq(u.Unit))
 		}
 		steps = append(steps, "systemctl enable "+strings.Join(units, " "))
+	}
+	if len(a.SystemdMasks) > 0 {
+		units := make([]string, 0, len(a.SystemdMasks))
+		for _, u := range a.SystemdMasks {
+			units = append(units, shq(u.Unit))
+		}
+		steps = append(steps, "systemctl mask "+strings.Join(units, " "))
 	}
 	if a.DefaultTarget != nil {
 		steps = append(steps, "systemctl set-default "+shq(a.DefaultTarget.Target))

@@ -1,0 +1,14 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: UpdatePolicy
+metadata:
+  name: deskos-core
+spec:
+  # Stage the next image daily; it applies at the user's next reboot.
+  image:
+    automatic: true
+    schedule: daily
+    requireACPower: true
+  flatpak:
+    automatic: true
+    schedule: daily
+    requireACPower: true

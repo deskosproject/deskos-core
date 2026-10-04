@@ -115,6 +115,18 @@
             }
           }
         },
+        "updates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["imageUpdateUnits"],
+          "properties": {
+            "imageUpdateUnits": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]+\\.(service|timer)$" }
+            }
+          }
+        },
         "flatpak": {
           "type": "object",
           "additionalProperties": false,

@@ -39,9 +39,9 @@ func TestSchemasMatchProviders(t *testing.T) {
 	for p := range have {
 		t.Errorf("schema %s has no provider", p)
 	}
-	// BootProfile became the tenth kind by an explicit decision (ADR 0006).
-	if n := len(c.Registry.Providers()); n != 10 {
-		t.Errorf("v1alpha1 exposes %d kinds, want exactly 10", n)
+	// UpdatePolicy became the eleventh kind by an explicit decision (ADR 0007).
+	if n := len(c.Registry.Providers()); n != 11 {
+		t.Errorf("v1alpha1 exposes %d kinds, want exactly 11", n)
 	}
 }
 

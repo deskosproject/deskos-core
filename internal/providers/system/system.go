@@ -1,8 +1,9 @@
-// Package system provides system.deskos.org/BootProfile: how the artifact
-// boots and shuts down (graphical splash or text, quiet or verbose, the
-// splash watermark). It is
-// artifact intent lowered to image content (kernel arguments, initramfs);
-// it runs nothing on the machine.
+// Package system provides the system.deskos.org kinds: BootProfile, how the
+// artifact boots and shuts down (graphical splash or text, quiet or verbose,
+// the splash watermark), and UpdatePolicy, the unattended updates the image
+// schedules. Both are artifact intent lowered to image content (kernel
+// arguments, initramfs, systemd units); the compiler runs nothing on the
+// machine.
 package system
 
 import (
@@ -63,7 +64,7 @@ type decoded struct {
 var pngNameRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.png$`)
 
 // Providers returns the system.deskos.org providers.
-func Providers() []registry.Provider { return []registry.Provider{bootProfile{}} }
+func Providers() []registry.Provider { return []registry.Provider{bootProfile{}, updatePolicy{}} }
 
 type bootProfile struct{}
 
@@ -121,14 +122,22 @@ func (bootProfile) Contribute(res *model.Resource, sc *compose.Scope) error {
 	return nil
 }
 
-// Lowerer translates boot settings into kernel arguments and, for the
-// graphical splash, Plymouth packages, an optional DeskOS theme carrying
-// the watermark, and an initramfs that contains them.
+// Lowerer translates boot and update settings into plan IR.
 type Lowerer struct{}
 
 func (Lowerer) Name() string { return "system" }
 
 func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
+	var errs model.ErrorList
+	errs.Add(lowerBoot(c, p))
+	errs.Add(lowerUpdates(c, p))
+	return errs.Err()
+}
+
+// lowerBoot translates boot settings into kernel arguments and, for the
+// graphical splash, Plymouth packages, an optional DeskOS theme carrying
+// the watermark, and an initramfs that contains them.
+func lowerBoot(c *compose.Composition, p *plan.Plan) error {
 	settings := c.Result.Scalars(DomainBoot)
 	if len(settings) == 0 {
 		return nil

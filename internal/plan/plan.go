@@ -58,23 +58,25 @@ type Profile struct {
 
 // Artifact is image-owned content.
 type Artifact struct {
-	BaseImage       BaseImage                `json:"baseImage"`
-	Labels          []Label                  `json:"labels"`
-	RpmRepositories []RpmRepository          `json:"rpmRepositories"`
-	RpmGroups       []RpmGroupInstall        `json:"rpmGroups"`
-	RpmPackages     []RpmInstall             `json:"rpmPackages"`
-	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
-	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
-	Files           []FileInstall            `json:"files"`
-	DesktopEntries  []DesktopEntry           `json:"desktopEntries"`
-	IconCaches      []IconCacheUpdate        `json:"iconCaches"`
-	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
-	GSettings       []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
-	KernelArguments []KernelArgument         `json:"kernelArguments"`
-	Initramfs       *InitramfsRegeneration   `json:"initramfs,omitempty"`
-	PlymouthTheme   *PlymouthTheme           `json:"plymouthTheme,omitempty"`
-	SystemdUnits    []SystemdEnable          `json:"systemdUnits"`
-	DefaultTarget   *DefaultTarget           `json:"defaultTarget,omitempty"`
+	BaseImage        BaseImage                `json:"baseImage"`
+	Labels           []Label                  `json:"labels"`
+	RpmRepositories  []RpmRepository          `json:"rpmRepositories"`
+	RpmGroups        []RpmGroupInstall        `json:"rpmGroups"`
+	RpmPackages      []RpmInstall             `json:"rpmPackages"`
+	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
+	Binaries         []VerifiedBinaryInstall  `json:"binaries"`
+	Files            []FileInstall            `json:"files"`
+	DesktopEntries   []DesktopEntry           `json:"desktopEntries"`
+	IconCaches       []IconCacheUpdate        `json:"iconCaches"`
+	Dconf            *DconfDatabase           `json:"dconf,omitempty"`
+	GSettings        []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
+	KernelArguments  []KernelArgument         `json:"kernelArguments"`
+	Initramfs        *InitramfsRegeneration   `json:"initramfs,omitempty"`
+	PlymouthTheme    *PlymouthTheme           `json:"plymouthTheme,omitempty"`
+	SystemdUnits     []SystemdEnable          `json:"systemdUnits"`
+	SystemdMasks     []SystemdMask            `json:"systemdMasks"`
+	ScheduledUpdates []ScheduledUpdate        `json:"scheduledUpdates"`
+	DefaultTarget    *DefaultTarget           `json:"defaultTarget,omitempty"`
 }
 
 type BaseImage struct {
@@ -238,6 +240,30 @@ type SystemdEnable struct {
 	Provenance []model.Provenance `json:"provenance"`
 }
 
+// SystemdMask masks a platform unit so it never starts.
+type SystemdMask struct {
+	Unit       string             `json:"unit"`
+	Provenance []model.Provenance `json:"provenance"`
+}
+
+// Update kinds; the backend maps each to one fixed command.
+const (
+	UpdateImage   = "image"
+	UpdateFlatpak = "flatpak"
+)
+
+// ScheduledUpdate is an unattended update run by a generated service from a
+// generated, enabled timer. It never restarts or reboots the machine.
+type ScheduledUpdate struct {
+	Kind            string             `json:"kind"`
+	Service         string             `json:"service"`
+	Timer           string             `json:"timer"`
+	Schedule        string             `json:"schedule"`
+	RandomizedDelay string             `json:"randomizedDelay"`
+	RequireACPower  bool               `json:"requireACPower"`
+	Provenance      []model.Provenance `json:"provenance"`
+}
+
 type DefaultTarget struct {
 	Target     string             `json:"target"`
 	Provenance []model.Provenance `json:"provenance"`
@@ -290,6 +316,11 @@ func (p *Plan) AddPackage(name string, prov ...model.Provenance) {
 	p.Artifact.RpmPackages = append(p.Artifact.RpmPackages, RpmInstall{Name: name, Provenance: prov})
 }
 
+// MaskUnit adds a systemd unit to mask.
+func (p *Plan) MaskUnit(unit string, prov ...model.Provenance) {
+	p.Artifact.SystemdMasks = append(p.Artifact.SystemdMasks, SystemdMask{Unit: unit, Provenance: prov})
+}
+
 // EnableUnit adds a systemd unit to enable.
 func (p *Plan) EnableUnit(unit string, prov ...model.Provenance) {
 	p.Artifact.SystemdUnits = append(p.Artifact.SystemdUnits, SystemdEnable{Unit: unit, Provenance: prov})
@@ -309,6 +340,22 @@ func (p *Plan) Normalize() error {
 		func(x *RpmInstall) *[]model.Provenance { return &x.Provenance })
 	a.SystemdUnits = mergeByName(a.SystemdUnits, func(x SystemdEnable) string { return x.Unit },
 		func(x *SystemdEnable) *[]model.Provenance { return &x.Provenance })
+	a.SystemdMasks = mergeByName(a.SystemdMasks, func(x SystemdMask) string { return x.Unit },
+		func(x *SystemdMask) *[]model.Provenance { return &x.Provenance })
+	for _, m := range a.SystemdMasks {
+		for _, u := range a.SystemdUnits {
+			if u.Unit == m.Unit {
+				return fmt.Errorf("systemd unit %s is both enabled and masked", m.Unit)
+			}
+		}
+	}
+	sort.Slice(a.ScheduledUpdates, func(i, j int) bool { return a.ScheduledUpdates[i].Kind < a.ScheduledUpdates[j].Kind })
+	for i, u := range a.ScheduledUpdates {
+		if i > 0 && u.Kind == a.ScheduledUpdates[i-1].Kind {
+			return fmt.Errorf("scheduled %s update is defined twice", u.Kind)
+		}
+		a.ScheduledUpdates[i].Provenance = uniq(a.ScheduledUpdates[i].Provenance)
+	}
 	sort.Slice(a.RpmFiles, func(i, j int) bool { return a.RpmFiles[i].URL < a.RpmFiles[j].URL })
 	sort.Slice(a.Binaries, func(i, j int) bool { return a.Binaries[i].Destination < a.Binaries[j].Destination })
 	sort.Slice(a.Files, func(i, j int) bool { return a.Files[i].Path < a.Files[j].Path })
@@ -466,6 +513,12 @@ func nonNil(p *Plan) {
 	}
 	if a.SystemdUnits == nil {
 		a.SystemdUnits = []SystemdEnable{}
+	}
+	if a.SystemdMasks == nil {
+		a.SystemdMasks = []SystemdMask{}
+	}
+	if a.ScheduledUpdates == nil {
+		a.ScheduledUpdates = []ScheduledUpdate{}
 	}
 	if p.Profiles == nil {
 		p.Profiles = []Profile{}

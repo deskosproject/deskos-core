@@ -12,3 +12,5 @@ spec:
       name: deskos-core
     - kind: BootProfile
       name: deskos-core
+    - kind: UpdatePolicy
+      name: deskos-core

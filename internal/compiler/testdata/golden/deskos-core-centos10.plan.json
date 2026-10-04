@@ -126,6 +126,12 @@
             "source": "resources/software/deskos-core.yaml:1"
           },
           {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          },
+          {
             "resource": "FlatpakRemote/flathub",
             "via": "FlatpakSet/deskos-reference-apps",
             "profile": "deskos-reference-apps",
@@ -548,6 +554,28 @@
         ]
       },
       {
+        "unit": "deskos-flatpak-update.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "deskos-image-update.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
         "unit": "firewalld.service",
         "provenance": [
           {
@@ -566,6 +594,64 @@
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/software/deskos-core.yaml:1"
+          }
+        ]
+      }
+    ],
+    "systemdMasks": [
+      {
+        "unit": "bootc-fetch-apply-updates.service",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "bootc-fetch-apply-updates.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      }
+    ],
+    "scheduledUpdates": [
+      {
+        "kind": "flatpak",
+        "service": "deskos-flatpak-update.service",
+        "timer": "deskos-flatpak-update.timer",
+        "schedule": "daily",
+        "randomizedDelay": "2h",
+        "requireACPower": true,
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "kind": "image",
+        "service": "deskos-image-update.service",
+        "timer": "deskos-image-update.timer",
+        "schedule": "daily",
+        "randomizedDelay": "2h",
+        "requireACPower": true,
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
           }
         ]
       }

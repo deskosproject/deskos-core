@@ -115,6 +115,18 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, u := range a.SystemdUnits {
 		pf("    %s\t%s\n", u.Unit, origins(u.Provenance))
 	}
+	section(w, "systemd units masked", len(a.SystemdMasks))
+	for _, u := range a.SystemdMasks {
+		pf("    %s\t%s\n", u.Unit, origins(u.Provenance))
+	}
+	section(w, "Scheduled updates (never reboot)", len(a.ScheduledUpdates))
+	for _, u := range a.ScheduledUpdates {
+		ac := ""
+		if u.RequireACPower {
+			ac = ", on AC power only"
+		}
+		pf("    %s\t%s, random delay %s%s, %s\t%s\n", u.Kind, u.Schedule, u.RandomizedDelay, ac, u.Timer, origins(u.Provenance))
+	}
 	if a.DefaultTarget != nil {
 		pf("  Default target\n    %s\n", a.DefaultTarget.Target)
 	}

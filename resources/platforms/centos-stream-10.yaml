@@ -47,6 +47,9 @@ spec:
     spinnerFrames:
       package: plymouth-theme-spinner
       imageDir: /usr/share/plymouth/themes/spinner
+  updates:
+    # Enabled by the base image (default.target.wants); runs bootc upgrade --apply, which reboots.
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
   flatpak:
     package: flatpak
     preinstall: true

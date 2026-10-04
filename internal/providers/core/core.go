@@ -34,6 +34,7 @@ type PlatformSpec struct {
 	DisplayManager      string               `json:"displayManager,omitempty"`
 	Gnome               *GnomePlatform       `json:"gnome,omitempty"`
 	Boot                *BootPlatform        `json:"boot,omitempty"`
+	Updates             *UpdatesPlatform     `json:"updates,omitempty"`
 	Flatpak             FlatpakPlatform      `json:"flatpak"`
 }
 
@@ -75,6 +76,12 @@ type BootPlatform struct {
 type PlymouthFrames struct {
 	Package  string `json:"package"`
 	ImageDir string `json:"imageDir"`
+}
+
+// UpdatesPlatform holds the platform's image update facts.
+type UpdatesPlatform struct {
+	// ImageUpdateUnits are platform units that update the image on their own.
+	ImageUpdateUnits []string `json:"imageUpdateUnits"`
 }
 
 // UnavailablePackage is a package the platform deliberately does not supply.
@@ -166,6 +173,7 @@ var (
 	digestRE      = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 	rpmGroupRE    = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	unitRE        = regexp.MustCompile(`^[A-Za-z0-9@_.:-]+\.service$`)
+	updateUnitRE  = regexp.MustCompile(`^[A-Za-z0-9_.:-]+\.(service|timer)$`)
 	uuidRE        = regexp.MustCompile(`^[A-Za-z0-9._@-]+$`)
 	pkgRE         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 	kargRE        = regexp.MustCompile(`^[a-z][a-z0-9_.-]*$`)
@@ -259,6 +267,15 @@ func (platformProvider) Decode(res *model.Resource) error {
 		}
 		if f := b.SpinnerFrames; f != nil && (!pkgRE.MatchString(f.Package) || !plymouthDirRE.MatchString(f.ImageDir)) {
 			errs.Add(model.Errorf(res, "boot.spinnerFrames needs a package and an imageDir under /usr/share/plymouth/themes/"))
+		}
+	}
+	if u := s.Updates; u != nil {
+		seen := map[string]bool{}
+		for _, unit := range u.ImageUpdateUnits {
+			if !updateUnitRE.MatchString(unit) || seen[unit] {
+				errs.Add(model.Errorf(res, "updates.imageUpdateUnits: %q must be a unique .service or .timer unit", unit))
+			}
+			seen[unit] = true
 		}
 	}
 	if s.Flatpak.Preinstall && !pkgRE.MatchString(s.Flatpak.Package) {
