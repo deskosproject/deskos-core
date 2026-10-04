@@ -18,10 +18,14 @@ precedence, conflict detection and `locks`.
 
 - `shell.workspaces` is `dynamic` or a fixed count; a count sets
   `dynamic-workspaces` false and `num-workspaces`.
-- `shell.appFolders` is one list. When `folder-children` is non-empty,
-  GNOME Shell 47 does not create its default folders
+- `shell.appFolders` is one list. GNOME Shell 49.5 does not create its
+  default folders when `folder-children` is non-empty
   (`_ensureDefaultFolders` in `appDisplay.js`), so declared folders replace
-  them.
+  them. GNOME Shell 49.4 checks only the user's own value and writes its
+  defaults over the administrator's at first login (fixed upstream in
+  4b1d80383c, released in 49.5). The Platform fact `gnome.appFolders`
+  says whether the shell keeps them; RHEL 10.2 ships 49.4, so its
+  Platform rejects the setting.
 - `keyboard.terminal` names a desktop file. The binding is fixed at
   Ctrl+Alt+T and the command is the Platform's `gnome.appLauncher`
   followed by the desktop file id; the launcher's package is installed.

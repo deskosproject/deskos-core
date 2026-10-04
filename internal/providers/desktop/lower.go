@@ -188,7 +188,10 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 			l.set(KeyWorkspaces, "/org/gnome/desktop/wm/preferences/num-workspaces", "i", strconv.Itoa(n), v.Provenance)
 		}
 	}
-	if v, ok := get(KeyAppFolders); ok {
+	if v, ok := get(KeyAppFolders); ok && !l.c.PlatformSpec.Gnome.AppFolders {
+		l.errs.Add(fmt.Errorf("%s does not keep app folders from the DeskOS dconf database; %s cannot be applied\n  set by: %s",
+			l.c.Platform.ID(), KeyAppFolders, describe(v.Provenance)))
+	} else if ok {
 		folders := v.Value.([]AppFolder)
 		var ids []string
 		for _, f := range folders {

@@ -357,6 +357,21 @@ RHEL.
   `existing_user_only=language;keyboard`; the upstream README says
   `/etc/gnome-initial-setup/vendor.conf` replaces it rather than merging.
 
+## GNOME Shell on EL10 (2026-10-04)
+
+- Pinned bases: CS10 `gnome-shell` 49.5, RHEL 10.2 `gnome-shell`
+  49.4-9.el10_2; both with `mutter` 49.4, `gsettings-desktop-schemas`
+  47.1 and `gnome-settings-daemon` 47.2.
+- App folders: 49.4 creates GNOME's default folders whenever the user has
+  no own `folder-children` value, overwriting dconf defaults. Upstream
+  fixed it in 4b1d80383c (in 49.5); RHEL 10.2 does not carry the fix
+  (checked in `libshell-17.so`).
+- Activities button: RHEL's `0001-panel-Use-branding-in-activities-button.patch`
+  shows the `fedora-logo-icon` icon instead of the workspace dots when
+  `/etc/os-release` has `ID=rhel`, so CS10 shows the dots. No setting
+  turns it off; an icon theme that inherits Adwaita and provides
+  `fedora-logo-icon` could replace it (not tried).
+
 ## Reference projects
 
 - **`ublue-os/bluefin` `THEPATTERN.md`** (a report comparing ublue-os and

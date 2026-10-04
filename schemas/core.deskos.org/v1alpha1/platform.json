@@ -93,6 +93,7 @@
                 }
               }
             },
+            "appFolders": { "type": "boolean" },
             "appLauncher": {
               "type": "object",
               "additionalProperties": false,

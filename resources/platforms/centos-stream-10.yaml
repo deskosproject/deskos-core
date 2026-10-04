@@ -36,6 +36,8 @@ spec:
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+    # gnome-shell 49.5 keeps app folders from the dconf defaults.
+    appFolders: true
     # Starts an application by desktop file id (keyboard shortcuts).
     appLauncher:
       package: gtk3

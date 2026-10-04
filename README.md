@@ -126,6 +126,7 @@ in [**docs/install.md**](docs/install.md).
 | Image build, `bootc container lint` | CI | entitled factory host |
 | Boot to GNOME, session checks | CI (`vm-bootcheck`) | factory host (`deskos/rhel10` status) |
 | Published image | `quay.io/deskos/deskos-core` | **never** |
+| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) |
 
 Details: [validation status](docs/architecture.md#validation-status).
 

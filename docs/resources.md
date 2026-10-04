@@ -313,7 +313,8 @@ spec:
 
 - **`appFolders`** replaces GNOME's built-in folders (such as
   *Utilities*); declare every folder the app grid should have. A higher
-  layer replaces the whole list.
+  layer replaces the whole list. Not available on RHEL 10.2, whose GNOME
+  Shell 49.4 overwrites them at first login.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
   through the Platform's application launcher (`gtk-launch` on EL10).
 

@@ -99,6 +99,8 @@ type GnomePlatform struct {
 	EnabledExtensions []string         `json:"enabledExtensions,omitempty"`
 	Extensions        []GnomeExtension `json:"extensions,omitempty"`
 	AppLauncher       *AppLauncher     `json:"appLauncher,omitempty"`
+	// AppFolders reports that GNOME Shell keeps app folders from the dconf defaults.
+	AppFolders bool `json:"appFolders,omitempty"`
 }
 
 // AppLauncher is the command that starts an application by desktop file id.

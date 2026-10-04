@@ -23,7 +23,7 @@ const (
 
 var launcherPlatform = fixture{"platform.yaml": strings.Replace(platformYAML,
 	"  flatpak: {package: flatpak, preinstall: true}\n",
-	"    appLauncher: {package: gtk3, command: /usr/bin/gtk-launch}\n  flatpak: {package: flatpak, preinstall: true}\n", 1)}
+	"    appFolders: true\n    appLauncher: {package: gtk3, command: /usr/bin/gtk-launch}\n  flatpak: {package: flatpak, preinstall: true}\n", 1)}
 
 const devFolder = "      appFolders:\n" +
 	"        - id: Development\n          name: Development\n          apps: [code.desktop]\n          categories: [Development, IDE]\n" +
@@ -212,4 +212,15 @@ func TestGnomeShellRenderAndLocks(t *testing.T) {
 			t.Errorf("dconf locks lack %s:\n%s", want, locks)
 		}
 	}
+}
+
+func TestAppFoldersNeedPlatformSupport(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", shellDefaults(devFolder)),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "Platform/test-platform does not keep app folders from the DeskOS dconf database; shell.appFolders cannot be applied",
+		"organization GnomeProfile/g")
 }
