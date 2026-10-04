@@ -70,23 +70,25 @@ reference it was built from (`quay.io/deskos/deskos-core:latest`) with
 Build on a **registered RHEL 10 host** logged in to `registry.redhat.io`,
 as root (the build runs as root).
 
-**1. Get `deskosctl` and the DeskOS resources** of the same release. The
-binary comes from [GitHub Releases](https://github.com/deskosproject/deskos-core/releases)
-with its checksums; no Go toolchain is needed:
+**1. Get `deskosctl` and the DeskOS resources** of the same release from
+[GitHub Releases](https://github.com/deskosproject/deskos-core/releases),
+both covered by `SHA256SUMS`. No Go toolchain or git is needed:
 
 ```bash
-VERSION=v0.2.0
-git clone --depth 1 --branch "$VERSION" https://github.com/deskosproject/deskos-core.git
-cd deskos-core
+VERSION=v0.2.1
 base=https://github.com/deskosproject/deskos-core/releases/download/$VERSION
-curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
+mkdir deskos && cd deskos
+curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" \
+     -O "$base/deskos-resources-$VERSION.tar.gz" -O "$base/SHA256SUMS"
 sha256sum -c SHA256SUMS
 install -D -m 0755 "deskosctl-$VERSION-linux-amd64" bin/deskosctl
+tar -xzf "deskos-resources-$VERSION.tar.gz"     # creates ./resources
 ```
 
 > [!NOTE]
-> Use a release of `v0.2.0` or later for RHEL: earlier binaries render a
-> schema step that fails on RHEL 10.2.
+> Use `v0.2.1` or later: it is the first release that ships the resources
+> archive, and binaries before `v0.2.0` render a schema step that fails on
+> RHEL 10.2.
 
 **2. Declare a RHEL 10 workstation** in a resource root of your own, for
 example `my-org/workstations/core-rhel10.yaml`:

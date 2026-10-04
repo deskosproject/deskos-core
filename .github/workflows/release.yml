@@ -1,8 +1,9 @@
 name: release
 
 # A pushed tag vX.Y.Z (optionally vX.Y.Z-<prerelease>) runs the CI checks,
-# builds deskosctl for linux/amd64 and creates a GitHub Release with the
-# binary and SHA256SUMS. Nothing else is published.
+# builds deskosctl for linux/amd64, packs the DeskOS resources of the same
+# commit and creates a GitHub Release with both and SHA256SUMS. Nothing
+# else is published.
 on:
   push:
     tags: ["v*"]
@@ -56,7 +57,13 @@ jobs:
           out=$("release/$asset" version)
           echo "$out"
           [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
-          (cd release && sha256sum "$asset" > SHA256SUMS && sha256sum -c SHA256SUMS)
+          # Resources of the same commit; reproducible archive (sorted, commit time, no owner, no gzip name or time).
+          resources="deskos-resources-${TAG}.tar.gz"
+          tar --sort=name --mtime="@$(git log -1 --format=%ct)" --owner=0 --group=0 --numeric-owner \
+            -cf - resources | gzip -9n > "release/$resources"
+          mkdir -p /tmp/check && tar -xzf "release/$resources" -C /tmp/check
+          "release/$asset" validate /tmp/check/resources
+          (cd release && sha256sum "$asset" "$resources" > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
@@ -83,7 +90,7 @@ jobs:
           (cd release && sha256sum -c SHA256SUMS)
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" release/deskosctl-"$TAG"-linux-amd64 release/SHA256SUMS \
+          gh release create "$TAG" release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} for linux/amd64, built from ${GITHUB_SHA}. Verify with: sha256sum -c SHA256SUMS" \
+            --notes "deskosctl ${TAG} for linux/amd64 and the DeskOS resources, built from ${GITHUB_SHA}. Verify with: sha256sum -c SHA256SUMS" \
             "${flags[@]}"

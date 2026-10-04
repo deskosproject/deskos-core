@@ -113,9 +113,13 @@ deskosctl version
 ## Releases
 
 Pushing a tag `vX.Y.Z` (or `vX.Y.Z-<prerelease>`) runs the CI checks and
-creates a GitHub Release with `deskosctl-vX.Y.Z-linux-amd64` and
-`SHA256SUMS` (`.github/workflows/release.yml`). Only **linux/amd64** is
-built.
+creates a GitHub Release (`.github/workflows/release.yml`) with:
+
+| Asset | Contents |
+|---|---|
+| `deskosctl-vX.Y.Z-linux-amd64` | the CLI; only **linux/amd64** is built |
+| `deskos-resources-vX.Y.Z.tar.gz` | `resources/` of the same commit (DeskOS Core, platforms, assets), validated by that binary before release; a reproducible archive |
+| `SHA256SUMS` | checksums of both |
 
 > [!NOTE]
 > The binary is not signed.
@@ -125,18 +129,20 @@ git tag -a vX.Y.Z -m "deskosctl vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-To download and verify `v0.2.0`, the current release:
+To download and verify `v0.2.1`, the current release:
 
 ```bash
-gh release download v0.2.0 --repo deskosproject/deskos-core
+gh release download v0.2.1 --repo deskosproject/deskos-core
 sha256sum -c SHA256SUMS
-chmod +x deskosctl-v0.2.0-linux-amd64
+chmod +x deskosctl-v0.2.1-linux-amd64
+tar -xzf deskos-resources-v0.2.1.tar.gz
 ```
 
 or without `gh`:
 
 ```bash
-base=https://github.com/deskosproject/deskos-core/releases/download/v0.2.0
-curl -fL -O "$base/deskosctl-v0.2.0-linux-amd64" -O "$base/SHA256SUMS"
+base=https://github.com/deskosproject/deskos-core/releases/download/v0.2.1
+curl -fL -O "$base/deskosctl-v0.2.1-linux-amd64" \
+     -O "$base/deskos-resources-v0.2.1.tar.gz" -O "$base/SHA256SUMS"
 sha256sum -c SHA256SUMS
 ```
