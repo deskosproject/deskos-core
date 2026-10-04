@@ -422,6 +422,30 @@ only `dock.enabled: true` (the extension's defaults); an organization's
 `dock.enabled: false` removes the package and the extension entry.
 Favorites are native and work without the dock.
 
+**Appearance.** `appearance.colorScheme` and `appearance.accentColor` set
+`org.gnome.desktop.interface` `color-scheme` and `accent-color`, with the
+enum values of `gsettings-desktop-schemas` 47.1. Core sets neither.
+
+**GNOME Software.** `software.updates` controls the updates GNOME Software
+handles, Flatpak applications included:
+
+| Value | `allow-updates` | `download-updates` | Effect |
+|---|---|---|---|
+| `automatic` | true | true | GNOME default: downloads in the background and applies what needs no reboot |
+| `manual` | true | false | offers updates; the user applies them |
+| `disabled` | false | false | no Updates page; another updater owns every update |
+
+Core sets `manual` (a default, no lock), so GNOME Software never updates
+behind the image while users can still update Flatpak applications.
+
+**Not modeled.** A terminal shortcut needs a custom keybinding whose
+command names a terminal: EL10 has no native terminal key and no
+default-terminal launcher outside EPEL (`xdg-terminal-exec`). The
+AppIndicator extension is packaged only in EPEL, so no Platform declares
+it. GNOME Initial Setup shows its third-party repositories page only
+when `fedora-third-party` is installed, which EL10 does not ship. See
+[research notes](research-notes.md#gnome-user-settings-2026-10-04).
+
 **Login screen.** `appearance.loginLogo` sets the GDM login-screen logo;
 GDM's dconf profile reads `distro`, which Platforms declare with
 `gnome.loginScreen`.

@@ -14,6 +14,7 @@ anything else is marked as **not verified**.
 [systemd ordering](#systemd-ordering) ·
 [Go](#go) ·
 [Visual identity and boot](#visual-identity-and-boot-2026-09-28) ·
+[GNOME user settings](#gnome-user-settings-2026-10-04) ·
 [Reference projects](#reference-projects) ·
 [Comparable tools](#comparable-tools) ·
 [License history](#license-history) ·
@@ -292,6 +293,61 @@ Checked in `localhost/deskos-core-centos10:freeze`:
   `tests/lifecycle/features/bootc.feature`. The workflow boots QEMU with
   `selinux=0`, `systemd.mask=` for about twenty services and pre-baked
   GDM autologin; GUI suites run behave with qecore-headless.
+
+## GNOME user settings (2026-10-04)
+
+Checked in `quay.io/centos/centos:stream10` with the packages installed
+from AppStream/BaseOS, and the same versions in `quay.io/deskos/deskos-core:latest`
+except where noted:
+
+| Package | Version |
+|---|---|
+| `gsettings-desktop-schemas` | 47.1-4 |
+| `gnome-software` | 47.5-2 |
+| `gnome-settings-daemon` | 47.2-10 |
+| `gnome-initial-setup` | 46.7-4 (46.7-3 in the DeskOS image) |
+| `gnome-shell` | 49.5-16 (49.5-14 in the DeskOS image) |
+| `libadwaita` | 1.6.10-1 |
+| `ptyxis` | 47.13-1 |
+
+*RHEL 10:* `gsettings-desktop-schemas-47.1-4` is the RHEL 10.2 version
+(see [Packages](#packages-centos-stream-10-appstreambaseos-checked-with-dnf-in-the-image)); the other packages were not checked on
+RHEL.
+
+- **Color scheme and accent color**: `org.gnome.desktop.interface`
+  `color-scheme` (enum `GDesktopColorScheme`: `default`, `prefer-dark`,
+  `prefer-light`; default `default`) and `accent-color` (enum
+  `GDesktopAccentColor`: `blue`, `teal`, `green`, `yellow`, `orange`,
+  `red`, `pink`, `purple`, `slate`; default `blue`). No distribution
+  override sets either. libadwaita 1.6 reads both.
+- **GNOME Software updates**: `org.gnome.software` `allow-updates` (b,
+  default true: "If disabled, GNOME Software will hide the updates panel,
+  not perform any automatic updates actions or prompt for upgrades") and
+  `download-updates` (b, default true: downloads in the background and
+  installs updates that need no reboot). The only distribution override is
+  `official-repos`. Plugins include `flatpak`, `packagekit` and `fwupd`.
+  `bootc-fetch-apply-updates.timer` is disabled in the DeskOS image.
+  Bazzite sets `allow-updates`, `download-updates` and
+  `download-updates-notify` to false and locks them
+  ([`zz0-00-bazzite-desktop-silverblue-global.gschema.override`](https://github.com/ublue-os/bazzite/blob/main/system_files/desktop/silverblue/usr/share/glib-2.0/schemas/zz0-00-bazzite-desktop-silverblue-global.gschema.override)).
+  *Not verified:* what the Updates page of GNOME Software shows on a
+  booted bootc DeskOS image.
+- **Terminal shortcut**: `org.gnome.settings-daemon.plugins.media-keys`
+  has no `terminal` key in 47.2, and no schema binds a terminal. The only
+  path is a custom keybinding (`custom-keybindings` plus the relocatable
+  `...media-keys.custom-keybinding` with `name`, `binding`, `command`).
+  `org.gnome.desktop.default-applications.terminal exec` defaults to
+  `gnome-terminal`, which is not packaged. `xdg-terminal-exec` 0.14.1 is
+  only in EPEL 10 (`el10_2`), not in AppStream, BaseOS or CRB.
+- **AppIndicator**: `gnome-shell-extension-appindicator` 61-1.el10_2 is
+  only in EPEL 10. `gnome-shell-extension-dash-to-dock` is in AppStream.
+- **Initial Setup third-party repositories page**: in 46.7
+  ([`gis-software-page.c`](https://gitlab.gnome.org/GNOME/gnome-initial-setup/-/raw/46.7/gnome-initial-setup/pages/software/gis-software-page.c))
+  the page is created only when `fedora-third-party` is in `PATH`; it is
+  not packaged in CS10 or EPEL 10, so the page never shows. The EL10
+  `/usr/share/gnome-initial-setup/vendor.conf` is `skip=timezone`,
+  `existing_user_only=language;keyboard`; the upstream README says
+  `/etc/gnome-initial-setup/vendor.conf` replaces it rather than merging.
 
 ## Reference projects
 

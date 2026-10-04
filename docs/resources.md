@@ -272,6 +272,10 @@ spec:
       wallpaper:
         light: ../assets/example-org.svg
       loginLogo: ../assets/example-org-login-logo.svg
+      colorScheme: prefer-dark   # default | prefer-dark | prefer-light
+      accentColor: teal          # blue, teal, green, yellow, orange, red, pink, purple, slate
+    software:
+      updates: manual            # automatic | manual | disabled
     session:
       idle:
         blankAfter: 5m
@@ -358,10 +362,12 @@ An administrator describes things such as:
 - wallpapers and branding;
 - fonts;
 - icon and cursor themes;
+- color scheme and accent color;
 - ordered favorites;
 - dock behavior;
 - idle timeout;
 - lock behavior;
+- whether GNOME Software applies updates;
 
 *without knowing* which GNOME schema or dconf key implements them. DeskOS
 Core ships reasonable defaults, and organizations override them
