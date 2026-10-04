@@ -81,6 +81,10 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, f := range a.Files {
 		pf("    %s\tfrom %s\t%s\n", f.Path, f.Asset, origins(f.Provenance))
 	}
+	section(w, "Desktop entries", len(a.DesktopEntries))
+	for _, e := range a.DesktopEntries {
+		pf("    %s\t%q runs %s, icon %s\t%s\n", e.Path, e.Name, e.Exec, e.IconPath, origins(e.Provenance))
+	}
 	if db := a.Dconf; db != nil {
 		section(w, "GNOME defaults (dconf system database "+db.Name+")", len(db.Defaults))
 		for _, d := range db.Defaults {

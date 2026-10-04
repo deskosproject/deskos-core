@@ -66,6 +66,8 @@ type Artifact struct {
 	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
 	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
 	Files           []FileInstall            `json:"files"`
+	DesktopEntries  []DesktopEntry           `json:"desktopEntries"`
+	IconCaches      []IconCacheUpdate        `json:"iconCaches"`
 	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
 	GSettings       []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
 	KernelArguments []KernelArgument         `json:"kernelArguments"`
@@ -146,6 +148,28 @@ type FileInstall struct {
 
 	// AssetFile is the absolute host path of Asset; never serialized.
 	AssetFile string `json:"-"`
+}
+
+// DesktopEntry is an application launcher generated at Path. Exec is a
+// Binaries destination; IconPath is a Files entry found by the name Icon.
+type DesktopEntry struct {
+	ID             string             `json:"id"`
+	Path           string             `json:"path"`
+	Name           string             `json:"name"`
+	Comment        string             `json:"comment,omitempty"`
+	Exec           string             `json:"exec"`
+	Icon           string             `json:"icon"`
+	IconPath       string             `json:"iconPath"`
+	Categories     []string           `json:"categories"`
+	StartupWMClass string             `json:"startupWMClass,omitempty"`
+	Provenance     []model.Provenance `json:"provenance"`
+}
+
+// IconCacheUpdate regenerates the GTK icon cache of an icon theme directory
+// after image files are copied, since package triggers do not run for them.
+type IconCacheUpdate struct {
+	Dir        string             `json:"dir"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 // DconfDatabase is a system dconf database carrying defaults and locks.
@@ -302,6 +326,21 @@ func (p *Plan) Normalize() error {
 	for i := range a.Files {
 		a.Files[i].Provenance = uniq(a.Files[i].Provenance)
 	}
+	sort.Slice(a.DesktopEntries, func(i, j int) bool { return a.DesktopEntries[i].ID < a.DesktopEntries[j].ID })
+	for i, e := range a.DesktopEntries {
+		if i > 0 && e.ID == a.DesktopEntries[i-1].ID {
+			return fmt.Errorf("desktop entry %s is defined twice", e.ID)
+		}
+		if !hasBinary(a.Binaries, e.Exec) {
+			return fmt.Errorf("desktop entry %s: %s is not a binary destination of the plan", e.ID, e.Exec)
+		}
+		if !hasFile(a.Files, e.IconPath) {
+			return fmt.Errorf("desktop entry %s: icon %s is not an image file of the plan", e.ID, e.IconPath)
+		}
+		a.DesktopEntries[i].Provenance = uniq(a.DesktopEntries[i].Provenance)
+	}
+	a.IconCaches = mergeByName(a.IconCaches, func(x IconCacheUpdate) string { return x.Dir },
+		func(x *IconCacheUpdate) *[]model.Provenance { return &x.Provenance })
 	sort.Slice(a.GSettings, func(i, j int) bool {
 		x, y := a.GSettings[i], a.GSettings[j]
 		if x.Schema != y.Schema {
@@ -413,6 +452,12 @@ func nonNil(p *Plan) {
 	if a.Files == nil {
 		a.Files = []FileInstall{}
 	}
+	if a.DesktopEntries == nil {
+		a.DesktopEntries = []DesktopEntry{}
+	}
+	if a.IconCaches == nil {
+		a.IconCaches = []IconCacheUpdate{}
+	}
 	if a.KernelArguments == nil {
 		a.KernelArguments = []KernelArgument{}
 	}
@@ -448,6 +493,15 @@ func (p *Plan) JSON() ([]byte, error) {
 func hasFile(files []FileInstall, p string) bool {
 	for _, f := range files {
 		if f.Path == p {
+			return true
+		}
+	}
+	return false
+}
+
+func hasBinary(bins []VerifiedBinaryInstall, dest string) bool {
+	for _, b := range bins {
+		if b.Destination == dest {
 			return true
 		}
 	}

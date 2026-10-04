@@ -267,6 +267,8 @@
         ]
       }
     ],
+    "desktopEntries": [],
+    "iconCaches": [],
     "dconf": {
       "name": "distro",
       "defaults": [

@@ -38,6 +38,7 @@ var (
 	DomainRepositories   = compose.Domain{ID: "rpm-repository", Label: "RPM repository"}
 	DomainRpmFiles       = compose.Domain{ID: "rpm-file", Label: "RPM file"}
 	DomainBinaries       = compose.Domain{ID: "binary-destination", Label: "binary install destination"}
+	DomainDesktopEntries = compose.Domain{ID: "desktop-entry", Label: "desktop entry"}
 	DomainFlatpakRemotes = compose.Domain{ID: "flatpak-remote", Label: "Flatpak remote"}
 	DomainFlatpakApps    = compose.Domain{ID: "flatpak-application", Label: "Flatpak application"}
 )
@@ -311,10 +312,11 @@ func (rpmRepository) Contribute(res *model.Resource, s *compose.Scope) error {
 
 // BinaryArtifactSpec describes a checksum-pinned upstream binary or archive.
 type BinaryArtifactSpec struct {
-	Version string         `json:"version"`
-	Source  BinarySource   `json:"source"`
-	Archive string         `json:"archive"`
-	Files   []BinaryMember `json:"files"`
+	Version      string            `json:"version"`
+	Source       BinarySource      `json:"source"`
+	Archive      string            `json:"archive"`
+	Files        []BinaryMember    `json:"files"`
+	DesktopEntry *DesktopEntrySpec `json:"desktopEntry,omitempty"`
 }
 
 type BinarySource struct {
@@ -399,7 +401,11 @@ func (binaryArtifact) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "mode %q is not allowed (expected 0755 or 0555)", f.Mode))
 		}
 	}
-	res.Object = &s
+	obj := &BinaryArtifactObject{BinaryArtifactSpec: s}
+	if s.DesktopEntry != nil {
+		obj.Entry = decodeDesktopEntry(res, &s, &errs)
+	}
+	res.Object = obj
 	return errs.Err()
 }
 
@@ -413,7 +419,8 @@ func safeDestination(d string) bool {
 }
 
 func (binaryArtifact) Contribute(res *model.Resource, s *compose.Scope) error {
-	spec := res.Object.(*BinaryArtifactSpec)
+	obj := res.Object.(*BinaryArtifactObject)
+	spec := &obj.BinaryArtifactSpec
 	for _, f := range spec.Files {
 		b := BinaryInstall{
 			Artifact:    res.Metadata.Name,
@@ -426,6 +433,9 @@ func (binaryArtifact) Contribute(res *model.Resource, s *compose.Scope) error {
 			Mode:        f.Mode,
 		}
 		s.AddKeyed(DomainBinaries, f.Destination, b, fmt.Sprintf("%s %s from %s (sha256 %s)", b.Artifact, b.Version, b.URL, b.SHA256))
+	}
+	if e := obj.Entry; e != nil {
+		s.AddKeyed(DomainDesktopEntries, e.ID, *e, fmt.Sprintf("%q runs %s, icon %s (sha256 %s)", e.Name, e.Exec, e.IconAsset, e.IconSHA256))
 	}
 	return nil
 }

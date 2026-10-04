@@ -2,6 +2,7 @@ package software
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/deskosproject/deskos-core/internal/compose"
@@ -12,6 +13,9 @@ import (
 // PreinstallUnit runs the upstream `flatpak preinstall` at startup. The
 // target platforms ship the preinstall mechanism but no unit invoking it.
 const PreinstallUnit = "deskos-flatpak-preinstall.service"
+
+// IconCachePackage provides gtk-update-icon-cache on CentOS Stream 10 and RHEL 10.
+const IconCachePackage = "gtk-update-icon-cache"
 
 // Lowerer translates composed software intent into Plan IR.
 type Lowerer struct{}
@@ -86,6 +90,21 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 			Archive: b.Archive, Member: b.Member, Destination: b.Destination, Mode: b.Mode,
 			Provenance: k.Provenance,
 		})
+	}
+
+	for _, k := range r.Keyed(DomainDesktopEntries) {
+		e := k.Value.(DesktopEntry)
+		p.Artifact.DesktopEntries = append(p.Artifact.DesktopEntries, plan.DesktopEntry{
+			ID: e.ID, Path: path.Join(ApplicationsDir, e.ID+".desktop"), Name: e.Name, Comment: e.Comment,
+			Exec: e.Exec, Icon: e.ID, IconPath: e.IconPath, Categories: e.Categories,
+			StartupWMClass: e.StartupWMClass, Provenance: k.Provenance,
+		})
+		p.Artifact.Files = append(p.Artifact.Files, plan.FileInstall{
+			Path: e.IconPath, Mode: "0644", SHA256: e.IconSHA256, Asset: e.IconAsset, AssetFile: e.IconFile,
+			Provenance: k.Provenance,
+		})
+		p.Artifact.IconCaches = append(p.Artifact.IconCaches, plan.IconCacheUpdate{Dir: HicolorDir, Provenance: k.Provenance})
+		p.AddPackage(IconCachePackage, k.Provenance...)
 	}
 
 	remotes := map[string]Remote{}

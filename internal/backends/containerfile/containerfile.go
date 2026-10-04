@@ -85,6 +85,9 @@ func Render(p *plan.Plan) ([]File, error) {
 		}
 		r.addImage(f.Path, parseMode(f.Mode), data)
 	}
+	for _, e := range p.Artifact.DesktopEntries {
+		r.addImage(e.Path, 0o644, desktopFile(e))
+	}
 	if len(p.Artifact.KernelArguments) > 0 {
 		r.addImage(kargsPath, 0o644, kargsFile(p.Artifact.KernelArguments))
 	}
@@ -205,6 +208,32 @@ func repoFile(r plan.RpmRepository) []byte {
 	}
 	return []byte(b.String())
 }
+
+// desktopFile writes a Desktop Entry Specification file; Exec is a validated
+// /usr/local/bin path without reserved characters, so it needs no quoting.
+func desktopFile(e plan.DesktopEntry) []byte {
+	var b strings.Builder
+	b.WriteString(generatedHeader)
+	b.WriteString("[Desktop Entry]\n")
+	b.WriteString("Type=Application\n")
+	fmt.Fprintf(&b, "Name=%s\n", desktopEscape(e.Name))
+	if e.Comment != "" {
+		fmt.Fprintf(&b, "Comment=%s\n", desktopEscape(e.Comment))
+	}
+	fmt.Fprintf(&b, "Exec=%s\n", e.Exec)
+	fmt.Fprintf(&b, "TryExec=%s\n", e.Exec)
+	fmt.Fprintf(&b, "Icon=%s\n", e.Icon)
+	b.WriteString("Terminal=false\n")
+	fmt.Fprintf(&b, "Categories=%s;\n", strings.Join(e.Categories, ";"))
+	if e.StartupWMClass != "" {
+		fmt.Fprintf(&b, "StartupWMClass=%s\n", e.StartupWMClass)
+	}
+	return []byte(b.String())
+}
+
+// desktopEscape escapes backslashes; control characters and surrounding
+// whitespace, which need the other escapes, are rejected upstream.
+func desktopEscape(s string) string { return strings.ReplaceAll(s, `\`, `\\`) }
 
 func dconfKeyfile(db *plan.DconfDatabase) []byte {
 	groups := map[string][]string{}
@@ -485,6 +514,9 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	}
 	if a.Dconf != nil {
 		steps = append(steps, "dconf update")
+	}
+	for _, c := range a.IconCaches {
+		steps = append(steps, "gtk-update-icon-cache --force --quiet "+shq(c.Dir))
 	}
 	if len(a.SystemdUnits) > 0 {
 		units := make([]string, 0, len(a.SystemdUnits))
