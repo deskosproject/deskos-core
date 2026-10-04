@@ -141,8 +141,16 @@ anything else is marked as **not verified**.
 - CS10 ships `flatpak` 1.18.0. RHEL backported preinstall support into
   1.16.0-1 (c10s changelog, RHEL-26066); RHEL 10.2 package version is
   1.16.0-9 according to AlmaLinux mirrors; the RHEL 10.2 build `0e65bf4b`
-  (2026-10-03) carries `flatpak-1.16.0-9.el10_2.1`. Whether it reads
-  `preinstall.d` is **not verified**.
+  (2026-10-03) carries `flatpak-1.16.0-9.el10_2.1`, and it reads
+  `/usr/share/flatpak/preinstall.d` (checked with a private workstation
+  that declares Flathub apps).
+- RHEL's `workstation-product-environment` group includes
+  `redhat-flatpak-preinstall-firefox`, which adds
+  `/etc/flatpak/preinstall.d/firefox.preinstall` for the `rhel` OCI
+  remote (`flatpaks.redhat.io`). Resolving it requests tokens from
+  `flatpak-oci-authenticator` on the session bus, so a system service
+  fails with "Cannot autolaunch D-Bus without X11 $DISPLAY" and installs
+  nothing. The RHEL 10 Platform excludes that package.
 - The man page says "The OS runs flatpak preinstall -y (or its GUI
   equivalent) on system startup". Neither EL10 platform ships a unit for
   it, so DeskOS generates a single unit that runs that command.

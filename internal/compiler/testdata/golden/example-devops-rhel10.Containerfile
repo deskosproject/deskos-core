@@ -14,6 +14,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y group install \
+        '--exclude=redhat-flatpak-preinstall-firefox' \
         'workstation-product-environment' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo

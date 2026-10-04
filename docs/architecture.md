@@ -271,7 +271,11 @@ A Platform package group may list `excludePackages`: group members the
 platform does not install with the group. They become `--exclude` options
 of the single group transaction only, so a `PackageSet` that names one
 still installs it. The CS10 Platform excludes setroubleshoot this way; see
-[research-notes.md](research-notes.md).
+[research-notes.md](research-notes.md). The RHEL 10 Platform excludes
+`redhat-flatpak-preinstall-firefox`: its Firefox Flatpak comes from an
+OCI remote whose authenticator needs a session bus, so a system
+`flatpak preinstall` fails for every declared Flatpak. Core installs the
+Firefox RPM on both platforms.
 
 ## Validation status
 
@@ -285,7 +289,7 @@ still installs it. The CS10 Platform excludes setroubleshoot this way; see
 | Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] |
 | Automated runs | `vm-bootcheck.yml`, manual; with `publish` it pushes the tested image [^cs10-run] | `tests/rhel/factory.py`, every head of `main`, as the `deskos/rhel10` commit status |
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 |
-| Flatpak preinstall materializes apps | remote and ref resolution checked | not exercised [^flatpak] |
+| Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] |
 
 [^rhel-build]: Image `0e65bf4b` on RHEL 10.2, base `d13af792...`; lint
 passed with the three known warnings.
@@ -304,15 +308,17 @@ DeskOS identity; it published `quay.io/deskos/deskos-core:8ab0cc9...` and
 [^mcelog]: In AMD QEMU guests without `edac_mce_amd`; reported as a known,
 non-blocking diagnostic with its raw failed state (see
 `tests/vm/README.md` and [research-notes.md](research-notes.md)).
-[^flatpak]: `example-devops-rhel10` declares no Flatpaks.
+[^flatpak]: `example-devops-rhel10` declares no Flatpaks. A private RHEL
+10.2 workstation with four Flathub apps: `flatpak preinstall --system`
+without a session bus installed all four from `/usr/share/flatpak/preinstall.d`
+in the built image, and its booted disk had no failed preinstall unit.
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
 `gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
 1.37.1, VS Code 1.140.0 and Chrome 154 from their vendor repositories,
 and the rhel9 `oc` 4.22.14 build (needs at most GLIBC_2.34).
 
-**Still open:** whether RHEL's flatpak 1.16 reads
-`/usr/share/flatpak/preinstall.d`, and E2E tests on either platform.
+**Still open:** E2E tests on either platform.
 
 ## Supply-chain inputs
 

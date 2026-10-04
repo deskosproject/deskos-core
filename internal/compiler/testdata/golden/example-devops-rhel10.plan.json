@@ -138,6 +138,9 @@
         "rpmGroups": [
           "workstation-product-environment"
         ],
+        "excludePackages": [
+          "redhat-flatpak-preinstall-firefox"
+        ],
         "provenance": [
           {
             "resource": "PackageSet/deskos-core",

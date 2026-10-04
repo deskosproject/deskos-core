@@ -20,6 +20,8 @@ spec:
     - name: workstation
       rpmGroups: [workstation-product-environment]
       graphical: true
+      # Its Firefox Flatpak needs a session-bus authenticator, which fails the system preinstall of every declared Flatpak.
+      excludePackages: [redhat-flatpak-preinstall-firefox]
   unavailablePackages:
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support

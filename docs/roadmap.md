@@ -16,9 +16,8 @@ organization.
   (image `0e65bf4b...`), lint passed, all layers scanned free of
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM.
-- **Left:** whether RHEL's flatpak 1.16 reads
-  `/usr/share/flatpak/preinstall.d`, which needs a RHEL workstation that
-  declares Flatpaks.
+- RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
+  with a private workstation that declares Flathub apps.
 
 ## Milestone 1b: visual identity and boot
 
