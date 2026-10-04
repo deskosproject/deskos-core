@@ -121,9 +121,9 @@ Details in
 - **Done:** `UpdatePolicy`
   ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image
   and update system Flatpaks from DeskOS timers, daily and on AC power
-  in Core, and the bootc timer that reboots is masked. Units checked with
-  `systemd-analyze verify` and a booted container; an update staged and
-  applied on a VM is **still pending**.
+  in Core, and the bootc timer that reboots is masked. Validated on a CentOS
+  Stream 10 VM: the image service staged a new image without rebooting,
+  and a manual reboot booted it with the previous one as rollback.
 - A local endpoint command (`deskos status`, `deskos update`,
   `deskos rollback`) that a user or administrator runs on one machine to
   inspect the deployment and invoke bootc's own staged update and

@@ -562,9 +562,12 @@ across image updates (see [Drift](#drift-and-mutable-etc)).
 **Not supported:** metered networks (systemd has no condition for them,
 and reading NetworkManager's `Metered` property needs a program, which
 would be a script); a catch-up run when AC power returns. Checked:
-`systemd-analyze verify` of the Core units and a container booted with
-them (DeskOS timers scheduled, the bootc timer masked). Not yet checked:
-an update staged and applied on a booted VM.
+`systemd-analyze verify` of the Core units, and a CentOS Stream 10 VM
+installed from a registry image: `deskos-image-update.service` staged
+the next image with the same boot ID, a manual reboot booted it with the
+previous image as rollback, the bootc timer stayed masked, and
+`deskos-flatpak-update.service` succeeded. Not yet checked: RHEL 10, and
+a laptop running on battery.
 
 ## Drift and mutable `/etc`
 
