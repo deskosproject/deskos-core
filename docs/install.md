@@ -75,7 +75,7 @@ as root (the build runs as root).
 both covered by `SHA256SUMS`. No Go toolchain or git is needed:
 
 ```bash
-VERSION=v0.3.0
+VERSION=v0.4.0
 base=https://github.com/deskosproject/deskos-core/releases/download/$VERSION
 mkdir deskos && cd deskos
 curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" \
