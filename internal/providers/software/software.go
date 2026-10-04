@@ -36,6 +36,7 @@ var (
 	DomainPackageGroups  = compose.Domain{ID: "package-group", Label: "package group"}
 	DomainUnits          = compose.Domain{ID: "systemd-unit", Label: "systemd unit"}
 	DomainRepositories   = compose.Domain{ID: "rpm-repository", Label: "RPM repository"}
+	DomainRpmFiles       = compose.Domain{ID: "rpm-file", Label: "RPM file"}
 	DomainBinaries       = compose.Domain{ID: "binary-destination", Label: "binary install destination"}
 	DomainFlatpakRemotes = compose.Domain{ID: "flatpak-remote", Label: "Flatpak remote"}
 	DomainFlatpakApps    = compose.Domain{ID: "flatpak-application", Label: "Flatpak application"}
@@ -83,15 +84,70 @@ func httpsURL(raw string, allowVars bool) error {
 	return nil
 }
 
+// pinnedURL validates an https URL without variables whose path has no
+// floating segment such as latest or main.
+func pinnedURL(raw string) error {
+	if err := httpsURL(raw, false); err != nil {
+		return err
+	}
+	u, _ := url.Parse(raw)
+	for _, seg := range strings.Split(u.Path, "/") {
+		if floatingVersions[strings.ToLower(seg)] {
+			return fmt.Errorf("URL %q points at a floating location (%q); use a versioned URL", raw, seg)
+		}
+	}
+	return nil
+}
+
+// checksum validates a pinned SHA-256 checksum.
+func checksum(sum string) error {
+	if sum == "" {
+		return fmt.Errorf("is required: downloads must be pinned by checksum")
+	}
+	if !sha256RE.MatchString(sum) {
+		return fmt.Errorf("%q must be 64 lowercase hex characters", sum)
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------- PackageSet
 
 // PackageSetSpec describes system software of the managed baseline.
 type PackageSetSpec struct {
-	Groups       []string `json:"groups,omitempty"`
-	Packages     []string `json:"packages,omitempty"`
-	Repositories []string `json:"repositories,omitempty"`
-	EnableUnits  []string `json:"enableUnits,omitempty"`
+	Groups       []string      `json:"groups,omitempty"`
+	Packages     []string      `json:"packages,omitempty"`
+	Repositories []string      `json:"repositories,omitempty"`
+	EnableUnits  []string      `json:"enableUnits,omitempty"`
+	RpmFiles     []RpmFileSpec `json:"rpmFiles,omitempty"`
 }
+
+// RpmFileSpec is a signed RPM downloaded without a repository.
+type RpmFileSpec struct {
+	URL        string `json:"url"`
+	SHA256     string `json:"sha256"`
+	GPGKeyFile string `json:"gpgKeyFile"`
+}
+
+// RpmFile is the composed definition of one RPM file, keyed by URL.
+type RpmFile struct {
+	URL          string `json:"url"`
+	SHA256       string `json:"sha256"`
+	GPGKey       string `json:"gpgKey"`
+	GPGKeySHA256 string `json:"gpgKeySHA256"`
+}
+
+// PackageSetObject is the decoded PackageSet with its RPM file keys read.
+type PackageSetObject struct {
+	PackageSetSpec
+	Files []RpmFile
+}
+
+const (
+	armorBegin = "-----BEGIN PGP PUBLIC KEY BLOCK-----"
+	armorEnd   = "-----END PGP PUBLIC KEY BLOCK-----"
+)
+
+var armorRE = regexp.MustCompile(`^[\x20-\x7e\n]*$`)
 
 type packageSet struct{}
 
@@ -104,8 +160,8 @@ func (packageSet) Decode(res *model.Resource) error {
 		return err
 	}
 	var errs model.ErrorList
-	if len(s.Groups) == 0 && len(s.Packages) == 0 {
-		errs.Add(model.Errorf(res, "at least one group or package is required"))
+	if len(s.Groups) == 0 && len(s.Packages) == 0 && len(s.RpmFiles) == 0 {
+		errs.Add(model.Errorf(res, "at least one group, package or RPM file is required"))
 	}
 	for _, g := range s.Groups {
 		if !groupRE.MatchString(g) {
@@ -127,20 +183,45 @@ func (packageSet) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "invalid systemd unit %q (expected .service, .socket, .timer or .path)", u))
 		}
 	}
-	res.Object = &s
+	obj := &PackageSetObject{PackageSetSpec: s}
+	seen := map[string]bool{}
+	for i, f := range s.RpmFiles {
+		if err := pinnedURL(f.URL); err != nil {
+			errs.Add(model.Errorf(res, "rpmFiles[%d].url: %v", i, err))
+		}
+		if seen[f.URL] {
+			errs.Add(model.Errorf(res, "rpmFiles[%d].url %q is listed twice", i, f.URL))
+		}
+		seen[f.URL] = true
+		if err := checksum(f.SHA256); err != nil {
+			errs.Add(model.Errorf(res, "rpmFiles[%d].sha256 %v", i, err))
+		}
+		key, err := assets.Read(res, f.GPGKeyFile)
+		if err != nil {
+			errs.Add(model.Errorf(res, "rpmFiles[%d].gpgKeyFile: %v", i, err))
+			continue
+		}
+		text := string(key.Data)
+		if !armorRE.MatchString(text) || !strings.HasPrefix(strings.TrimSpace(text), armorBegin) || !strings.HasSuffix(strings.TrimSpace(text), armorEnd) {
+			errs.Add(model.Errorf(res, "rpmFiles[%d].gpgKeyFile %s must be an ASCII-armored OpenPGP public key", i, key.Path))
+			continue
+		}
+		obj.Files = append(obj.Files, RpmFile{URL: f.URL, SHA256: f.SHA256, GPGKey: text, GPGKeySHA256: key.SHA256})
+	}
+	res.Object = obj
 	return errs.Err()
 }
 
 func (packageSet) References(res *model.Resource) []model.ObjectRef {
 	var refs []model.ObjectRef
-	for _, r := range res.Object.(*PackageSetSpec).Repositories {
+	for _, r := range res.Object.(*PackageSetObject).Repositories {
 		refs = append(refs, model.ObjectRef{APIVersion: RpmRepositoryGVK.APIVersion(), Kind: RpmRepositoryGVK.Kind, Name: r})
 	}
 	return refs
 }
 
 func (packageSet) Contribute(res *model.Resource, s *compose.Scope) error {
-	spec := res.Object.(*PackageSetSpec)
+	spec := res.Object.(*PackageSetObject)
 	for _, g := range spec.Groups {
 		s.AddMember(DomainPackageGroups, g)
 	}
@@ -149,6 +230,9 @@ func (packageSet) Contribute(res *model.Resource, s *compose.Scope) error {
 	}
 	for _, u := range spec.EnableUnits {
 		s.AddMember(DomainUnits, u)
+	}
+	for _, f := range spec.Files {
+		s.AddKeyed(DomainRpmFiles, f.URL, f, fmt.Sprintf("sha256 %s, gpg key sha256 %s", f.SHA256, f.GPGKeySHA256))
 	}
 	return nil
 }
@@ -275,19 +359,11 @@ func (binaryArtifact) Decode(res *model.Resource) error {
 	if !versionRE.MatchString(s.Version) || floatingVersions[strings.ToLower(s.Version)] {
 		errs.Add(model.Errorf(res, "version %q must be an exact, immutable version", s.Version))
 	}
-	if err := httpsURL(s.Source.URL, false); err != nil {
+	if err := pinnedURL(s.Source.URL); err != nil {
 		errs.Add(model.Errorf(res, "source.url: %v", err))
-	} else if u, _ := url.Parse(s.Source.URL); u != nil {
-		for _, seg := range strings.Split(u.Path, "/") {
-			if floatingVersions[strings.ToLower(seg)] {
-				errs.Add(model.Errorf(res, "source.url %q points at a floating location (%q); use a versioned URL", s.Source.URL, seg))
-			}
-		}
 	}
-	if s.Source.SHA256 == "" {
-		errs.Add(model.Errorf(res, "source.sha256 is required: binary artifacts must be pinned by checksum"))
-	} else if !sha256RE.MatchString(s.Source.SHA256) {
-		errs.Add(model.Errorf(res, "source.sha256 %q must be 64 lowercase hex characters", s.Source.SHA256))
+	if err := checksum(s.Source.SHA256); err != nil {
+		errs.Add(model.Errorf(res, "source.sha256 %v", err))
 	}
 	switch s.Archive {
 	case "none":

@@ -69,6 +69,10 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, pkg := range a.RpmPackages {
 		pf("    %s\t%s\n", pkg.Name, origins(pkg.Provenance))
 	}
+	section(w, "RPM files (signed, without repository)", len(a.RpmFiles))
+	for _, f := range a.RpmFiles {
+		pf("    %s\tsha256 %s…, gpg key sha256 %s…\t%s\n", f.URL, f.SHA256[:12], f.GPGKeySHA256[:12], origins(f.Provenance))
+	}
 	section(w, "Binary artifacts", len(a.Binaries))
 	for _, b := range a.Binaries {
 		pf("    %s\t%s %s, sha256 %s…\t%s\n", b.Destination, b.Artifact, b.Version, b.SHA256[:12], origins(b.Provenance))

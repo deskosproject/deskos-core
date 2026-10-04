@@ -15,7 +15,7 @@
     "spec": {
       "type": "object",
       "additionalProperties": false,
-      "anyOf": [{ "required": ["groups"] }, { "required": ["packages"] }],
+      "anyOf": [{ "required": ["groups"] }, { "required": ["packages"] }, { "required": ["rpmFiles"] }],
       "properties": {
         "groups": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
         "packages": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/packageName" } },
@@ -23,6 +23,19 @@
         "enableUnits": {
           "type": "array",
           "items": { "type": "string", "pattern": "^[A-Za-z0-9@_.:-]+\\.(service|socket|timer|path)$" }
+        },
+        "rpmFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "sha256", "gpgKeyFile"],
+            "properties": {
+              "url": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "gpgKeyFile": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+            }
+          }
         }
       }
     }

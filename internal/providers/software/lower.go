@@ -71,6 +71,14 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 	}
 
+	for _, k := range r.Keyed(DomainRpmFiles) {
+		f := k.Value.(RpmFile)
+		p.Artifact.RpmFiles = append(p.Artifact.RpmFiles, plan.RpmFileInstall{
+			URL: f.URL, SHA256: f.SHA256, GPGKey: f.GPGKey, GPGKeySHA256: f.GPGKeySHA256,
+			Provenance: k.Provenance,
+		})
+	}
+
 	for _, k := range r.Keyed(DomainBinaries) {
 		b := k.Value.(BinaryInstall)
 		p.Artifact.Binaries = append(p.Artifact.Binaries, plan.VerifiedBinaryInstall{

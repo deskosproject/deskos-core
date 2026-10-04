@@ -32,6 +32,7 @@ const (
 	PlanPath          = "plan.json"
 	ManifestPath      = "generated-manifest.json"
 	reposDir          = "repos"
+	rpmKeysDir        = "rpm-keys"
 	rootfsDir         = "rootfs"
 	imagePlanPath     = "/usr/share/deskos/plan.json"
 	dconfFileName     = "50-deskos"
@@ -63,6 +64,16 @@ func Render(p *plan.Plan) ([]File, error) {
 			return nil, fmt.Errorf("RPM repository id %q would be written as %s, which RPM builds reserve for subscription-manager", repo.ID, rhsmRepoFile)
 		}
 		r.add(path.Join(reposDir, "etc/yum.repos.d", repo.ID+".repo"), 0o644, repoFile(repo))
+	}
+	keys := map[string]bool{}
+	for _, f := range p.Artifact.RpmFiles {
+		if sum := sha256.Sum256([]byte(f.GPGKey)); hex.EncodeToString(sum[:]) != f.GPGKeySHA256 {
+			return nil, fmt.Errorf("RPM file %s: gpg key does not match its sha256", f.URL)
+		}
+		if !keys[f.GPGKeySHA256] {
+			keys[f.GPGKeySHA256] = true
+			r.add(path.Join(rpmKeysDir, f.GPGKeySHA256+".asc"), 0o644, []byte(f.GPGKey))
+		}
 	}
 	for _, f := range p.Artifact.Files {
 		data, err := os.ReadFile(f.AssetFile)
@@ -406,7 +417,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 			args = append(args, "--exclude="+x)
 		}
 		w("\n# RPM groups\n")
-		rpmTransaction(w, "dnf -y group install", append(args, ids...))
+		rpmTransaction(w, nil, "dnf -y group install", append(args, ids...))
 	}
 
 	if hasRepos {
@@ -414,17 +425,31 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	}
 
 	if len(a.RpmPackages) > 0 {
-		var args []string
-		for _, r := range a.RpmRepositories {
-			if !r.Enabled {
-				args = append(args, "--enablerepo="+r.ID)
-			}
-		}
+		args := enableRepos(a.RpmRepositories)
 		for _, pkg := range a.RpmPackages {
 			args = append(args, pkg.Name)
 		}
 		w("\n# RPM packages\n")
-		rpmTransaction(w, "dnf -y install", args)
+		rpmTransaction(w, nil, "dnf -y install", args)
+	}
+
+	if len(a.RpmFiles) > 0 {
+		pre := []string{"mkdir -m 0700 " + rpmFilesDir}
+		args := enableRepos(a.RpmRepositories)
+		for _, f := range a.RpmFiles {
+			rpm := path.Join(rpmFilesDir, f.SHA256+".rpm")
+			// A keyring per file trusts only that file's key and leaves the image's rpmdb keys unchanged.
+			rpmkeys := "rpmkeys --dbpath " + shq(path.Join(rpmFilesDir, "keyring-"+f.SHA256)) + " --define '_keyring rpmdb'"
+			pre = append(pre,
+				fmt.Sprintf("curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \\\n        -o %s %s", shq(rpm), shq(f.URL)),
+				fmt.Sprintf("echo %s | sha256sum --check --strict --quiet -", shq(f.SHA256+"  "+rpm)),
+				fmt.Sprintf("%s --import %s", rpmkeys, shq(path.Join(rpmKeysImageDir, f.GPGKeySHA256+".asc"))),
+				// Without signature level, --checksig accepts an unsigned package whose digests match.
+				fmt.Sprintf("%s --define '_pkgverify_level signature' --checksig %s", rpmkeys, shq(rpm)))
+			args = append(args, rpm)
+		}
+		w("\n# RPM files (sha256- and signature-verified)\nCOPY %s/ %s/\n", rpmKeysDir, rpmKeysImageDir)
+		rpmTransaction(w, pre, "dnf -y install", args, "rm -rf "+rpmFilesDir)
 	}
 
 	for _, group := range groupBinaries(a.Binaries) {
@@ -541,11 +566,17 @@ const (
 
 var rhsmStateDirs = []string{"/var/lib/rhsm", "/var/log/rhsm"}
 
+// The keys stay in the image (plan.json carries them too); downloads are removed in the same RUN.
+const (
+	rpmKeysImageDir = "/usr/share/deskos/rpm-keys"
+	rpmFilesDir     = "/tmp/deskos-rpm-files"
+)
+
 // rpmTransaction emits one dnf transaction whose RHSM state stays out of the
 // committed layer: state directories are tmpfs mounts, and the generated repo
 // file is removed in the same RUN. A pre-existing repo file with that name
 // fails the build instead of being removed.
-func rpmTransaction(w func(string, ...any), cmd string, args []string) {
+func rpmTransaction(w func(string, ...any), pre []string, cmd string, args []string, post ...string) {
 	w("RUN")
 	for i, d := range rhsmStateDirs {
 		sep := " "
@@ -555,11 +586,29 @@ func rpmTransaction(w func(string, ...any), cmd string, args []string) {
 		w("%s--mount=type=tmpfs,target=%s", sep, d)
 	}
 	w(" \\\n    if [ -e %s ]; then echo 'refusing to run dnf: %s already exists' >&2; exit 1; fi", rhsmRepoFile, rhsmRepoFile)
+	for _, c := range pre {
+		w(" \\\n    && %s", c)
+	}
 	w(" \\\n    && %s", cmd)
 	for _, a := range args {
 		w(" \\\n        %s", shq(a))
 	}
-	w(" \\\n    && dnf clean all \\\n    && rm -f %s\n", rhsmRepoFile)
+	w(" \\\n    && dnf clean all")
+	for _, c := range post {
+		w(" \\\n    && %s", c)
+	}
+	w(" \\\n    && rm -f %s\n", rhsmRepoFile)
+}
+
+// enableRepos enables declared repositories that are disabled after the build.
+func enableRepos(repos []plan.RpmRepository) []string {
+	var args []string
+	for _, r := range repos {
+		if !r.Enabled {
+			args = append(args, "--enablerepo="+r.ID)
+		}
+	}
+	return args
 }
 
 // groupBinaries groups installs that share one download.

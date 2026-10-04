@@ -227,40 +227,45 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		for _, f := range files {
 			byPath[f.Path] = string(f.Data)
 		}
-		var runs []string
-		for _, block := range strings.Split(byPath[containerfile.ContainerfilePath], "\n\n") {
-			if i := strings.Index(block, "RUN "); i >= 0 && strings.Contains(block, "dnf -y") {
-				runs = append(runs, block[i:])
-			}
-		}
-		want := 0
-		if len(p.Artifact.RpmGroups) > 0 {
-			want++
-		}
-		if len(p.Artifact.RpmPackages) > 0 {
-			want++
-		}
-		if len(runs) != want {
-			t.Fatalf("%s: %d dnf RUNs, want %d", tc.ws, len(runs), want)
-		}
-		for _, run := range runs {
-			for _, need := range []string{
-				"RUN --mount=type=tmpfs,target=/var/lib/rhsm \\\n    --mount=type=tmpfs,target=/var/log/rhsm \\\n",
-				"if [ -e /etc/yum.repos.d/redhat.repo ]; then",
-				"&& dnf clean all \\\n    && rm -f /etc/yum.repos.d/redhat.repo",
-			} {
-				if !strings.Contains(run, need) {
-					t.Errorf("%s: dnf RUN lacks %q:\n%s", tc.ws, need, run)
-				}
-			}
-			if !strings.HasSuffix(strings.TrimSpace(run), "rm -f /etc/yum.repos.d/redhat.repo") {
-				t.Errorf("%s: redhat.repo removal is not the last command of the RUN", tc.ws)
-			}
-		}
+		checkRHSMRuns(t, tc.ws, p, byPath[containerfile.ContainerfilePath])
 		for _, r := range p.Artifact.RpmRepositories {
 			if _, ok := byPath["repos/etc/yum.repos.d/"+r.ID+".repo"]; !ok {
 				t.Errorf("%s: repository file for %s missing", tc.ws, r.ID)
 			}
+		}
+	}
+}
+
+// checkRHSMRuns asserts that every dnf RUN of a Containerfile keeps RHSM state out of its layer.
+func checkRHSMRuns(t *testing.T, name string, p *plan.Plan, cf string) {
+	t.Helper()
+	var runs []string
+	for _, block := range strings.Split(cf, "\n\n") {
+		if i := strings.Index(block, "RUN "); i >= 0 && strings.Contains(block, "dnf -y") {
+			runs = append(runs, block[i:])
+		}
+	}
+	want := 0
+	for _, n := range []int{len(p.Artifact.RpmGroups), len(p.Artifact.RpmPackages), len(p.Artifact.RpmFiles)} {
+		if n > 0 {
+			want++
+		}
+	}
+	if len(runs) != want {
+		t.Fatalf("%s: %d dnf RUNs, want %d", name, len(runs), want)
+	}
+	for _, run := range runs {
+		for _, need := range []string{
+			"RUN --mount=type=tmpfs,target=/var/lib/rhsm \\\n    --mount=type=tmpfs,target=/var/log/rhsm \\\n",
+			"if [ -e /etc/yum.repos.d/redhat.repo ]; then",
+			"&& dnf clean all \\\n",
+		} {
+			if !strings.Contains(run, need) {
+				t.Errorf("%s: dnf RUN lacks %q:\n%s", name, need, run)
+			}
+		}
+		if !strings.HasSuffix(strings.TrimSpace(run), "&& rm -f /etc/yum.repos.d/redhat.repo") {
+			t.Errorf("%s: redhat.repo removal is not the last command of the RUN", name)
 		}
 	}
 }

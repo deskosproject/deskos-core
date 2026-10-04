@@ -5,7 +5,7 @@
 //   - set: members are unioned; duplicates collapse (packages, units).
 //   - keyed: one definition per key; identical definitions deduplicate and
 //     different definitions conflict regardless of layer (repositories,
-//     binary destinations, Flatpak remotes and applications).
+//     RPM files, binary destinations, Flatpak remotes and applications).
 //   - scalar: layered values; the highest layer wins, and two different
 //     values at the same layer conflict (desktop settings).
 //

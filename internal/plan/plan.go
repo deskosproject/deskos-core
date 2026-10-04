@@ -63,6 +63,7 @@ type Artifact struct {
 	RpmRepositories []RpmRepository          `json:"rpmRepositories"`
 	RpmGroups       []RpmGroupInstall        `json:"rpmGroups"`
 	RpmPackages     []RpmInstall             `json:"rpmPackages"`
+	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
 	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
 	Files           []FileInstall            `json:"files"`
 	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
@@ -107,6 +108,17 @@ type RpmGroupInstall struct {
 type RpmInstall struct {
 	Name       string             `json:"name"`
 	Provenance []model.Provenance `json:"provenance"`
+}
+
+// RpmFileInstall downloads one RPM without a repository, verifies its
+// SHA-256 and its signature by GPGKey (an ASCII-armored public key), and
+// installs it with the platform package manager.
+type RpmFileInstall struct {
+	URL          string             `json:"url"`
+	SHA256       string             `json:"sha256"`
+	GPGKey       string             `json:"gpgKey"`
+	GPGKeySHA256 string             `json:"gpgKeySHA256"`
+	Provenance   []model.Provenance `json:"provenance"`
 }
 
 // VerifiedBinaryInstall downloads an artifact, verifies its SHA-256,
@@ -273,6 +285,7 @@ func (p *Plan) Normalize() error {
 		func(x *RpmInstall) *[]model.Provenance { return &x.Provenance })
 	a.SystemdUnits = mergeByName(a.SystemdUnits, func(x SystemdEnable) string { return x.Unit },
 		func(x *SystemdEnable) *[]model.Provenance { return &x.Provenance })
+	sort.Slice(a.RpmFiles, func(i, j int) bool { return a.RpmFiles[i].URL < a.RpmFiles[j].URL })
 	sort.Slice(a.Binaries, func(i, j int) bool { return a.Binaries[i].Destination < a.Binaries[j].Destination })
 	sort.Slice(a.Files, func(i, j int) bool { return a.Files[i].Path < a.Files[j].Path })
 	for i := 1; i < len(a.Files); i++ {
@@ -390,6 +403,9 @@ func nonNil(p *Plan) {
 	}
 	if a.RpmPackages == nil {
 		a.RpmPackages = []RpmInstall{}
+	}
+	if a.RpmFiles == nil {
+		a.RpmFiles = []RpmFileInstall{}
 	}
 	if a.Binaries == nil {
 		a.Binaries = []VerifiedBinaryInstall{}
