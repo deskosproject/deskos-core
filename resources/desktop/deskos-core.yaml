@@ -22,6 +22,9 @@ spec:
     # Dash to Dock with its upstream defaults; favorites stay native GNOME state.
     dock:
       enabled: true
+    # GNOME Software offers updates but never downloads or applies them on its own.
+    software:
+      updates: manual
     session:
       idle:
         blankAfter: 10m

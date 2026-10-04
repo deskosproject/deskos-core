@@ -810,6 +810,34 @@
               "source": "example-org/desktop/example-devops-desktop.yaml:1"
             }
           ]
+        },
+        {
+          "key": "/org/gnome/software/allow-updates",
+          "type": "b",
+          "value": "true",
+          "setting": "software.updates",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/software/download-updates",
+          "type": "b",
+          "value": "false",
+          "setting": "software.updates",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-core",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
         }
       ],
       "locks": null
