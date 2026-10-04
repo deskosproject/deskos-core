@@ -129,20 +129,20 @@ git tag -a vX.Y.Z -m "deskosctl vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-To download and verify `v0.2.1`, the current release:
+To download and verify `v0.3.0`, the current release:
 
 ```bash
-gh release download v0.2.1 --repo deskosproject/deskos-core
+gh release download v0.3.0 --repo deskosproject/deskos-core
 sha256sum -c SHA256SUMS
-chmod +x deskosctl-v0.2.1-linux-amd64
-tar -xzf deskos-resources-v0.2.1.tar.gz
+chmod +x deskosctl-v0.3.0-linux-amd64
+tar -xzf deskos-resources-v0.3.0.tar.gz
 ```
 
 or without `gh`:
 
 ```bash
-base=https://github.com/deskosproject/deskos-core/releases/download/v0.2.1
-curl -fL -O "$base/deskosctl-v0.2.1-linux-amd64" \
-     -O "$base/deskos-resources-v0.2.1.tar.gz" -O "$base/SHA256SUMS"
+base=https://github.com/deskosproject/deskos-core/releases/download/v0.3.0
+curl -fL -O "$base/deskosctl-v0.3.0-linux-amd64" \
+     -O "$base/deskos-resources-v0.3.0.tar.gz" -O "$base/SHA256SUMS"
 sha256sum -c SHA256SUMS
 ```
