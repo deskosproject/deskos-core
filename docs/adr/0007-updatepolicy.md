@@ -51,8 +51,7 @@ Lowering:
 
 - Any effective `image.automatic` masks the platform's
   `updates.imageUpdateUnits` (`bootc-fetch-apply-updates.timer` and
-  `.service` on both platforms), so DeskOS owns image updates and nothing
-  reboots on its own. `false` emits nothing else.
+  `.service` on both platforms), so DeskOS owns image updates. `false` emits nothing else.
 - `image.automatic: true` adds `deskos-image-update.service`, which runs
   `/usr/bin/bootc upgrade --quiet`, and `deskos-image-update.timer`.
 - `flatpak.automatic: true` adds the platform Flatpak package,

@@ -118,12 +118,18 @@ Details in
 ## Milestone 7: release promotion and update UX
 
 - Channels (candidate, canary, pilot, stable) promoting one digest.
+- **Done:** `UpdatePolicy`
+  ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image
+  and update system Flatpaks from DeskOS timers, daily and on AC power
+  in Core, and the bootc timer that reboots is masked. Units checked with
+  `systemd-analyze verify` and a booted container; an update staged and
+  applied on a VM is **left**.
 - A local endpoint command (`deskos status`, `deskos update`,
   `deskos rollback`) that a user or administrator runs on one machine to
   inspect the deployment and invoke bootc's own staged update and
   rollback, system Flatpak updates and fwupd checks. **No controller,
   reconciliation loop or automatic enforcement**
-  ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)).
-- Candidate resources: `UpdatePolicy`, `TimeSyncPolicy`,
-  `PerformancePolicy`, `FirmwarePolicy`, `IdentityProvider`,
-  `WebApplication`.
+  ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)). It
+  drives the units and reads the files listed in ADR 0007.
+- Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
+  `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.

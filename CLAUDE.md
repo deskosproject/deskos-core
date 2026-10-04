@@ -249,6 +249,7 @@ Current public resource kinds are limited to:
 - FlatpakSet
 - GnomeProfile
 - BootProfile (ADR 0006)
+- UpdatePolicy (ADR 0007)
 
 Do not expand that list casually.
 

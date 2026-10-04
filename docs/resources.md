@@ -28,7 +28,7 @@ spec:
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile` |
-| `system.deskos.org` | `BootProfile` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy` |
 
 All kinds are `v1alpha1`. Their JSON Schemas are in
 [`schemas/`](../schemas/).
@@ -92,8 +92,8 @@ spec:
 
 ### `Platform`
 
-Facts about an OS target (bootc base image, RPM groups, GNOME and Flatpak
-capabilities, redistribution). DeskOS ships `centos-stream-10` and
+Facts about an OS target (bootc base image, RPM groups, GNOME, boot, image
+update and Flatpak capabilities, redistribution). DeskOS ships `centos-stream-10` and
 `rhel-10` in [`resources/platforms/`](../resources/platforms/); see
 [architecture.md](architecture.md#core-organizations-and-roles).
 
@@ -305,6 +305,35 @@ spec:
   quiet: true
   watermark: ../assets/deskos/deskos-splash-watermark.png
 ```
+
+### `UpdatePolicy`
+
+**Unattended updates** of the image and of system Flatpaks. The image
+update only downloads and stages the next image; it applies at the next
+reboot the user makes. Neither update reboots the machine.
+
+```yaml
+apiVersion: system.deskos.org/v1alpha1
+kind: UpdatePolicy
+metadata:
+  name: deskos-core
+spec:
+  image:
+    automatic: true
+    schedule: daily
+    requireACPower: true
+  flatpak:
+    automatic: true
+    schedule: daily
+    requireACPower: true
+```
+
+`schedule` is `daily` or `weekly`. Every field is a layered scalar, so an
+organization changes one field and keeps the rest of Core's policy, for
+example `image: {schedule: weekly}`, or turns image updates off with
+`image: {automatic: false}` when another tool updates its machines. The
+generated units are described in
+[architecture.md](architecture.md#updates).
 
 ## Composition
 

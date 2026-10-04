@@ -21,6 +21,7 @@ backend, and what has been validated on each platform.
 [System Flatpaks](#system-flatpaks) ·
 [GNOME](#gnome) ·
 [Boot](#boot) ·
+[Updates](#updates) ·
 [Drift and mutable `/etc`](#drift-and-mutable-etc) ·
 [Provisioning and enrollment](#provisioning-and-enrollment) ·
 [Release model](#release-model)
@@ -44,7 +45,9 @@ machines in a given state is the job of configuration management
 
 > [!NOTE]
 > There is no controller, agent or reconciliation loop, and none is
-> planned.
+> planned. Scheduled updates ([Updates](#updates)) are image content:
+> timers that stage the next published image, not a loop that checks or
+> enforces machine state.
 
 ## Design principles
 
@@ -79,7 +82,7 @@ tags are rejected, and no field accepts shell, templates or hooks.
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile` |
-| `system.deskos.org` | `BootProfile` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy` |
 
 Schemas live in `schemas/` and are embedded in `deskosctl`. Each kind is
 checked **twice**: against its JSON Schema, and by strict typed decoding
@@ -96,8 +99,8 @@ repository of resources and references DeskOS resources by name; it
 - **`Platform`**: facts about an OS target: bootc base image,
   redistribution constraints, the RPM groups behind DeskOS group names,
   GNOME integration facts (dconf database, default extensions, available
-  extensions), Flatpak capabilities. *All platform differences live
-  here.*
+  extensions), boot facts, the units that update the image on their
+  own, Flatpak capabilities. *All platform differences live here.*
 - **`Profile`**: a reusable fragment of intent at a semantic layer. It
   lists the resources it includes.
 - **`Workstation`**: a concrete build target, one Platform plus Profiles.
@@ -123,7 +126,7 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 |---|---|---|
 | **set** | RPM packages, package groups, systemd units, GNOME locks | deterministic union; duplicates collapse |
 | **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, desktop entries (by id), Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
-| **scalar** | GNOME settings | highest layer wins; different values *at one layer* conflict |
+| **scalar** | GNOME, boot and update settings | highest layer wins; different values *at one layer* conflict |
 
 **Profile order and file order never matter.** Every contribution carries
 *provenance* (resource, including profile, layer, source file and line),
@@ -157,7 +160,8 @@ it.
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
   `FileInstall`, `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
-  `PlymouthTheme`, `SystemdEnable`, `DefaultTarget`.
+  `PlymouthTheme`, `SystemdEnable`, `SystemdMask`, `ScheduledUpdate`,
+  `DefaultTarget`.
 - **Provisioning**: system Flatpak remotes and applications, materialized
   on the machine by upstream `flatpak preinstall`.
 - **Enrollment**: reserved and empty.
@@ -193,8 +197,8 @@ The Containerfile, in order:
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
 7. runs `dconf update`, regenerates the hicolor icon cache when the
-   image installs desktop entry icons, enables units and sets the
-   default target;
+   image installs desktop entry icons, enables and masks units and sets
+   the default target;
 8. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
 9. cleans package caches and ends with `bootc container lint`.
@@ -513,6 +517,54 @@ and shutdown on UEFI VMs. A serial console turns Plymouth to text mode, so
 test QCOW2s are built with bootc-image-builder's
 `--no-default-kernel-args`, which omits its `console=ttyS0` (see
 `tests/vm/README.md`); the artifact's own kernel arguments are unchanged.
+
+## Updates
+
+Both base images enable `bootc-fetch-apply-updates.timer` (a
+`default.target.wants` link in `/usr/lib` that `systemctl disable` does
+not remove). Its service runs `bootc upgrade --apply`, which **reboots**
+whenever a new image is published.
+
+`UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
+`schedule: daily|weekly` and `requireACPower`) lowers to:
+
+- for any `image.automatic`: masks of the Platform's
+  `updates.imageUpdateUnits` (`systemctl mask`, links to `/dev/null` in
+  `/etc/systemd/system`);
+- for `automatic: true`: a generated service and an enabled timer in
+  `/usr/lib/systemd/system/`:
+
+| Unit | Command |
+|---|---|
+| `deskos-image-update.service` | `/usr/bin/bootc upgrade --quiet` |
+| `deskos-flatpak-update.service` | `/usr/bin/flatpak update --system --noninteractive --assumeyes` |
+
+`bootc upgrade` without `--apply` downloads the image and stages it;
+`ostree-finalize-staged.service` applies it at the next shutdown or
+reboot the user makes. **No generated unit reboots**, and a test rejects
+`--apply`, `--soft-reboot` and `--download-only` in any rendered file.
+
+Timers use `OnCalendar=daily` or `weekly`, `RandomizedDelaySec=2h` and
+`Persistent=true` (a missed run starts after the next boot).
+`requireACPower` adds `ConditionACPower=true` to the service: on battery
+the run is skipped, not failed, until the next scheduled time. Desktops
+and VMs without a known AC connector count as on AC power. Services want
+and follow `network-online.target`; the timers add no boot ordering.
+
+Core sets image and Flatpak updates daily, on AC power only. An
+organization overrides single fields at a higher layer; `automatic:
+false` for the image keeps the platform updater masked and schedules
+nothing, leaving updates to an administrator or configuration
+management. A workstation with no image intent keeps the platform's
+rebooting timer. The masks live in `/etc`, so a local unmask is kept
+across image updates (see [Drift](#drift-and-mutable-etc)).
+
+**Not supported:** metered networks (systemd has no condition for them,
+and reading NetworkManager's `Metered` property needs a program, which
+would be a script); a catch-up run when AC power returns. Checked:
+`systemd-analyze verify` of the Core units and a container booted with
+them (DeskOS timers scheduled, the bootc timer masked). Not yet checked:
+an update staged and applied on a booted VM.
 
 ## Drift and mutable `/etc`
 
