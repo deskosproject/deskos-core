@@ -43,7 +43,8 @@ DeskOS resources by kind and name **without copying them**.
 - Asset paths are relative to the YAML file.
 - Every example below is a file from this repository
   ([`resources/`](../resources/) and
-  [`examples/example-org/`](../examples/example-org/)).
+  [`examples/example-org/`](../examples/example-org/)), except the
+  `BinaryArtifact` desktop entry example.
 
 ## Resource kinds
 
@@ -181,6 +182,49 @@ spec:
       destination: /usr/local/bin/oc
       mode: "0755"
 ```
+
+A graphical application installed this way can declare a
+**`desktopEntry`**, so it appears in the GNOME application menu and can
+be added to the dock favorites. The example below is organization
+content, not a file of this repository; this Ghostty AppImage is a
+community build, not an official Ghostty release:
+
+```yaml
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: ghostty
+spec:
+  version: 1.3.1
+  source:
+    url: https://github.com/pkgforge-dev/ghostty-appimage/releases/download/v1.3.1/Ghostty-1.3.1-x86_64.AppImage
+    sha256: fde48d2b716afd1978766879bbf1aae30dd305e8ad86a1037a2614a14d82dc28
+  archive: none
+  files:
+    - destination: /usr/local/bin/ghostty
+      mode: "0755"
+  desktopEntry:
+    id: com.mitchellh.ghostty
+    name: Ghostty
+    comment: Fast, native terminal emulator
+    icon: ../assets/ghostty.png
+    categories: [System, TerminalEmulator]
+    startupWMClass: com.mitchellh.ghostty
+```
+
+| Field | Rule |
+|---|---|
+| `id` | reverse-DNS name (dot-separated elements of `[A-Za-z0-9_-]`, none starting with a digit); the file is `/usr/share/applications/<id>.desktop` and the icon name is `<id>` |
+| `name`, `comment` | one line of text, without control characters or surrounding whitespace; `comment` is optional |
+| `icon` | asset inside the resource root: a square PNG of a size the hicolor theme defines (16, 22, 24, 32, 36, 48, 64, 72, 96, 128, 192, 256 or 512 pixels), installed in `hicolor/<size>x<size>/apps/`, or an SVG, installed in `hicolor/scalable/apps/` |
+| `categories` | registered freedesktop categories known to the platforms' `desktop-file-validate`, at least one of them a main category; `ConsoleOnly` is not accepted |
+| `startupWMClass` | optional; matches the application's window class so the dock groups its windows under the launcher |
+
+`Exec` and `TryExec` are **not authored**: they are the destination of
+the artifact's only file, without arguments, so `desktopEntry` requires
+an artifact with exactly one file. The entry also sets
+`Type=Application` and `Terminal=false`. Two artifacts that declare the
+same `id` conflict unless their entries are identical.
 
 ### `FlatpakRemote` and `FlatpakSet`
 

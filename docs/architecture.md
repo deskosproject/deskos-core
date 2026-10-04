@@ -122,7 +122,7 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 | Class | Used for | Rule |
 |---|---|---|
 | **set** | RPM packages, package groups, systemd units, GNOME locks | deterministic union; duplicates collapse |
-| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
+| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, desktop entries (by id), Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
 | **scalar** | GNOME settings | highest layer wins; different values *at one layer* conflict |
 
 **Profile order and file order never matter.** Every contribution carries
@@ -155,7 +155,7 @@ it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
-  `FileInstall`, `DconfDatabase` (defaults and locks),
+  `FileInstall`, `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
   `PlymouthTheme`, `SystemdEnable`, `DefaultTarget`.
 - **Provisioning**: system Flatpak remotes and applications, materialized
@@ -192,7 +192,9 @@ The Containerfile, in order:
 6. checks the DeskOS GSettings override with
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
-7. runs `dconf update`, enables units and sets the default target;
+7. runs `dconf update`, regenerates the hicolor icon cache when the
+   image installs desktop entry icons, enables units and sets the
+   default target;
 8. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
 9. cleans package caches and ends with `bootc container lint`.
@@ -346,6 +348,16 @@ Acquisition order:
 `BinaryArtifact` requires an exact version, an https URL that is not a
 floating location, a SHA-256 checksum, and installs only directly into
 `/usr/local/bin` with mode `0755` or `0555`.
+
+A single-file `BinaryArtifact` may declare a `desktopEntry`. The
+software lowerer turns it into a `DesktopEntry`, a `FileInstall` for its
+icon and an `IconCacheUpdate` for `/usr/share/icons/hicolor`, and adds
+the `gtk-update-icon-cache` package. The backend generates
+`/usr/share/applications/<id>.desktop` in `rootfs/`; its `Exec` and
+`TryExec` are the artifact's destination, never authored text. The icon
+cache is regenerated after `rootfs/` is copied because RPM file triggers
+maintain it only for packaged files, and GTK keeps using an existing
+cache that lacks the copied icons.
 
 `PackageSet.rpmFiles` requires the same kind of URL and checksum plus an
 ASCII-armored public key file inside the resource root; the build fails
