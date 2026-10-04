@@ -27,10 +27,14 @@ A RHEL 10 VM or machine that is registered with subscription-manager,
 logged in to `registry.redhat.io` as root, and has `/dev/kvm`. A run
 writes about 25 GB and deletes it.
 
-> [!TIP]
-> On a thin-provisioned VM disk use `discard='unmap'` and mount the root
-> with `discard`, so that space returns to the hypervisor (the service
-> also runs `fstrim` when it finishes).
+> [!WARNING]
+> On a thin-provisioned VM disk, freed space does not return to the
+> hypervisor by itself, and a run can fill the host. Give the disk
+> `discard='unmap'` and mount the root with `discard`. For an XFS root the
+> option must be on the kernel command line
+> (`grubby --update-kernel=ALL --args=rootflags=discard`), because XFS
+> ignores it on remount; check with `findmnt -no OPTIONS /`. The service
+> also runs `fstrim` when it finishes.
 
 ```bash
 dnf install podman skopeo qemu-kvm qemu-img edk2-ovmf python3 git golang
