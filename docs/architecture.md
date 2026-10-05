@@ -82,7 +82,7 @@ tags are rejected, and no field accepts shell, templates or hooks.
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile` |
-| `system.deskos.org` | `BootProfile`, `UpdatePolicy` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
 Schemas live in `schemas/` and are embedded in `deskosctl`. Each kind is
 checked **twice**: against its JSON Schema, and by strict typed decoding
@@ -100,7 +100,8 @@ repository of resources and references DeskOS resources by name; it
   redistribution constraints, the RPM groups behind DeskOS group names,
   GNOME integration facts (dconf database, default extensions, available
   extensions), boot facts, the units that update the image on their
-  own, Flatpak capabilities. *All platform differences live here.*
+  own, Flatpak capabilities, and CA trust-store facts. *All platform
+  differences live here.*
 - **`Profile`**: a reusable fragment of intent at a semantic layer. It
   lists the resources it includes.
 - **`Workstation`**: a concrete build target, one Platform plus Profiles.
@@ -125,7 +126,7 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 | Class | Used for | Rule |
 |---|---|---|
 | **set** | RPM packages, package groups, systemd units, GNOME locks | deterministic union; duplicates collapse |
-| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, desktop entries (by id), Flatpak remotes and applications | identical definitions deduplicate; different definitions conflict *at any layer* |
+| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, desktop entries (by id), Flatpak remotes and applications, trust anchors (by name) | identical definitions deduplicate; different definitions conflict *at any layer* |
 | **scalar** | GNOME, boot and update settings | highest layer wins; different values *at one layer* conflict |
 
 **Profile order and file order never matter.** Every contribution carries
@@ -158,7 +159,8 @@ it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
-  `FileInstall`, `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
+  `FileInstall`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
+  `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
   `PlymouthTheme`, `SystemdEnable`, `SystemdMask`, `ScheduledUpdate`,
   `DefaultTarget`.
@@ -197,8 +199,9 @@ The Containerfile, in order:
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
 7. runs `dconf update`, regenerates the hicolor icon cache when the
-   image installs desktop entry icons, enables and masks units and sets
-   the default target;
+   image installs desktop entry icons, regenerates the platform trust
+   store when the image places trust anchors, enables and masks units and
+   sets the default target;
 8. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
 9. cleans package caches and ends with `bootc container lint`.
@@ -523,6 +526,33 @@ and shutdown on UEFI VMs. A serial console turns Plymouth to text mode, so
 test QCOW2s are built with bootc-image-builder's
 `--no-default-kernel-args`, which omits its `console=ttyS0` (see
 `tests/vm/README.md`); the artifact's own kernel arguments are unchanged.
+
+## Trust store
+
+`TrustAnchor` (`anchors[].name`, `anchors[].file`) places organization CA
+certificates in the platform trust store. It lowers to:
+
+- one image file per anchor at `<trust.anchorsDir>/<name>.crt`;
+- one trust-store update through the platform's `trust.updateCommand`,
+  run in the system-configuration step after `COPY rootfs/`.
+
+On `rhel-10` and `centos-stream-10` the anchors directory is
+`/etc/pki/ca-trust/source/anchors/` and the command is `update-ca-trust`,
+which regenerates `/etc/pki/ca-trust/extracted/`. The update runs during
+the build, so the extracted store is image content and changes only when
+the anchors change.
+
+Each anchor is a **keyed** definition by `name`: identical definitions
+deduplicate and different certificates under one name conflict at any
+layer. The certificate must be a PEM `CERTIFICATE` block that parses as
+X.509; the private key is neither needed nor accepted. A platform without
+`trust` facts fails composition when a `TrustAnchor` is used.
+
+The destination is never replaced silently: the render rejects an anchor
+that shares a path with another image file, and the build fails if the
+base image or an installed package already provides that exact file. Asset
+paths are confined to the resource root, so `../` cannot pull a host file
+into the build context and a symlink out of the root is refused too.
 
 ## Updates
 

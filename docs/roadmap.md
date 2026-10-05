@@ -129,6 +129,9 @@ Details in
 - **Next release (v0.6.0):** the `GnomeProfile` shell, clock and keyboard
   settings of [ADR 0008](adr/0008-gnome-shell-clock-keyboard.md) are on
   `main` and not yet released.
+- **Unreleased:** `TrustAnchor`
+  ([ADR 0009](adr/0009-trustanchor.md)) lets an organization place its CA
+  certificates in the platform trust store.
 - A staged update skipped on battery waits for the next schedule; a
   catch-up run on AC connect (Bluefin's `uupd-on-ac.service`) is open.
 - A local endpoint command (`deskos status`, `deskos update`,

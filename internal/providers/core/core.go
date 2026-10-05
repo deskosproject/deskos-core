@@ -36,6 +36,7 @@ type PlatformSpec struct {
 	Boot                *BootPlatform        `json:"boot,omitempty"`
 	Updates             *UpdatesPlatform     `json:"updates,omitempty"`
 	Flatpak             FlatpakPlatform      `json:"flatpak"`
+	Trust               *TrustPlatform       `json:"trust,omitempty"`
 }
 
 // BootcBase is the official bootc base image. Digest pins it when set.
@@ -122,6 +123,13 @@ type FlatpakPlatform struct {
 	Preinstall bool   `json:"preinstall"`
 }
 
+// TrustPlatform holds the platform's CA trust-store facts: the directory the
+// image places trust anchors in, and the command that regenerates the store.
+type TrustPlatform struct {
+	AnchorsDir    string `json:"anchorsDir"`
+	UpdateCommand string `json:"updateCommand"`
+}
+
 // PackageGroup returns the named mapping.
 func (p *PlatformSpec) PackageGroup(name string) (PackageGroup, bool) {
 	for _, g := range p.PackageGroups {
@@ -187,6 +195,8 @@ var (
 	pkgRE         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 	kargRE        = regexp.MustCompile(`^[a-z][a-z0-9_.-]*$`)
 	plymouthDirRE = regexp.MustCompile(`^/usr/share/plymouth/themes/[a-z0-9][a-z0-9_.-]*$`)
+	trustDirRE    = regexp.MustCompile(`^/etc/[A-Za-z0-9/._-]+$`)
+	trustCmdRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 )
 
 type platformProvider struct{}
@@ -289,6 +299,14 @@ func (platformProvider) Decode(res *model.Resource) error {
 	}
 	if s.Flatpak.Preinstall && !pkgRE.MatchString(s.Flatpak.Package) {
 		errs.Add(model.Errorf(res, "flatpak.package is required when flatpak.preinstall is true"))
+	}
+	if t := s.Trust; t != nil {
+		if !trustDirRE.MatchString(t.AnchorsDir) {
+			errs.Add(model.Errorf(res, "trust.anchorsDir %q must be an absolute directory under /etc", t.AnchorsDir))
+		}
+		if !trustCmdRE.MatchString(t.UpdateCommand) {
+			errs.Add(model.Errorf(res, "trust.updateCommand %q must be a bare command name", t.UpdateCommand))
+		}
 	}
 	res.Object = &s
 	return errs.Err()

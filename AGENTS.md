@@ -16,11 +16,11 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
    role < workstation`. Sets union, keyed definitions must match, scalars
    take the highest layer and conflict within one layer. File, root and
    profile order never change output (ADR 0003).
-4. **Exactly eleven public kinds** in v1alpha1: Platform, Profile,
+4. **Exactly twelve public kinds** in v1alpha1: Platform, Profile,
    Workstation, PackageSet, RpmRepository, BinaryArtifact, FlatpakRemote,
    FlatpakSet, GnomeProfile, BootProfile (ADR 0006), UpdatePolicy
-   (ADR 0007). A test enforces the count; adding a kind needs an explicit
-   decision.
+   (ADR 0007), TrustAnchor (ADR 0009). A test enforces the count; adding a
+   kind needs an explicit decision.
 5. **No escape hatches.** No `script`, `command`, `postInstall` or other
    shell fields, no raw kernel arguments or Plymouth script themes, no
    templating, and nothing that manages a user's `$HOME`

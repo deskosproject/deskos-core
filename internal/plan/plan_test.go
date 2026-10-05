@@ -52,3 +52,40 @@ func TestNormalizePlymouthTheme(t *testing.T) {
 		t.Errorf("complete theme: %v", err)
 	}
 }
+
+func TestNormalizeTrustAnchors(t *testing.T) {
+	anchor := func() *Plan {
+		p := &Plan{}
+		p.Artifact.TrustAnchors = []TrustAnchorInstall{{Name: "root", Path: "/etc/pki/ca-trust/source/anchors/root.crt"}}
+		p.Artifact.TrustStore = &TrustStoreUpdate{Command: "update-ca-trust"}
+		return p
+	}
+	// An anchor needs its trust store update.
+	p := anchor()
+	p.Artifact.TrustStore = nil
+	if err := p.Normalize(); err == nil || !strings.Contains(err.Error(), "need a trust store update") {
+		t.Errorf("anchor without store: %v", err)
+	}
+	// A trust store update without anchors is an error.
+	p = &Plan{}
+	p.Artifact.TrustStore = &TrustStoreUpdate{Command: "update-ca-trust"}
+	if err := p.Normalize(); err == nil || !strings.Contains(err.Error(), "needs at least one trust anchor") {
+		t.Errorf("store without anchor: %v", err)
+	}
+	// An anchor may not share a destination with an image file.
+	p = anchor()
+	p.Artifact.Files = []FileInstall{{Path: "/etc/pki/ca-trust/source/anchors/root.crt"}}
+	if err := p.Normalize(); err == nil || !strings.Contains(err.Error(), "share the destination") {
+		t.Errorf("anchor colliding with an image file: %v", err)
+	}
+	// Two anchors under one name are an error.
+	p = anchor()
+	p.Artifact.TrustAnchors = append(p.Artifact.TrustAnchors, p.Artifact.TrustAnchors[0])
+	if err := p.Normalize(); err == nil || !strings.Contains(err.Error(), "defined twice") {
+		t.Errorf("duplicate anchor: %v", err)
+	}
+	// A complete plan normalizes.
+	if err := anchor().Normalize(); err != nil {
+		t.Errorf("complete plan: %v", err)
+	}
+}

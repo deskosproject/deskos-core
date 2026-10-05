@@ -81,6 +81,13 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, f := range a.Files {
 		pf("    %s\tfrom %s\t%s\n", f.Path, f.Asset, origins(f.Provenance))
 	}
+	section(w, "Trust anchors (platform trust store)", len(a.TrustAnchors))
+	for _, t := range a.TrustAnchors {
+		pf("    %s\tfrom %s\t%s\n", t.Path, t.Asset, origins(t.Provenance))
+	}
+	if ts := a.TrustStore; ts != nil {
+		pf("    store\tregenerated with %s\n", ts.Command)
+	}
 	section(w, "Desktop entries", len(a.DesktopEntries))
 	for _, e := range a.DesktopEntries {
 		pf("    %s\t%q runs %s, icon %s\t%s\n", e.Path, e.Name, e.Exec, e.IconPath, origins(e.Provenance))

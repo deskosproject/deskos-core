@@ -39,9 +39,10 @@ func TestSchemasMatchProviders(t *testing.T) {
 	for p := range have {
 		t.Errorf("schema %s has no provider", p)
 	}
-	// UpdatePolicy became the eleventh kind by an explicit decision (ADR 0007).
-	if n := len(c.Registry.Providers()); n != 11 {
-		t.Errorf("v1alpha1 exposes %d kinds, want exactly 11", n)
+	// UpdatePolicy became the eleventh kind (ADR 0007) and TrustAnchor the
+	// twelfth (ADR 0009), each by an explicit decision.
+	if n := len(c.Registry.Providers()); n != 12 {
+		t.Errorf("v1alpha1 exposes %d kinds, want exactly 12", n)
 	}
 }
 
@@ -56,6 +57,7 @@ func TestUnknownFieldsRejectedBySchemaAndTypes(t *testing.T) {
 		"Workstation":    "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata: {name: x}\nspec:\n  platformRef: p\n  profiles: [a]\n  hooks: [x]\n",
 		"FlatpakSet":     "apiVersion: software.deskos.org/v1alpha1\nkind: FlatpakSet\nmetadata: {name: x}\nspec:\n  remote: r\n  applications: [{id: org.example.App, shell: x}]\n",
 		"BootProfile":    "apiVersion: system.deskos.org/v1alpha1\nkind: BootProfile\nmetadata: {name: x}\nspec:\n  splash: graphical\n  kernelArguments: [init=/bin/sh]\n",
+		"TrustAnchor":    "apiVersion: system.deskos.org/v1alpha1\nkind: TrustAnchor\nmetadata: {name: x}\nspec:\n  anchors: [{name: x, file: x.crt, script: echo hi}]\n",
 		"BinaryArtifact": "apiVersion: software.deskos.org/v1alpha1\nkind: BinaryArtifact\nmetadata: {name: x}\nspec:\n  version: '1'\n  source: {url: https://example.org/1/x, sha256: " + strings.Repeat("a", 64) + "}\n  archive: none\n  files: [{destination: /usr/local/bin/x}]\n  preInstall: x\n",
 	}
 	c := newCompiler(t)
@@ -69,13 +71,14 @@ func TestUnknownFieldsRejectedBySchemaAndTypes(t *testing.T) {
 		"PackageSet":   `{"packages":["git"],"script":"x"}`,
 		"GnomeProfile": `{"defaults":{"dconf":{}}}`,
 		"BootProfile":  `{"splash":"graphical","script":"x"}`,
+		"TrustAnchor":  `{"anchors":[{"name":"x","file":"x.crt","script":"x"}]}`,
 	} {
 		t.Run(kind+" typed", func(t *testing.T) {
 			group := "software.deskos.org/v1alpha1"
 			switch kind {
 			case "GnomeProfile":
 				group = "desktop.deskos.org/v1alpha1"
-			case "BootProfile":
+			case "BootProfile", "TrustAnchor":
 				group = "system.deskos.org/v1alpha1"
 			}
 			res := rawResource(group, kind, "x", spec)

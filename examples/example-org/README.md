@@ -9,7 +9,7 @@ deskosctl plan ./resources ./examples/example-org --workstation example-devops-r
 
 | Resource | Contents |
 |---|---|
-| `example-baseline` (organization) | fonts, wallpaper, window controls, dock and idle/lock defaults for every workstation of the organization |
+| `example-baseline` (organization) | fonts, wallpaper, window controls, dock and idle/lock defaults for every workstation of the organization, and the organization root CA trusted through `TrustAnchor` |
 | `example-devops` (role) | containers, virtualization, Terraform, kubectl, VS Code, Chrome and the OpenShift CLI |
 | `example-devops-rhel10` | the target |
 | `example-devops-centos10` | composes the same profiles on the public platform so it can be built without a subscription |

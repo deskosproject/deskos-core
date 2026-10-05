@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/system.deskos.org/v1alpha1/trustanchor.json",
+  "title": "system.deskos.org/v1alpha1 TrustAnchor",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "system.deskos.org/v1alpha1" },
+    "kind": { "const": "TrustAnchor" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["anchors"],
+      "properties": {
+        "anchors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "file"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+              "file": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

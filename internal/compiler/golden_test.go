@@ -180,9 +180,13 @@ func TestDeterministicRender(t *testing.T) {
 		t.Fatal("re-render changed the file set")
 	}
 	// Repository assets are copied verbatim; only generated text is checked.
+	p := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)
 	copied := map[string]bool{}
-	for _, f := range mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot).Artifact.Files {
+	for _, f := range p.Artifact.Files {
 		copied[filepath.Join("rootfs", f.Path)] = true
+	}
+	for _, a := range p.Artifact.TrustAnchors {
+		copied[filepath.Join("rootfs", a.Path)] = true
 	}
 	for k := range a {
 		if path, _, _ := strings.Cut(k, " "); copied[path] {

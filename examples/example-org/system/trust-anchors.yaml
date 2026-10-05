@@ -1,0 +1,12 @@
+# The organization's own root CA. The image places it in the platform trust
+# store's anchors directory, and one build-time update-ca-trust makes it
+# trusted by every TLS client that reads the system store (dnf, curl, and
+# browsers that use the system store).
+apiVersion: system.deskos.org/v1alpha1
+kind: TrustAnchor
+metadata:
+  name: example-org-root
+spec:
+  anchors:
+    - name: example-org-root
+      file: ../assets/example-org-root-ca.crt

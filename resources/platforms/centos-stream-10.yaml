@@ -59,3 +59,8 @@ spec:
   flatpak:
     package: flatpak
     preinstall: true
+  # Image-owned CA anchors go in source/anchors; one build-time
+  # update-ca-trust regenerates the extracted store from them.
+  trust:
+    anchorsDir: /etc/pki/ca-trust/source/anchors
+    updateCommand: update-ca-trust

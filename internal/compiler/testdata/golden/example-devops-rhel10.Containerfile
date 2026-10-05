@@ -69,6 +69,12 @@ RUN set -eu; \
     install -D -m 0755 "$tmp"/'oc' '/usr/local/bin/oc'; \
     rm -rf "$tmp"
 
+# Trust anchors: the destination must not already exist
+RUN set -eu; \
+    for f in '/etc/pki/ca-trust/source/anchors/example-org-root.crt'; do \
+        [ ! -e "$f" ] || { echo "$f already exists in the image" >&2; exit 1; }; \
+    done
+
 # Image files
 COPY rootfs/ /
 
@@ -79,6 +85,7 @@ RUN tmp="$(mktemp -d)" \
     && rm -rf "$tmp" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
+    && 'update-ca-trust' \
     && systemctl enable 'cockpit.socket' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'firewalld.service' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'

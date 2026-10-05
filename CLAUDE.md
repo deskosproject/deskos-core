@@ -252,6 +252,7 @@ Current public resource kinds are limited to:
 - GnomeProfile
 - BootProfile (ADR 0006)
 - UpdatePolicy (ADR 0007)
+- TrustAnchor (ADR 0009)
 
 Do not expand that list casually.
 

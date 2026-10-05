@@ -145,6 +145,15 @@
             "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
             "preinstall": { "type": "boolean" }
           }
+        },
+        "trust": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["anchorsDir", "updateCommand"],
+          "properties": {
+            "anchorsDir": { "type": "string", "pattern": "^/etc/[A-Za-z0-9/._-]+$" },
+            "updateCommand": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$" }
+          }
         }
       }
     }

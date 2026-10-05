@@ -543,6 +543,33 @@
         ]
       }
     ],
+    "trustAnchors": [
+      {
+        "name": "example-org-root",
+        "path": "/etc/pki/ca-trust/source/anchors/example-org-root.crt",
+        "sha256": "3abcdda49dfa4b96f511cce7cba1419f09c0f155458b929bd4fa0ce262c37349",
+        "asset": "example-org/assets/example-org-root-ca.crt",
+        "provenance": [
+          {
+            "resource": "TrustAnchor/example-org-root",
+            "profile": "example-baseline",
+            "layer": "organization",
+            "source": "example-org/system/trust-anchors.yaml:5"
+          }
+        ]
+      }
+    ],
+    "trustStore": {
+      "command": "update-ca-trust",
+      "provenance": [
+        {
+          "resource": "TrustAnchor/example-org-root",
+          "profile": "example-baseline",
+          "layer": "organization",
+          "source": "example-org/system/trust-anchors.yaml:5"
+        }
+      ]
+    },
     "desktopEntries": [],
     "iconCaches": [],
     "dconf": {

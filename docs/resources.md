@@ -28,7 +28,7 @@ spec:
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile` |
-| `system.deskos.org` | `BootProfile`, `UpdatePolicy` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
 All kinds are `v1alpha1`. Their JSON Schemas are in
 [`schemas/`](../schemas/).
@@ -362,6 +362,30 @@ example `image: {schedule: weekly}`, or turns image updates off with
 `image: {automatic: false}` when another tool updates its machines. The
 generated units are described in
 [architecture.md](architecture.md#updates).
+
+### `TrustAnchor`
+
+**Organization CA certificates** placed in the platform trust store:
+
+```yaml
+apiVersion: system.deskos.org/v1alpha1
+kind: TrustAnchor
+metadata:
+  name: example-org-root
+spec:
+  anchors:
+    - name: example-org-root
+      file: ../assets/example-org-root-ca.crt
+```
+
+Each `file` is a PEM X.509 certificate inside the resource root and `name`
+is the file stem in the trust store. Anchors are **keyed** by `name`: the
+same certificate under one name deduplicates, and a different certificate
+under the same name conflicts at any layer. The Platform supplies the
+anchors directory and the update command; on both EL10 platforms that is
+`/etc/pki/ca-trust/source/anchors/` and `update-ca-trust`. The private key
+is neither needed nor accepted. See
+[architecture.md](architecture.md#trust-store).
 
 ## Composition
 

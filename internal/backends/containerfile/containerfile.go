@@ -87,6 +87,16 @@ func Render(p *plan.Plan) ([]File, error) {
 		}
 		r.addImage(f.Path, parseMode(f.Mode), data)
 	}
+	for _, a := range p.Artifact.TrustAnchors {
+		data, err := os.ReadFile(a.AssetFile)
+		if err != nil {
+			return nil, fmt.Errorf("asset %s: %w", a.Asset, err)
+		}
+		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != a.SHA256 {
+			return nil, fmt.Errorf("asset %s changed after planning (sha256 mismatch)", a.Asset)
+		}
+		r.addImage(a.Path, 0o644, data)
+	}
 	for _, e := range p.Artifact.DesktopEntries {
 		r.addImage(e.Path, 0o644, desktopFile(e))
 	}
@@ -563,6 +573,17 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 		w("    rm -rf \"$tmp\"\n")
 	}
 
+	if len(a.TrustAnchors) > 0 {
+		// A package- or image-owned file is never replaced silently; a
+		// colliding name must fail the build instead.
+		w("\n# Trust anchors: the destination must not already exist\n")
+		w("RUN set -eu; \\\n    for f in")
+		for _, t := range a.TrustAnchors {
+			w(" %s", shq(t.Path))
+		}
+		w("; do \\\n        [ ! -e \"$f\" ] || { echo \"$f already exists in the image\" >&2; exit 1; }; \\\n    done\n")
+	}
+
 	if hasRootfs {
 		w("\n# Image files\nCOPY %s/ /\n", rootfsDir)
 	}
@@ -582,6 +603,9 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	}
 	for _, c := range a.IconCaches {
 		steps = append(steps, "gtk-update-icon-cache --force --quiet "+shq(c.Dir))
+	}
+	if a.TrustStore != nil {
+		steps = append(steps, shq(a.TrustStore.Command))
 	}
 	if len(a.SystemdUnits) > 0 {
 		units := make([]string, 0, len(a.SystemdUnits))
