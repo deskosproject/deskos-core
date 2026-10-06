@@ -42,6 +42,14 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
     build of an earlier revision of the example and one manual,
     owner-observed boot; there is no automated boot or E2E evidence on RHEL
     (see `docs/architecture.md`, "Validation status").
+11. **AI is not part of compiler semantics.** Compilation must work with
+    no model, no network and no SaaS API, and identical inputs must keep
+    producing identical plans and build contexts. No resource kind,
+    provider, Plan IR or backend may depend on a model or generate
+    nondeterministic output (CLAUDE.md, "AI").
+12. **Human-gated automation.** Automation may propose; a human approves.
+    Agents never self-merge, never push to `main`, never touch signing,
+    secrets, releases or registries, and never weaken a check to go green.
 
 ## Requires Ricardo's explicit approval
 
@@ -54,3 +62,44 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
     make check        # gofmt, go vet, go test, validate
     python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
     go test ./internal/compiler -update   # refresh goldens, then review the diff
+
+Do not run `go test ./internal/compiler -update` merely to make a red
+check pass: a golden diff is a change under review, not a fix for a
+failing test.
+
+## Agentic contribution
+
+DeskOS is compiled from intent. A patch may be authored or assisted by an
+agent, under exactly the same rules as any other patch: review, tests and
+a human decision. The value of automation here is review capacity and
+evidence, not unattended change.
+
+**The split.** Agents operate on the repository, CI, the issue tracker,
+documentation and tests. They do **not** operate on compiler semantics:
+no resource kind, provider, Plan IR or backend behaviour may depend on a
+model (invariant 11). Keep the compiler deterministic and offline.
+
+**Start with low-risk work.** Suitable first tasks are triage and
+labelling, documentation, corrections under `resources/**`, flaky-test
+fixes, and pin bumps that carry their checksum. Architecture, new kinds,
+signing, secrets, releases and registry operations are out of scope for
+automation.
+
+**Workflow.**
+
+- Work from a scoped, labelled issue; if it is unclear, ask instead of
+  guessing.
+- Branch from `main`; never commit or push to `main`.
+- Open a PR. `make check` and the golden diff must be green before review.
+- A human reviews and merges. An agent does not self-merge, and an agent
+  review never substitutes for a maintainer's approval.
+- Trailer: `Assisted-by: <agent> <model>`. Never `Co-authored-by:`.
+
+**Evidence, not telemetry.** Reports and feedback are user-owned and
+opt-in, the same principle as the artifact factory: DeskOS never phones
+home and never aggregates user data centrally.
+
+**Reuse before building.** Prefer an existing orchestrator — for example
+Hive, part of KubeStellar (CNCF Sandbox) — over an agent runner written
+into this repository. The orchestrator is infrastructure around DeskOS,
+not part of it, and must never become a compiler dependency.
