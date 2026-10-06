@@ -79,7 +79,12 @@ jobs:
         run: |
           grype oci-archive:image.tar -o table | tee grype.txt
           grype oci-archive:image.tar -o json > cves.json
-          grype oci-archive:image.tar --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
+          # The gate applies the severity policy: .grype.yaml from this
+          # directory and the OpenVEX statements (ADR 0012). The evidence
+          # above stays unfiltered.
+          grype oci-archive:image.tar \
+            --vex tests/supply-chain/vex.openvex.json \
+            --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
 
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json

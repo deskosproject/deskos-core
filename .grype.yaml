@@ -1,0 +1,12 @@
+# Grype configuration for the DeskOS supply chain (ADR 0012).
+#
+# The blocking gate is Critical, so nothing has to be ignored to pass a
+# build. Every entry below would be a deliberate, reviewed exception: keep
+# the owner and the review date in a comment, and remove it when it expires.
+# Prefer OpenVEX (tests/supply-chain/vex.openvex.json) for "not affected"
+# statements. Never ignore a whole severity or a package family.
+#
+# Grype reads .grype.yaml from the working directory.
+# https://github.com/anchore/grype#configuration
+check-for-app-update: false
+ignore: []

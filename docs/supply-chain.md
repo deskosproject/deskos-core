@@ -71,9 +71,30 @@ files, Flatpaks and trust anchors are reported but not gated there — a
 scanner does not enumerate all of them, and `generated-manifest.json` and
 the boot/session checks cover those.
 
-The job is **experimental and has not been dispatched yet**. The first run
-establishes the real CVE baseline, and the Syft/Grype versions must be
-pinned before this gate blocks a release.
+The job first ran on 2026-10-06 (run `37466048646`, success, 0 Critical).
+The Syft/Grype versions must be pinned before this gate blocks a release.
+
+## Severity policy and VEX
+
+The policy the gate applies is
+[ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md):
+
+- **the blocking gate is `Critical`**; a digest with an unresolved Critical
+  is not promoted;
+- **High is tracked, not blocking** by default: a full GNOME desktop with a
+  browser and a distribution kernel always carries a large High count,
+  mostly backported upstream or not reachable in context;
+- **vendor-controlled components** (the kernel, distribution packages)
+  follow the distribution's security response; a Critical in them still
+  blocks;
+- **every exception is explicit** — an OpenVEX statement
+  (`tests/supply-chain/vex.openvex.json`) or a `.grype.yaml` ignore rule
+  with an owner and a review date. Nothing is silently ignored and there
+  are no blanket exclusions.
+
+CentOS Stream 10 baseline from that first run (Grype, distro `centos-10`):
+0 Critical, 1866 High, 26735 Medium, 10263 Low, 124 Unknown. The High count
+is dominated by the kernel (one entry per subpackage) and Firefox.
 
 ## Signing and provenance
 
