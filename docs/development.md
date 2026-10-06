@@ -26,6 +26,7 @@ Run tests:
 go test ./...
 python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
 python3 -m unittest discover -s tests/rhel # RHEL factory harness, same
+python3 -m unittest discover -s tests/supply-chain # SBOM comparison harness, same
 ```
 
 Validate the included resources:

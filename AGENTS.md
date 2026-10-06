@@ -103,3 +103,6 @@ home and never aggregates user data centrally.
 Hive, part of KubeStellar (CNCF Sandbox) — over an agent runner written
 into this repository. The orchestrator is infrastructure around DeskOS,
 not part of it, and must never become a compiler dependency.
+
+This section is the operating procedure of
+[ADR 0011](docs/adr/0011-agentic-contribution-layer.md).

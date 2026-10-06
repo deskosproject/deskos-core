@@ -119,10 +119,11 @@ how-to: [supply-chain.md](supply-chain.md).
 
 - **Done (v0.8.0):** `deskosctl sbom`, the deterministic declared
   (CycloneDX) SBOM of a Plan.
-- **Next:** a CI job that builds the CentOS Stream 10 image, produces the
-  installed SBOM with Syft, scans it with Grype and fails on critical,
-  uploads both as artifacts, and compares the declared SBOM against the
-  installed one.
+- **Added, not yet dispatched:** `.github/workflows/supply-chain.yml`
+  builds the CentOS Stream 10 image, produces the installed SBOM with
+  Syft and scans it with Grype, compares the declared SBOM against the
+  installed one (`tests/supply-chain/compare.py`), and uploads the
+  evidence.
 - Then: `cosign` signing and an SBOM/vulnerability attestation over the
   digest; promotion by digest, never by a mutable tag.
 - Later: OpenSCAP evidence; candidate resources `TrustPolicy`,

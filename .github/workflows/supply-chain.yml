@@ -1,0 +1,93 @@
+name: supply-chain (experimental)
+
+# Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
+# writes the declared SBOM with `deskosctl sbom`, produces the installed
+# SBOM with Syft, scans it with Grype, compares the two for RPM coverage,
+# and uploads the evidence. RHEL scanning runs on the entitled factory
+# host, not here. See docs/supply-chain.md and ADR 0010.
+on:
+  workflow_dispatch:
+    inputs:
+      fail-on:
+        description: Grype severity that fails the job
+        type: choice
+        options: [negligible, low, medium, high, critical]
+        default: critical
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-chain
+  cancel-in-progress: false
+
+env:
+  IMAGE: localhost/deskos-core-centos10:ci
+
+jobs:
+  centos10:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the Core build context and write the declared SBOM
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
+          ./bin/deskosctl sbom ./resources --workstation deskos-core-centos10 --output declared.sbom.cdx.json
+
+      - name: Put container storage on /mnt
+        # The root disk is small; the same layout as vm-bootcheck.yml.
+        run: |
+          sudo mkdir -p /mnt/containers /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+
+      - name: Build the image
+        timeout-minutes: 40
+        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+
+      - name: Export the image to an OCI archive
+        run: |
+          sudo podman save --format oci-archive -o image.tar "$IMAGE"
+          sudo chown "$(id -u):$(id -g)" image.tar
+          ls -lh image.tar
+
+      - name: Install Syft and Grype
+        # These install the current release. Pin both versions before this
+        # job gates a real release (AGENTS.md).
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b "$HOME/.local/bin"
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Installed SBOM (Syft)
+        run: syft oci-archive:image.tar -o cyclonedx-json=installed.sbom.cdx.json
+
+      - name: CVE scan (Grype)
+        run: |
+          grype oci-archive:image.tar -o table | tee grype.txt
+          grype oci-archive:image.tar -o json > cves.json
+          grype oci-archive:image.tar --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
+
+      - name: Compare declared and installed SBOMs
+        run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: supply-chain-evidence
+          path: |
+            declared.sbom.cdx.json
+            installed.sbom.cdx.json
+            cves.json
+            grype.txt
+            ctx/plan.json
+            ctx/generated-manifest.json
+          retention-days: 14
+          if-no-files-found: warn

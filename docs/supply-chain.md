@@ -57,6 +57,24 @@ grype "$image" -o json > cves.json
 `grype` fails non-zero when the configured severity threshold is met
 (`--fail-on critical`), which is what a CI gate uses.
 
+## CI job
+
+`.github/workflows/supply-chain.yml` (manual, `workflow_dispatch`) builds
+the CentOS Stream 10 Core image from a checkout and runs the steps above:
+it writes the declared SBOM, produces `installed.sbom.cdx.json` with Syft
+and `cves.json` with Grype, fails on the chosen severity, compares the two
+bills with `tests/supply-chain/compare.py`, and uploads all evidence.
+
+`compare.py` gates **RPM packages**: every declared `deskos:source=rpm`
+component must appear, by name, in the installed SBOM. Binaries, RPM
+files, Flatpaks and trust anchors are reported but not gated there — a
+scanner does not enumerate all of them, and `generated-manifest.json` and
+the boot/session checks cover those.
+
+The job is **experimental and has not been dispatched yet**. The first run
+establishes the real CVE baseline, and the Syft/Grype versions must be
+pinned before this gate blocks a release.
+
 ## Promotion gate (proposed)
 
 A digest moves forward only when, for that digest:
