@@ -51,7 +51,8 @@ DeskOS resources by kind and name **without copying them**.
 ### `Workstation`
 
 A concrete build target: **one platform plus profiles**. Profile order is
-*not* precedence.
+*not* precedence. It compiles into a workstation **image**; `Workstation`
+is the composition kind — the machine you author — not a Fedora edition.
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1

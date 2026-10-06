@@ -8,6 +8,11 @@ Its central thesis is:
 
 > A workstation is compiled from organizational intent.
 
+"Workstation" is the composition kind: the resource an organization
+authors. It compiles into a workstation *image* (a bootable container
+image). It is not a Fedora Workstation edition and not a distribution
+edition.
+
 DeskOS deterministically compiles declarative workstation definitions
 into Linux workstation artifacts.
 

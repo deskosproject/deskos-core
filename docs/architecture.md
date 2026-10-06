@@ -105,6 +105,8 @@ repository of resources and references DeskOS resources by name; it
 - **`Profile`**: a reusable fragment of intent at a semantic layer. It
   lists the resources it includes.
 - **`Workstation`**: a concrete build target, one Platform plus Profiles.
+  It compiles into a workstation *image*; the kind names the machine you
+  compose, not a Fedora Workstation edition.
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile. The same Core composes onto `centos-stream-10` and `rhel-10`; a

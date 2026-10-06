@@ -51,6 +51,10 @@ built*, and `deskosctl render` writes a **deterministic** build context:
 the same inputs always give the same bytes. Every resource kind, with an
 example, is in [**docs/resources.md**](docs/resources.md).
 
+A `Workstation` is the resource you author: a machine definition. It
+compiles into a workstation **image** (a bootable container image). The
+name is DeskOS's composition kind, not a Fedora Workstation edition.
+
 ## Composition
 
 <p align="center">
@@ -108,7 +112,9 @@ in [**docs/install.md**](docs/install.md).
 ## What DeskOS is not
 
 - **Not a distribution with editions.** Organizations compose their own
-  workstations from DeskOS Core, their baseline and their roles.
+  workstations from DeskOS Core, their baseline and their roles. A
+  `Workstation` here is the machine you compose, not the Fedora
+  Workstation edition and not a DeskOS edition.
 - **Not configuration management.** DeskOS owns the *image*, not the
   running machine; Ansible, Satellite, MDM and EDR keep managing
   endpoints.
