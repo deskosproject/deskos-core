@@ -13,9 +13,16 @@ on:
         type: choice
         options: [negligible, low, medium, high, critical]
         default: critical
+      publish:
+        description: Push the scanned image to quay.io and sign it (main only)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  # Keyless cosign: Fulcio issues a short-lived certificate from the
+  # workflow's OIDC identity and Rekor records the signature.
+  id-token: write
 
 concurrency:
   group: supply-chain
@@ -77,6 +84,35 @@ jobs:
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
 
+      - name: Install cosign
+        if: inputs.publish && github.ref == 'refs/heads/main'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Publish, sign and attest the scanned image
+        # CentOS Stream 10 only; RHEL images are never published. The
+        # signature is keyless: it is bound to this workflow's OIDC
+        # identity, and the installed SBOM is attached as an attestation.
+        if: inputs.publish && github.ref == 'refs/heads/main'
+        env:
+          DEST: quay.io/deskos/deskos-core
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+        run: |
+          printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
+          sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          digest="$(tr -d '\n\r' < digest.txt)"
+          ref="$DEST@$digest"
+          printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          cosign sign --yes "$ref"
+          cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
+          cosign verify "$ref" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+          cosign logout quay.io
+          sudo podman logout quay.io
+          echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -87,6 +123,8 @@ jobs:
             installed.sbom.cdx.json
             cves.json
             grype.txt
+            digest.txt
+            cosign-verify.txt
             ctx/plan.json
             ctx/generated-manifest.json
           retention-days: 14

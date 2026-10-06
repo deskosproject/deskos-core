@@ -75,6 +75,36 @@ The job is **experimental and has not been dispatched yet**. The first run
 establishes the real CVE baseline, and the Syft/Grype versions must be
 pinned before this gate blocks a release.
 
+## Signing and provenance
+
+The same workflow, with `publish` on `main`, pushes the scanned image and
+signs it **keyless** with [cosign](https://docs.sigstore.dev/): Fulcio
+issues a short-lived certificate bound to the workflow's OIDC identity,
+Rekor records the signature, and the **installed** SBOM is attached as a
+CycloneDX attestation. The digest is the unit of promotion.
+
+```bash
+cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
+  quay.io/deskos/deskos-core@sha256:…
+cosign verify-attestation --type cyclonedx \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
+  quay.io/deskos/deskos-core@sha256:…
+```
+
+Keyless signing needs a GitHub Actions OIDC identity, so it covers the
+CentOS Stream 10 CI path. **RHEL builds run on the entitled factory host
+with no OIDC**: sign them with a cosign key kept outside this repository
+and verify against its public key.
+
+The signing steps are **experimental and have not been dispatched**. Open
+design point: a digest should be boot-tested, scanned and signed in one
+run; today `vm-bootcheck` publishes the boot-tested image and this workflow
+signs the scanned one, so promoting a single digest needs the two gates
+unified.
+
 ## Promotion gate (proposed)
 
 A digest moves forward only when, for that digest:

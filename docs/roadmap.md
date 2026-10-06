@@ -119,13 +119,16 @@ how-to: [supply-chain.md](supply-chain.md).
 
 - **Done (v0.8.0):** `deskosctl sbom`, the deterministic declared
   (CycloneDX) SBOM of a Plan.
-- **Added, not yet dispatched:** `.github/workflows/supply-chain.yml`
+- **Added, first run pending:** `.github/workflows/supply-chain.yml`
   builds the CentOS Stream 10 image, produces the installed SBOM with
   Syft and scans it with Grype, compares the declared SBOM against the
   installed one (`tests/supply-chain/compare.py`), and uploads the
-  evidence.
-- Then: `cosign` signing and an SBOM/vulnerability attestation over the
-  digest; promotion by digest, never by a mutable tag.
+  evidence. With `publish` on `main` it also pushes the scanned image and
+  signs it **keyless** with `cosign`, attaching the installed SBOM as a
+  CycloneDX attestation.
+- Remaining for stage 3: key-based signing on the RHEL factory host (no
+  OIDC there), and unifying the boot-check and scan gates so one digest is
+  tested, scanned and signed together.
 - Later: OpenSCAP evidence; candidate resources `TrustPolicy`,
   `ComplianceProfile`.
 
