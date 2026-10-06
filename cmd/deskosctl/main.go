@@ -15,6 +15,7 @@ import (
 	"github.com/deskosproject/deskos-core/internal/compiler"
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/model"
+	"github.com/deskosproject/deskos-core/internal/sbom"
 	"github.com/deskosproject/deskos-core/internal/textplan"
 )
 
@@ -24,6 +25,7 @@ Usage:
   deskosctl validate ROOT...
   deskosctl plan ROOT... --workstation NAME [--format text|json]
   deskosctl render ROOT... --workstation NAME --backend containerfile --output DIR
+  deskosctl sbom ROOT... --workstation NAME [--output FILE]
   deskosctl version
 
 A ROOT is a directory (searched recursively for *.yaml and *.yml) or a
@@ -62,6 +64,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = cmdPlan(args[1:], stdout)
 	case "render":
 		err = cmdRender(args[1:], stdout)
+	case "sbom":
+		err = cmdSBOM(args[1:], stdout)
 	case "version":
 		if len(args) > 1 {
 			err = usageError{"version takes no arguments"}
@@ -235,5 +239,41 @@ func cmdRender(args []string, stdout io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stdout, "rendered %s (%d files) to %s\n", p.Workstation.Name, len(files), *output)
+	return nil
+}
+
+// cmdSBOM writes the declared CycloneDX SBOM of one workstation: the
+// inputs the Plan selects, not the contents of a built image.
+func cmdSBOM(args []string, stdout io.Writer) error {
+	fs := newFlags("sbom")
+	ws := fs.String("workstation", "", "workstation to build the SBOM for")
+	output := fs.String("output", "", "write the SBOM to FILE instead of stdout")
+	roots, err := parse(fs, args)
+	if err != nil {
+		return err
+	}
+	if *ws == "" {
+		return usageError{"--workstation is required"}
+	}
+	c, cat, err := load(roots)
+	if err != nil {
+		return err
+	}
+	p, err := c.Plan(cat, *ws)
+	if err != nil {
+		return err
+	}
+	b, err := sbom.Build(p)
+	if err != nil {
+		return err
+	}
+	if *output == "" {
+		_, err = stdout.Write(b)
+		return err
+	}
+	if err := os.WriteFile(*output, b, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "wrote the declared SBOM of %s to %s\n", p.Workstation.Name, *output)
 	return nil
 }

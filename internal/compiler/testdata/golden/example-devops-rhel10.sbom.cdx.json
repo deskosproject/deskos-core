@@ -1,0 +1,366 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "operating-system",
+      "name": "example-devops-rhel10",
+      "version": "10",
+      "properties": [
+        {
+          "name": "deskos:platform",
+          "value": "rhel-10"
+        },
+        {
+          "name": "deskos:baseImage",
+          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "application",
+      "name": "openshift-client",
+      "version": "4.22.14",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/bin/oc"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "example-org-root",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3abcdda49dfa4b96f511cce7cba1419f09c0f155458b929bd4fa0ce262c37349"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "trust-anchor"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/etc/pki/ca-trust/source/anchors/example-org-root.crt"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "NetworkManager",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "bootc",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "buildah",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cockpit",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "cockpit-machines",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "code",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "firefox",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "firewalld",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "flatpak",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "git",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "gnome-shell-extension-dash-to-dock",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-chrome-stable",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-sans-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-sans-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "kubectl",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "libvirt",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plymouth",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plymouth-scripts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plymouth-system-theme",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "plymouth-theme-spinner",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "podman",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "qemu-kvm",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "skopeo",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "terraform",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "toolbox",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vim-enhanced",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "virt-install",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "virt-viewer",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "xdg-utils",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "operating-system",
+      "name": "registry.redhat.io/rhel10/rhel-bootc:10.2",
+      "version": "sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
+        }
+      ]
+    }
+  ]
+}

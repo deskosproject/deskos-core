@@ -100,6 +100,7 @@ The artifact-factory CLI is `deskosctl`. The initial workflow is:
 deskosctl validate ...
 deskosctl plan ...
 deskosctl render ...
+deskosctl sbom ...
 deskosctl version
 ```
 
@@ -108,7 +109,11 @@ deskosctl version
 | `validate` | checks resources and composition |
 | `plan` | shows the effective workstation *before anything is built* |
 | `render` | produces a **deterministic** build context |
+| `sbom` | writes the declared CycloneDX SBOM of one workstation |
 | `version` | prints the release version and commit (`dev` and the Git revision for local builds) |
+
+The declared SBOM and where a CVE scan fits are described in
+[supply-chain.md](supply-chain.md).
 
 ## Releases
 

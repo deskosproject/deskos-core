@@ -12,6 +12,7 @@ import (
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
+	"github.com/deskosproject/deskos-core/internal/sbom"
 )
 
 var update = flag.Bool("update", false, "rewrite golden files")
@@ -65,6 +66,16 @@ func TestGoldenExampleRHELPlan(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden(t, "example-devops-rhel10.plan.json", b)
+}
+
+// The declared SBOM is part of the artifact evidence: it must be canonical
+// for the example workstation, like the plan and the Containerfile.
+func TestGoldenExampleRHELSBOM(t *testing.T) {
+	b, err := sbom.Build(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "example-devops-rhel10.sbom.cdx.json", b)
 }
 
 func TestGoldenContainerfiles(t *testing.T) {

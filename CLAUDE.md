@@ -361,6 +361,8 @@ At the end of substantial work, explain:
 - `internal/compose`: reference resolution and layered composition.
 - `internal/plan`: the typed Plan (IR).
 - `internal/backends/containerfile`: Plan to build context.
+- `internal/sbom`: declared CycloneDX SBOM of a Plan
+  ([supply-chain.md](docs/supply-chain.md)).
 - `internal/textplan`: the text form of `deskosctl plan`.
 - `internal/compiler`: pipeline wiring and the architecture, golden and
   composition tests. Refresh goldens with

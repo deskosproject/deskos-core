@@ -75,6 +75,27 @@ func TestRender(t *testing.T) {
 	}
 }
 
+func TestSBOM(t *testing.T) {
+	code, out, errOut := runCLI("sbom", "../../resources", "../../examples/example-org", "--workstation", "example-devops-rhel10")
+	if code != exitOK {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(out), &doc); err != nil || doc["bomFormat"] != "CycloneDX" {
+		t.Fatalf("invalid SBOM: %v\n%s", err, out)
+	}
+	outFile := filepath.Join(t.TempDir(), "sbom.json")
+	if code, _, errOut := runCLI("sbom", "../../resources", "--workstation", "deskos-core-centos10", "--output", outFile); code != exitOK {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if _, err := os.Stat(outFile); err != nil {
+		t.Errorf("missing %s", outFile)
+	}
+	if code, _, _ := runCLI("sbom", "../../resources"); code != exitUsage {
+		t.Errorf("sbom without --workstation: exit %d, want %d", code, exitUsage)
+	}
+}
+
 func TestValidatePrintsMaskedDockWarnings(t *testing.T) {
 	dir := t.TempDir()
 	files := map[string]string{

@@ -7,7 +7,7 @@ BIN      := bin/deskosctl
 CORE     := ./resources
 EXAMPLE   := ./examples/example-org
 
-.PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example golden clean
+.PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
 
 build:
 	$(GO) build -o $(BIN) ./cmd/deskosctl
@@ -42,6 +42,10 @@ render-centos: build
 
 render-example: build
 	$(BIN) render $(CORE) $(EXAMPLE) --workstation example-devops-rhel10 --backend containerfile --output dist/example-devops-rhel10
+
+sbom-example: build
+	mkdir -p dist
+	$(BIN) sbom $(CORE) $(EXAMPLE) --workstation example-devops-rhel10 --output dist/example-devops-rhel10.sbom.cdx.json
 
 golden:
 	$(GO) test ./internal/compiler -update
