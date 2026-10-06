@@ -114,8 +114,19 @@ Details in
 
 ## Milestone 6: compliance and supply chain
 
-- OpenSCAP evidence, SBOM, provenance attestations, keyless signing.
-- Candidate resources: `TrustPolicy`, `ComplianceProfile`.
+Plan and decision: [ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md);
+how-to: [supply-chain.md](supply-chain.md).
+
+- **Done (v0.8.0):** `deskosctl sbom`, the deterministic declared
+  (CycloneDX) SBOM of a Plan.
+- **Next:** a CI job that builds the CentOS Stream 10 image, produces the
+  installed SBOM with Syft, scans it with Grype and fails on critical,
+  uploads both as artifacts, and compares the declared SBOM against the
+  installed one.
+- Then: `cosign` signing and an SBOM/vulnerability attestation over the
+  digest; promotion by digest, never by a mutable tag.
+- Later: OpenSCAP evidence; candidate resources `TrustPolicy`,
+  `ComplianceProfile`.
 
 ## Milestone 7: release promotion and update UX
 

@@ -2,6 +2,8 @@
 
 How a DeskOS artifact states what it is made of, and where a CVE scan
 fits. This is an **initial** slice, not a finished attestation pipeline.
+The decision and staged plan are
+[ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md).
 
 ## Two bills of materials
 
@@ -65,6 +67,7 @@ A digest moves forward only when, for that digest:
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.
 
-Steps 1–2 are in place as of the declared-SBOM render; 3 needs a scan step
-in CI; 4 is future work. This is the "factory" layer around the compiler —
-it never enters compiler semantics (see `AGENTS.md`, invariant 11).
+Only the declared SBOM exists today (v0.8.0). Steps 2–4 are the next
+stages of [ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md). This
+is the "factory" layer around the compiler — it never enters compiler
+semantics (see `AGENTS.md`, invariant 11).
