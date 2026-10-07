@@ -5,7 +5,7 @@ GO       ?= go
 GOFMT    ?= gofmt
 BIN      := bin/deskosctl
 CORE     := ./resources
-EXAMPLE   := ./examples/example-org
+EXAMPLE   := ./examples/baseline-and-role
 
 .PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
 
@@ -30,6 +30,9 @@ check: fmt-check vet test validate
 
 validate: build
 	$(BIN) validate $(CORE) $(EXAMPLE)
+	$(BIN) validate $(CORE) ./examples/core-centos-stream-10
+	$(BIN) validate $(CORE) ./examples/core-almalinux-10
+	$(BIN) validate $(CORE) ./examples/core-rhel-10
 
 plan-centos: build
 	$(BIN) plan $(CORE) --workstation deskos-core-centos10

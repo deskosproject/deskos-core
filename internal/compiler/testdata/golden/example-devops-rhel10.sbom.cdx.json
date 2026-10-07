@@ -43,7 +43,7 @@
     },
     {
       "type": "data",
-      "name": "example-org-root",
+      "name": "example-root-ca",
       "hashes": [
         {
           "alg": "SHA-256",
@@ -57,7 +57,7 @@
         },
         {
           "name": "deskos:destination",
-          "value": "/etc/pki/ca-trust/source/anchors/example-org-root.crt"
+          "value": "/etc/pki/ca-trust/source/anchors/example-root-ca.crt"
         }
       ]
     },

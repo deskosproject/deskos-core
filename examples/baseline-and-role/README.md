@@ -1,10 +1,10 @@
-# Example organization
+# Example: a baseline and a role
 
-An example organization overlay. It is a **separate resource root** that
-references DeskOS resources by name:
+A **separate resource root** that composes an organization baseline and a
+role on top of DeskOS Core, referencing DeskOS resources by name:
 
 ```bash
-deskosctl plan ./resources ./examples/example-org --workstation example-devops-rhel10
+deskosctl plan ./resources ./examples/baseline-and-role --workstation example-devops-rhel10
 ```
 
 | Resource | Contents |
@@ -13,6 +13,10 @@ deskosctl plan ./resources ./examples/example-org --workstation example-devops-r
 | `example-devops` (role) | containers, virtualization, Terraform, kubectl, VS Code, Chrome and the OpenShift CLI |
 | `example-devops-rhel10` | the target |
 | `example-devops-centos10` | composes the same profiles on the public platform so it can be built without a subscription |
+
+The minimal per-platform examples live in the sibling directories
+(`core-centos-stream-10/`, `core-almalinux-10/`, `core-rhel-10/`); this one
+shows the *composition* axis (baseline + role) on EL10.
 
 ## Known gap: virt-manager
 
@@ -33,9 +37,9 @@ Composition and rendering are **validated for both targets**. The RHEL
 10.2 workstation is built on an entitled factory VM, passes
 `bootc container lint` with no build-host subscription state, and its
 QCOW2 passes the boot and session checks there, for each head of `main`
-(`tests/rhel/factory.py`). An earlier
-revision of the CentOS Stream 10 workstation was built with Podman; the
-current one is not built. Neither target has an E2E test.
+(`tests/rhel/factory.py`). An earlier revision of the CentOS Stream 10
+workstation was built with Podman; the current one is not built. Neither
+target has an E2E test.
 
 `assets/` holds placeholder artwork; see
 [`assets/PROVENANCE.md`](assets/PROVENANCE.md).

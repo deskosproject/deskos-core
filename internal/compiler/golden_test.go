@@ -19,7 +19,7 @@ var update = flag.Bool("update", false, "rewrite golden files")
 
 const (
 	resourcesRoot = "../../resources"
-	exampleRoot   = "../../examples/example-org"
+	exampleRoot   = "../../examples/baseline-and-role"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -296,7 +296,7 @@ func TestWallpaperReachesInitialSetupAsSchemaDefault(t *testing.T) {
 		light, dark string
 	}{
 		{"deskos-core-centos10", []string{resourcesRoot}, "deskos-light.svg", "deskos-dark.svg"},
-		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}, "example-org.svg", "example-org.svg"},
+		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}, "example.svg", "example.svg"},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		want := header + "[org.gnome.desktop.background]\n" +

@@ -3,7 +3,7 @@ kind: Workstation
 metadata:
   name: example-devops-rhel10
 spec:
-  displayName: Example Org DevOps Workstation
+  displayName: Example DevOps Workstation
   platformRef: rhel-10
   profiles:
     - deskos-core
@@ -16,7 +16,7 @@ kind: Workstation
 metadata:
   name: example-devops-centos10
 spec:
-  displayName: Example Org DevOps Workstation
+  displayName: Example DevOps Workstation
   platformRef: centos-stream-10
   profiles:
     - deskos-core

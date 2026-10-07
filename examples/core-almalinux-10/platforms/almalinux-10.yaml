@@ -1,0 +1,55 @@
+# Example: an organization target on AlmaLinux 10 (EL10, RHEL-compatible).
+# Modeled on the rhel-10 Platform; the platform facts (RPM group, Plymouth
+# packages, update units, trust store) are EL10 conventions and are NOT
+# verified against AlmaLinux. Rocky Linux publishes no bootc image today, so
+# AlmaLinux 10 (the closest EL10 bootc) stands in for it.
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  name: almalinux-10
+spec:
+  displayName: AlmaLinux 10
+  family: almalinux
+  release: "10"
+  architectures: [x86_64]
+  bootc:
+    image: quay.io/almalinuxorg/almalinux-bootc:10
+    # quay.io/almalinuxorg/almalinux-bootc:10, 2026-10-07.
+    digest: sha256:affae7bde1c852c5350d54c3e9dd0c82908b3d079b5cfcbe4c389330c4166aa8
+  distribution:
+    redistributable: true
+    requiresSubscription: false
+  packageGroups:
+    - name: workstation
+      rpmGroups: [workstation-product-environment]
+      graphical: true
+      excludePackages: [setroubleshoot, setroubleshoot-plugins, setroubleshoot-server]
+  displayManager: gdm.service
+  gnome:
+    dconfDatabase: distro
+    loginScreen: true
+    enabledExtensions: [background-logo@fedorahosted.org]
+    extensions:
+      - name: dash-to-dock
+        package: gnome-shell-extension-dash-to-dock
+        uuid: dash-to-dock@micxgx.gmail.com
+    appFolders: true
+    appLauncher:
+      package: gtk3
+      command: /usr/bin/gtk-launch
+  boot:
+    splashKernelArgument: rhgb
+    quietKernelArgument: quiet
+    plymouthPackages: [plymouth, plymouth-scripts, plymouth-system-theme]
+    plymouthDracutModule: plymouth
+    spinnerFrames:
+      package: plymouth-theme-spinner
+      imageDir: /usr/share/plymouth/themes/spinner
+  updates:
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+  flatpak:
+    package: flatpak
+    preinstall: true
+  trust:
+    anchorsDir: /etc/pki/ca-trust/source/anchors
+    updateCommand: update-ca-trust

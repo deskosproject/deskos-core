@@ -32,7 +32,7 @@ python3 -m unittest discover -s tests/supply-chain # SBOM comparison harness, sa
 Validate the included resources:
 
 ```bash
-./bin/deskosctl validate ./resources ./examples/example-org
+./bin/deskosctl validate ./resources ./examples/baseline-and-role
 ```
 
 Inspect the public CentOS reference workstation:
@@ -69,19 +69,19 @@ unchanged with `localhost/deskos-core-centos10` as the image reference.
 GNOME session against the plan; [`tests/rhel/`](../tests/rhel/README.md)
 does the same for RHEL on an entitled host.
 
-### Example organization
+### Example: baseline and role
 
-An example organization (`example-org`) with a RHEL 10 developer
-workstation is included separately to prove organization- and
-role-specific composition. It lives in its own resource root and reuses
+An example that composes an organization baseline and a developer role on
+RHEL 10 is included separately to prove organization- and role-specific
+composition. It lives in its own resource root and reuses
 DeskOS resources *without copying them*; see
-[examples/example-org/README.md](../examples/example-org/README.md):
+[examples/baseline-and-role/README.md](../examples/baseline-and-role/README.md):
 
 ```bash
-./bin/deskosctl plan ./resources ./examples/example-org \
+./bin/deskosctl plan ./resources ./examples/baseline-and-role \
   --workstation example-devops-rhel10
 
-./bin/deskosctl render ./resources ./examples/example-org \
+./bin/deskosctl render ./resources ./examples/baseline-and-role \
   --workstation example-devops-rhel10 \
   --output ./dist/example-devops-rhel10
 ```

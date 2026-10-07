@@ -14,13 +14,13 @@ schemas and composition) *without requiring Kubernetes*.
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: acme-developer-centos10
+  name: example-developer-centos10
 spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
-    - acme-baseline
-    - acme-developer
+    - example-baseline
+    - example-developer
 ```
 
 | Group | Kinds |
@@ -43,7 +43,7 @@ DeskOS resources by kind and name **without copying them**.
 - Asset paths are relative to the YAML file.
 - Every example below is a file from this repository
   ([`resources/`](../resources/) and
-  [`examples/example-org/`](../examples/example-org/)), except the
+  [`examples/baseline-and-role/`](../examples/baseline-and-role/)), except the
   `BinaryArtifact` desktop entry example.
 
 ## Resource kinds
@@ -60,7 +60,7 @@ kind: Workstation
 metadata:
   name: example-devops-centos10
 spec:
-  displayName: Example Org DevOps Workstation
+  displayName: Example DevOps Workstation
   platformRef: centos-stream-10
   profiles:
     - deskos-core
@@ -68,7 +68,7 @@ spec:
     - example-devops
 ```
 
-`deskosctl plan ./resources ./examples/example-org --workstation
+`deskosctl plan ./resources ./examples/baseline-and-role --workstation
 example-devops-centos10` shows the composed result, including **which
 layer won each setting**.
 
@@ -271,8 +271,8 @@ spec:
       buttons: [close]
     appearance:
       wallpaper:
-        light: ../assets/example-org.svg
-      loginLogo: ../assets/example-org-login-logo.svg
+        light: ../assets/example.svg
+      loginLogo: ../assets/example-login-logo.svg
       colorScheme: prefer-dark   # default | prefer-dark | prefer-light
       accentColor: teal          # blue, teal, green, yellow, orange, red, pink, purple, slate
     software:
@@ -372,11 +372,11 @@ generated units are described in
 apiVersion: system.deskos.org/v1alpha1
 kind: TrustAnchor
 metadata:
-  name: example-org-root
+  name: example-root-ca
 spec:
   anchors:
-    - name: example-org-root
-      file: ../assets/example-org-root-ca.crt
+    - name: example-root-ca
+      file: ../assets/example-root-ca.crt
 ```
 
 Each `file` is a PEM X.509 certificate inside the resource root and `name`

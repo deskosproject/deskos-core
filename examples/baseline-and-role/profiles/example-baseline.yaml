@@ -9,6 +9,6 @@ spec:
     - kind: PackageSet
       name: example-baseline
     - kind: TrustAnchor
-      name: example-org-root
+      name: example-root-ca
     - kind: GnomeProfile
       name: example-desktop

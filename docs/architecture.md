@@ -89,7 +89,8 @@ checked **twice**: against its JSON Schema, and by strict typed decoding
 with semantic validation in its provider.
 
 Several resource roots can be combined
-(`deskosctl plan ./resources ./acme ...`). An organization keeps its own
+(`deskosctl plan ./resources ./examples/baseline-and-role ...`). An
+organization keeps its own
 repository of resources and references DeskOS resources by name; it
 **never copies** them. Examples of every kind are in
 [resources.md](resources.md).
@@ -270,7 +271,7 @@ reason, and **composition fails with that reason** instead of dropping or
 substituting the package. The example organization shows this with
 `virt-manager`, which EL10 ships only in the CodeReady Linux Builder
 repository (unsupported on RHEL 10); see
-[`examples/example-org/README.md`](../examples/example-org/README.md).
+[`examples/baseline-and-role/README.md`](../examples/baseline-and-role/README.md).
 
 A Platform package group may list `excludePackages`: group members the
 platform does not install with the group. They become `--exclude` options

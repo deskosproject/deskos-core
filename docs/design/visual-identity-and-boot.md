@@ -133,7 +133,7 @@ the distribution's logo packages are never replaced or falsified.
 
 ## Example organization assets
 
-`examples/example-org/assets/` holds placeholder artwork drawn in this
+`examples/baseline-and-role/assets/` holds placeholder artwork drawn in this
 repository. A real organization supplies its own marks with owner, source
 file and permission recorded in its `PROVENANCE.md`. Its splash is the
 stock two-step spinner with its own watermark; custom frames, if ever

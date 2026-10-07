@@ -1,0 +1,9 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-core-rhel-10
+spec:
+  displayName: DeskOS Core (RHEL 10)
+  platformRef: rhel-10
+  profiles:
+    - deskos-core

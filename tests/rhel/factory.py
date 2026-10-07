@@ -36,7 +36,7 @@ REPO = "deskosproject/deskos-core"
 BRANCH = "main"
 CONTEXT = "deskos/rhel10"
 WORKSTATION = "example-devops-rhel10"
-RESOURCE_ROOTS = ["./resources", "./examples/example-org"]
+RESOURCE_ROOTS = ["./resources", "./examples/baseline-and-role"]
 # rhel10/bootc-image-builder amd64 manifest; move it deliberately.
 BIB = "registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b"
 KEEP_RUNS = 5

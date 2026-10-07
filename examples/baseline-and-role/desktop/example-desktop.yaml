@@ -8,8 +8,8 @@ spec:
       buttons: [close]
     appearance:
       wallpaper:
-        light: ../assets/example-org.svg
-      loginLogo: ../assets/example-org-login-logo.svg
+        light: ../assets/example.svg
+      loginLogo: ../assets/example-login-logo.svg
       fonts:
         interface: { family: Noto Sans, size: 11 }
         document: { family: Noto Sans, size: 11 }

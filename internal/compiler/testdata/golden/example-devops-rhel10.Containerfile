@@ -71,7 +71,7 @@ RUN set -eu; \
 
 # Trust anchors: the destination must not already exist
 RUN set -eu; \
-    for f in '/etc/pki/ca-trust/source/anchors/example-org-root.crt'; do \
+    for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt'; do \
         [ ! -e "$f" ] || { echo "$f already exists in the image" >&2; exit 1; }; \
     done
 
@@ -124,4 +124,4 @@ RUN rm -rf /var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /v
 
 LABEL org.deskos.platform="rhel-10" \
       org.deskos.workstation="example-devops-rhel10" \
-      org.opencontainers.image.title="Example Org DevOps Workstation"
+      org.opencontainers.image.title="Example DevOps Workstation"

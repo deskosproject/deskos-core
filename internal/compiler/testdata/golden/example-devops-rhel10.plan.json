@@ -2,8 +2,8 @@
   "format": "plan.deskos.org/v1alpha1",
   "workstation": {
     "name": "example-devops-rhel10",
-    "displayName": "Example Org DevOps Workstation",
-    "source": "example-org/workstations/example-devops.yaml:1"
+    "displayName": "Example DevOps Workstation",
+    "source": "baseline-and-role/workstations/example-devops.yaml:1"
   },
   "platform": {
     "name": "rhel-10",
@@ -26,12 +26,12 @@
     {
       "name": "example-baseline",
       "layer": "organization",
-      "source": "example-org/profiles/example-baseline.yaml:1"
+      "source": "baseline-and-role/profiles/example-baseline.yaml:1"
     },
     {
       "name": "example-devops",
       "layer": "role",
-      "source": "example-org/profiles/example-devops.yaml:1"
+      "source": "baseline-and-role/profiles/example-devops.yaml:1"
     }
   ],
   "artifact": {
@@ -51,7 +51,7 @@
       },
       {
         "name": "org.opencontainers.image.title",
-        "value": "Example Org DevOps Workstation"
+        "value": "Example DevOps Workstation"
       }
     ],
     "rpmRepositories": [
@@ -70,7 +70,7 @@
             "via": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/repositories.yaml:27"
+            "source": "baseline-and-role/software/repositories.yaml:27"
           }
         ]
       },
@@ -89,7 +89,7 @@
             "via": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/repositories.yaml:39"
+            "source": "baseline-and-role/software/repositories.yaml:39"
           }
         ]
       },
@@ -108,7 +108,7 @@
             "via": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/repositories.yaml:2"
+            "source": "baseline-and-role/software/repositories.yaml:2"
           }
         ]
       },
@@ -127,7 +127,7 @@
             "via": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/repositories.yaml:14"
+            "source": "baseline-and-role/software/repositories.yaml:14"
           }
         ]
       }
@@ -181,7 +181,7 @@
             "resource": "PackageSet/example-containers",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:1"
+            "source": "baseline-and-role/software/example-devops.yaml:1"
           }
         ]
       },
@@ -192,7 +192,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -203,7 +203,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -214,7 +214,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:42"
+            "source": "baseline-and-role/software/example-devops.yaml:42"
           }
         ]
       },
@@ -264,7 +264,7 @@
             "resource": "PackageSet/example-containers",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:1"
+            "source": "baseline-and-role/software/example-devops.yaml:1"
           }
         ]
       },
@@ -275,7 +275,7 @@
             "resource": "GnomeProfile/example-desktop",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/desktop/example-desktop.yaml:1"
+            "source": "baseline-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       },
@@ -286,7 +286,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:42"
+            "source": "baseline-and-role/software/example-devops.yaml:42"
           }
         ]
       },
@@ -297,7 +297,7 @@
             "resource": "PackageSet/example-baseline",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/software/example-baseline.yaml:1"
+            "source": "baseline-and-role/software/example-baseline.yaml:1"
           }
         ]
       },
@@ -308,7 +308,7 @@
             "resource": "PackageSet/example-baseline",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/software/example-baseline.yaml:1"
+            "source": "baseline-and-role/software/example-baseline.yaml:1"
           }
         ]
       },
@@ -319,7 +319,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:42"
+            "source": "baseline-and-role/software/example-devops.yaml:42"
           }
         ]
       },
@@ -330,7 +330,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -385,7 +385,7 @@
             "resource": "PackageSet/example-containers",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:1"
+            "source": "baseline-and-role/software/example-devops.yaml:1"
           }
         ]
       },
@@ -396,7 +396,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -407,7 +407,7 @@
             "resource": "PackageSet/example-containers",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:1"
+            "source": "baseline-and-role/software/example-devops.yaml:1"
           }
         ]
       },
@@ -418,7 +418,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:42"
+            "source": "baseline-and-role/software/example-devops.yaml:42"
           }
         ]
       },
@@ -429,7 +429,7 @@
             "resource": "PackageSet/example-containers",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:1"
+            "source": "baseline-and-role/software/example-devops.yaml:1"
           }
         ]
       },
@@ -440,7 +440,7 @@
             "resource": "PackageSet/example-baseline",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/software/example-baseline.yaml:1"
+            "source": "baseline-and-role/software/example-baseline.yaml:1"
           }
         ]
       },
@@ -451,7 +451,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -462,7 +462,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },
@@ -494,37 +494,37 @@
             "resource": "BinaryArtifact/openshift-client",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/openshift-client.yaml:1"
+            "source": "baseline-and-role/software/openshift-client.yaml:1"
           }
         ]
       }
     ],
     "files": [
       {
-        "path": "/usr/share/deskos/backgrounds/example-org.svg",
+        "path": "/usr/share/deskos/backgrounds/example.svg",
         "mode": "0644",
         "sha256": "0a32d5c09021dba7525d0aed0934e59d2f68e87836d15a1dcaf87fdc1a42a37f",
-        "asset": "example-org/assets/example-org.svg",
+        "asset": "baseline-and-role/assets/example.svg",
         "provenance": [
           {
             "resource": "GnomeProfile/example-desktop",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/desktop/example-desktop.yaml:1"
+            "source": "baseline-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       },
       {
-        "path": "/usr/share/deskos/branding/example-org-login-logo.svg",
+        "path": "/usr/share/deskos/branding/example-login-logo.svg",
         "mode": "0644",
         "sha256": "1860119bfa8a4b6171a1b3adc27888c71c9f859521913aaa8082b23570caa942",
-        "asset": "example-org/assets/example-org-login-logo.svg",
+        "asset": "baseline-and-role/assets/example-login-logo.svg",
         "provenance": [
           {
             "resource": "GnomeProfile/example-desktop",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/desktop/example-desktop.yaml:1"
+            "source": "baseline-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       },
@@ -545,16 +545,16 @@
     ],
     "trustAnchors": [
       {
-        "name": "example-org-root",
-        "path": "/etc/pki/ca-trust/source/anchors/example-org-root.crt",
+        "name": "example-root-ca",
+        "path": "/etc/pki/ca-trust/source/anchors/example-root-ca.crt",
         "sha256": "3abcdda49dfa4b96f511cce7cba1419f09c0f155458b929bd4fa0ce262c37349",
-        "asset": "example-org/assets/example-org-root-ca.crt",
+        "asset": "baseline-and-role/assets/example-root-ca.crt",
         "provenance": [
           {
-            "resource": "TrustAnchor/example-org-root",
+            "resource": "TrustAnchor/example-root-ca",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/system/trust-anchors.yaml:5"
+            "source": "baseline-and-role/system/trust-anchors.yaml:5"
           }
         ]
       }
@@ -563,10 +563,10 @@
       "command": "update-ca-trust",
       "provenance": [
         {
-          "resource": "TrustAnchor/example-org-root",
+          "resource": "TrustAnchor/example-root-ca",
           "profile": "example-baseline",
           "layer": "organization",
-          "source": "example-org/system/trust-anchors.yaml:5"
+          "source": "baseline-and-role/system/trust-anchors.yaml:5"
         }
       ]
     },
@@ -578,28 +578,28 @@
         {
           "key": "/org/gnome/desktop/background/picture-uri",
           "type": "s",
-          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
           "setting": "appearance.wallpaper",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
         {
           "key": "/org/gnome/desktop/background/picture-uri-dark",
           "type": "s",
-          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
           "setting": "appearance.wallpaper",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -613,7 +613,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -627,7 +627,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -641,7 +641,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -655,7 +655,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -669,21 +669,21 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
         {
           "key": "/org/gnome/desktop/screensaver/picture-uri",
           "type": "s",
-          "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+          "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
           "setting": "appearance.wallpaper",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -697,7 +697,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -711,7 +711,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             },
             {
               "resource": "GnomeProfile/deskos-core",
@@ -724,14 +724,14 @@
         {
           "key": "/org/gnome/login-screen/logo",
           "type": "s",
-          "value": "'/usr/share/deskos/branding/example-org-login-logo.svg'",
+          "value": "'/usr/share/deskos/branding/example-login-logo.svg'",
           "setting": "appearance.loginLogo",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -745,7 +745,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -759,7 +759,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -773,7 +773,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -787,7 +787,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -801,7 +801,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -815,7 +815,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -829,7 +829,7 @@
               "resource": "GnomeProfile/example-desktop",
               "profile": "example-baseline",
               "layer": "organization",
-              "source": "example-org/desktop/example-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },
@@ -843,7 +843,7 @@
               "resource": "GnomeProfile/example-devops-desktop",
               "profile": "example-devops",
               "layer": "role",
-              "source": "example-org/desktop/example-devops-desktop.yaml:1"
+              "source": "baseline-and-role/desktop/example-devops-desktop.yaml:1"
             }
           ]
         },
@@ -883,14 +883,14 @@
         "schema": "org.gnome.desktop.background",
         "key": "picture-uri",
         "type": "s",
-        "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+        "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
         "setting": "appearance.wallpaper",
         "provenance": [
           {
             "resource": "GnomeProfile/example-desktop",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/desktop/example-desktop.yaml:1"
+            "source": "baseline-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       },
@@ -898,14 +898,14 @@
         "schema": "org.gnome.desktop.background",
         "key": "picture-uri-dark",
         "type": "s",
-        "value": "'file:///usr/share/deskos/backgrounds/example-org.svg'",
+        "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
         "setting": "appearance.wallpaper",
         "provenance": [
           {
             "resource": "GnomeProfile/example-desktop",
             "profile": "example-baseline",
             "layer": "organization",
-            "source": "example-org/desktop/example-desktop.yaml:1"
+            "source": "baseline-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       }
@@ -972,7 +972,7 @@
             "resource": "PackageSet/example-virtualization",
             "profile": "example-devops",
             "layer": "role",
-            "source": "example-org/software/example-devops.yaml:13"
+            "source": "baseline-and-role/software/example-devops.yaml:13"
           }
         ]
       },

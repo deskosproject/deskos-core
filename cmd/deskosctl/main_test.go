@@ -16,7 +16,7 @@ func runCLI(args ...string) (int, string, string) {
 }
 
 func TestValidate(t *testing.T) {
-	code, out, errOut := runCLI("validate", "../../resources", "../../examples/example-org")
+	code, out, errOut := runCLI("validate", "../../resources", "../../examples/baseline-and-role")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -24,14 +24,14 @@ func TestValidate(t *testing.T) {
 		t.Errorf("unexpected output: %s", out)
 	}
 	// An organization overlay alone cannot resolve DeskOS Core.
-	code, _, errOut = runCLI("validate", "../../examples/example-org")
+	code, _, errOut = runCLI("validate", "../../examples/baseline-and-role")
 	if code != exitInvalid || !strings.Contains(errOut, "Profile/deskos-core, which is not defined") {
 		t.Errorf("exit %d: %s", code, errOut)
 	}
 }
 
 func TestPlanFlagsAfterRoots(t *testing.T) {
-	code, out, errOut := runCLI("plan", "../../resources", "../../examples/example-org", "--workstation", "example-devops-rhel10")
+	code, out, errOut := runCLI("plan", "../../resources", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -76,7 +76,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestSBOM(t *testing.T) {
-	code, out, errOut := runCLI("sbom", "../../resources", "../../examples/example-org", "--workstation", "example-devops-rhel10")
+	code, out, errOut := runCLI("sbom", "../../resources", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -139,7 +139,7 @@ spec:
 		t.Errorf("stdout = %q", out)
 	}
 
-	_, _, errOut = runCLI("validate", "../../resources", "../../examples/example-org")
+	_, _, errOut = runCLI("validate", "../../resources", "../../examples/baseline-and-role")
 	if strings.Contains(errOut, "masked") {
 		t.Errorf("current resources report masked dock options:\n%s", errOut)
 	}

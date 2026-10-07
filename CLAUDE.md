@@ -315,7 +315,7 @@ Important properties include:
 - deterministic JSON plans;
 - deterministic render output;
 - CentOS Core golden plan;
-- RHEL example-org golden plan.
+- RHEL example golden plan.
 
 Tests should verify architecture, not just code coverage.
 

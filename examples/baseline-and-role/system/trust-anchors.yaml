@@ -5,8 +5,8 @@
 apiVersion: system.deskos.org/v1alpha1
 kind: TrustAnchor
 metadata:
-  name: example-org-root
+  name: example-root-ca
 spec:
   anchors:
-    - name: example-org-root
-      file: ../assets/example-org-root-ca.crt
+    - name: example-root-ca
+      file: ../assets/example-root-ca.crt
