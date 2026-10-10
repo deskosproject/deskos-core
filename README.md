@@ -63,22 +63,22 @@ Compiling a workstation is five commands, and this is exactly what CI runs
 on `main`:
 
 ```bash
-# 1. Get deskosctl and the DeskOS resources of one release (no Go needed).
+# 1. Get deskosctl of one release. DeskOS Core is embedded in it, so there is
+#    nothing else to download. (SHA256SUMS also lists the resources tar, kept
+#    for inspection; --ignore-missing checks only what you fetched.)
 VERSION=v0.9.1
 base="https://github.com/deskosproject/deskos-core/releases/download/$VERSION"
-curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" \
-     -O "$base/deskos-resources-$VERSION.tar.gz" -O "$base/SHA256SUMS"
-sha256sum -c SHA256SUMS
+curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
+sha256sum -c --ignore-missing SHA256SUMS
 chmod +x "deskosctl-$VERSION-linux-amd64"
-tar -xzf "deskos-resources-$VERSION.tar.gz"
 
-# 2. Validate the resources, then read the composed workstation.
-./deskosctl-$VERSION-linux-amd64 validate ./resources
-./deskosctl-$VERSION-linux-amd64 plan ./resources --workstation deskos-core-centos10
+# 2. Validate Core, then read the composed workstation.
+./deskosctl-$VERSION-linux-amd64 validate
+./deskosctl-$VERSION-linux-amd64 plan --workstation deskos-core-centos10
 
 # 3. Render a deterministic build context: the same inputs give the same
 #    bytes, and generated-manifest.json records their SHA-256.
-./deskosctl-$VERSION-linux-amd64 render ./resources \
+./deskosctl-$VERSION-linux-amd64 render \
     --workstation deskos-core-centos10 --output ctx
 
 # 4. Build the bootable container image.

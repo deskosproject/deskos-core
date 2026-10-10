@@ -48,8 +48,8 @@ spec:
 ```
 
 ```bash
-deskosctl plan ./resources ./my-org --workstation lab        # read the composed machine
-deskosctl render ./resources ./my-org --workstation lab --output ctx
+deskosctl plan ./my-org --workstation lab        # Core is embedded; read the composed machine
+deskosctl render ./my-org --workstation lab --output ctx
 sudo podman build -t localhost/lab ctx
 ```
 

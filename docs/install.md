@@ -71,19 +71,20 @@ reboot (see [Updates](architecture.md#updates)).
 Build on a **registered RHEL 10 host** logged in to `registry.redhat.io`,
 as root (the build runs as root).
 
-**1. Get `deskosctl` and the DeskOS resources** of the same release from
-[GitHub Releases](https://github.com/deskosproject/deskos-core/releases),
-both covered by `SHA256SUMS`. No Go toolchain or git is needed:
+**1. Get `deskosctl`** — DeskOS Core is embedded in it — of the desired
+release from
+[GitHub Releases](https://github.com/deskosproject/deskos-core/releases).
+`SHA256SUMS` covers the binary and the resources tar (kept for inspection;
+`--ignore-missing` checks only what you fetched). No Go toolchain or git is
+needed:
 
 ```bash
 VERSION=v0.9.1
 base=https://github.com/deskosproject/deskos-core/releases/download/$VERSION
 mkdir deskos && cd deskos
-curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" \
-     -O "$base/deskos-resources-$VERSION.tar.gz" -O "$base/SHA256SUMS"
-sha256sum -c SHA256SUMS
+curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
+sha256sum -c --ignore-missing SHA256SUMS
 install -D -m 0755 "deskosctl-$VERSION-linux-amd64" bin/deskosctl
-tar -xzf "deskos-resources-$VERSION.tar.gz"     # creates ./resources
 ```
 
 > [!NOTE]
@@ -111,7 +112,7 @@ should update from, in a registry that is **private to your
 organization**:
 
 ```bash
-./bin/deskosctl render ./resources ./my-org \
+./bin/deskosctl render ./my-org \
     --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
 sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
     ./dist/deskos-core-rhel10

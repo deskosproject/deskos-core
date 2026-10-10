@@ -88,11 +88,13 @@ Schemas live in `schemas/` and are embedded in `deskosctl`. Each kind is
 checked **twice**: against its JSON Schema, and by strict typed decoding
 with semantic validation in its provider.
 
-Several resource roots can be combined
-(`deskosctl plan ./resources ./examples/baseline-and-role ...`). An
-organization keeps its own
-repository of resources and references DeskOS resources by name; it
-**never copies** them. Examples of every kind are in
+DeskOS Core is **embedded in `deskosctl`** — it is small and versioned with
+the compiler — so a run loads it plus the resource roots you pass. Several
+organization roots can be combined (`deskosctl plan ./one ./two ...`), and
+an organization keeps its own repository of resources and references DeskOS
+resources by name; it **never copies** them. `--no-core` drops the embedded
+Core, and `deskosctl core export DIR` writes it for inspection.
+Examples of every kind are in
 [resources.md](resources.md).
 
 ## Core, organizations and roles

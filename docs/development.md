@@ -32,13 +32,13 @@ python3 -m unittest discover -s tests/supply-chain # SBOM comparison harness, sa
 Validate the included resources:
 
 ```bash
-./bin/deskosctl validate ./resources ./examples/baseline-and-role
+./bin/deskosctl validate ./examples/baseline-and-role
 ```
 
 Inspect the public CentOS reference workstation:
 
 ```bash
-./bin/deskosctl plan ./resources \
+./bin/deskosctl plan \
   --workstation deskos-core-centos10
 ```
 
@@ -51,7 +51,7 @@ Contributors build the image from their checkout instead of pulling it.
 1. Render the build context:
 
    ```bash
-   ./bin/deskosctl render ./resources \
+   ./bin/deskosctl render \
      --workstation deskos-core-centos10 \
      --backend containerfile \
      --output ./dist/deskos-core-centos10
@@ -78,10 +78,10 @@ DeskOS resources *without copying them*; see
 [examples/baseline-and-role/README.md](../examples/baseline-and-role/README.md):
 
 ```bash
-./bin/deskosctl plan ./resources ./examples/baseline-and-role \
+./bin/deskosctl plan ./examples/baseline-and-role \
   --workstation example-devops-rhel10
 
-./bin/deskosctl render ./resources ./examples/baseline-and-role \
+./bin/deskosctl render ./examples/baseline-and-role \
   --workstation example-devops-rhel10 \
   --output ./dist/example-devops-rhel10
 ```

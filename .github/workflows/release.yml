@@ -71,7 +71,11 @@ jobs:
           tar --sort=name --mtime="@$(git log -1 --format=%ct)" --owner=0 --group=0 --numeric-owner \
             -cf - resources | gzip -9n > "release/$resources"
           mkdir -p /tmp/check && tar -xzf "release/$resources" -C /tmp/check
-          "release/$asset" validate /tmp/check/resources
+          # The tar is the Core the binary carries: validate it standalone and
+          # prove it is byte for byte what core export writes.
+          "release/$asset" validate --no-core /tmp/check/resources
+          mkdir -p /tmp/embedded && "release/$asset" core export /tmp/embedded
+          diff -r /tmp/embedded/resources /tmp/check/resources
           (cd release && sha256sum "$asset" "$resources" > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:

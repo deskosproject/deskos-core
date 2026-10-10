@@ -4,7 +4,8 @@
 GO       ?= go
 GOFMT    ?= gofmt
 BIN      := bin/deskosctl
-CORE     := ./resources
+# DeskOS Core is embedded in the binary; only an organization's resources are
+# passed on the command line.
 EXAMPLE   := ./examples/baseline-and-role
 
 .PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
@@ -29,26 +30,26 @@ vet:
 check: fmt-check vet test validate
 
 validate: build
-	$(BIN) validate $(CORE) $(EXAMPLE)
-	$(BIN) validate $(CORE) ./examples/core-centos-stream-10
-	$(BIN) validate $(CORE) ./examples/core-almalinux-10
-	$(BIN) validate $(CORE) ./examples/core-rhel-10
+	$(BIN) validate $(EXAMPLE)
+	$(BIN) validate ./examples/core-centos-stream-10
+	$(BIN) validate ./examples/core-almalinux-10
+	$(BIN) validate ./examples/core-rhel-10
 
 plan-centos: build
-	$(BIN) plan $(CORE) --workstation deskos-core-centos10
+	$(BIN) plan --workstation deskos-core-centos10
 
 plan-example: build
-	$(BIN) plan $(CORE) $(EXAMPLE) --workstation example-devops-rhel10
+	$(BIN) plan $(EXAMPLE) --workstation example-devops-rhel10
 
 render-centos: build
-	$(BIN) render $(CORE) --workstation deskos-core-centos10 --backend containerfile --output dist/deskos-core-centos10
+	$(BIN) render --workstation deskos-core-centos10 --backend containerfile --output dist/deskos-core-centos10
 
 render-example: build
-	$(BIN) render $(CORE) $(EXAMPLE) --workstation example-devops-rhel10 --backend containerfile --output dist/example-devops-rhel10
+	$(BIN) render $(EXAMPLE) --workstation example-devops-rhel10 --backend containerfile --output dist/example-devops-rhel10
 
 sbom-example: build
 	mkdir -p dist
-	$(BIN) sbom $(CORE) $(EXAMPLE) --workstation example-devops-rhel10 --output dist/example-devops-rhel10.sbom.cdx.json
+	$(BIN) sbom $(EXAMPLE) --workstation example-devops-rhel10 --output dist/example-devops-rhel10.sbom.cdx.json
 
 golden:
 	$(GO) test ./internal/compiler -update

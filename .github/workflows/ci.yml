@@ -39,21 +39,27 @@ jobs:
       - name: validate resources and examples
         run: |
           for ex in baseline-and-role core-centos-stream-10 core-almalinux-10 core-rhel-10; do
-            ./bin/deskosctl validate ./resources "./examples/$ex"
+            ./bin/deskosctl validate "./examples/$ex"
           done
       - name: plan CentOS reference workstation
-        run: ./bin/deskosctl plan ./resources --workstation deskos-core-centos10
+        run: ./bin/deskosctl plan --workstation deskos-core-centos10
       - name: plan per-platform examples
         run: |
-          ./bin/deskosctl plan ./resources ./examples/core-centos-stream-10 --workstation example-core-centos-stream-10
-          ./bin/deskosctl plan ./resources ./examples/core-almalinux-10 --workstation example-core-almalinux-10
-          ./bin/deskosctl plan ./resources ./examples/core-rhel-10 --workstation example-core-rhel-10
+          ./bin/deskosctl plan ./examples/core-centos-stream-10 --workstation example-core-centos-stream-10
+          ./bin/deskosctl plan ./examples/core-almalinux-10 --workstation example-core-almalinux-10
+          ./bin/deskosctl plan ./examples/core-rhel-10 --workstation example-core-rhel-10
       - name: plan example RHEL workstation
-        run: ./bin/deskosctl plan ./resources ./examples/baseline-and-role --workstation example-devops-rhel10
+        run: ./bin/deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel10
       - name: render twice and compare
         run: |
+          # The embedded Core, twice (determinism), and a Core passed in two
+          # orders with --no-core (order independence), all identical.
           for ws in deskos-core-centos10 example-devops-rhel10; do
-            ./bin/deskosctl render ./resources ./examples/baseline-and-role --workstation "$ws" --output "dist/a/$ws"
-            ./bin/deskosctl render ./examples/baseline-and-role ./resources --workstation "$ws" --output "dist/b/$ws"
+            ./bin/deskosctl render ./examples/baseline-and-role --workstation "$ws" --output "dist/a/$ws"
+            ./bin/deskosctl render ./examples/baseline-and-role --workstation "$ws" --output "dist/b/$ws"
+            ./bin/deskosctl render --no-core ./resources ./examples/baseline-and-role --workstation "$ws" --output "dist/c/$ws"
+            ./bin/deskosctl render --no-core ./examples/baseline-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
           done
           diff -r dist/a dist/b
+          diff -r dist/a dist/c
+          diff -r dist/a dist/d

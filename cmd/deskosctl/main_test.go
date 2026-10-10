@@ -16,22 +16,43 @@ func runCLI(args ...string) (int, string, string) {
 }
 
 func TestValidate(t *testing.T) {
-	code, out, errOut := runCLI("validate", "../../resources", "../../examples/baseline-and-role")
+	// The embedded Core is loaded by default.
+	code, out, errOut := runCLI("validate", "../../examples/baseline-and-role")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
 	if !strings.Contains(out, "example-devops-rhel10") || !strings.Contains(out, "deskos-core-centos10") {
 		t.Errorf("unexpected output: %s", out)
 	}
-	// An organization overlay alone cannot resolve DeskOS Core.
-	code, _, errOut = runCLI("validate", "../../examples/baseline-and-role")
+	// --no-core drops it, so an organization overlay alone cannot resolve Core.
+	code, _, errOut = runCLI("validate", "--no-core", "../../examples/baseline-and-role")
 	if code != exitInvalid || !strings.Contains(errOut, "Profile/deskos-core, which is not defined") {
 		t.Errorf("exit %d: %s", code, errOut)
+	}
+	// With --no-core, the same tree works when it is passed explicitly.
+	if code, _, errOut := runCLI("validate", "--no-core", "../../resources", "../../examples/baseline-and-role"); code != exitOK {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+}
+
+func TestCoreExport(t *testing.T) {
+	dir := t.TempDir()
+	code, out, errOut := runCLI("core", "export", dir)
+	if code != exitOK {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if !strings.Contains(out, "embedded DeskOS Core") {
+		t.Errorf("unexpected output: %s", out)
+	}
+	for _, f := range []string{"resources/platforms/centos-stream-10.yaml", "resources/assets/deskos"} {
+		if _, err := os.Stat(filepath.Join(dir, f)); err != nil {
+			t.Errorf("exported Core lacks %s: %v", f, err)
+		}
 	}
 }
 
 func TestPlanFlagsAfterRoots(t *testing.T) {
-	code, out, errOut := runCLI("plan", "../../resources", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
+	code, out, errOut := runCLI("plan", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -40,7 +61,7 @@ func TestPlanFlagsAfterRoots(t *testing.T) {
 			t.Errorf("plan output lacks %q", want)
 		}
 	}
-	code, out, _ = runCLI("plan", "--format", "json", "--workstation", "deskos-core-centos10", "../../resources")
+	code, out, _ = runCLI("plan", "--format", "json", "--workstation", "deskos-core-centos10", "../../resources", "--no-core")
 	if code != exitOK {
 		t.Fatalf("exit %d", code)
 	}
@@ -60,7 +81,7 @@ func TestUsageErrors(t *testing.T) {
 
 func TestRender(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "ctx")
-	code, _, errOut := runCLI("render", "../../resources", "--workstation", "deskos-core-centos10", "--backend", "containerfile", "--output", out)
+	code, _, errOut := runCLI("render", "--workstation", "deskos-core-centos10", "--backend", "containerfile", "--output", out)
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -69,14 +90,14 @@ func TestRender(t *testing.T) {
 			t.Errorf("missing %s", f)
 		}
 	}
-	code, _, errOut = runCLI("render", "../../resources", "--workstation", "deskos-core-centos10", "--backend", "other", "--output", out)
+	code, _, errOut = runCLI("render", "--workstation", "deskos-core-centos10", "--backend", "other", "--output", out)
 	if code != exitUsage {
 		t.Errorf("unknown backend: exit %d: %s", code, errOut)
 	}
 }
 
 func TestSBOM(t *testing.T) {
-	code, out, errOut := runCLI("sbom", "../../resources", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
+	code, out, errOut := runCLI("sbom", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -85,7 +106,7 @@ func TestSBOM(t *testing.T) {
 		t.Fatalf("invalid SBOM: %v\n%s", err, out)
 	}
 	outFile := filepath.Join(t.TempDir(), "sbom.json")
-	if code, _, errOut := runCLI("sbom", "../../resources", "--workstation", "deskos-core-centos10", "--output", outFile); code != exitOK {
+	if code, _, errOut := runCLI("sbom", "--workstation", "deskos-core-centos10", "--output", outFile); code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
 	if _, err := os.Stat(outFile); err != nil {
@@ -127,7 +148,7 @@ spec:
 			t.Fatal(err)
 		}
 	}
-	code, out, errOut := runCLI("validate", dir)
+	code, out, errOut := runCLI("validate", "--no-core", dir)
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -139,7 +160,7 @@ spec:
 		t.Errorf("stdout = %q", out)
 	}
 
-	_, _, errOut = runCLI("validate", "../../resources", "../../examples/baseline-and-role")
+	_, _, errOut = runCLI("validate", "../../examples/baseline-and-role")
 	if strings.Contains(errOut, "masked") {
 		t.Errorf("current resources report masked dock options:\n%s", errOut)
 	}

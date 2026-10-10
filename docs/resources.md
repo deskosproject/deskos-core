@@ -36,8 +36,10 @@ All kinds are `v1alpha1`. Their JSON Schemas are in
 ## Resource roots
 
 Resources live in YAML files under **one or more resource roots**. DeskOS
-ships `./resources`; an organization keeps its own root and references
-DeskOS resources by kind and name **without copying them**.
+Core is **embedded in `deskosctl`** and loaded by default; an organization
+keeps its own root and references Core resources by kind and name
+**without copying them**. `--no-core` drops the embedded Core, to compile
+against a Core tree you pass, and `deskosctl core export DIR` writes it out.
 
 - File and directory names have no meaning.
 - Asset paths are relative to the YAML file.
@@ -68,7 +70,7 @@ spec:
     - example-devops
 ```
 
-`deskosctl plan ./resources ./examples/baseline-and-role --workstation
+`deskosctl plan ./examples/baseline-and-role --workstation
 example-devops-centos10` shows the composed result, including **which
 layer won each setting**.
 

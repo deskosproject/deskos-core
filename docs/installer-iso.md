@@ -19,7 +19,7 @@ from, so **that reference is where installed machines update from**.
   update from; a `localhost/` tag leaves them *without an update source*:
 
   ```bash
-  deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
+  deskosctl render --workstation deskos-core-centos10 --output ctx
   sudo podman build -t quay.io/example/deskos-core:stable ctx
   ```
 
