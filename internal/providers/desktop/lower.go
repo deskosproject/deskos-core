@@ -25,6 +25,10 @@ const gtk4UserCSSPath = "/etc/skel/.config/gtk-4.0/gtk.css"
 // gtk3UserCSSPath is read by every GTK3 app, alongside its theme.
 const gtk3UserCSSPath = "/etc/skel/.config/gtk-3.0/gtk.css"
 
+// ptyxisPalettesDir holds Ptyxis terminal palettes for the session user. A
+// system image seeds it through the user skeleton.
+const ptyxisPalettesDir = "/etc/skel/.local/share/org.gnome.Ptyxis/palettes"
+
 // welcomeDialogShownVersion is gnome-shell's WELCOME_DIALOG_LAST_TOUR_CHANGE.
 // At or after it the shell does not show its first-run welcome dialog.
 const welcomeDialogShownVersion = "40.beta"
@@ -116,6 +120,13 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 			plan.GeneratedFile{Path: gtk4UserCSSPath, Mode: "0644", Content: libadwaitaCSS(pal), Provenance: v.Provenance},
 			plan.GeneratedFile{Path: gtk3UserCSSPath, Mode: "0644", Content: gtk3CSS(pal), Provenance: v.Provenance},
 		)
+		if pal.terminalReady() {
+			l.p.Artifact.GeneratedFiles = append(l.p.Artifact.GeneratedFiles,
+				plan.GeneratedFile{
+					Path: path.Join(ptyxisPalettesDir, pal.Name+".palette"), Mode: "0644",
+					Content: ptyxisPalette(pal), Provenance: v.Provenance,
+				})
+		}
 	}
 
 	if v, ok := get(KeyWelcomeTour); ok && !v.Value.(bool) {
@@ -409,6 +420,27 @@ func gtk3CSS(p PaletteValue) string {
 	}
 	for _, n := range []string{"theme_fg_color", "theme_text_color", "window_fg_color", "view_fg_color", "headerbar_fg_color", "card_fg_color"} {
 		define(n, p.Foreground)
+	}
+	return b.String()
+}
+
+// ptyxisPalette renders a Ptyxis terminal palette (single scheme, so it
+// tracks the system color scheme) from the palette. The bright half reuses
+// the normal colors; black and white default to the background and
+// foreground.
+func ptyxisPalette(p PaletteValue) string {
+	black, white := p.Black, p.White
+	if black == "" {
+		black = p.Background
+	}
+	if white == "" {
+		white = p.Foreground
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "[Palette]\nName=%s\nPrimary=true\nForeground=%s\nBackground=%s\n", p.Name, p.Foreground, p.Background)
+	normal := []string{black, p.Red, p.Green, p.Yellow, p.Blue, p.Magenta, p.Cyan, white}
+	for i := 0; i < 16; i++ {
+		fmt.Fprintf(&b, "Color%d=%s\n", i, normal[i%8])
 	}
 	return b.String()
 }

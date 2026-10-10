@@ -48,23 +48,26 @@ colors.
 
 ## Slice 2: the palette (implemented)
 
-`palette` (`background`, `foreground`) makes a Theme generate a
-GTK4/libadwaita and a GTK3 named-color override (`--accent-*`,
-`--window-*`, `--view-*`, `--headerbar-*`, `--card-*`, `--sidebar-*`,
-`--popover-*`; `@accent_*`, `@theme_*`, …). The compiler synthesizes the
-files (a new `GeneratedFile` IR leaf, which needs no asset) and installs
-them at `/etc/skel/.config/gtk-{4,3}.0/gtk.css`, so users created by the
-installer or GNOME Initial Setup inherit them; libadwaita 1.4+ and GTK3
-read them next to Adwaita.
+`palette` makes a Theme generate the look's overrides. `background` and
+`foreground` produce a GTK4/libadwaita and a GTK3 named-color override
+(`--accent-*`, `--window-*`, `--view-*`, `--headerbar-*`, `--card-*`,
+`--sidebar-*`, `--popover-*`; `@accent_*`, `@theme_*`, …). The six normal
+ANSI colors (`red`…`cyan`, plus optional `black`/`white`) additionally
+produce a **Ptyxis terminal palette**. The compiler synthesizes the files (a
+new `GeneratedFile` IR leaf, which needs no asset) and installs them at
+`/etc/skel/…`, so users created by the installer or GNOME Initial Setup
+inherit them; libadwaita 1.4+, GTK3 and Ptyxis read them.
 
-Still out: terminals (Ptyxis palettes are user-scoped and chosen per
-profile) and the **GNOME Shell** stylesheet. The Shell replaces its whole
-stylesheet and needs the `user-theme` extension, so it is a separate,
-RPM-shaped track; GNOME 47+ already tints the Shell with `accent-color`.
+Still out: **selecting** the terminal palette (Ptyxis chooses a palette per
+profile, and the default profile's UUID is generated at first login, so a
+system image cannot preset it without provisioning a fixed profile) and the
+**GNOME Shell** stylesheet. The Shell replaces its whole stylesheet and needs
+the `user-theme` extension, so it is a separate, RPM-shaped track; GNOME 47+
+already tints the Shell with `accent-color`.
 
 ## Consequences
 
 - The public API has **exactly thirteen kinds**; a test enforces the count.
 - Themes are how DeskOS expresses "many looks" without repeating settings;
   an palette `colors.toml` is the reference palette shape.
-- **Not yet:** terminals and the GNOME Shell recoloring.
+- **Not yet:** selecting the terminal palette, and the GNOME Shell recoloring.

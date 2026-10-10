@@ -46,17 +46,48 @@ type ThemeSpec struct {
 	Wallpaper   *Wallpaper `json:"wallpaper,omitempty"`
 }
 
-// Palette is the free color set behind the generated GTK/libadwaita override.
+// Palette is the free color set behind the generated GTK and terminal
+// overrides. background and foreground feed GTK; the ANSI colors, when the
+// whole normal set is present, also produce a Ptyxis terminal palette.
 type Palette struct {
 	Background string `json:"background,omitempty"`
 	Foreground string `json:"foreground,omitempty"`
+	Black      string `json:"black,omitempty"`
+	Red        string `json:"red,omitempty"`
+	Green      string `json:"green,omitempty"`
+	Yellow     string `json:"yellow,omitempty"`
+	Blue       string `json:"blue,omitempty"`
+	Magenta    string `json:"magenta,omitempty"`
+	Cyan       string `json:"cyan,omitempty"`
+	White      string `json:"white,omitempty"`
 }
 
-// PaletteValue is the composed palette; Accent is the theme's free hex.
+// PaletteValue is the composed palette; Name is the Theme's resource name and
+// Accent is its free hex.
 type PaletteValue struct {
+	Name       string `json:"name"`
 	Accent     string `json:"accent,omitempty"`
 	Background string `json:"background,omitempty"`
 	Foreground string `json:"foreground,omitempty"`
+	Black      string `json:"black,omitempty"`
+	Red        string `json:"red,omitempty"`
+	Green      string `json:"green,omitempty"`
+	Yellow     string `json:"yellow,omitempty"`
+	Blue       string `json:"blue,omitempty"`
+	Magenta    string `json:"magenta,omitempty"`
+	Cyan       string `json:"cyan,omitempty"`
+	White      string `json:"white,omitempty"`
+}
+
+// terminalReady reports whether the palette carries what a Ptyxis palette
+// requires: a background, a foreground and the six normal ANSI colors.
+func (p PaletteValue) terminalReady() bool {
+	for _, c := range []string{p.Background, p.Foreground, p.Red, p.Green, p.Yellow, p.Blue, p.Magenta, p.Cyan} {
+		if c == "" {
+			return false
+		}
+	}
+	return true
 }
 
 var hexColorRE = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
@@ -96,22 +127,28 @@ func (theme) Decode(res *model.Resource) error {
 	}
 
 	if spec.Palette != nil {
-		pv := PaletteValue{Accent: spec.Accent}
-		if v := spec.Palette.Background; v != "" {
-			if hexColorRE.MatchString(v) {
-				pv.Background = v
-			} else {
-				bad("%s.background: expected a #RRGGBB color, got %q", KeyPalette, v)
+		p := spec.Palette
+		fields := []struct{ name, val string }{
+			{"background", p.Background}, {"foreground", p.Foreground},
+			{"black", p.Black}, {"red", p.Red}, {"green", p.Green}, {"yellow", p.Yellow},
+			{"blue", p.Blue}, {"magenta", p.Magenta}, {"cyan", p.Cyan}, {"white", p.White},
+		}
+		ok := true
+		for _, f := range fields {
+			if f.val != "" && !hexColorRE.MatchString(f.val) {
+				bad("%s.%s: expected a #RRGGBB color, got %q", KeyPalette, f.name, f.val)
+				ok = false
 			}
 		}
-		if v := spec.Palette.Foreground; v != "" {
-			if hexColorRE.MatchString(v) {
-				pv.Foreground = v
-			} else {
-				bad("%s.foreground: expected a #RRGGBB color, got %q", KeyPalette, v)
+		if ok {
+			pv := PaletteValue{
+				Name: res.Metadata.Name, Accent: spec.Accent,
+				Background: p.Background, Foreground: p.Foreground,
+				Black: p.Black, Red: p.Red, Green: p.Green, Yellow: p.Yellow,
+				Blue: p.Blue, Magenta: p.Magenta, Cyan: p.Cyan, White: p.White,
 			}
+			set(KeyPalette, pv, "background="+pv.Background+" foreground="+pv.Foreground)
 		}
-		set(KeyPalette, pv, "background="+pv.Background+" foreground="+pv.Foreground)
 	}
 
 	for key, v := range map[string]string{KeyIconTheme: spec.IconTheme, KeyCursorTheme: spec.CursorTheme} {

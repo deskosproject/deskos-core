@@ -26,7 +26,15 @@
           "minProperties": 1,
           "properties": {
             "background": { "$ref": "#/$defs/color" },
-            "foreground": { "$ref": "#/$defs/color" }
+            "foreground": { "$ref": "#/$defs/color" },
+            "black": { "$ref": "#/$defs/color" },
+            "red": { "$ref": "#/$defs/color" },
+            "green": { "$ref": "#/$defs/color" },
+            "yellow": { "$ref": "#/$defs/color" },
+            "blue": { "$ref": "#/$defs/color" },
+            "magenta": { "$ref": "#/$defs/color" },
+            "cyan": { "$ref": "#/$defs/color" },
+            "white": { "$ref": "#/$defs/color" }
           }
         },
         "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },

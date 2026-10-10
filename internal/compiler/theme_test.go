@@ -89,6 +89,49 @@ func TestThemePaletteGeneratesGTKCSS(t *testing.T) {
 			t.Errorf("gtk-3.0/gtk.css lacks %q:\n%s", want, gtk3)
 		}
 	}
+	// Without the normal ANSI colors there is no terminal palette.
+	if _, ok := files["rootfs/etc/skel/.local/share/org.gnome.Ptyxis/palettes/t.palette"]; ok {
+		t.Error("a palette without ANSI colors must not generate a terminal palette")
+	}
+}
+
+// A palette that carries the normal ANSI colors also seeds a Ptyxis terminal
+// palette in the user skeleton.
+func TestThemePaletteGeneratesTerminalPalette(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "Theme/t"),
+		"t.yaml": theme("t", ""+
+			"  mode: dark\n"+
+			"  accent: \"#b8bb26\"\n"+
+			"  palette:\n"+
+			"    background: \"#282828\"\n"+
+			"    foreground: \"#ebdbb2\"\n"+
+			"    red: \"#fb4934\"\n"+
+			"    green: \"#b8bb26\"\n"+
+			"    yellow: \"#fabd2f\"\n"+
+			"    blue: \"#83a598\"\n"+
+			"    magenta: \"#d3869b\"\n"+
+			"    cyan: \"#8ec07c\"\n"),
+	}).dir(t)
+	out, err := containerfile.Render(mustPlan(t, "ws", dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{}
+	for _, f := range out {
+		files[f.Path] = string(f.Data)
+	}
+	pal := files["rootfs/etc/skel/.local/share/org.gnome.Ptyxis/palettes/t.palette"]
+	for _, want := range []string{
+		"Name=t", "Primary=true",
+		"Foreground=#ebdbb2", "Background=#282828",
+		"Color1=#fb4934", "Color15=#ebdbb2",
+	} {
+		if !strings.Contains(pal, want) {
+			t.Errorf("terminal palette lacks %q:\n%s", want, pal)
+		}
+	}
 }
 
 // The first-run welcome dialog (the tour prompt) is optional and on by

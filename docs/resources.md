@@ -337,9 +337,15 @@ metadata:
 spec:
   mode: dark                    # dark | light
   accent: "#7aa2f7"             # any #RRGGBB; mapped to the closest GNOME accent
-  palette:                      # free colors for the libadwaita override
+  palette:                      # free colors for the GTK and terminal overrides
     background: "#1a1b26"
     foreground: "#a9b1d6"
+    red: "#f7768e"              # the six normal ANSI colors also produce
+    green: "#9ece6a"            # a Ptyxis terminal palette
+    yellow: "#e0af68"
+    blue: "#7aa2f7"
+    magenta: "#ad8ee6"
+    cyan: "#449dab"
   iconTheme: Yaru-blue
   cursorTheme: Adwaita
   fonts:
@@ -353,10 +359,11 @@ spec:
 - **`accent`** is any hex; it is mapped to the closest of GNOME's nine
   accents **by hue** (a light green stays green), with a `slate` fallback
   for near-achromatic colors.
-- **`palette`** makes the Theme generate a GTK4/libadwaita named-color
-  override at `/etc/skel/.config/gtk-4.0/gtk.css`, so apps recolor to the
-  palette (`--window-*`, `--view-*`, `--card-*`, `--accent-*`, …); it is
-  inherited by users the installer or GNOME Initial Setup create.
+- **`palette`** makes the Theme generate named-color overrides for
+  **GTK4/libadwaita and GTK3** (`/etc/skel/.config/gtk-{4,3}.0/gtk.css`), and,
+  when the six normal ANSI colors are present, a **Ptyxis terminal palette**
+  (`/etc/skel/.local/share/org.gnome.Ptyxis/palettes/`). Users the installer
+  or GNOME Initial Setup create inherit them.
 - **`wallpaper`**, **`fonts`**, **`iconTheme`** and **`cursorTheme`** are
   the same shapes and lowering as in `GnomeProfile.appearance`.
 
