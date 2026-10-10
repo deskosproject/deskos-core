@@ -10,8 +10,8 @@
 <p align="center">
   <a href="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml"><img alt="vm-bootcheck" src="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/deskosproject/deskos-core/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/deskosproject/deskos-core"></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/deskosproject/deskos-core"></a>
+  <a href="https://github.com/deskosproject/deskos-core/releases/latest"><img alt="release" src="https://img.shields.io/github/v/release/deskosproject/deskos-core?cacheSeconds=86400"></a>
+  <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/deskosproject/deskos-core?cacheSeconds=86400"></a>
 </p>
 
 **DeskOS is an open workstation artifact factory.** An organization
