@@ -1,4 +1,4 @@
-package desktop
+package theme
 
 import "testing"
 
@@ -14,13 +14,13 @@ func TestNearestAccent(t *testing.T) {
 		"#b8bb26": "yellow",
 		"#000000": "slate",
 	} {
-		if got, ok := nearestAccent(color); !ok || got != want {
-			t.Errorf("nearestAccent(%q) = %q, %v; want %q", color, got, ok, want)
+		if got, ok := NearestAccent(color); !ok || got != want {
+			t.Errorf("NearestAccent(%q) = %q, %v; want %q", color, got, ok, want)
 		}
 	}
 	for _, bad := range []string{"nope", "#12345", "#gggggg"} {
-		if _, ok := nearestAccent(bad); ok {
-			t.Errorf("nearestAccent(%q) accepted an invalid color", bad)
+		if _, ok := NearestAccent(bad); ok {
+			t.Errorf("NearestAccent(%q) accepted an invalid color", bad)
 		}
 	}
 }
