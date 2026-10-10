@@ -55,6 +55,51 @@ A `Workstation` is the resource you author: a machine definition. It
 compiles into a workstation **image** (a bootable container image). The
 name is DeskOS's composition kind, not a Fedora Workstation edition.
 
+## Quickstart
+
+Compiling a workstation is five commands, and this is exactly what CI runs
+on `main`:
+
+```bash
+# 1. Get deskosctl and the DeskOS resources of one release (no Go needed).
+VERSION=v0.9.1
+base="https://github.com/deskosproject/deskos-core/releases/download/$VERSION"
+curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" \
+     -O "$base/deskos-resources-$VERSION.tar.gz" -O "$base/SHA256SUMS"
+sha256sum -c SHA256SUMS
+chmod +x "deskosctl-$VERSION-linux-amd64"
+tar -xzf "deskos-resources-$VERSION.tar.gz"
+
+# 2. Validate the resources, then read the composed workstation.
+./deskosctl-$VERSION-linux-amd64 validate ./resources
+./deskosctl-$VERSION-linux-amd64 plan ./resources --workstation deskos-core-centos10
+
+# 3. Render a deterministic build context: the same inputs give the same
+#    bytes, and generated-manifest.json records their SHA-256.
+./deskosctl-$VERSION-linux-amd64 render ./resources \
+    --workstation deskos-core-centos10 --output ctx
+
+# 4. Build the bootable container image.
+sudo podman build -t localhost/deskos-core-centos10:test ctx
+
+# 5. Optional: a QCOW2 disk or an installer ISO from that image.
+sudo podman run --rm --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
+```
+
+**This flow has already been run, and its result is published.** The last
+image CI built and published from these steps is
+`quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe`
+(the `:latest` tag), from commit `8ab0cc9e…`; it is the one that passed
+`bootcheck.py` and `sessioncheck.py`. On every green `main`, the same steps
+run again and publish `:<commit>` and `:latest`. Compilation is
+deterministic — the rendered context is byte-identical for the same inputs,
+and its manifest carries their SHA-256 — so anyone can reproduce it from
+the same commit; the *build* is reproducible but not yet bit-for-bit.
+
 ## Composition
 
 <p align="center">
