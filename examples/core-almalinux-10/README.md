@@ -6,7 +6,7 @@ RHEL-compatible). It is a **separate resource root** that carries its own
 `deskos-core` profile by name:
 
 ```bash
-deskosctl plan ./resources ./examples/core-almalinux-10 \
+deskosctl plan ./examples/core-almalinux-10 \
   --workstation example-core-almalinux-10
 ```
 

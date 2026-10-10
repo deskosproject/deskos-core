@@ -4,7 +4,7 @@ A **separate resource root** that composes an organization baseline and a
 role on top of DeskOS Core, referencing DeskOS resources by name:
 
 ```bash
-deskosctl plan ./resources ./examples/baseline-and-role --workstation example-devops-rhel10
+deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel10
 ```
 
 | Resource | Contents |

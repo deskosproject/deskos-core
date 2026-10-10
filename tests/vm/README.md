@@ -20,7 +20,7 @@ bootc-image-builder's default kernel arguments
 arguments, as an installed workstation does:
 
 ```bash
-deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
+deskosctl render --workstation deskos-core-centos10 --output ctx
 sudo podman build -t localhost/deskos-core-centos10:test ctx
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \

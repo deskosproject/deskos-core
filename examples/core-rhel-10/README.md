@@ -5,7 +5,7 @@ a **separate resource root** that references the shipped `deskos-core`
 profile and the `rhel-10` Platform by name:
 
 ```bash
-deskosctl plan ./resources ./examples/core-rhel-10 \
+deskosctl plan ./examples/core-rhel-10 \
   --workstation example-core-rhel-10
 ```
 

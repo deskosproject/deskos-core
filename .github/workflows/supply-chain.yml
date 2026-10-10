@@ -53,8 +53,8 @@ jobs:
       - name: Render the Core build context and write the declared SBOM
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
-          ./bin/deskosctl sbom ./resources --workstation deskos-core-centos10 --output declared.sbom.cdx.json
+          ./bin/deskosctl render --workstation deskos-core-centos10 --output ctx
+          ./bin/deskosctl sbom --workstation deskos-core-centos10 --output declared.sbom.cdx.json
 
       - name: The publishable image has no unchecked repository
         # Publication policy (kept out of `deskosctl validate`, which stays a

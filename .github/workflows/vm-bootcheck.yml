@@ -37,7 +37,7 @@ jobs:
       - name: Render the Core build context
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
+          ./bin/deskosctl render --workstation deskos-core-centos10 --output ctx
           sha256sum ctx/plan.json ctx/generated-manifest.json
 
       - name: Put container storage and outputs on /mnt

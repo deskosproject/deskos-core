@@ -5,7 +5,7 @@ platform. It is a **separate resource root** that references the shipped
 `deskos-core` profile and the `centos-stream-10` Platform by name:
 
 ```bash
-deskosctl plan ./resources ./examples/core-centos-stream-10 \
+deskosctl plan ./examples/core-centos-stream-10 \
   --workstation example-core-centos-stream-10
 ```
 
