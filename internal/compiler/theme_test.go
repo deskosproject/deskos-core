@@ -135,7 +135,7 @@ func TestThemePaletteGeneratesTerminalPalette(t *testing.T) {
 	prof := files["rootfs/etc/dconf/db/distro.d/60-deskos-ptyxis"]
 	for _, want := range []string{
 		"default-profile-uuid='9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30'",
-		"[/org/gnome/Ptyxis/Profiles/9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30/]",
+		"[org/gnome/Ptyxis/Profiles/9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30]",
 		"palette='t'",
 	} {
 		if !strings.Contains(prof, want) {

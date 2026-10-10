@@ -15,6 +15,23 @@ func TestPatchShellCSS(t *testing.T) {
 	}
 }
 
+func TestPtyxisProfile(t *testing.T) {
+	got := Palette{Name: "gruvbox"}.PtyxisProfile("abc-123")
+	for _, want := range []string{
+		"[org/gnome/Ptyxis]",
+		"default-profile-uuid='abc-123'",
+		"[org/gnome/Ptyxis/Profiles/abc-123]",
+		"palette='gruvbox'",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("ptyxis profile lacks %q:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "[/") || strings.Contains(got, "//") {
+		t.Errorf("ptyxis profile must not use bracketed relocatable sections:\n%s", got)
+	}
+}
+
 func TestShellDconf(t *testing.T) {
 	got := ShellDconf([]string{"dash-to-dock@micxgx.gmail.com"}, "deskos-a")
 	for _, want := range []string{
