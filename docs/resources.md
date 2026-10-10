@@ -334,6 +334,9 @@ metadata:
 spec:
   mode: dark                    # dark | light
   accent: "#7aa2f7"             # any #RRGGBB; mapped to the closest GNOME accent
+  palette:                      # free colors for the libadwaita override
+    background: "#1a1b26"
+    foreground: "#a9b1d6"
   iconTheme: Yaru-blue
   cursorTheme: Adwaita
   fonts:
@@ -347,12 +350,16 @@ spec:
 - **`accent`** is any hex; it is mapped to the closest of GNOME's nine
   accents **by hue** (a light green stays green), with a `slate` fallback
   for near-achromatic colors.
+- **`palette`** makes the Theme generate a GTK4/libadwaita named-color
+  override at `/etc/skel/.config/gtk-4.0/gtk.css`, so apps recolor to the
+  palette (`--window-*`, `--view-*`, `--card-*`, `--accent-*`, …); it is
+  inherited by users the installer or GNOME Initial Setup create.
 - **`wallpaper`**, **`fonts`**, **`iconTheme`** and **`cursorTheme`** are
   the same shapes and lowering as in `GnomeProfile.appearance`.
 
-A Theme is included by a `Profile` like any other resource. Applying the
-rest of a palette (backgrounds, terminal colors, a full libadwaita or Shell
-recolor) needs CSS assets or the `user-theme` extension; see
+A Theme is included by a `Profile` like any other resource. A native GTK3
+theme, terminals and a GNOME Shell recoloring are still out: the Shell needs
+the `user-theme` extension and its own stylesheet; see
 [ADR 0013](adr/0013-theme.md).
 
 ### `BootProfile`

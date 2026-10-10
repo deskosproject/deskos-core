@@ -44,6 +44,7 @@ const (
 	KeyCursorTheme     = "appearance.cursorTheme"
 	KeyColorScheme     = "appearance.colorScheme"
 	KeyAccentColor     = "appearance.accentColor"
+	KeyPalette         = "appearance.palette"
 	KeyFavorites       = "shell.favorites"
 	KeyBlankAfter      = "session.idle.blankAfter"
 	KeyLockEnabled     = "session.lock.enabled"

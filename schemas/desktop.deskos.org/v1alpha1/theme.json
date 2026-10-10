@@ -12,13 +12,23 @@
     "spec": { "$ref": "#/$defs/spec" }
   },
   "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
     "spec": {
       "type": "object",
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
         "mode": { "enum": ["dark", "light"] },
-        "accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+        "accent": { "$ref": "#/$defs/color" },
+        "palette": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "background": { "$ref": "#/$defs/color" },
+            "foreground": { "$ref": "#/$defs/color" }
+          }
+        },
         "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
         "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
         "fonts": {

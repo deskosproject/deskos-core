@@ -87,6 +87,9 @@ func Render(p *plan.Plan) ([]File, error) {
 		}
 		r.addImage(f.Path, parseMode(f.Mode), data)
 	}
+	for _, f := range p.Artifact.GeneratedFiles {
+		r.addImage(f.Path, parseMode(f.Mode), []byte(f.Content))
+	}
 	for _, a := range p.Artifact.TrustAnchors {
 		data, err := os.ReadFile(a.AssetFile)
 		if err != nil {

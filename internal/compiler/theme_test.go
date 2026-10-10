@@ -1,7 +1,10 @@
 package compiler_test
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 )
 
 func theme(name, spec string) string {
@@ -43,6 +46,40 @@ func TestThemeMapsAppearanceToGNOME(t *testing.T) {
 	}
 }
 
+// A Theme palette generates a GTK4/libadwaita named-color override, seeded
+// through the user skeleton for every user the installer or GIS creates.
+func TestThemePaletteGeneratesGTKCSS(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "Theme/t"),
+		"t.yaml": theme("t", ""+
+			"  mode: dark\n"+
+			"  accent: \"#7aa2f7\"\n"+
+			"  palette:\n"+
+			"    background: \"#1a1b26\"\n"+
+			"    foreground: \"#a9b1d6\"\n"),
+	}).dir(t)
+	out, err := containerfile.Render(mustPlan(t, "ws", dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{}
+	for _, f := range out {
+		files[f.Path] = string(f.Data)
+	}
+	css := files["rootfs/etc/skel/.config/gtk-4.0/gtk.css"]
+	for _, want := range []string{
+		"--accent-bg-color: #7aa2f7;",
+		"--accent-fg-color: rgb(0 0 0 / 80%);",
+		"--window-bg-color: #1a1b26;",
+		"--window-fg-color: #a9b1d6;",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("gtk.css lacks %q:\n%s", want, css)
+		}
+	}
+}
+
 // A Theme and a GnomeProfile share the GNOME setting domain, so equal-layer
 // conflicts are reported like any other GNOME setting.
 func TestThemeConflictsWithGnomeProfileAtSameLayer(t *testing.T) {
@@ -74,7 +111,9 @@ func TestThemeValidation(t *testing.T) {
 		"empty theme":      "  {}\n",
 		"unknown mode":     "  mode: auto\n",
 		"bad accent":       "  accent: azul\n",
-		"unknown field":    "  palette: {}\n",
+		"bad palette":      "  palette:\n    background: nope\n",
+		"empty palette":    "  palette: {}\n",
+		"unknown field":    "  nope: x\n",
 		"no sane settings": "\n",
 	} {
 		t.Run(name, func(t *testing.T) {

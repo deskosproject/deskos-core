@@ -46,11 +46,24 @@ Mapping a free accent to one of nine is a loss, so it is done by **hue** (a
 light green stays green), with a `slate` fallback for near-achromatic
 colors.
 
+## Slice 2: the palette (implemented)
+
+`palette` (`background`, `foreground`) makes a Theme generate a
+GTK4/libadwaita named-color override (`--accent-*`, `--window-*`,
+`--view-*`, `--headerbar-*`, `--card-*`, `--sidebar-*`, `--popover-*`). The
+compiler synthesizes the file (a new `GeneratedFile` IR leaf, which needs
+no asset) and installs it at `/etc/skel/.config/gtk-4.0/gtk.css`, so users
+created by the installer or GNOME Initial Setup inherit it; libadwaita
+1.4+ reads it from the session's `gtk.css`.
+
+Still out: a native GTK3 theme (base it on `adw-gtk3`), terminals, and the
+**GNOME Shell** stylesheet. The Shell replaces its whole stylesheet and
+needs the `user-theme` extension, so it is a separate, RPM-shaped track;
+GNOME 47+ already tints the Shell with `accent-color`.
+
 ## Consequences
 
 - The public API has **exactly thirteen kinds**; a test enforces the count.
 - Themes are how DeskOS expresses "many looks" without repeating settings;
   an palette `colors.toml` is the reference palette shape.
-- **Not in this slice:** applying the rest of the palette (backgrounds,
-  terminal colors, a full libadwaita or Shell recolor). Those need CSS
-  assets or the `user-theme` extension and their own decision.
+- **Not yet:** a GTK3 theme, terminals and the GNOME Shell recoloring.
