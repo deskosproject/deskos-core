@@ -14,8 +14,10 @@ MDM products.
 **DeskOS compiles organizational intent into bootc OCI artifacts and stops
 there.** It has no controller, agent, reconciliation loop or fleet state.
 Mutable `/etc` drift on deployed machines is acknowledged and left to
-configuration management. Future endpoint tooling may observe (`status`,
-`diff`) but **never enforce**.
+configuration management. Endpoint tooling observes (`status`) and acts only
+when a person asks it to, once (`update`, `rollback`): a single requested
+action is not reconciliation, and no loop, schedule or automatic enforcement
+lives in the endpoint.
 
 ## Consequences
 
