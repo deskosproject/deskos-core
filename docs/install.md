@@ -63,7 +63,7 @@ in `config.toml`. The kickstart DeskOS needs is in
 **erases every disk**. Machines installed from it update from the image
 reference it was built from (`quay.io/deskos/deskos-core:latest`): Core
 stages the new image daily, on AC power, and it applies at the next
-reboot (see [Updates](architecture.md#updates)).
+reboot (see [Updates](operations.md)).
 
 ## RHEL 10 (private builds only)
 

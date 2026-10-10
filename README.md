@@ -217,6 +217,7 @@ By what you want to do:
 |---|---|
 | **Evaluate** | the tour above; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
 | **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds |
+| **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |
 | **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing; [ADRs](docs/adr/) |
