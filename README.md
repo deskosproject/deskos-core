@@ -52,28 +52,20 @@ artifact in your pipeline.
 
 ### See it work
 
-One file to author, and two commands to look before you build:
-
-```yaml
-# my-org/workstations/lab.yaml — the machine you want
-apiVersion: core.deskos.org/v1alpha1
-kind: Workstation
-metadata: { name: lab }
-spec:
-  platformRef: centos-stream-10
-  profiles: [deskos-core, example-baseline, example-devops]
-```
+Download `deskosctl` (step 1 of the [Quickstart](#quickstart)), then look at
+the workstation DeskOS Core already ships — no files to write yet:
 
 ```bash
-deskosctl plan ./my-org --workstation lab        # Core is embedded; read the composed machine
-deskosctl render ./my-org --workstation lab --output ctx
-sudo podman build -t localhost/lab ctx
+deskosctl validate                                  # Core is embedded; composes cleanly
+deskosctl plan --workstation deskos-core-centos10   # the composed machine, before any build
 ```
 
-The copy-paste version, with the release download and the QCOW2 or ISO
-step, is the [Quickstart](#quickstart) below. The
+`plan` prints what the image will contain and where each value came from.
+To author your own machine, copy the
 [example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/baseline-and-role)
-is a complete, runnable set of resources to copy from.
+— a `Workstation` plus the profiles it is made of — and point `deskosctl` at
+that directory. Building the image and a disk needs `podman` and root; that
+is the rest of the [Quickstart](#quickstart).
 
 ## How it works
 
@@ -143,15 +135,21 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-**This flow has already been run, and its result is published.** The last
-image CI built and published from these steps is
-`quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe`
-(the `:latest` tag), from commit `8ab0cc9e…`; it is the one that passed
-`bootcheck.py` and `sessioncheck.py`. On every green `main`, the same steps
-run again and publish `:<commit>` and `:latest`. Compilation is
-deterministic — the rendered context is byte-identical for the same inputs,
-and its manifest carries their SHA-256 — so anyone can reproduce it from
-the same commit; the *build* is reproducible but not yet bit-for-bit.
+**This flow has already been run, and its result is published.** The
+[supply-chain workflow](.github/workflows/supply-chain.yml) is manual
+(`workflow_dispatch` with `publish=true`): it builds the image, scans it,
+boots a QCOW2 made from the same image (`bootcheck.py`, `sessioncheck.py`),
+then pushes and signs `quay.io/deskos/deskos-core:<commit>`. Pull the image
+that passed the checks **by digest**, not by a moving tag:
+
+```bash
+sudo podman pull quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe
+```
+
+Compilation is deterministic — the rendered context is byte-identical for
+the same inputs, and its manifest carries their SHA-256 — so anyone can
+reproduce it from the same commit; the *build* is reproducible but not yet
+bit-for-bit.
 
 ## Composition
 
@@ -192,10 +190,10 @@ file it came from.
 ## Get DeskOS
 
 DeskOS Core for CentOS Stream 10 is published as a bootable container
-image; it is **the image that passed the boot and session checks**:
+image. Pin it by digest — `:latest` is a convenience tag and may lag:
 
 ```bash
-sudo podman pull quay.io/deskos/deskos-core:latest
+sudo podman pull quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe
 ```
 
 Downloadable disks are not published yet. Make a **QCOW2** or an
@@ -229,20 +227,23 @@ in [**docs/install.md**](docs/install.md).
 | Compose and render | deterministic | deterministic |
 | Image build, `bootc container lint` | CI | entitled factory host |
 | Boot to GNOME, session checks | CI (`vm-bootcheck`) | factory host (`deskos/rhel10` status) |
-| Published image | `quay.io/deskos/deskos-core` | **never** |
+| Published image | `quay.io/deskos/deskos-core`, by digest (manual publish) | **never** |
 | GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) |
 
 Details: [validation status](docs/architecture.md#validation-status).
 
 ## Documentation
 
+By what you want to do:
+
 | | |
 |---|---|
-| [**Installing DeskOS**](docs/install.md) | QCOW2 and ISO from the published image; private RHEL 10 builds |
-| [**Resources**](docs/resources.md) | every resource kind with an example; composition; software and GNOME model |
-| [**Architecture**](docs/architecture.md) | design principles, compiler pipeline, validation status |
-| [**Development**](docs/development.md) | building `deskosctl` and the image, tests, releases |
-| [ADRs](docs/adr/) · [Roadmap](docs/roadmap.md) · [Research notes](docs/research-notes.md) | decisions, milestones, upstream facts |
+| **Evaluate** | the tour above; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds |
+| **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
+| **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |
+| **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing; [ADRs](docs/adr/) |
+| **Track** | [Roadmap](docs/roadmap.md) · [Research notes](docs/research-notes.md) |
 
 ## License
 

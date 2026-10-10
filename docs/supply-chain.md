@@ -137,10 +137,9 @@ CentOS Stream 10 CI path. **RHEL builds run on the entitled factory host
 with no OIDC**: sign them with a cosign key kept outside this repository
 and verify against its public key.
 
-The signing steps are **experimental and have not been dispatched**. The
-gates are now unified: `supply-chain.yml` is the single publish path, and it
-boots, scans, signs and attests the same image before it is promoted.
-`vm-bootcheck.yml` is a pure check.
+The gates are unified: `supply-chain.yml` is the single publish path, and it
+boots, scans, signs and attests the same image before it is promoted; it is
+dispatched manually with `publish=true`. `vm-bootcheck.yml` is a pure check.
 
 ## Promotion gate (proposed)
 
@@ -152,7 +151,7 @@ A digest moves forward only when, for that digest:
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.
 
-Only the declared SBOM exists today (v0.8.0). Steps 2–4 are the next
-stages of [ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md). This
-is the "factory" layer around the compiler — it never enters compiler
-semantics (see `AGENTS.md`, invariant 11).
+Steps 1–4 run in `supply-chain.yml` today; what is still open is promoting
+the same digest through channels (candidate, canary, pilot, stable) without
+rebuilding. This is the "factory" layer around the compiler — it never
+enters compiler semantics (see `AGENTS.md`, invariant 11).
