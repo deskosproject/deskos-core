@@ -254,7 +254,7 @@ func applyUser(dir string, p theme.Palette, accent string, mode string) int {
 		uuidsRaw, readU := dconfRead("/org/gnome/Ptyxis/profile-uuids")
 		uuids, parseU := gvariantStrings(uuidsRaw)
 		defRaw, readD := dconfRead("/org/gnome/Ptyxis/default-profile-uuid")
-		defs, parseD := gvariantStrings(defRaw)
+		def, parseD := gvariantStringValue(defRaw)
 		if !readU || !parseU || !readD || !parseD {
 			fmt.Println("note: could not read the Ptyxis profile keys; left Ptyxis unchanged")
 			failures++
@@ -265,18 +265,14 @@ func applyUser(dir string, p theme.Palette, accent string, mode string) int {
 					failures++
 				}
 			}
-			// Add the DeskOS profile only if it is missing, and keep the
-			// user's default profile instead of replacing it.
-			if !slices.Contains(uuids, ptyxisProfileUUID) {
-				uuids = append(uuids, ptyxisProfileUUID)
-			}
-			dwrite("/org/gnome/Ptyxis/profile-uuids", gvariantStringList(uuids))
-			if len(defs) == 0 {
-				dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(ptyxisProfileUUID))
+			list, defaultUUID := ptyxisPlan(uuids, def)
+			dwrite("/org/gnome/Ptyxis/profile-uuids", gvariantStringList(list))
+			dwrite("/org/gnome/Ptyxis/Profiles/"+ptyxisProfileUUID+"/palette", gvariantString(p.Name))
+			if def == "" {
+				dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(defaultUUID))
 			} else {
 				fmt.Println("note: kept the user's Ptyxis default profile; the DeskOS palette is installed and selectable")
 			}
-			dwrite("/org/gnome/Ptyxis/Profiles/"+ptyxisProfileUUID+"/palette", gvariantString(p.Name))
 		}
 	}
 	return failures
@@ -337,6 +333,39 @@ func gvariantStringList(items []string) string {
 		parts[i] = gvariantString(s)
 	}
 	return "[" + strings.Join(parts, ", ") + "]"
+}
+
+// gvariantStringValue parses a scalar GVariant string ("'abc'" or "" for an
+// unset key). It rejects anything that is not a single quoted string, so a
+// profile UUID is never mistaken for an array.
+func gvariantStringValue(v string) (value string, ok bool) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return "", true
+	}
+	if len(v) >= 2 && v[0] == '\'' && v[len(v)-1] == '\'' {
+		body := v[1 : len(v)-1]
+		if strings.ContainsRune(body, '\'') {
+			return "", false
+		}
+		return body, true
+	}
+	return "", false
+}
+
+// ptyxisPlan is the policy for the user's Ptyxis profiles: the DeskOS profile
+// joins the list only if it is missing, and the default is the user's if they
+// have one, otherwise the DeskOS profile. Keeping it pure lets a test pin the
+// policy without dconf.
+func ptyxisPlan(uuids []string, def string) (list []string, defaultUUID string) {
+	list = append([]string{}, uuids...)
+	if !slices.Contains(list, ptyxisProfileUUID) {
+		list = append(list, ptyxisProfileUUID)
+	}
+	if def == "" {
+		def = ptyxisProfileUUID
+	}
+	return list, def
 }
 
 // firstBackground returns the theme's first background image, if any.
