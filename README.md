@@ -22,7 +22,58 @@ from which QCOW2 disks and installer ISOs are built.
 
 > **A workstation is compiled from organizational intent.**
 
-New here? **[Start with the five-minute tour →](docs/getting-started.md)**.
+## The five-minute tour
+
+An organization with more than a handful of Linux desktops ends up with
+**snowflakes**: each machine was installed once, by hand, and then drifted.
+Nobody can say what is on them, reproduce one, or prove one is safe to
+ship. DeskOS takes the machine definition out of each installer's hands: you
+**describe** the workstation in versioned text, and DeskOS **compiles** it
+into one image — built, tested, signed and published like any other
+artifact in your pipeline.
+
+> A workstation is compiled from organizational intent.
+
+### The four words
+
+- **Resource** — a YAML file describing one thing: a package set, a
+  repository, a desktop setting, a theme, an update policy. There are
+  **thirteen kinds**; each is small and composable. See
+  [docs/resources.md](docs/resources.md).
+- **Profile** — a named group of resources at a **layer**:
+  `foundation` < `organization` < `role` < `workstation`. A higher layer
+  overrides a lower one *on purpose*, never by file order.
+- **Workstation** — the machine: a platform (CentOS Stream 10 or RHEL 10)
+  plus the profiles it is made of. This is the file you author.
+- **Plan, then render** — the compiler reads every resource, composes them
+  into a typed **plan** (each value keeps the resource and layer it came
+  from), and `render` writes a **deterministic** build context: the same
+  inputs always give the same bytes.
+
+### See it work
+
+One file to author, and two commands to look before you build:
+
+```yaml
+# my-org/workstations/lab.yaml — the machine you want
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata: { name: lab }
+spec:
+  platformRef: centos-stream-10
+  profiles: [deskos-core, example-baseline, example-devops]
+```
+
+```bash
+deskosctl plan ./my-org --workstation lab        # Core is embedded; read the composed machine
+deskosctl render ./my-org --workstation lab --output ctx
+sudo podman build -t localhost/lab ctx
+```
+
+The copy-paste version, with the release download and the QCOW2 or ISO
+step, is the [Quickstart](#quickstart) below. The
+[example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/baseline-and-role)
+is a complete, runnable set of resources to copy from.
 
 ## How it works
 
@@ -187,7 +238,6 @@ Details: [validation status](docs/architecture.md#validation-status).
 
 | | |
 |---|---|
-| [**Getting started**](docs/getting-started.md) | the five-minute tour: the problem, the four words, a first build |
 | [**Installing DeskOS**](docs/install.md) | QCOW2 and ISO from the published image; private RHEL 10 builds |
 | [**Resources**](docs/resources.md) | every resource kind with an example; composition; software and GNOME model |
 | [**Architecture**](docs/architecture.md) | design principles, compiler pipeline, validation status |
