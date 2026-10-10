@@ -16,20 +16,15 @@ boot and session checks. Publishing is manual (the `supply-chain` workflow
 with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
 for production, pin the digest you verified.
 
-**1. Pull the image and record its digest.** `:latest` is the simple way to
-learn; for production, keep the digest it resolves to:
+**1. Pull the image and make a QCOW2 disk** for a virtual machine. Resolve
+`:latest` once and build from that digest, so a publish between the pull and
+the build cannot change what you install:
 
 ```bash
 image=quay.io/deskos/deskos-core:latest
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
-echo "pinned: quay.io/deskos/deskos-core@$digest"
-```
 
-**2. Make a QCOW2 disk** for a virtual machine, from the **same digest**
-(a publish between the two steps would otherwise change the image):
-
-```bash
 mkdir -p output
 sudo podman run --rm -it --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
