@@ -30,6 +30,9 @@ concurrency:
 
 env:
   IMAGE: localhost/deskos-core-centos10:ci
+  # bootc-image-builder pinned to the digest used for local test disks (same
+  # as vm-bootcheck.yml).
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
 
 jobs:
   centos10:
@@ -54,6 +57,18 @@ jobs:
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
 
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+
       - name: Build the image
         timeout-minutes: 40
         run: sudo podman build --pull=missing -t "$IMAGE" ctx
@@ -64,12 +79,16 @@ jobs:
           sudo chown "$(id -u):$(id -g)" image.tar
           ls -lh image.tar
 
-      - name: Install Syft and Grype
-        # These install the current release. Pin both versions before this
-        # job gates a real release (AGENTS.md).
+      - name: Install Syft and Grype (pinned)
+        env:
+          SYFT_VERSION: v1.54.0
+          GRYPE_VERSION: v0.120.0
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b "$HOME/.local/bin"
-          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b "$HOME/.local/bin"
+          # Pinned releases, installed from the tag: the scanner code must not
+          # change between runs of the same commit, even when the scan gates a
+          # real release. The installers verify the release checksums.
+          curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
+          curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Installed SBOM (Syft)
@@ -89,6 +108,32 @@ jobs:
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
 
+      - name: Build a QCOW2 without the builder's kernel arguments
+        timeout-minutes: 30
+        run: |
+          mkdir -p output
+          sudo podman run --rm --privileged --pull=missing \
+            --security-opt label=type:unconfined_t \
+            -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --no-default-kernel-args \
+            --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check output/qcow2/disk.qcow2
+
+      - name: Boot check (unmodified disk)
+        timeout-minutes: 15
+        run: |
+          python3 tests/vm/bootcheck.py --disk output/qcow2/disk.qcow2 \
+            --out bootcheck --expect-splash --hash-disk --boot-timeout 420
+
+      - name: Session check (instrumented boot)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session --disk output/qcow2/disk.qcow2 \
+            --plan ctx/plan.json --out session --boot-timeout 900
+          # Record the image that passed; the same image is tagged, pushed and
+          # signed below, so the published digest is the tested one.
+          sudo podman image inspect "$IMAGE" --format 'id={{.Id}}' | tee image.txt
+
       - name: Install cosign
         if: inputs.publish && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -104,8 +149,9 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
+          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA" "$DEST:latest"
           sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          sudo podman push "$DEST:latest"
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
