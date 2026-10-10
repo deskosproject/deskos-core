@@ -22,6 +22,8 @@ from which QCOW2 disks and installer ISOs are built.
 
 > **A workstation is compiled from organizational intent.**
 
+New here? **[Start with the five-minute tour →](docs/getting-started.md)**.
+
 ## How it works
 
 <p align="center">
@@ -185,6 +187,7 @@ Details: [validation status](docs/architecture.md#validation-status).
 
 | | |
 |---|---|
+| [**Getting started**](docs/getting-started.md) | the five-minute tour: the problem, the four words, a first build |
 | [**Installing DeskOS**](docs/install.md) | QCOW2 and ISO from the published image; private RHEL 10 builds |
 | [**Resources**](docs/resources.md) | every resource kind with an example; composition; software and GNOME model |
 | [**Architecture**](docs/architecture.md) | design principles, compiler pipeline, validation status |
