@@ -70,8 +70,7 @@ func TestThemePaletteGeneratesGTKCSS(t *testing.T) {
 	}
 	css := files["rootfs/etc/skel/.config/gtk-4.0/gtk.css"]
 	for _, want := range []string{
-		"--accent-bg-color: #7aa2f7;",
-		"--accent-fg-color: rgb(0 0 0 / 80%);",
+		"--accent-bg-color: var(--accent-blue);",
 		"--window-bg-color: #1a1b26;",
 		"--window-fg-color: #a9b1d6;",
 	} {
@@ -79,9 +78,15 @@ func TestThemePaletteGeneratesGTKCSS(t *testing.T) {
 			t.Errorf("gtk.css lacks %q:\n%s", want, css)
 		}
 	}
+	// Surfaces keep a hierarchy instead of one flat pair.
+	for _, surface := range []string{"view", "headerbar", "sidebar", "card", "popover"} {
+		if strings.Contains(css, "--"+surface+"-bg-color: #1a1b26;") {
+			t.Errorf("%s-bg-color is not shaded from the window color:\n%s", surface, css)
+		}
+	}
 	gtk3 := files["rootfs/etc/skel/.config/gtk-3.0/gtk.css"]
 	for _, want := range []string{
-		"@define-color accent_bg_color #7aa2f7;",
+		"@define-color accent_bg_color #3584e4;",
 		"@define-color theme_bg_color #1a1b26;",
 		"@define-color theme_fg_color #a9b1d6;",
 	} {

@@ -1,14 +1,20 @@
 // Command deskos-theme applies a theme's palette to the GNOME surfaces
 // DeskOS supports. It is the runtime counterpart of the compiler's Theme
 // kind: the compiler bakes the palette into an image (system mode), and this
-// command applies it to a session (user mode), reading either a DeskOS Theme
-// or an palette theme directory.
+// command applies it to a session (user mode), reading an palette theme
+// directory.
+//
+// What it applies is deliberately bounded and documented: the GTK4/GTK3
+// files, the terminal palettes and, in user mode, the GNOME settings
+// colour-scheme, accent, icon and cursor theme, wallpaper and fonts. The
+// GNOME Shell stylesheet is an explicit, experimental opt in (--shell-css).
 package main
 
 import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -22,14 +28,14 @@ const ptyxisProfileUUID = "9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30"
 
 func main() {
 	if len(os.Args) < 2 || os.Args[1] != "apply" {
-		fmt.Fprintln(os.Stderr, "usage: deskos-theme apply --palette <dir> [--user | --root <dir>]")
+		fmt.Fprintln(os.Stderr, "usage: deskos-theme apply --palette <dir> [--user | --root <dir>] [--shell-css <file>]")
 		os.Exit(2)
 	}
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	palette := fs.String("palette", "", "an palette theme directory (colors.toml + backgrounds)")
-	user := fs.Bool("user", false, "write to $HOME instead of a system root")
+	user := fs.Bool("user", false, "write to $HOME and apply the GNOME settings of the session")
 	root := fs.String("root", "/", "system root to write under")
-	shellCSS := fs.String("shell-css", "", "the distro's compiled gnome-shell.css to theme (best effort)")
+	shellCSS := fs.String("shell-css", "", "EXPERIMENTAL: the distro's compiled gnome-shell.css to recolor")
 	extensions := fs.String("extensions", "background-logo@fedorahosted.org,dash-to-dock@micxgx.gmail.com",
 		"the enabled-extensions the image already writes, to repeat in the shell drop in")
 	_ = fs.Parse(os.Args[2:])
@@ -38,13 +44,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "deskos-theme: --palette is required")
 		os.Exit(2)
 	}
-	p, err := paletteFrompalette(*palette)
+	p, accent, dark, err := paletteFrompalette(*palette)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "deskos-theme: %v\n", err)
 		os.Exit(1)
 	}
 
-	var base string
+	base := *root
 	if *user {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -52,10 +58,8 @@ func main() {
 			os.Exit(1)
 		}
 		base = home
-	} else {
-		base = *root
 	}
-	files := artifacts(base, *user, p)
+	files := artifacts(base, *user, p, accent, dark)
 	if *shellCSS != "" {
 		css, err := os.ReadFile(*shellCSS)
 		if err != nil {
@@ -75,12 +79,9 @@ func main() {
 		}
 		if dconfPath != "" {
 			files[dconfPath] = theme.ShellDconf(strings.Split(*extensions, ","), theme.ShellTheme("a"))
-		} else {
-			fmt.Println("user mode: enable the shell theme with:")
-			fmt.Println("  gnome-extensions enable " + theme.UserThemeExtension)
-			fmt.Println("  gsettings set org.gnome.shell.extensions.user-theme name " + theme.ShellTheme("a"))
 		}
 	}
+
 	names := make([]string, 0, len(files))
 	for n := range files {
 		names = append(names, n)
@@ -93,15 +94,28 @@ func main() {
 		}
 		fmt.Println(n)
 	}
+
+	if *user {
+		applyUser(*palette, p, accent, dark)
+	}
+	if !*user && *root == "/" {
+		if err := run("dconf", "update"); err != nil {
+			fmt.Printf("deskos-theme: dconf update: %v\n", err)
+		}
+	}
 	fmt.Printf("applied theme %q (%d files)\n", p.Name, len(files))
-	fmt.Println("note: the GNOME Shell theme needs the User Themes extension and a logout; see docs.")
+	if *shellCSS == "" {
+		fmt.Println("note: the GNOME Shell theme is an experimental opt in (--shell-css); the Shell otherwise follows the GNOME accent.")
+	}
+	fmt.Println("note: GTK3 recoloring needs the adw-gtk3 theme active; it is not verified here.")
 }
 
-// paletteFrompalette reads an palette theme's colors.toml into a palette.
-func paletteFrompalette(dir string) (theme.Palette, error) {
+// paletteFrompalette reads an palette theme's colors.toml into a validated
+// palette, the GNOME accent name it maps to, and whether it is a dark theme.
+func paletteFrompalette(dir string) (theme.Palette, string, bool, error) {
 	data, err := os.ReadFile(filepath.Join(dir, "colors.toml"))
 	if err != nil {
-		return theme.Palette{}, err
+		return theme.Palette{}, "", false, err
 	}
 	colors := map[string]string{}
 	for _, line := range strings.Split(string(data), "\n") {
@@ -116,37 +130,46 @@ func paletteFrompalette(dir string) (theme.Palette, error) {
 		colors[strings.TrimSpace(key)] = strings.Trim(strings.TrimSpace(value), `"'`)
 	}
 	if colors["background"] == "" || colors["foreground"] == "" {
-		return theme.Palette{}, fmt.Errorf("%s does not define background and foreground", dir)
+		return theme.Palette{}, "", false, fmt.Errorf("%s does not define background and foreground", dir)
 	}
-	return theme.Palette{
+	// Every value that reaches a CSS or a config file is a validated hex.
+	for _, key := range []string{"background", "foreground", "red", "green", "yellow", "blue", "magenta", "cyan"} {
+		if v := colors[key]; v != "" && !theme.HexColor.MatchString(v) {
+			return theme.Palette{}, "", false, fmt.Errorf("%s: %s=%q is not a #RRGGBB color", dir, key, v)
+		}
+	}
+	p := theme.Palette{
 		Name:       filepath.Base(filepath.Clean(dir)),
-		Accent:     colors["accent"],
-		Background: colors["background"],
-		Foreground: colors["foreground"],
-		Red:        colors["red"],
-		Green:      colors["green"],
-		Yellow:     colors["yellow"],
-		Blue:       colors["blue"],
-		Magenta:    colors["magenta"],
-		Cyan:       colors["cyan"],
-	}, nil
+		Background: colors["background"], Foreground: colors["foreground"],
+		Red: colors["red"], Green: colors["green"], Yellow: colors["yellow"],
+		Blue: colors["blue"], Magenta: colors["magenta"], Cyan: colors["cyan"],
+	}
+	accent := ""
+	if hex := colors["accent"]; hex != "" {
+		if !theme.HexColor.MatchString(hex) {
+			return theme.Palette{}, "", false, fmt.Errorf("%s: accent=%q is not a #RRGGBB color", dir, hex)
+		}
+		if name, ok := theme.NearestAccent(hex); ok {
+			accent = name
+		}
+	}
+	return p, accent, colors["mode"] != "light", nil
 }
 
 // artifacts returns the absolute paths and contents to write. System mode
 // seeds the user skeleton and the dconf database a build's dconf update
 // compiles; user mode writes the same files into a running session.
-func artifacts(base string, user bool, p theme.Palette) map[string]string {
+func artifacts(base string, user bool, p theme.Palette, accent string, dark bool) map[string]string {
 	var skel, dconf string
 	if user {
 		skel = base
-		dconf = ""
 	} else {
 		skel = filepath.Join(base, "etc/skel")
 		dconf = filepath.Join(base, "etc/dconf/db/distro.d")
 	}
 	files := map[string]string{
-		filepath.Join(skel, ".config/gtk-4.0/gtk.css"): p.GTK4CSS(),
-		filepath.Join(skel, ".config/gtk-3.0/gtk.css"): p.GTK3CSS(),
+		filepath.Join(skel, ".config/gtk-4.0/gtk.css"): p.GTK4CSS(accent, dark),
+		filepath.Join(skel, ".config/gtk-3.0/gtk.css"): p.GTK3CSS(accent),
 	}
 	if p.TerminalReady() {
 		files[filepath.Join(skel, ".local/share/org.gnome.Ptyxis/palettes", p.Name+".palette")] = p.PtyxisPalette()
@@ -156,6 +179,73 @@ func artifacts(base string, user bool, p theme.Palette) map[string]string {
 		}
 	}
 	return files
+}
+
+// applyUser applies what a user session needs beyond the files: the wallpaper
+// (copied from the theme) and the GNOME settings the files cannot change.
+// Best effort: gsettings needs a session bus.
+func applyUser(dir string, p theme.Palette, accent string, dark bool) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	set := func(schema, key, value string) {
+		if err := run("gsettings", "set", schema, key, value); err != nil {
+			fmt.Printf("deskos-theme: gsettings %s %s: %v\n", schema, key, err)
+		}
+	}
+	if bg := firstBackground(dir); bg != "" {
+		dest := filepath.Join(home, ".local/share/deskos/backgrounds", p.Name+filepath.Ext(bg))
+		if err := copyFile(bg, dest); err != nil {
+			fmt.Printf("deskos-theme: wallpaper %s: %v\n", bg, err)
+		} else {
+			uri := "file://" + dest
+			set("org.gnome.desktop.background", "picture-uri", uri)
+			set("org.gnome.desktop.background", "picture-uri-dark", uri)
+			set("org.gnome.desktop.screensaver", "picture-uri", uri)
+		}
+	}
+	set("org.gnome.desktop.interface", "color-scheme", map[bool]string{true: "prefer-dark", false: "prefer-light"}[dark])
+	if accent != "" {
+		set("org.gnome.desktop.interface", "accent-color", accent)
+	}
+}
+
+// firstBackground returns the theme's first background image, if any.
+func firstBackground(dir string) string {
+	entries, err := os.ReadDir(filepath.Join(dir, "backgrounds"))
+	if err != nil {
+		return ""
+	}
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		switch strings.ToLower(filepath.Ext(e.Name())) {
+		case ".png", ".jpg", ".jpeg", ".svg", ".webp":
+			names = append(names, e.Name())
+		}
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	sort.Strings(names)
+	return filepath.Join(dir, "backgrounds", names[0])
+}
+
+func copyFile(src, dest string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(dest, data, 0o644)
+}
+
+func run(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+	return cmd.Run()
 }
 
 func writeFile(path, content string) error {

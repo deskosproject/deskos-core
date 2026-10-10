@@ -42,9 +42,9 @@ type Palette struct {
 }
 
 // value returns the shared palette, named after the resource.
-func (p Palette) value(name, accent string) theme.Palette {
+func (p Palette) value(name string) theme.Palette {
 	return theme.Palette{
-		Name: name, Accent: accent,
+		Name:       name,
 		Background: p.Background, Foreground: p.Foreground,
 		Black: p.Black, Red: p.Red, Green: p.Green, Yellow: p.Yellow,
 		Blue: p.Blue, Magenta: p.Magenta, Cyan: p.Cyan, White: p.White,
@@ -100,7 +100,7 @@ func (themeKind) Decode(res *model.Resource) error {
 			}
 		}
 		if ok {
-			set(KeyPalette, p.value(res.Metadata.Name, spec.Accent), "background="+p.Background+" foreground="+p.Foreground)
+			set(KeyPalette, p.value(res.Metadata.Name), "background="+p.Background+" foreground="+p.Foreground)
 		}
 	}
 

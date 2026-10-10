@@ -44,6 +44,37 @@ func TestShellDconf(t *testing.T) {
 	}
 }
 
+func TestGTK4CSSHierarchyAndAccent(t *testing.T) {
+	p := Palette{Background: "#1a1b26", Foreground: "#a9b1d6"}
+	css := p.GTK4CSS("blue", true)
+	for _, want := range []string{
+		"--accent-bg-color: var(--accent-blue);",
+		"--window-bg-color: #1a1b26;",
+		"--window-fg-color: #a9b1d6;",
+	} {
+		if !strings.Contains(css, want) {
+			t.Errorf("gtk4 css lacks %q:\n%s", want, css)
+		}
+	}
+	// The accent must come from the GNOME name, never a second hex.
+	if strings.Contains(css, "--accent-color:") {
+		t.Errorf("gtk4 css must not pin --accent-color:\n%s", css)
+	}
+	// Surfaces step away from the window color.
+	if strings.Contains(css, "--card-bg-color: #1a1b26;") {
+		t.Errorf("card is not shaded from the window color:\n%s", css)
+	}
+}
+
+func TestAccentHex(t *testing.T) {
+	if h, ok := AccentHex("blue"); !ok || h != "#3584e4" {
+		t.Errorf(`AccentHex("blue") = %q, %v; want #3584e4`, h, ok)
+	}
+	if _, ok := AccentHex("nope"); ok {
+		t.Error("AccentHex accepted an unknown accent")
+	}
+}
+
 func TestNearestAccent(t *testing.T) {
 	for color, want := range map[string]string{
 		"#3584e4": "blue",
