@@ -32,8 +32,6 @@ ship. DeskOS takes the machine definition out of each installer's hands: you
 into one image — built, tested, signed and published like any other
 artifact in your pipeline.
 
-> A workstation is compiled from organizational intent.
-
 ### The four words
 
 - **Resource** — a YAML file describing one thing: a package set, a
