@@ -248,25 +248,36 @@ func applyUser(dir string, p theme.Palette, accent string, mode string) int {
 		set("org.gnome.desktop.interface", "accent-color", accent)
 	}
 	if p.TerminalReady() {
-		dwrite := func(path, value string) {
-			if err := run("dconf", "write", path, value); err != nil {
-				fmt.Printf("deskos-theme: dconf write %s: %v\n", path, err)
-				failures++
-			}
-		}
-		// Preserve the user's profiles: add ours only if it is missing, and
-		// keep their default profile instead of replacing it.
-		uuids := gvariantStrings(dconfRead("/org/gnome/Ptyxis/profile-uuids"))
-		if !slices.Contains(uuids, ptyxisProfileUUID) {
-			uuids = append(uuids, ptyxisProfileUUID)
-		}
-		dwrite("/org/gnome/Ptyxis/profile-uuids", gvariantStringList(uuids))
-		if len(gvariantStrings(dconfRead("/org/gnome/Ptyxis/default-profile-uuid"))) == 0 {
-			dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(ptyxisProfileUUID))
+		// Read the user's Ptyxis state first. If either read fails, or the
+		// value is not a recognizable list, leave Ptyxis untouched: writing a
+		// fresh list would drop the user's profiles.
+		uuidsRaw, readU := dconfRead("/org/gnome/Ptyxis/profile-uuids")
+		uuids, parseU := gvariantStrings(uuidsRaw)
+		defRaw, readD := dconfRead("/org/gnome/Ptyxis/default-profile-uuid")
+		defs, parseD := gvariantStrings(defRaw)
+		if !readU || !parseU || !readD || !parseD {
+			fmt.Println("note: could not read the Ptyxis profile keys; left Ptyxis unchanged")
+			failures++
 		} else {
-			fmt.Println("note: kept the user's Ptyxis default profile; the DeskOS palette is installed and selectable")
+			dwrite := func(path, value string) {
+				if err := run("dconf", "write", path, value); err != nil {
+					fmt.Printf("deskos-theme: dconf write %s: %v\n", path, err)
+					failures++
+				}
+			}
+			// Add the DeskOS profile only if it is missing, and keep the
+			// user's default profile instead of replacing it.
+			if !slices.Contains(uuids, ptyxisProfileUUID) {
+				uuids = append(uuids, ptyxisProfileUUID)
+			}
+			dwrite("/org/gnome/Ptyxis/profile-uuids", gvariantStringList(uuids))
+			if len(defs) == 0 {
+				dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(ptyxisProfileUUID))
+			} else {
+				fmt.Println("note: kept the user's Ptyxis default profile; the DeskOS palette is installed and selectable")
+			}
+			dwrite("/org/gnome/Ptyxis/Profiles/"+ptyxisProfileUUID+"/palette", gvariantString(p.Name))
 		}
-		dwrite("/org/gnome/Ptyxis/Profiles/"+ptyxisProfileUUID+"/palette", gvariantString(p.Name))
 	}
 	return failures
 }
@@ -275,33 +286,49 @@ func gvariantString(s string) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(s) + "'"
 }
 
-// dconfRead returns the value at path (GVariant text), or "" if it is unset or
-// dconf is unavailable.
-func dconfRead(path string) string {
+// dconfRead returns the value at path (GVariant text) and whether the read
+// succeeded. An unset key is a successful read of an empty value.
+func dconfRead(path string) (string, bool) {
 	out, err := exec.Command("dconf", "read", path).Output()
 	if err != nil {
-		return ""
+		return "", false
 	}
-	return strings.TrimSpace(string(out))
+	return strings.TrimSpace(string(out)), true
 }
 
-// gvariantStrings returns the quoted strings inside a GVariant value like
-// "['a', 'b']" or "'a'".
-func gvariantStrings(v string) []string {
-	var out []string
-	for {
-		i := strings.IndexByte(v, '\'')
-		if i < 0 {
-			return out
+// gvariantStrings parses a GVariant string array like "['a', 'b']". It returns
+// ok=false when the value is not a recognizable array, so a malformed read is
+// never mistaken for an empty list; an unset key is the empty value and is a
+// valid empty list.
+func gvariantStrings(v string) (items []string, ok bool) {
+	v = strings.TrimSpace(v)
+	if v == "" || v == "[]" || v == "@as []" {
+		return nil, true
+	}
+	if !strings.HasPrefix(v, "[") || !strings.HasSuffix(v, "]") {
+		return nil, false
+	}
+	body := strings.TrimSpace(v[1 : len(v)-1])
+	for body != "" {
+		if body[0] != '\'' {
+			return nil, false
 		}
-		rest := v[i+1:]
+		rest := body[1:]
 		j := strings.IndexByte(rest, '\'')
 		if j < 0 {
-			return out
+			return nil, false
 		}
-		out = append(out, rest[:j])
-		v = rest[j+1:]
+		items = append(items, rest[:j])
+		body = strings.TrimSpace(rest[j+1:])
+		if body == "" {
+			break
+		}
+		if body[0] != ',' {
+			return nil, false
+		}
+		body = strings.TrimSpace(body[1:])
 	}
+	return items, true
 }
 
 func gvariantStringList(items []string) string {
