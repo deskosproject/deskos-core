@@ -328,8 +328,8 @@ spec:
 
 ### `Theme`
 
-A **named, reusable look** — the palette theme scheme adapted to the
-surfaces GNOME itself defines. A Theme maps a palette onto the same GNOME
+A **named, reusable look** — a palette mapped onto the surfaces GNOME
+itself defines. A Theme maps a palette onto the same GNOME
 setting domain as `GnomeProfile`, so it layers, locks and conflicts like
 any other appearance setting:
 

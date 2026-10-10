@@ -4,10 +4,10 @@
 
 ## Context
 
-A workstation's look is a named thing. palette ships themes as a palette
-(`colors.toml`: a mode, an accent, background/foreground and terminal
-colors) alongside wallpapers, and `palette theme set <name>` applies it
-across the desktop. DeskOS's `GnomeProfile` can already set the appearance
+A workstation's look is a named thing. Desktops increasingly ship themes as
+a palette (`colors.toml`: a mode, an accent, background/foreground and
+terminal colors) alongside wallpapers, applied by naming the theme.
+DeskOS's `GnomeProfile` can already set the appearance
 one workstation at a time (color scheme, accent, icon and cursor theme,
 fonts, wallpaper), but there is no **reusable, named palette**: every
 workstation repeats the values, and a free accent color has nowhere to go —
@@ -72,7 +72,7 @@ user's own file. Migrating an existing account is therefore out of scope (a
 future explicit user command, with a preview, would be the way).
 
 **`deskos-theme`** is the runtime counterpart: `apply --palette <dir>` reads
-an palette theme directory, validates every color as `#RRGGBB`, and writes
+a palette directory, validates every color as `#RRGGBB`, and writes
 the same files (`--user` to `$HOME`, `--system` under a root). `--user` is
 configuration management and says so: it applies only the fields the theme
 carries (an absent `mode` sets nothing), sets `color-scheme`, the accent, the
@@ -82,9 +82,9 @@ the GNOME keys DeskOS manages to the image default; its scope is exactly
 that, and it leaves the files under `$HOME` untouched. On `--system` with a
 root other than `/` it only stages the tree; `dconf update` runs inside the
 environment that will use it (the image build), never on a host against
-another root. Icons, cursors and fonts are not applied: an palette
-`colors.toml` does not carry them and inventing values is worse than leaving
-them.
+another root. Icons, cursors and fonts are not applied: a palette
+(`colors.toml`) does not carry them and inventing values is worse than
+leaving them.
 
 ## Optional adapters
 
@@ -114,8 +114,8 @@ version: the test asserts suppression on the packaged Shell.
 
 - The public API has **exactly thirteen kinds**; a test enforces the count.
 - Themes are how DeskOS expresses "many looks" without repeating settings;
-  an palette `colors.toml` is the reference palette shape. Promising visual
-  parity with palette would be wrong: GNOME has deliberate limits and apps
+  a `colors.toml` palette is the reference shape. Promising visual parity
+  with any other desktop would be wrong: GNOME has deliberate limits and apps
   that read the accent by API, not CSS.
 - `deskos-theme` is the runtime applier; the compiler bakes the install-time
   default. The design is code-reviewed; the remaining gate is the **manual,

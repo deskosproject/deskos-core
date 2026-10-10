@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Palette is the free color set of a theme, palette's shape. The accent is
+// Palette is the free color set of a theme. The accent is
 // not here: it is a GNOME setting (see AccentHex) so the generated CSS and
 // the dconf default cannot diverge.
 type Palette struct {

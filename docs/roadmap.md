@@ -103,8 +103,8 @@ Details in
   replacing `fedora-logo-icon` through an icon theme is untried.
 - Applying the rest of a [Theme](adr/0013-theme.md) palette: a **Ghostty**
   terminal theme and a best-effort **GNOME Shell** recolor are implemented in
-  `deskos-theme`. Still open: installing a third-party **palette** theme from
-  a git URL (`deskos-theme install <url>`, reading only `colors.toml` and
+  `deskos-theme`. Still open: installing a third-party palette from a git URL
+  (`deskos-theme install <url>`, reading only `colors.toml` and
   `backgrounds/` and never running the repository's code) and vendoring one
   into resources pinned by commit.
 

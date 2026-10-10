@@ -1,5 +1,5 @@
 // Theme is the thirteenth public kind (ADR 0013). It maps a named,
-// reusable palette — the scheme palette themes use — onto the appearance
+// reusable palette — the palette scheme — onto the appearance
 // surfaces GNOME itself defines, so a workstation picks a look by name
 // instead of repeating every setting.
 package desktop

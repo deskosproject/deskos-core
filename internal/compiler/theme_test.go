@@ -12,7 +12,7 @@ func theme(name, spec string) string {
 	return "apiVersion: desktop.deskos.org/v1alpha1\nkind: Theme\nmetadata:\n  name: " + name + "\nspec:\n" + spec
 }
 
-// A Theme maps an palette-style palette (mode, a free accent, assets) onto
+// A Theme maps a palette (mode, a free accent, assets) onto
 // the appearance surfaces GNOME itself defines.
 func TestThemeMapsAppearanceToGNOME(t *testing.T) {
 	dir := base.with(fixture{
