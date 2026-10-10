@@ -52,12 +52,15 @@ artifact in your pipeline.
 
 ### See it work
 
-Download `deskosctl` (step 1 of the [Quickstart](#quickstart)), then look at
-the workstation DeskOS Core already ships — no files to write yet:
+Get `deskosctl` and stay in the directory where you downloaded it (step 1 of
+the [Quickstart](#quickstart)), then look at the workstation DeskOS Core
+already ships — no files to write yet:
 
 ```bash
-deskosctl validate                                  # Core is embedded; composes cleanly
-deskosctl plan --workstation deskos-core-centos10   # the composed machine, before any build
+# Core is embedded: this composes cleanly with no resources of your own.
+./deskosctl-$VERSION-linux-amd64 validate
+# The composed machine, before anything is built.
+./deskosctl-$VERSION-linux-amd64 plan --workstation deskos-core-centos10
 ```
 
 `plan` prints what the image will contain and where each value came from.
@@ -190,13 +193,8 @@ file it came from.
 ## Get DeskOS
 
 DeskOS Core for CentOS Stream 10 is published as a bootable container
-image. Pin it by digest — `:latest` is a convenience tag and may lag:
-
-```bash
-sudo podman pull quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe
-```
-
-Downloadable disks are not published yet. Make a **QCOW2** or an
+image; the digest to pull is in the [Quickstart](#quickstart) above.
+Downloadable disks are not published yet: make a **QCOW2** or an
 **installer ISO** from the image with `bootc-image-builder`, as described
 in [**docs/install.md**](docs/install.md).
 
