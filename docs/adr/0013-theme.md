@@ -53,21 +53,25 @@ colors.
 (`--accent-*`, `--window-*`, `--view-*`, `--headerbar-*`, `--card-*`,
 `--sidebar-*`, `--popover-*`; `@accent_*`, `@theme_*`, …). The six normal
 ANSI colors (`red`…`cyan`, plus optional `black`/`white`) additionally
-produce a **Ptyxis terminal palette**. The compiler synthesizes the files (a
-new `GeneratedFile` IR leaf, which needs no asset) and installs them at
-`/etc/skel/…`, so users created by the installer or GNOME Initial Setup
-inherit them; libadwaita 1.4+, GTK3 and Ptyxis read them.
+produce a **Ptyxis terminal palette**, and a dconf drop in
+(`distro.d/60-deskos-ptyxis`) that provisions a fixed Ptyxis profile and
+selects that palette, so a terminal uses the Theme by default. The profile
+keys live under a relocatable schema, so they are a generated dconf fragment
+with a bracketed section. The compiler synthesizes the files (a new
+`GeneratedFile` IR leaf, which needs no asset) and installs them at
+`/etc/skel/…` and `/etc/dconf/db/distro.d/…`, so users created by the
+installer or GNOME Initial Setup inherit them; libadwaita 1.4+, GTK3 and
+Ptyxis read them. Whether Ptyxis honours the preset profile is not yet
+verified in a booted session.
 
-Still out: **selecting** the terminal palette (Ptyxis chooses a palette per
-profile, and the default profile's UUID is generated at first login, so a
-system image cannot preset it without provisioning a fixed profile) and the
-**GNOME Shell** stylesheet. The Shell replaces its whole stylesheet and needs
-the `user-theme` extension, so it is a separate, RPM-shaped track; GNOME 47+
-already tints the Shell with `accent-color`.
+Still out: a **Ghostty** profile (its own config format; DayTwo's terminal)
+and the **GNOME Shell** stylesheet. The Shell replaces its whole stylesheet
+and needs the `user-theme` extension, so it is a separate, RPM-shaped track;
+GNOME 47+ already tints the Shell with `accent-color`.
 
 ## Consequences
 
 - The public API has **exactly thirteen kinds**; a test enforces the count.
 - Themes are how DeskOS expresses "many looks" without repeating settings;
   an palette `colors.toml` is the reference palette shape.
-- **Not yet:** selecting the terminal palette, and the GNOME Shell recoloring.
+- **Not yet:** a Ghostty profile and the GNOME Shell recoloring.

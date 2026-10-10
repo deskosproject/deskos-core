@@ -99,9 +99,9 @@ Details in
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.
-- Applying the rest of a [Theme](adr/0013-theme.md) palette: backgrounds,
-  terminal colors and a full libadwaita or GNOME Shell recolor need CSS
-  assets or the `user-theme` extension, and their own decision.
+- Applying the rest of a [Theme](adr/0013-theme.md) palette: a **Ghostty**
+  terminal profile and a full GNOME Shell recolor (which needs CSS assets or
+  the `user-theme` extension) remain open.
 
 ## Milestone 4: workstation E2E
 
