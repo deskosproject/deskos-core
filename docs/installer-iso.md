@@ -10,18 +10,25 @@ installs it offline, unattended**, with the kickstart below.
 
 ### 1. Choose the image reference
 
-The installer runs `bootc switch` to the image reference the ISO is built
-from, so **that reference is where installed machines update from**.
+The installer runs `bootc switch` to the reference the ISO is built from, so
+**that reference is where installed machines update from**: it must be one
+they can pull.
 
 - With the published CentOS Stream 10 image, pull it and use
   `quay.io/deskos/deskos-core:latest` in the build command below.
-- For your own build, tag it with the registry reference machines should
-  update from; a `localhost/` tag leaves them *without an update source*:
+- For your own image, tag it with the reference your machines will update
+  from and **push it before handing out the ISO**; a `localhost/` tag, or a
+  tag you never pushed, leaves them *without an update source*:
 
   ```bash
   deskosctl render --workstation deskos-core-centos10 --output ctx
-  sudo podman build -t quay.io/example/deskos-core:stable ctx
+  sudo podman build -t registry.example.internal/deskos/core:stable ctx
+  sudo podman push registry.example.internal/deskos/core:stable
   ```
+
+  `bootc-image-builder` builds the ISO from the local image, but the
+  reference baked into it is the one above, so the push is what makes future
+  updates possible.
 
 ### 2. Write the kickstart
 
@@ -67,7 +74,7 @@ sudo podman run --rm --privileged --pull=missing \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
     build --type anaconda-iso --config /config.toml \
-    --chown "$(id -u):$(id -g)" quay.io/example/deskos-core:stable
+    --chown "$(id -u):$(id -g)" registry.example.internal/deskos/core:stable
 ```
 
 The ISO is `output/bootiso/install.iso`.

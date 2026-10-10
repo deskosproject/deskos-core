@@ -16,13 +16,18 @@ boot and session checks. Publishing is manual (the `supply-chain` workflow
 with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
 for production, pin the digest you verified.
 
-**1. Pull the image:**
+**1. Pull the image and record its digest.** `:latest` is the simple way to
+learn; for production, keep the digest it resolves to:
 
 ```bash
-sudo podman pull quay.io/deskos/deskos-core:latest
+image=quay.io/deskos/deskos-core:latest
+sudo podman pull "$image"
+digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
+echo "pinned: quay.io/deskos/deskos-core@$digest"
 ```
 
-**2. Make a QCOW2 disk** for a virtual machine:
+**2. Make a QCOW2 disk** for a virtual machine, from the **same digest**
+(a publish between the two steps would otherwise change the image):
 
 ```bash
 mkdir -p output
@@ -33,7 +38,7 @@ sudo podman run --rm -it --privileged --pull=missing \
     quay.io/centos-bootc/bootc-image-builder:latest \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
-    quay.io/deskos/deskos-core:latest
+    "quay.io/deskos/deskos-core@$digest"
 ```
 
 > The CI pins this builder by digest for reproducibility; `:latest` is the
@@ -129,7 +134,8 @@ sudo podman run --rm -it --privileged --pull=missing \
     registry.example.internal/deskos/core-rhel10:latest
 ```
 
-Every layer of the build is free of the build host's subscription state
-(see [validation status](architecture.md#validation-status)), but the
-image, disks and ISOs are **still RHEL derivatives**: push them only to
-registries and storage that are private to your organization.
+In the image DeskOS builds and tests, every layer is free of the build
+host's subscription state (see [validation status](architecture.md#validation-status));
+a build you make is your own to check. The image, disks and ISOs are
+**still RHEL derivatives**: push them only to registries and storage that
+are private to your organization.

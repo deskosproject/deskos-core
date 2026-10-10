@@ -46,9 +46,12 @@ The authoritative SBOM and the vulnerability scan run on the **built
 image**, because only then do package versions and file contents exist:
 
 ```bash
-# A built image, for example from `make build`.
-image=localhost/daytwo-devops-rhel10:latest
+# Build the Core image from its rendered context.
+mkdir -p dist
+deskosctl render --workstation deskos-core-centos10 --output dist/deskos-core-centos10
+sudo podman build -t localhost/deskos-core-centos10:test dist/deskos-core-centos10
 
+image=localhost/deskos-core-centos10:test
 syft "$image" -o cyclonedx-json > installed.sbom.cdx.json
 grype "$image" -o table
 grype "$image" -o json > cves.json

@@ -44,8 +44,8 @@ pipeline, never inside compiler semantics.** The compiler may only
 | Stage | Deliverable | Status |
 |---|---|---|
 | 1 | Declared SBOM: `deskosctl sbom`, deterministic, tested | **done** (v0.8.0) |
-| 2 | CI: render → build the CS10 image → Syft SBOM → Grype scan → upload artifacts, fail on critical; compare declared vs installed | **added**, first run pending |
-| 3 | Signing and provenance: `cosign sign` over the digest and an SBOM attestation; promotion by digest | **started** (keyless in CI; key-based on the RHEL factory host) |
+| 2 | CI: render → build the CS10 image → Syft SBOM → Grype scan → upload artifacts, fail on critical; compare declared vs installed | **done**: `supply-chain.yml` runs it; the gate passed on 2026-10-10 |
+| 3 | Signing and provenance: `cosign sign` over the digest and an SBOM attestation; promotion by digest | **done** on the RHEL factory host (key-based, 2026-10-10); keyless in CI |
 | 4 | Evidence travels with the artifact: ship the SBOM beside `plan.json`; an endpoint command reports it | planned |
 | 5 | Compliance resources (`TrustPolicy`, `ComplianceProfile`) and OpenSCAP execution | later |
 

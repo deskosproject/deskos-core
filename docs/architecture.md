@@ -324,7 +324,7 @@ in the built image, and its booted disk had no failed preinstall unit.
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
 `gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
 1.37.1, VS Code 1.140.0 and Chrome 154 from their vendor repositories,
-and the rhel9 `oc` 4.22.14 build (needs at most GLIBC_2.34).
+and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 
 **Still open:** E2E tests on either platform.
 

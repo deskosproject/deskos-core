@@ -179,10 +179,10 @@ kind: BinaryArtifact
 metadata:
   name: openshift-client
 spec:
-  version: 4.22.14
+  version: 4.22.17
   source:
-    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz
-    sha256: 73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b
+    url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.17/openshift-client-linux-amd64-rhel9-4.22.17.tar.gz
+    sha256: 87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f
   archive: tar.gz
   files:
     - path: oc
