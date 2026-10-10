@@ -76,7 +76,11 @@ jobs:
           "release/$asset" validate --no-core /tmp/check/resources
           mkdir -p /tmp/embedded && "release/$asset" core export /tmp/embedded
           diff -r /tmp/embedded/resources /tmp/check/resources
-          (cd release && sha256sum "$asset" "$resources" > SHA256SUMS && sha256sum -c SHA256SUMS)
+          # Version-less aliases, so releases/latest/download/<name> works
+          # without knowing the tag.
+          cp "release/$asset" release/deskosctl-linux-amd64
+          cp "release/$resources" release/deskos-resources.tar.gz
+          (cd release && sha256sum "$asset" "$resources" deskosctl-linux-amd64 deskos-resources.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
@@ -103,7 +107,9 @@ jobs:
           (cd release && sha256sum -c SHA256SUMS)
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
-          gh release create "$TAG" release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz release/SHA256SUMS \
+          gh release create "$TAG" \
+            release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz \
+            release/deskosctl-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} for linux/amd64 and the DeskOS resources, built from ${GITHUB_SHA}. Verify with: sha256sum -c SHA256SUMS" \
+            --notes "deskosctl ${TAG} for linux/amd64 and the DeskOS resources, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
             "${flags[@]}"

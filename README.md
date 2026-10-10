@@ -103,32 +103,24 @@ name is DeskOS's composition kind, not a Fedora Workstation edition.
 
 ## Quickstart
 
-Compiling a workstation is five commands, and this is exactly what CI runs
-on `main`:
+The whole flow, and the same steps CI runs:
 
 ```bash
-# 1. Get deskosctl of one release. DeskOS Core is embedded in it, so there is
-#    nothing else to download. (SHA256SUMS also lists the resources tar, kept
-#    for inspection; --ignore-missing checks only what you fetched.)
-VERSION=v0.9.2
-base="https://github.com/deskosproject/deskos-core/releases/download/$VERSION"
-curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
+# 1. deskosctl. DeskOS Core is embedded, so there is nothing else to download.
+curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/deskosctl-linux-amd64
+curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/SHA256SUMS
 sha256sum -c --ignore-missing SHA256SUMS
-chmod +x "deskosctl-$VERSION-linux-amd64"
+mv deskosctl-linux-amd64 deskosctl && chmod +x deskosctl
 
-# 2. Validate Core, then read the composed workstation.
-./deskosctl-$VERSION-linux-amd64 validate
-./deskosctl-$VERSION-linux-amd64 plan --workstation deskos-core-centos10
+# 2. Look at the workstation Core ships — no files to write yet.
+./deskosctl validate
+./deskosctl plan --workstation deskos-core-centos10
 
-# 3. Render a deterministic build context: the same inputs give the same
-#    bytes, and generated-manifest.json records their SHA-256.
-./deskosctl-$VERSION-linux-amd64 render \
-    --workstation deskos-core-centos10 --output ctx
-
-# 4. Build the bootable container image.
+# 3. Render the build context and build the image (needs podman and root).
+./deskosctl render --workstation deskos-core-centos10 --output ctx
 sudo podman build -t localhost/deskos-core-centos10:test ctx
 
-# 5. Optional: a QCOW2 disk or an installer ISO from that image.
+# 4. Optional: a QCOW2 disk from that image.
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
@@ -136,25 +128,12 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-> The CI pins this builder by digest
-> (`quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b`)
-> for reproducibility; `:latest` is the same image today.
-
-**This flow has already been run, and its result is published.** The
-[supply-chain workflow](.github/workflows/supply-chain.yml) is manual
-(`workflow_dispatch` with `publish=true`): it builds the image, scans it,
-boots a QCOW2 made from the same image (`bootcheck.py`, `sessioncheck.py`),
-then pushes and signs `quay.io/deskos/deskos-core` as `:latest` and
-`:<commit>`. Pull the simple tag to learn; pin a digest in production:
-
-```bash
-sudo podman pull quay.io/deskos/deskos-core:latest
-```
-
-Compilation is deterministic — the rendered context is byte-identical for
-the same inputs, and its manifest carries their SHA-256 — so anyone can
-reproduce it from the same commit; the *build* is reproducible but not yet
-bit-for-bit.
+The published image that passed the boot and session checks is
+`quay.io/deskos/deskos-core:latest`; [docs/install.md](docs/install.md)
+covers QCOW2, ISO and RHEL. Rendering is deterministic — the same inputs
+give byte-identical output, and `generated-manifest.json` records their
+SHA-256 — so the context is reproducible from the same commit; the *build*
+is reproducible but not yet bit-for-bit.
 
 ## Composition
 

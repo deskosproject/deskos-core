@@ -84,7 +84,7 @@ release from
 needed:
 
 ```bash
-VERSION=v0.9.2
+VERSION=v0.9.3
 base=https://github.com/deskosproject/deskos-core/releases/download/$VERSION
 mkdir deskos && cd deskos
 curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"

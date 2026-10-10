@@ -140,20 +140,20 @@ git push origin vX.Y.Z
 > concrete, not a placeholder. Bump it in the commit you tag: the release job
 > refuses a tag the docs do not name, so it cannot go stale.
 
-To download and verify `v0.9.2`, the current release (DeskOS Core is embedded
+To download and verify `v0.9.3`, the current release (DeskOS Core is embedded
 in the binary; the resources tar is published for inspection and
 `deskosctl core export` writes it):
 
 ```bash
-gh release download v0.9.2 --repo deskosproject/deskos-core
+gh release download v0.9.3 --repo deskosproject/deskos-core
 sha256sum -c --ignore-missing SHA256SUMS
-chmod +x deskosctl-v0.9.2-linux-amd64
+chmod +x deskosctl-v0.9.3-linux-amd64
 ```
 
 or without `gh`:
 
 ```bash
-base=https://github.com/deskosproject/deskos-core/releases/download/v0.9.2
-curl -fL -O "$base/deskosctl-v0.9.2-linux-amd64" -O "$base/SHA256SUMS"
+base=https://github.com/deskosproject/deskos-core/releases/download/v0.9.3
+curl -fL -O "$base/deskosctl-v0.9.3-linux-amd64" -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 ```
