@@ -66,7 +66,7 @@ on `main`:
 # 1. Get deskosctl of one release. DeskOS Core is embedded in it, so there is
 #    nothing else to download. (SHA256SUMS also lists the resources tar, kept
 #    for inspection; --ignore-missing checks only what you fetched.)
-VERSION=v0.9.1
+VERSION=v0.9.2
 base="https://github.com/deskosproject/deskos-core/releases/download/$VERSION"
 curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
