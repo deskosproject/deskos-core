@@ -24,7 +24,7 @@ spec:
   displayName: Kubernetes v1.37
   baseURL: https://pkgs.k8s.io/core:/stable:/v1.37/rpm/
   gpgKeyFiles:
-    - ../assets/rpm-keys/kubernetes-v1.37.key
+    - ../assets/rpm-keys/kubernetes-v1.37.asc
 ---
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
