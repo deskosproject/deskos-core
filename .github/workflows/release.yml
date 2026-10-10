@@ -44,6 +44,15 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      - name: The docs name this release
+        # install.md and development.md carry a concrete, copy-paste version so
+        # it never reads as a placeholder; bump it in the tagged commit. This
+        # fails the release if they were forgotten.
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          grep -q -- "$TAG" docs/install.md
+          grep -q -- "$TAG" docs/development.md
       - name: Build deskosctl for linux/amd64
         env:
           TAG: ${{ github.ref_name }}

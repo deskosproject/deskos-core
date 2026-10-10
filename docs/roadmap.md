@@ -153,12 +153,12 @@ how-to: [supply-chain.md](supply-chain.md).
   in Core, and the bootc timer that reboots is masked. Validated on a CentOS
   Stream 10 VM: the image service staged a new image without rebooting,
   and a manual reboot booted it with the previous one as rollback.
-- **Next release (v0.6.0):** the `GnomeProfile` shell, clock and keyboard
-  settings of [ADR 0008](adr/0008-gnome-shell-clock-keyboard.md) are on
-  `main` and not yet released.
-- **Unreleased:** `TrustAnchor`
-  ([ADR 0009](adr/0009-trustanchor.md)) lets an organization place its CA
-  certificates in the platform trust store.
+- **Done:** the `GnomeProfile` shell, clock and keyboard settings
+  ([ADR 0008](adr/0008-gnome-shell-clock-keyboard.md)) and `TrustAnchor`
+  ([ADR 0009](adr/0009-trustanchor.md)).
+- **This release (v0.9.0):** the `Theme` kind and the `deskos-theme` applier
+  ([ADR 0013](adr/0013-theme.md)), and repository signing keys as **local
+  assets** instead of URLs (`gpgKeyFiles`; a deliberate break of v1alpha1).
 - A staged update skipped on battery waits for the next schedule; a
   catch-up run on AC connect (Bluefin's `uupd-on-ac.service`) is open.
 - A local endpoint command (`deskos status`, `deskos update`,
