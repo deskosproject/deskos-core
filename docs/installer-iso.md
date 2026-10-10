@@ -22,8 +22,8 @@ they can pull.
 
   ```bash
   deskosctl render --workstation deskos-core-centos10 --output ctx
-  sudo podman build -t registry.example.internal/deskos/core:stable ctx
-  sudo podman push registry.example.internal/deskos/core:stable
+  sudo podman build -t registry.example.com/deskos/core:stable ctx
+  sudo podman push registry.example.com/deskos/core:stable
   ```
 
   `bootc-image-builder` builds the ISO from the local image, but the
@@ -74,7 +74,7 @@ sudo podman run --rm --privileged --pull=missing \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
     build --type anaconda-iso --config /config.toml \
-    --chown "$(id -u):$(id -g)" registry.example.internal/deskos/core:stable
+    --chown "$(id -u):$(id -g)" registry.example.com/deskos/core:stable
 ```
 
 The ISO is `output/bootiso/install.iso`.

@@ -116,7 +116,7 @@ organization**:
 ```bash
 ./bin/deskosctl render ./my-org \
     --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
-sudo podman build -t registry.example.internal/deskos/core-rhel10:latest \
+sudo podman build -t registry.example.com/deskos/core-rhel10:latest \
     ./dist/deskos-core-rhel10
 ```
 
@@ -131,7 +131,7 @@ sudo podman run --rm -it --privileged --pull=missing \
     registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
-    registry.example.internal/deskos/core-rhel10:latest
+    registry.example.com/deskos/core-rhel10:latest
 ```
 
 In the image DeskOS builds and tests, every layer is free of the build

@@ -79,7 +79,7 @@ A machine tracks the image reference it was installed from. To move it to a
 different one (a new registry, a pinned digest):
 
 ```bash
-sudo bootc switch registry.example.internal/deskos/core-rhel10:latest
+sudo bootc switch registry.example.com/deskos/core-rhel10:latest
 sudo reboot
 ```
 
