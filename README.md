@@ -140,11 +140,11 @@ sudo podman run --rm --privileged --pull=missing \
 [supply-chain workflow](.github/workflows/supply-chain.yml) is manual
 (`workflow_dispatch` with `publish=true`): it builds the image, scans it,
 boots a QCOW2 made from the same image (`bootcheck.py`, `sessioncheck.py`),
-then pushes and signs `quay.io/deskos/deskos-core:<commit>`. Pull the image
-that passed the checks **by digest**, not by a moving tag:
+then pushes and signs `quay.io/deskos/deskos-core` as `:latest` and
+`:<commit>`. Pull the simple tag to learn; pin a digest in production:
 
 ```bash
-sudo podman pull quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe
+sudo podman pull quay.io/deskos/deskos-core:latest
 ```
 
 Compilation is deterministic — the rendered context is byte-identical for
@@ -223,7 +223,7 @@ in [**docs/install.md**](docs/install.md).
 | Compose and render | deterministic | deterministic |
 | Image build, `bootc container lint` | CI | entitled factory host |
 | Boot to GNOME, session checks | CI (`vm-bootcheck`) | factory host (`deskos/rhel10` status) |
-| Published image | `quay.io/deskos/deskos-core`, by digest (manual publish) | **never** |
+| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** |
 | GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) |
 
 Details: [validation status](docs/architecture.md#validation-status).

@@ -11,14 +11,15 @@ published CentOS Stream 10 image or from a private RHEL 10 build.
 ## CentOS Stream 10
 
 DeskOS Core for CentOS Stream 10 is published as a bootable container
-image. Publishing is manual (the `supply-chain` workflow with
-`publish=true`) and tags `:<commit>`; `:latest` is a convenience tag and may
-lag, so pin the digest of the image that passed the boot and session checks.
+image. `:latest` is the newest published image — the one that passed the
+boot and session checks. Publishing is manual (the `supply-chain` workflow
+with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
+for production, pin the digest you verified.
 
 **1. Pull the image:**
 
 ```bash
-sudo podman pull quay.io/deskos/deskos-core@sha256:bdf083b47d2d91572d1c862e12ed50bab6e0d447d1a09d39ab88034c613e6ffe
+sudo podman pull quay.io/deskos/deskos-core:latest
 ```
 
 **2. Make a QCOW2 disk** for a virtual machine:

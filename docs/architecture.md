@@ -637,9 +637,9 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
 - **Published today:** the CentOS Stream 10 image on
   `quay.io/deskos/deskos-core`. Publishing is manual: the `supply-chain`
-  workflow (with `publish=true`) builds, scans, boots and then pushes and
-  signs `:<commit>`. It is not published on every green `main`, and
-  `:latest` may lag, so pin the digest.
+  workflow (with `publish=true`) builds, scans, boots, then pushes and
+  signs `:latest` and `:<commit>` together. It is not published on every
+  green `main`; pin a digest in production.
 - **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
   storage, not on GitHub; until then they are built locally (see
   [install.md](install.md)). The CI builds QCOW2 disks only as test input.
