@@ -99,8 +99,16 @@ type RpmRepository struct {
 	BaseURL     string             `json:"baseURL"`
 	Enabled     bool               `json:"enabled"`
 	GPGCheck    bool               `json:"gpgCheck"`
-	GPGKeys     []string           `json:"gpgKeys"`
+	GPGKeys     []RepoKey          `json:"gpgKeys"`
 	Provenance  []model.Provenance `json:"provenance"`
+}
+
+// RepoKey is one repository signing key: its bytes, the file name it is placed
+// under in the image, and the sha256 of those bytes.
+type RepoKey struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	SHA256  string `json:"sha256"`
 }
 
 // RpmGroupInstall installs platform RPM groups; ExcludePackages are group members excluded from that install.

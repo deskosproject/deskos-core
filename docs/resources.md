@@ -159,9 +159,13 @@ spec:
   id: code
   displayName: Visual Studio Code
   baseURL: https://packages.microsoft.com/yumrepos/vscode
-  gpgKeys:
-    - https://packages.microsoft.com/keys/microsoft.asc
+  gpgKeyFiles:
+    - keys/microsoft.asc
 ```
+
+The signing keys are **local assets**, read into the plan and placed in the
+image (`/etc/pki/rpm-gpg/`), so the repository file references them by
+`file://` and a dnf transaction never trusts a key fetched from the network.
 
 ### `BinaryArtifact`
 

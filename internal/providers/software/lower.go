@@ -65,9 +65,13 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 
 	for _, k := range r.Keyed(DomainRepositories) {
 		repo := k.Value.(Repository)
+		keys := make([]plan.RepoKey, 0, len(repo.GPGKeys))
+		for _, key := range repo.GPGKeys {
+			keys = append(keys, plan.RepoKey{Name: key.Name, Content: key.Content, SHA256: key.SHA256})
+		}
 		p.Artifact.RpmRepositories = append(p.Artifact.RpmRepositories, plan.RpmRepository{
 			ID: repo.ID, DisplayName: repo.DisplayName, BaseURL: repo.BaseURL,
-			Enabled: repo.Enabled, GPGCheck: repo.GPGCheck, GPGKeys: repo.GPGKeys,
+			Enabled: repo.Enabled, GPGCheck: repo.GPGCheck, GPGKeys: keys,
 			Provenance: k.Provenance,
 		})
 		if !repo.GPGCheck {

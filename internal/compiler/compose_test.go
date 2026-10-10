@@ -103,7 +103,13 @@ func gnome(name, defaults string) string {
 }
 
 func repo(name, id, url string) string {
-	return fmt.Sprintf("apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata:\n  name: %s\nspec:\n  id: %s\n  displayName: %s\n  baseURL: %s\n  gpgKeys: [https://example.org/key.asc]\n", name, id, id, url)
+	return fmt.Sprintf("apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata:\n  name: %s\nspec:\n  id: %s\n  displayName: %s\n  baseURL: %s\n  gpgKeyFiles: [assets/repo-key.asc]\n", name, id, id, url)
+}
+
+// testArmoredKey is a minimal ASCII-armored OpenPGP public key block. The
+// loader checks the armor frame, not the packet contents.
+func testArmoredKey() string {
+	return "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n" + strings.Repeat("A", 64) + "\n-----END PGP PUBLIC KEY BLOCK-----\n"
 }
 
 func newCompiler(t *testing.T) *compiler.Compiler {
@@ -337,8 +343,9 @@ func TestRpmRepositoryKeyed(t *testing.T) {
 	}
 	t.Run("identical definitions deduplicate", func(t *testing.T) {
 		dir := base.with(ws).with(fixture{
-			"r1.yaml": repo("hashicorp", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
-			"r2.yaml": repo("hashicorp-mirror", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
+			"r1.yaml":             repo("hashicorp", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
+			"r2.yaml":             repo("hashicorp-mirror", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
+			"assets/repo-key.asc": testArmoredKey(),
 		}).dir(t)
 		p := mustPlan(t, "ws", dir)
 		if n := len(p.Artifact.RpmRepositories); n != 1 {
@@ -350,8 +357,9 @@ func TestRpmRepositoryKeyed(t *testing.T) {
 	})
 	t.Run("different definitions conflict at any layer", func(t *testing.T) {
 		dir := base.with(ws).with(fixture{
-			"r1.yaml": repo("hashicorp", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
-			"r2.yaml": repo("hashicorp-mirror", "hashicorp", "https://mirror.example.org/hashicorp/stable"),
+			"r1.yaml":             repo("hashicorp", "hashicorp", "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"),
+			"r2.yaml":             repo("hashicorp-mirror", "hashicorp", "https://mirror.example.org/hashicorp/stable"),
+			"assets/repo-key.asc": testArmoredKey(),
 		}).dir(t)
 		_, err := planOf(t, "ws", dir)
 		mustFail(t, err, `composition conflict for RPM repository "hashicorp"`, "RpmRepository/hashicorp", "RpmRepository/hashicorp-mirror", "r1.yaml", "r2.yaml")

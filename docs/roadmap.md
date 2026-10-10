@@ -92,9 +92,11 @@ Details in
 
 ## Later
 
-- Lockfiles resolving binary artifacts, keys and base digests, designed
-  after real release experience shows which inputs need them.
-- Immutable identity for RPM repository GPG keys (mechanism undecided).
+- Lockfiles resolving binary artifacts and base digests, designed after
+  real release experience shows which inputs need them.
+- ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
+  keys are local assets read into the plan (see
+  [resources.md](resources.md#rpmrepository)).
 - A decision by the example organization on the `virt-manager` gap.
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):

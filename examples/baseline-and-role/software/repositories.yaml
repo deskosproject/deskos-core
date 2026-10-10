@@ -1,4 +1,6 @@
-# Official vendor RPM repositories, as documented by each vendor.
+# Official vendor RPM repositories, as documented by each vendor. The signing
+# keys are local assets under ../assets/rpm-keys/, pinned by this repository's
+# commit, so a build never fetches a key from the network.
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
 metadata:
@@ -8,8 +10,8 @@ spec:
   id: hashicorp
   displayName: HashiCorp Stable - $basearch
   baseURL: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
-  gpgKeys:
-    - https://rpm.releases.hashicorp.com/gpg
+  gpgKeyFiles:
+    - ../assets/rpm-keys/hashicorp.gpg
 ---
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
@@ -21,8 +23,8 @@ spec:
   id: kubernetes
   displayName: Kubernetes v1.37
   baseURL: https://pkgs.k8s.io/core:/stable:/v1.37/rpm/
-  gpgKeys:
-    - https://pkgs.k8s.io/core:/stable:/v1.37/rpm/repodata/repomd.xml.key
+  gpgKeyFiles:
+    - ../assets/rpm-keys/kubernetes-v1.37.key
 ---
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
@@ -33,8 +35,8 @@ spec:
   id: code
   displayName: Visual Studio Code
   baseURL: https://packages.microsoft.com/yumrepos/vscode
-  gpgKeys:
-    - https://packages.microsoft.com/keys/microsoft.asc
+  gpgKeyFiles:
+    - ../assets/rpm-keys/microsoft.asc
 ---
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
@@ -45,5 +47,5 @@ spec:
   id: google-chrome
   displayName: google-chrome
   baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
-  gpgKeys:
-    - https://dl.google.com/linux/linux_signing_key.pub
+  gpgKeyFiles:
+    - ../assets/rpm-keys/google-chrome.pub

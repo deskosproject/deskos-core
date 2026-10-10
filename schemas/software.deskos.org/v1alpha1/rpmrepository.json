@@ -22,7 +22,7 @@
         "baseURL": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
         "enabled": { "type": "boolean" },
         "gpgCheck": { "type": "boolean" },
-        "gpgKeys": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/httpsURL" } }
+        "gpgKeyFiles": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/relativePath" } }
       }
     }
   }
