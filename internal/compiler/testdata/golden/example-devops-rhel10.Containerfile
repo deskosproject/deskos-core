@@ -7,7 +7,7 @@
 # Building requires an entitled build host; credentials are supplied by
 # the build environment and are never part of this build context.
 
-FROM registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90
+FROM registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978
 
 # RPM groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
@@ -59,12 +59,12 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
-# Binary artifact openshift-client 4.22.14 (sha256-verified)
+# Binary artifact openshift-client 4.22.17 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
-        -o "$tmp/download" 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz'; \
-    echo '73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+        -o "$tmp/download" 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.17/openshift-client-linux-amd64-rhel9-4.22.17.tar.gz'; \
+    echo '87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     tar -xzf "$tmp/download" -C "$tmp" --no-same-owner -- 'oc'; \
     [ -f "$tmp"/'oc' ] && [ ! -L "$tmp"/'oc' ] && [ "$(stat -c %h "$tmp"/'oc')" = 1 ] || { echo 'archive member oc is not a regular file' >&2; exit 1; }; \
     install -D -m 0755 "$tmp"/'oc' '/usr/local/bin/oc'; \

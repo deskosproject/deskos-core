@@ -14,7 +14,7 @@
         },
         {
           "name": "deskos:baseImage",
-          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
+          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978"
         }
       ]
     }
@@ -23,11 +23,11 @@
     {
       "type": "application",
       "name": "openshift-client",
-      "version": "4.22.14",
+      "version": "4.22.17",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b"
+          "content": "87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f"
         }
       ],
       "properties": [
@@ -354,11 +354,11 @@
     {
       "type": "operating-system",
       "name": "registry.redhat.io/rhel10/rhel-bootc:10.2",
-      "version": "sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90",
+      "version": "sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
+          "content": "ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978"
         }
       ]
     }

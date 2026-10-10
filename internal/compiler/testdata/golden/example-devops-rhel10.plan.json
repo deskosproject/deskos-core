@@ -37,8 +37,8 @@
   "artifact": {
     "baseImage": {
       "image": "registry.redhat.io/rhel10/rhel-bootc:10.2",
-      "digest": "sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90",
-      "ref": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90"
+      "digest": "sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978",
+      "ref": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978"
     },
     "labels": [
       {
@@ -498,9 +498,9 @@
     "binaries": [
       {
         "artifact": "openshift-client",
-        "version": "4.22.14",
-        "url": "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz",
-        "sha256": "73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b",
+        "version": "4.22.17",
+        "url": "https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.17/openshift-client-linux-amd64-rhel9-4.22.17.tar.gz",
+        "sha256": "87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f",
         "archive": "tar.gz",
         "member": "oc",
         "destination": "/usr/local/bin/oc",

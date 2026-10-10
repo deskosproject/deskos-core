@@ -10,7 +10,7 @@ spec:
   bootc:
     image: registry.redhat.io/rhel10/rhel-bootc:10.2
     # x86_64 manifest (config sha256:cc0b9f18...), created 2026-09-30; move it deliberately.
-    digest: sha256:d13af792edec939afd7508043b30c3e4e6d3b05570072460baf07f57caf7da90
+    digest: sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978
   distribution:
     # rhel-bootc and images derived from it are covered by the RHEL EULA and
     # must not be publicly redistributed.
