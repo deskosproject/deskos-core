@@ -66,6 +66,7 @@ RUN set -eu; \
         -o "$tmp/download" 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.14/openshift-client-linux-amd64-rhel9-4.22.14.tar.gz'; \
     echo '73d4204fe2d028a5fb3b05f71da174915442c445d3b417321c635bf17d099f6b  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     tar -xzf "$tmp/download" -C "$tmp" --no-same-owner -- 'oc'; \
+    [ -f "$tmp"/'oc' ] && [ ! -L "$tmp"/'oc' ] && [ "$(stat -c %h "$tmp"/'oc')" = 1 ] || { echo 'archive member oc is not a regular file' >&2; exit 1; }; \
     install -D -m 0755 "$tmp"/'oc' '/usr/local/bin/oc'; \
     rm -rf "$tmp"
 

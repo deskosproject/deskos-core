@@ -566,7 +566,12 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 			src := `"$tmp/download"`
 			if bin.Archive == "tar.gz" {
 				w("    tar -xzf \"$tmp/download\" -C \"$tmp\" --no-same-owner -- %s; \\\n", shq(bin.Member))
+				// The member must be a plain file. tar extracts a symlink or
+				// hardlink member as such, and install would then copy whatever
+				// it points at (possibly a file from the build environment).
 				src = `"$tmp"/` + shq(bin.Member)
+				w("    [ -f %s ] && [ ! -L %s ] && [ \"$(stat -c %%h %s)\" = 1 ] || { echo %s >&2; exit 1; }; \\\n",
+					src, src, src, shq("archive member "+bin.Member+" is not a regular file"))
 			}
 			w("    install -D -m %s %s %s; \\\n", bin.Mode, src, shq(bin.Destination))
 		}
