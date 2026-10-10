@@ -1,0 +1,186 @@
+{
+  "owner": "rarguello",
+  "review": "2026-11-10",
+  "base": {
+    "image": "quay.io/centos-bootc/centos-bootc:stream10",
+    "digest": "sha256:0c9e5e394416f68956eb3c4a9b26e3900e208588aed259abd5075d037fa3037f"
+  },
+  "exceptions": [
+    {
+      "id": "GO-2026-6604",
+      "kind": "platform-false-positive",
+      "reason": "Platform false positive: os.Root.Mkdir/MkdirAll junction handling is Windows-only (goos: windows); the vulnerable implementation is not compiled into the Linux binaries scanned here. Equivalent to OpenVEX not_affected / vulnerable_code_not_present; kept as a scoped ignore until a VEX statement is proven to match the scanned OCI.",
+      "matches": [
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/47/eb689d5d554bf0b03007bbb39dececb84bef3e9712ebc3020b801e3fe4a3ef.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/d4/4b5d5bcf4b0af9e56b90e5b5f11650a62891e1204afd8d60afd53a72d089c4.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/bin/toolbox"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/libexec/yggdrasil-worker-package-manager"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/podman"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6612",
+      "kind": "accepted-risk",
+      "reason": "Temporary accepted risk: HTTP/2 server flow-control double refund (DoS). The flagged code is a server path and this desktop image exposes no Go HTTP/2 server, but that is not proven per binary, so this is an accepted risk, NOT a not_affected claim. Red Hat scores it Moderate. Revisit when the vendor or upstream Go toolchain is rebuilt with the fix (net/http go1.26.9, golang.org/x/net v0.60.0).",
+      "matches": [
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/47/eb689d5d554bf0b03007bbb39dececb84bef3e9712ebc3020b801e3fe4a3ef.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/d4/4b5d5bcf4b0af9e56b90e5b5f11650a62891e1204afd8d60afd53a72d089c4.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/bin/toolbox"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/libexec/yggdrasil-worker-package-manager"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.3",
+          "path": "/sysroot/ostree/repo/objects/37/36efca45e2c2c5dc57fbb1a9b586693d069b710be490ef914c8eea4aa00f4d.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.3",
+          "path": "/usr/bin/yggd"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/15/5e8ab3709d5fa0e0d3158e3c6509b5c87ae3cd0d557892fe72cea9ca6b59a0.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/4c/bbb724b74515a8b087f4ea2cd8efcf748e3f821db8d5808e0206061aabe324.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/a8/67099f02f90be25f502c69a27cf59d0ffbd2052d2f49e0dfa24f4334aa31a2.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/bin/rhc"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/libexec/rhc/rhc-collector"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/libexec/rhc/rhc-server"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/sbin/ipp-usb"
+        }
+      ]
+    }
+  ]
+}

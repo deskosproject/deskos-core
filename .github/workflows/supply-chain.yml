@@ -111,12 +111,31 @@ jobs:
 
       - name: CVE scan (Grype)
         run: |
-          grype "oci-archive:$WORK/image.tar" -o table | tee grype.txt
-          grype "oci-archive:$WORK/image.tar" -o json > cves.json
-          # The gate applies the severity policy: .grype.yaml from this
-          # directory and the OpenVEX statements (ADR 0012). The evidence
-          # above stays unfiltered.
+          # Evidence passes: pinned to the raw configuration, so grype.txt and
+          # cves.json stay unfiltered even when Grype finds another
+          # configuration on the runner.
           grype "oci-archive:$WORK/image.tar" \
+            --config tests/supply-chain/grype-raw.yaml -o table | tee grype.txt
+          grype "oci-archive:$WORK/image.tar" \
+            --config tests/supply-chain/grype-raw.yaml -o json > cves.json
+          # The reviewed exceptions record is verified against the raw report
+          # and the gate configuration is generated from it, so the gate can
+          # never accept more than the record approves: a new component, a new
+          # version, a moved base layer or an expired review fails here first.
+          # See docs/supply-chain.md and ADR 0012.
+          out=$(python3 tests/supply-chain/check_exceptions.py \
+            --cves cves.json \
+            --exceptions tests/supply-chain/exceptions.json \
+            --plan ctx/plan.json)
+          echo "$out"
+          { echo "### Accepted vulnerability exceptions"; echo; echo "$out"; } >> "$GITHUB_STEP_SUMMARY"
+          python3 tests/supply-chain/check_exceptions.py \
+            --exceptions tests/supply-chain/exceptions.json \
+            --emit-gate "$WORK/gate.grype.yaml"
+          # The gate applies the severity policy: the generated configuration
+          # and the OpenVEX statements (ADR 0012).
+          grype "oci-archive:$WORK/image.tar" \
+            --config "$WORK/gate.grype.yaml" \
             --vex tests/supply-chain/vex.openvex.json \
             --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
 
@@ -181,6 +200,10 @@ jobs:
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           cosign sign --yes "$ref"
           cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
+          # The accepted-risk decision is part of the signed record, not only
+          # of a 14-day Actions artifact: attest the reviewed exceptions.
+          cosign attest --yes --type "https://deskos.org/supply-chain/exceptions/v1" \
+            --predicate tests/supply-chain/exceptions.json "$ref"
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
@@ -200,8 +223,10 @@ jobs:
             grype.txt
             digest.txt
             cosign-verify.txt
+            tests/supply-chain/exceptions.json
             ctx/plan.json
             ctx/generated-manifest.json
+            ${{ env.WORK }}/gate.grype.yaml
             ${{ env.WORK }}/image.txt
             ${{ env.WORK }}/bootcheck/summary.md
             ${{ env.WORK }}/session/session.md

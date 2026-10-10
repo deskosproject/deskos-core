@@ -62,8 +62,12 @@ grype "$image" -o json > cves.json
 `.github/workflows/supply-chain.yml` (manual, `workflow_dispatch`) builds
 the CentOS Stream 10 Core image from a checkout and runs the steps above:
 it writes the declared SBOM, produces `installed.sbom.cdx.json` with Syft
-and `cves.json` with Grype, fails on the chosen severity, compares the two
-bills with `tests/supply-chain/compare.py`, and uploads all evidence.
+and `cves.json` with Grype, checks the exceptions record and generates the
+gate configuration from it, fails on the chosen severity, compares the two
+bills with `tests/supply-chain/compare.py`, and uploads all evidence. The
+two evidence passes are pinned to `tests/supply-chain/grype-raw.yaml`
+(`ignore: []`), so `grype.txt` and `cves.json` always show everything;
+only the gate applies the exceptions.
 
 `compare.py` gates **RPM packages**: every declared `deskos:source=rpm`
 component must appear, by name, in the installed SBOM. Binaries, RPM
@@ -88,9 +92,19 @@ The policy the gate applies is
   follow the distribution's security response; a Critical in them still
   blocks;
 - **every exception is explicit** — an OpenVEX statement
-  (`tests/supply-chain/vex.openvex.json`) or a `.grype.yaml` ignore rule
-  with an owner and a review date. Nothing is silently ignored and there
-  are no blanket exclusions.
+  (`tests/supply-chain/vex.openvex.json`) or an entry in the reviewed
+  record `tests/supply-chain/exceptions.json`. Nothing is silently ignored
+  and there are no blanket exclusions.
+
+The record is the single source of truth: it names the owner, the review
+date, the base image digest it was reviewed against and, for each
+exception, the exact matches it covers (package, type, version and
+location). `tests/supply-chain/check_exceptions.py` enforces it between the
+raw report and the gate — an expired review, a moved base layer, a new
+component, a new version or an unapproved Critical fails the build — and
+`--emit-gate` writes the Grype gate configuration from it, so the gate can
+never accept more than the record approves. The record is uploaded with the
+evidence and attested on the published digest.
 
 CentOS Stream 10 baseline from that first run (Grype, distro `centos-10`):
 0 Critical, 1866 High, 26735 Medium, 10263 Low, 124 Unknown. The High count

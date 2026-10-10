@@ -1,0 +1,10 @@
+# Minimal Grype configuration for the EVIDENCE passes.
+#
+# The two passes that write grype.txt and cves.json must stay unfiltered, so
+# they are pinned to this file (nothing ignored) rather than to whatever
+# Grype finds on its own: it also searches $HOME and the current directory,
+# and the gate configuration would hide matches from the evidence.
+#
+# The gate uses a configuration generated from tests/supply-chain/exceptions.json.
+check-for-app-update: false
+ignore: []

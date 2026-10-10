@@ -140,7 +140,8 @@ how-to: [supply-chain.md](supply-chain.md).
 - **Policy:**
   [ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md) — the gate
   blocks on Critical, High is tracked, and every exception is an explicit
-  OpenVEX statement or `.grype.yaml` rule.
+  OpenVEX statement or an entry in the reviewed
+  `tests/supply-chain/exceptions.json` record.
 - Later: OpenSCAP evidence; candidate resources `TrustPolicy`,
   `ComplianceProfile`.
 
