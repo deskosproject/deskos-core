@@ -30,11 +30,14 @@ sudo podman run --rm -it --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
-    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+    quay.io/centos-bootc/bootc-image-builder:latest \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     quay.io/deskos/deskos-core:latest
 ```
+
+> The CI pins this builder by digest for reproducibility; `:latest` is the
+> same image today.
 
 The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 
