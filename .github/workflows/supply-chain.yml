@@ -253,7 +253,8 @@ jobs:
           # :latest moves only after the digest is signed and verified.
           sudo podman tag "$IMAGE" "$DEST:latest"
           sudo podman push "$DEST:latest"
-          cosign logout quay.io
+          # cosign v3 has no `logout`; the credentials live in the runner's
+          # docker config, and podman logout clears the registry login.
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
 
