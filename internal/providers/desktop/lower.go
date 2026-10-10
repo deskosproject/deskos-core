@@ -9,6 +9,7 @@ import (
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
+	"github.com/deskosproject/deskos-core/internal/theme"
 )
 
 // BackgroundsDir is the image-owned location of wallpaper assets.
@@ -16,6 +17,31 @@ const BackgroundsDir = "/usr/share/deskos/backgrounds"
 
 // BrandingDir is the image-owned location of logo assets.
 const BrandingDir = "/usr/share/deskos/branding"
+
+// gtk4UserCSSPath is read by every GTK4/libadwaita app of the session user.
+// A system image seeds it through the user skeleton (/etc/skel), so users
+// created by the installer or GNOME Initial Setup inherit it.
+const gtk4UserCSSPath = "/etc/skel/.config/gtk-4.0/gtk.css"
+
+// gtk3UserCSSPath is read by every GTK3 app, alongside its theme.
+const gtk3UserCSSPath = "/etc/skel/.config/gtk-3.0/gtk.css"
+
+// ptyxisPalettesDir holds Ptyxis terminal palettes for the session user. A
+// system image seeds it through the user skeleton.
+const ptyxisPalettesDir = "/etc/skel/.local/share/org.gnome.Ptyxis/palettes"
+
+// dconfDropInDir is one dconf database source directory; deskosctl writes the
+// profile database there and the build runs dconf update.
+const dconfDropInDir = "/etc/dconf/db/distro.d"
+
+// ptyxisProfileUUID is the fixed UUID of the profile DeskOS provisions so a
+// terminal uses the Theme palette by default. It is a system default: a user
+// who picks another palette or profile overrides it.
+const ptyxisProfileUUID = "9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30"
+
+// welcomeDialogShownVersion is gnome-shell's WELCOME_DIALOG_LAST_TOUR_CHANGE.
+// At or after it the shell does not show its first-run welcome dialog.
+const welcomeDialogShownVersion = "40.beta"
 
 // DockExtension is the platform extension name that implements the dock.
 const DockExtension = "dash-to-dock"
@@ -96,6 +122,36 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 				Setting: KeyWallpaper, Provenance: wp.Provenance,
 			})
 		}
+	}
+
+	if v, ok := get(KeyPalette); ok {
+		pal := v.Value.(theme.Palette)
+		accent := ""
+		if a, ok := get(KeyAccentColor); ok {
+			accent = a.Value.(string)
+		}
+		l.p.Artifact.GeneratedFiles = append(l.p.Artifact.GeneratedFiles,
+			plan.GeneratedFile{Path: gtk4UserCSSPath, Mode: "0644", Content: pal.GTK4CSS(), Provenance: v.Provenance},
+			plan.GeneratedFile{Path: gtk3UserCSSPath, Mode: "0644", Content: pal.GTK3CSS(accent), Provenance: v.Provenance},
+		)
+		if pal.TerminalReady() {
+			l.p.Artifact.GeneratedFiles = append(l.p.Artifact.GeneratedFiles,
+				plan.GeneratedFile{
+					Path: path.Join(ptyxisPalettesDir, pal.Name+".palette"), Mode: "0644",
+					Content: pal.PtyxisPalette(), Provenance: v.Provenance,
+				},
+				plan.GeneratedFile{
+					Path: path.Join(dconfDropInDir, "60-deskos-ptyxis"), Mode: "0644",
+					Content: pal.PtyxisProfile(ptyxisProfileUUID), Provenance: v.Provenance,
+				})
+		}
+	}
+
+	if v, ok := get(KeyWelcomeTour); ok && !v.Value.(bool) {
+		// GNOME Shell shows its first-run welcome dialog (the tour prompt)
+		// until welcome-dialog-last-shown-version is at least the version of
+		// its last tour change; setting it suppresses the dialog.
+		l.set(KeyWelcomeTour, "/org/gnome/shell/welcome-dialog-last-shown-version", "s", gvString(welcomeDialogShownVersion), v.Provenance)
 	}
 
 	if v, ok := get(KeyLoginLogo); ok {

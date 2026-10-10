@@ -66,6 +66,7 @@ type Artifact struct {
 	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
 	Binaries         []VerifiedBinaryInstall  `json:"binaries"`
 	Files            []FileInstall            `json:"files"`
+	GeneratedFiles   []GeneratedFile          `json:"generatedFiles,omitempty"`
 	TrustAnchors     []TrustAnchorInstall     `json:"trustAnchors"`
 	TrustStore       *TrustStoreUpdate        `json:"trustStore,omitempty"`
 	DesktopEntries   []DesktopEntry           `json:"desktopEntries"`
@@ -160,6 +161,15 @@ type FileInstall struct {
 
 	// AssetFile is the absolute host path of Asset; never serialized.
 	AssetFile string `json:"-"`
+}
+
+// GeneratedFile is a file the compiler synthesizes rather than copies from
+// an asset: for example a CSS override derived from a Theme palette.
+type GeneratedFile struct {
+	Path       string             `json:"path"`
+	Mode       string             `json:"mode"`
+	Content    string             `json:"content"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 // TrustAnchorInstall is one CA certificate the image places in the platform

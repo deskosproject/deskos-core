@@ -101,6 +101,12 @@ Details in
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.
+- Applying the rest of a [Theme](adr/0013-theme.md) palette: a **Ghostty**
+  terminal theme and a best-effort **GNOME Shell** recolor are implemented in
+  `deskos-theme`. Still open: installing a third-party **palette** theme from
+  a git URL (`deskos-theme install <url>`, reading only `colors.toml` and
+  `backgrounds/` and never running the repository's code) and vendoring one
+  into resources pinned by commit.
 
 ## Milestone 4: workstation E2E
 

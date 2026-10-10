@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/desktop.deskos.org/v1alpha1/theme.json",
+  "title": "desktop.deskos.org/v1alpha1 Theme",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "desktop.deskos.org/v1alpha1" },
+    "kind": { "const": "Theme" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "mode": { "enum": ["dark", "light"] },
+        "accent": { "$ref": "#/$defs/color" },
+        "palette": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "background": { "$ref": "#/$defs/color" },
+            "foreground": { "$ref": "#/$defs/color" },
+            "black": { "$ref": "#/$defs/color" },
+            "red": { "$ref": "#/$defs/color" },
+            "green": { "$ref": "#/$defs/color" },
+            "yellow": { "$ref": "#/$defs/color" },
+            "blue": { "$ref": "#/$defs/color" },
+            "magenta": { "$ref": "#/$defs/color" },
+            "cyan": { "$ref": "#/$defs/color" },
+            "white": { "$ref": "#/$defs/color" }
+          }
+        },
+        "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
+        "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
+        "fonts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "interface": { "$ref": "gnomeprofile.json#/$defs/font" },
+            "document": { "$ref": "gnomeprofile.json#/$defs/font" },
+            "monospace": { "$ref": "gnomeprofile.json#/$defs/font" }
+          }
+        },
+        "wallpaper": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["light"],
+          "properties": {
+            "light": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+            "dark": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+          }
+        }
+      }
+    }
+  }
+}

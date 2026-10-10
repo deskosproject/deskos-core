@@ -91,6 +91,24 @@ with frames as for the boot check.
 `edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at
 most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
 
+### Seeding the skeleton and showing the widgets
+
+Two optional flags reach the per-user state a desktop theme lives in:
+
+- `--seed-skel` copies `/etc/skel` into the test user's `$HOME`, as
+  `useradd -m` does (the test user comes from `sysusers`, which does not).
+  Without it the image's per-user seeds never apply to the session. With it,
+  every generated file the plan places under `/etc/skel` is asserted to reach
+  `$HOME` with the generated content.
+- `--app <command>` opens a window (for example `nautilus` or `ptyxis`)
+  before the report, so a captured frame shows the themed widgets. A check
+  confirms the process is running.
+
+```bash
+python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.json \
+    --out session-theme --seed-skel --app nautilus
+```
+
 ### Known AMD guest exception (mcelog)
 
 **Any failed system unit fails the check**, with one exception: the known

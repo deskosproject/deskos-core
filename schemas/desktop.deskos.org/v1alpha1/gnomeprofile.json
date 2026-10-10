@@ -31,7 +31,7 @@
             "session.idle.blankAfter", "session.lock.enabled", "session.lock.delay",
             "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
             "software.updates",
-            "shell.hotCorners", "shell.workspaces", "shell.appFolders",
+            "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
             "clock.showWeekday", "clock.format",
             "keyboard.numLock", "keyboard.terminal"
           ] }
@@ -96,6 +96,7 @@
           "properties": {
             "favorites": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/desktopId" } },
             "hotCorners": { "type": "boolean" },
+            "welcomeTour": { "type": "boolean" },
             "workspaces": { "anyOf": [{ "const": "dynamic" }, { "type": "integer", "minimum": 1, "maximum": 36 }] },
             "appFolders": {
               "type": "array",

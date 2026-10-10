@@ -27,7 +27,7 @@ spec:
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
-| `desktop.deskos.org` | `GnomeProfile` |
+| `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
 All kinds are `v1alpha1`. Their JSON Schemas are in
@@ -302,6 +302,7 @@ spec:
   defaults:
     shell:
       hotCorners: false
+      welcomeTour: true            # the first-run welcome dialog (tour)
       workspaces: 4                # dynamic | 1 to 36
       appFolders:
         - id: Development
@@ -322,6 +323,58 @@ spec:
   Shell 49.4 overwrites them at first login.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
   through the Platform's application launcher (`gtk-launch` on EL10).
+- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
+  welcome dialog, which offers the desktop tour. `false` suppresses it.
+
+### `Theme`
+
+A **named, reusable look** — the palette theme scheme adapted to the
+surfaces GNOME itself defines. A Theme maps a palette onto the same GNOME
+setting domain as `GnomeProfile`, so it layers, locks and conflicts like
+any other appearance setting:
+
+```yaml
+apiVersion: desktop.deskos.org/v1alpha1
+kind: Theme
+metadata:
+  name: tokyo-night
+spec:
+  mode: dark                    # dark | light
+  accent: "#7aa2f7"             # any #RRGGBB; mapped to the closest GNOME accent
+  palette:                      # free colors for the GTK and terminal overrides
+    background: "#1a1b26"
+    foreground: "#a9b1d6"
+    red: "#f7768e"              # the six normal ANSI colors also produce
+    green: "#9ece6a"            # a Ptyxis terminal palette
+    yellow: "#e0af68"
+    blue: "#7aa2f7"
+    magenta: "#ad8ee6"
+    cyan: "#449dab"
+  iconTheme: Yaru-blue
+  cursorTheme: Adwaita
+  fonts:
+    monospace: { family: JetBrains Mono, size: 11 }
+  wallpaper:
+    light: ../assets/tokyo-night-light.svg
+    dark: ../assets/tokyo-night-dark.svg
+```
+
+- **`mode`** lowers to `appearance.colorScheme` (`dark` → `prefer-dark`).
+- **`accent`** is any hex; it is mapped to the closest of GNOME's nine
+  accents **by hue** (a light green stays green), with a `slate` fallback
+  for near-achromatic colors.
+- **`palette`** makes the Theme generate named-color overrides for
+  **GTK4/libadwaita and GTK3** (`/etc/skel/.config/gtk-{4,3}.0/gtk.css`), and,
+  when the six normal ANSI colors are present, a **Ptyxis terminal palette**
+  (`/etc/skel/.local/share/org.gnome.Ptyxis/palettes/`). Users the installer
+  or GNOME Initial Setup create inherit them.
+- **`wallpaper`**, **`fonts`**, **`iconTheme`** and **`cursorTheme`** are
+  the same shapes and lowering as in `GnomeProfile.appearance`.
+
+A Theme is included by a `Profile` like any other resource. A native GTK3
+theme, terminals and a GNOME Shell recoloring are still out: the Shell needs
+the `user-theme` extension and its own stylesheet; see
+[ADR 0013](adr/0013-theme.md).
 
 ### `BootProfile`
 

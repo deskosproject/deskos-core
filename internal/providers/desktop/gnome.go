@@ -44,6 +44,7 @@ const (
 	KeyCursorTheme     = "appearance.cursorTheme"
 	KeyColorScheme     = "appearance.colorScheme"
 	KeyAccentColor     = "appearance.accentColor"
+	KeyPalette         = "appearance.palette"
 	KeyFavorites       = "shell.favorites"
 	KeyBlankAfter      = "session.idle.blankAfter"
 	KeyLockEnabled     = "session.lock.enabled"
@@ -55,6 +56,7 @@ const (
 	KeyDockShowTrash   = "dock.showTrash"
 	KeySoftwareUpdates = "software.updates"
 	KeyHotCorners      = "shell.hotCorners"
+	KeyWelcomeTour     = "shell.welcomeTour"
 	KeyWorkspaces      = "shell.workspaces"
 	KeyAppFolders      = "shell.appFolders"
 	KeyClockWeekday    = "clock.showWeekday"
@@ -69,8 +71,7 @@ var knownKeys = map[string]bool{
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockEnabled: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
-	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWorkspaces: true, KeyAppFolders: true,
-	KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
+	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
 }
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
@@ -133,10 +134,11 @@ type Font struct {
 }
 
 type Shell struct {
-	Favorites  []string    `json:"favorites,omitempty"`
-	HotCorners *bool       `json:"hotCorners,omitempty"`
-	Workspaces any         `json:"workspaces,omitempty"`
-	AppFolders []AppFolder `json:"appFolders,omitempty"`
+	Favorites   []string    `json:"favorites,omitempty"`
+	HotCorners  *bool       `json:"hotCorners,omitempty"`
+	WelcomeTour *bool       `json:"welcomeTour,omitempty"`
+	Workspaces  any         `json:"workspaces,omitempty"`
+	AppFolders  []AppFolder `json:"appFolders,omitempty"`
 }
 
 // AppFolder is an app grid folder; declared folders replace GNOME's built-in ones.
@@ -228,7 +230,7 @@ var (
 )
 
 // Providers returns the desktop.deskos.org providers.
-func Providers() []registry.Provider { return []registry.Provider{gnomeProfile{}} }
+func Providers() []registry.Provider { return []registry.Provider{gnomeProfile{}, themeKind{}} }
 
 type gnomeProfile struct{}
 
@@ -362,6 +364,9 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		}
 		if sh.HotCorners != nil {
 			set(KeyHotCorners, *sh.HotCorners, strconv.FormatBool(*sh.HotCorners))
+		}
+		if sh.WelcomeTour != nil {
+			set(KeyWelcomeTour, *sh.WelcomeTour, strconv.FormatBool(*sh.WelcomeTour))
 		}
 		if sh.Workspaces != nil {
 			switch w := sh.Workspaces.(type) {
