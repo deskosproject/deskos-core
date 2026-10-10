@@ -298,6 +298,7 @@ spec:
   defaults:
     shell:
       hotCorners: false
+      welcomeTour: true            # the first-run welcome dialog (tour)
       workspaces: 4                # dynamic | 1 to 36
       appFolders:
         - id: Development
@@ -318,6 +319,8 @@ spec:
   Shell 49.4 overwrites them at first login.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
   through the Platform's application launcher (`gtk-launch` on EL10).
+- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
+  welcome dialog, which offers the desktop tour. `false` suppresses it.
 
 ### `Theme`
 

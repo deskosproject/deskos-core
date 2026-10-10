@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
+	"github.com/deskosproject/deskos-core/internal/plan"
 )
 
 func theme(name, spec string) string {
@@ -77,6 +78,36 @@ func TestThemePaletteGeneratesGTKCSS(t *testing.T) {
 		if !strings.Contains(css, want) {
 			t.Errorf("gtk.css lacks %q:\n%s", want, css)
 		}
+	}
+	gtk3 := files["rootfs/etc/skel/.config/gtk-3.0/gtk.css"]
+	for _, want := range []string{
+		"@define-color accent_bg_color #7aa2f7;",
+		"@define-color theme_bg_color #1a1b26;",
+		"@define-color theme_fg_color #a9b1d6;",
+	} {
+		if !strings.Contains(gtk3, want) {
+			t.Errorf("gtk-3.0/gtk.css lacks %q:\n%s", want, gtk3)
+		}
+	}
+}
+
+// The first-run welcome dialog (the tour prompt) is optional and on by
+// default; turning it off writes the shell's last-shown version.
+func TestWelcomeTourOptional(t *testing.T) {
+	const key = "/org/gnome/shell/welcome-dialog-last-shown-version"
+	profile := func(tour string) *plan.Plan {
+		dir := base.with(fixture{
+			"ws.yaml": workstation("ws", "org"),
+			"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+			"g.yaml":  gnome("g", "    shell:\n      welcomeTour: "+tour+"\n"),
+		}).dir(t)
+		return mustPlan(t, "ws", dir)
+	}
+	if v, _ := dconf(profile("false"), key); v != "'40.beta'" {
+		t.Errorf("%s = %q, want '40.beta'", key, v)
+	}
+	if _, ok := dconf(profile("true"), key); ok {
+		t.Errorf("welcomeTour: true must not write %s", key)
 	}
 }
 
