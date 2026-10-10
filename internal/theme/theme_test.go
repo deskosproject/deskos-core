@@ -44,25 +44,25 @@ func TestShellDconf(t *testing.T) {
 	}
 }
 
-func TestGTK4CSSHierarchyAndAccent(t *testing.T) {
+func TestGTK4CSS(t *testing.T) {
 	p := Palette{Background: "#1a1b26", Foreground: "#a9b1d6"}
-	css := p.GTK4CSS("blue", true)
+	css := p.GTK4CSS()
 	for _, want := range []string{
-		"--accent-bg-color: var(--accent-blue);",
 		"--window-bg-color: #1a1b26;",
 		"--window-fg-color: #a9b1d6;",
+		"--view-bg-color: #1a1b26;",
 	} {
 		if !strings.Contains(css, want) {
 			t.Errorf("gtk4 css lacks %q:\n%s", want, css)
 		}
 	}
-	// The accent must come from the GNOME name, never a second hex.
-	if strings.Contains(css, "--accent-color:") {
-		t.Errorf("gtk4 css must not pin --accent-color:\n%s", css)
+	// The accent is left to GNOME; the palette must not pin it, and it must
+	// not invent surface variants libadwaita cannot keep legible.
+	if strings.Contains(css, "accent") {
+		t.Errorf("gtk4 css must not override the accent:\n%s", css)
 	}
-	// Surfaces step away from the window color.
-	if strings.Contains(css, "--card-bg-color: #1a1b26;") {
-		t.Errorf("card is not shaded from the window color:\n%s", css)
+	if strings.Contains(css, "card-bg-color") {
+		t.Errorf("gtk4 css must stay conservative:\n%s", css)
 	}
 }
 

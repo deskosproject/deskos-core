@@ -26,11 +26,26 @@ import (
 // terminal uses the palette by default.
 const ptyxisProfileUUID = "9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30"
 
+const usage = "usage: deskos-theme apply --palette <dir> [--user | --root <dir>] [--shell-css <file>]\n" +
+	"       deskos-theme reset"
+
 func main() {
-	if len(os.Args) < 2 || os.Args[1] != "apply" {
-		fmt.Fprintln(os.Stderr, "usage: deskos-theme apply --palette <dir> [--user | --root <dir>] [--shell-css <file>]")
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, usage)
 		os.Exit(2)
 	}
+	switch os.Args[1] {
+	case "apply":
+		apply(os.Args[2:])
+	case "reset":
+		reset()
+	default:
+		fmt.Fprintln(os.Stderr, usage)
+		os.Exit(2)
+	}
+}
+
+func apply(args []string) {
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	palette := fs.String("palette", "", "an palette theme directory (colors.toml + backgrounds)")
 	user := fs.Bool("user", false, "write to $HOME and apply the GNOME settings of the session")
@@ -38,7 +53,7 @@ func main() {
 	shellCSS := fs.String("shell-css", "", "EXPERIMENTAL: the distro's compiled gnome-shell.css to recolor")
 	extensions := fs.String("extensions", "background-logo@fedorahosted.org,dash-to-dock@micxgx.gmail.com",
 		"the enabled-extensions the image already writes, to repeat in the shell drop in")
-	_ = fs.Parse(os.Args[2:])
+	_ = fs.Parse(args)
 
 	if *palette == "" {
 		fmt.Fprintln(os.Stderr, "deskos-theme: --palette is required")
@@ -59,7 +74,7 @@ func main() {
 		}
 		base = home
 	}
-	files := artifacts(base, *user, p, accent, dark)
+	files := artifacts(base, *user, p, accent)
 	if *shellCSS != "" {
 		css, err := os.ReadFile(*shellCSS)
 		if err != nil {
@@ -159,7 +174,7 @@ func paletteFrompalette(dir string) (theme.Palette, string, bool, error) {
 // artifacts returns the absolute paths and contents to write. System mode
 // seeds the user skeleton and the dconf database a build's dconf update
 // compiles; user mode writes the same files into a running session.
-func artifacts(base string, user bool, p theme.Palette, accent string, dark bool) map[string]string {
+func artifacts(base string, user bool, p theme.Palette, accent string) map[string]string {
 	var skel, dconf string
 	if user {
 		skel = base
@@ -168,7 +183,7 @@ func artifacts(base string, user bool, p theme.Palette, accent string, dark bool
 		dconf = filepath.Join(base, "etc/dconf/db/distro.d")
 	}
 	files := map[string]string{
-		filepath.Join(skel, ".config/gtk-4.0/gtk.css"): p.GTK4CSS(accent, dark),
+		filepath.Join(skel, ".config/gtk-4.0/gtk.css"): p.GTK4CSS(),
 		filepath.Join(skel, ".config/gtk-3.0/gtk.css"): p.GTK3CSS(accent),
 	}
 	if p.TerminalReady() {
@@ -253,4 +268,22 @@ func writeFile(path, content string) error {
 		return err
 	}
 	return os.WriteFile(path, []byte(content), 0o644)
+}
+
+// reset returns the GNOME keys deskos-theme manages to the image default, so a
+// user can undo an apply without hunting for the values. It never touches the
+// files deskos-theme wrote under $HOME.
+func reset() {
+	for _, k := range [][2]string{
+		{"org.gnome.desktop.interface", "color-scheme"},
+		{"org.gnome.desktop.interface", "accent-color"},
+		{"org.gnome.desktop.background", "picture-uri"},
+		{"org.gnome.desktop.background", "picture-uri-dark"},
+		{"org.gnome.desktop.screensaver", "picture-uri"},
+	} {
+		if err := run("gsettings", "reset", k[0], k[1]); err != nil {
+			fmt.Printf("deskos-theme: gsettings reset %s %s: %v\n", k[0], k[1], err)
+		}
+	}
+	fmt.Println("reset the GNOME keys deskos-theme manages")
 }

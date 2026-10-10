@@ -126,15 +126,12 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 
 	if v, ok := get(KeyPalette); ok {
 		pal := v.Value.(theme.Palette)
-		accent, dark := "", false
+		accent := ""
 		if a, ok := get(KeyAccentColor); ok {
 			accent = a.Value.(string)
 		}
-		if cs, ok := get(KeyColorScheme); ok {
-			dark = cs.Value.(string) == "prefer-dark"
-		}
 		l.p.Artifact.GeneratedFiles = append(l.p.Artifact.GeneratedFiles,
-			plan.GeneratedFile{Path: gtk4UserCSSPath, Mode: "0644", Content: pal.GTK4CSS(accent, dark), Provenance: v.Provenance},
+			plan.GeneratedFile{Path: gtk4UserCSSPath, Mode: "0644", Content: pal.GTK4CSS(), Provenance: v.Provenance},
 			plan.GeneratedFile{Path: gtk3UserCSSPath, Mode: "0644", Content: pal.GTK3CSS(accent), Provenance: v.Provenance},
 		)
 		if pal.TerminalReady() {
