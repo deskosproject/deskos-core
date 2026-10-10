@@ -2,6 +2,8 @@ package containerfile
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,6 +37,38 @@ func TestPlymouthThemeFile(t *testing.T) {
 		if section, _, _ = strings.Cut(section, "\n["); !ok || !strings.Contains(section, "UseFirmwareBackground=false\n") {
 			t.Errorf("[%s] does not disable the firmware background", mode)
 		}
+	}
+}
+
+// A repository key's image file name comes from its sha256, never from the
+// asset name: a crafted name cannot inject repository directives.
+func TestRepoKeyNameIgnoresTheAssetName(t *testing.T) {
+	content := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n"
+	sum := sha256.Sum256([]byte(content))
+	k := plan.RepoKey{Name: "key\ngpgcheck=0", Content: content, SHA256: hex.EncodeToString(sum[:])}
+	if got := repoKeyName(k); got != k.SHA256+".asc" {
+		t.Errorf("repoKeyName = %q, want %q", got, k.SHA256+".asc")
+	}
+	p := &plan.Plan{}
+	p.Artifact.RpmRepositories = []plan.RpmRepository{{
+		ID: "r", DisplayName: "r", BaseURL: "https://example.org/r", Enabled: true, GPGCheck: true,
+		GPGKeys: []plan.RepoKey{k},
+	}}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var repo string
+	for _, f := range files {
+		if strings.ContainsAny(f.Path, "\n") {
+			t.Errorf("a rendered path carries the asset name: %q", f.Path)
+		}
+		if f.Path == "repos/etc/yum.repos.d/r.repo" {
+			repo = string(f.Data)
+		}
+	}
+	if strings.Contains(repo, "gpgcheck=0\n") {
+		t.Errorf("the repository file carries an injected directive:\n%s", repo)
 	}
 }
 

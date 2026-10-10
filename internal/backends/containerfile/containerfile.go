@@ -72,7 +72,7 @@ func Render(p *plan.Plan) ([]File, error) {
 			if sum := sha256.Sum256([]byte(key.Content)); hex.EncodeToString(sum[:]) != key.SHA256 {
 				return nil, fmt.Errorf("RPM repository %s: gpg key %s does not match its sha256", repo.ID, key.Name)
 			}
-			r.add(path.Join(reposDir, repoGPGDir, repoKeyName(repo.ID, key)), 0o644, []byte(key.Content))
+			r.add(path.Join(reposDir, repoGPGDir, repoKeyName(key)), 0o644, []byte(key.Content))
 		}
 		r.add(path.Join(reposDir, "etc/yum.repos.d", repo.ID+".repo"), 0o644, repoFile(repo))
 	}
@@ -235,18 +235,18 @@ func repoFile(r plan.RpmRepository) []byte {
 	if len(r.GPGKeys) > 0 {
 		refs := make([]string, 0, len(r.GPGKeys))
 		for _, k := range r.GPGKeys {
-			refs = append(refs, "file://"+path.Join(repoGPGDir, repoKeyName(r.ID, k)))
+			refs = append(refs, "file://"+path.Join(repoGPGDir, repoKeyName(k)))
 		}
 		fmt.Fprintf(&b, "gpgkey=%s\n", strings.Join(refs, " "))
 	}
 	return []byte(b.String())
 }
 
-// repoKeyName is the file name a repository's key takes in the image. The
-// repository id namespaces it, so two repositories may ship a key with the
-// same base name.
-func repoKeyName(repoID string, k plan.RepoKey) string {
-	return repoID + "-" + k.Name
+// repoKeyName is the file name a repository's key takes in the image. It is
+// derived from the key's sha256, never from the asset name, so a resource
+// cannot inject repository directives through a crafted file name.
+func repoKeyName(k plan.RepoKey) string {
+	return k.SHA256 + ".asc"
 }
 
 // desktopFile writes a Desktop Entry Specification file; Exec is a validated

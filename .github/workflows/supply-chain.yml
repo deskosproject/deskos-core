@@ -1,10 +1,12 @@
 name: supply-chain (experimental)
 
-# Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
-# writes the declared SBOM with `deskosctl sbom`, produces the installed
-# SBOM with Syft, scans it with Grype, compares the two for RPM coverage,
-# and uploads the evidence. RHEL scanning runs on the entitled factory
-# host, not here. See docs/supply-chain.md and ADR 0010.
+# Manual only. The single publish path: builds DeskOS Core for CentOS Stream
+# 10 from this checkout, writes the declared SBOM with `deskosctl sbom`,
+# produces the installed SBOM with Syft, scans it with Grype, compares the two
+# for RPM coverage, then makes a QCOW2 from the same image and runs the boot
+# and session checks on it. Only then does it tag, push, sign and attest that
+# one digest, and upload the evidence. RHEL scanning runs on the entitled
+# factory host, not here. See docs/supply-chain.md and ADR 0010.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +16,7 @@ on:
         options: [negligible, low, medium, high, critical]
         default: critical
       publish:
-        description: Push the scanned image to quay.io and sign it (main only)
+        description: Push the scanned and boot-checked image to quay.io and sign it (main only)
         type: boolean
         default: false
 
@@ -33,11 +35,15 @@ env:
   # bootc-image-builder pinned to the digest used for local test disks (same
   # as vm-bootcheck.yml).
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+  # The OCI archive, the QCOW2 and the test overlays live on the /mnt disk;
+  # the root disk is small.
+  WORK: /mnt/deskos-work
 
 jobs:
   centos10:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Build (40) + QCOW2 (30) + boot (15) + session (25) can exceed 90.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -50,12 +56,13 @@ jobs:
           ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
           ./bin/deskosctl sbom ./resources --workstation deskos-core-centos10 --output declared.sbom.cdx.json
 
-      - name: Put container storage on /mnt
+      - name: Put container storage and the large artifacts on /mnt
         # The root disk is small; the same layout as vm-bootcheck.yml.
         run: |
-          sudo mkdir -p /mnt/containers /var/lib/containers /etc/containers
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
 
       - name: Enable KVM for the runner user
         run: |
@@ -75,33 +82,34 @@ jobs:
 
       - name: Export the image to an OCI archive
         run: |
-          sudo podman save --format oci-archive -o image.tar "$IMAGE"
-          sudo chown "$(id -u):$(id -g)" image.tar
-          ls -lh image.tar
+          sudo podman save --format oci-archive -o "$WORK/image.tar" "$IMAGE"
+          sudo chown "$(id -u):$(id -g)" "$WORK/image.tar"
+          ls -lh "$WORK/image.tar"
 
       - name: Install Syft and Grype (pinned)
         env:
           SYFT_VERSION: v1.54.0
           GRYPE_VERSION: v0.120.0
         run: |
-          # Pinned releases, installed from the tag: the scanner code must not
-          # change between runs of the same commit, even when the scan gates a
-          # real release. The installers verify the release checksums.
+          # Pinned release tags, so the scanner a run uses is fixed. Residual
+          # trust: install.sh comes from the tag, not a pinned commit, and a
+          # tag can move; the installer does verify the release checksums. Pin
+          # the installer by commit if that residual trust must go.
           curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
           curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Installed SBOM (Syft)
-        run: syft oci-archive:image.tar -o cyclonedx-json=installed.sbom.cdx.json
+        run: syft "oci-archive:$WORK/image.tar" -o cyclonedx-json=installed.sbom.cdx.json
 
       - name: CVE scan (Grype)
         run: |
-          grype oci-archive:image.tar -o table | tee grype.txt
-          grype oci-archive:image.tar -o json > cves.json
+          grype "oci-archive:$WORK/image.tar" -o table | tee grype.txt
+          grype "oci-archive:$WORK/image.tar" -o json > cves.json
           # The gate applies the severity policy: .grype.yaml from this
           # directory and the OpenVEX statements (ADR 0012). The evidence
           # above stays unfiltered.
-          grype oci-archive:image.tar \
+          grype "oci-archive:$WORK/image.tar" \
             --vex tests/supply-chain/vex.openvex.json \
             --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
 
@@ -111,28 +119,36 @@ jobs:
       - name: Build a QCOW2 without the builder's kernel arguments
         timeout-minutes: 30
         run: |
-          mkdir -p output
+          mkdir -p "$WORK/output"
           sudo podman run --rm --privileged --pull=missing \
             --security-opt label=type:unconfined_t \
-            -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
+            -v "$WORK/output:/output" -v /var/lib/containers/storage:/var/lib/containers/storage \
             "$BIB" build --type qcow2 --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
-          qemu-img check output/qcow2/disk.qcow2
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
       - name: Boot check (unmodified disk)
+        id: boot
         timeout-minutes: 15
         run: |
-          python3 tests/vm/bootcheck.py --disk output/qcow2/disk.qcow2 \
-            --out bootcheck --expect-splash --hash-disk --boot-timeout 420
+          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/bootcheck" --expect-splash --hash-disk --keep-overlay --boot-timeout 420
+
+      - name: Journal of the failed boot (diagnostic boot of the kept overlay)
+        if: failure() && steps.boot.outcome == 'failure'
+        timeout-minutes: 15
+        run: |
+          python3 tests/vm/sessioncheck.py --mode journal --disk "$WORK/bootcheck/overlay.qcow2" \
+            --out "$WORK/journal-failed-boot" --boot-timeout 600
 
       - name: Session check (instrumented boot)
         timeout-minutes: 25
         run: |
-          python3 tests/vm/sessioncheck.py --mode session --disk output/qcow2/disk.qcow2 \
-            --plan ctx/plan.json --out session --boot-timeout 900
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+            --plan ctx/plan.json --out "$WORK/session" --boot-timeout 900
           # Record the image that passed; the same image is tagged, pushed and
           # signed below, so the published digest is the tested one.
-          sudo podman image inspect "$IMAGE" --format 'id={{.Id}}' | tee image.txt
+          sudo podman image inspect "$IMAGE" --format 'id={{.Id}}' | tee "$WORK/image.txt"
 
       - name: Install cosign
         if: inputs.publish && github.ref == 'refs/heads/main'
@@ -149,9 +165,10 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA" "$DEST:latest"
+          # One tag, pushed by digest: a second moving tag would need its own
+          # digest recorded and compared before the publication is complete.
+          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
           sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
-          sudo podman push "$DEST:latest"
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
@@ -178,5 +195,8 @@ jobs:
             cosign-verify.txt
             ctx/plan.json
             ctx/generated-manifest.json
+            ${{ env.WORK }}/image.txt
+            ${{ env.WORK }}/bootcheck/summary.md
+            ${{ env.WORK }}/session/session.md
           retention-days: 14
           if-no-files-found: warn
