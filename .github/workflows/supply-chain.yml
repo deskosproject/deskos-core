@@ -216,11 +216,12 @@ jobs:
           }
           retry cosign sign --yes "$ref"
           # Rekor's public instance caps an attestation at 100 KB and an SBOM
-          # is far larger, so the signed statement references the SBOM by
-          # digest; the SBOM itself travels as workflow evidence.
+          # is far larger, so the signed statement names the image digest and
+          # the SBOM's exact SHA-256; the SBOM itself travels as workflow
+          # evidence (durable storage is tracked).
           sha="$(sha256sum installed.sbom.cdx.json | cut -d' ' -f1)"
-          jq -n --arg sha "$sha" --slurpfile s installed.sbom.cdx.json \
-            '{name:"installed.sbom.cdx.json", format:$s[0].bomFormat, specVersion:$s[0].specVersion, sha256:$sha, components:($s[0].components|length)}' \
+          jq -n --arg sha "$sha" --arg img "$digest" --slurpfile s installed.sbom.cdx.json \
+            '{image:$img, name:"installed.sbom.cdx.json", format:$s[0].bomFormat, specVersion:$s[0].specVersion, sha256:$sha, components:($s[0].components|length), location:"supply-chain-evidence workflow artifact"}' \
             > sbom-reference.json
           retry cosign attest --yes --type "https://deskos.org/supply-chain/sbom/v1" \
             --predicate sbom-reference.json "$ref"
@@ -236,6 +237,11 @@ jobs:
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/sbom/v1" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            | tee -a cosign-verify.txt
+          cosign verify-attestation \
+            --type "https://deskos.org/supply-chain/exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
             | tee -a cosign-verify.txt

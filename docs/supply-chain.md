@@ -123,32 +123,49 @@ The same workflow, with `publish` on `main`, pushes the scanned image and
 signs it **keyless** with [cosign](https://docs.sigstore.dev/): Fulcio
 issues a short-lived certificate bound to the workflow's OIDC identity and
 Rekor records the signature. Three attestations are attached: a reference to
-the **installed** SBOM (its format and SHA-256), the reviewed exceptions, and
-the matches this image accepted.
+the **installed** SBOM (the image digest, the SBOM's format and SHA-256, and
+where to find it), the reviewed exceptions, and the matches this image
+accepted.
 
 Rekor's public instance caps an attestation at 100 KB, and an SBOM is far
-larger, so the SBOM itself travels as workflow evidence and the signed
-statement references it by digest. The digest is the unit of promotion.
+larger, so the SBOM itself is not attached: the signed statement names its
+exact SHA-256, and the digest is the unit of promotion. The SBOM travels as
+workflow evidence; durable, digest-indexed storage for it is open work.
+
+**Verify a digest.** Checking the signature is necessary but not sufficient:
+require the three attestation types, pin the issuer and the workflow
+identity, and compare the SBOM you obtained against the hash the reference
+names. Do not use `--insecure-ignore-tlog` on this path.
 
 ```bash
 ref=quay.io/deskos/deskos-core@sha256:…
-cosign verify \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
-  "$ref"
+issuer=https://token.actions.githubusercontent.com
+identity='^https://github\.com/deskosproject/deskos-core/'
+
+cosign verify --certificate-oidc-issuer "$issuer" \
+  --certificate-identity-regexp "$identity" "$ref"
+
+for type in \
+  https://deskos.org/supply-chain/sbom/v1 \
+  https://deskos.org/supply-chain/exceptions/v1 \
+  https://deskos.org/supply-chain/effective-exceptions/v1; do
+  cosign verify-attestation --type "$type" \
+    --certificate-oidc-issuer "$issuer" \
+    --certificate-identity-regexp "$identity" "$ref"
+done
+
+# The reference names the image digest and the SBOM's SHA-256; read it and
+# check the SBOM you obtained against it.
 cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
-  "$ref"
+  --certificate-oidc-issuer "$issuer" --certificate-identity-regexp "$identity" "$ref" \
+  | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
 ```
 
-The reference carries the SBOM's SHA-256, so a verifier checks the evidence
-artifact against it.
-
-Keyless signing needs a GitHub Actions OIDC identity, so it covers the
-CentOS Stream 10 CI path. **RHEL builds run on the entitled factory host
-with no OIDC**: sign them with a cosign key kept outside this repository
-and verify against its public key.
+**RHEL builds** run on the entitled factory host with no OIDC: they are
+signed with a cosign **key** kept outside this repository and verified
+against its public key. That key's rotation, and the fact that verification
+without a transparency log carries less evidence than the keyless path, are
+recorded with the organization.
 
 The gates are unified: `supply-chain.yml` is the single publish path, and it
 boots, scans, signs and attests the same image before it is promoted; it is
