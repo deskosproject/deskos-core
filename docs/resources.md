@@ -421,7 +421,8 @@ organization changes one field and keeps the rest of Core's policy, for
 example `image: {schedule: weekly}`, or turns image updates off with
 `image: {automatic: false}` when another tool updates its machines. The
 generated units are described in
-[architecture.md](architecture.md#updates).
+[architecture.md](architecture.md#updates); how to operate them is in
+[operations.md](operations.md).
 
 ### `TrustAnchor`
 
