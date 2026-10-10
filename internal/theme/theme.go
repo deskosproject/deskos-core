@@ -108,8 +108,30 @@ func (p Palette) GTK4CSS() string {
 	write("window-fg-color", p.Foreground)
 	write("view-bg-color", p.Background)
 	write("view-fg-color", p.Foreground)
+	// libadwaita does not derive the sidebar from the window color, so a theme
+	// that sets the window leaves a neutral seam next to it. Step the sidebar
+	// toward the foreground (lighter on a dark theme, darker on a light one),
+	// which keeps it in the palette's hue.
+	if p.Background != "" && p.Foreground != "" {
+		write("sidebar-bg-color", mix(p.Background, p.Foreground, 0.08))
+		write("sidebar-fg-color", p.Foreground)
+	}
 	b.WriteString("}\n")
 	return b.String()
+}
+
+// mix returns a sRGB mix of a and b by weight (0..1) toward b. An invalid
+// color is returned unchanged.
+func mix(a, b string, weight float64) string {
+	if !HexColor.MatchString(a) || !HexColor.MatchString(b) {
+		return a
+	}
+	ar, ag, ab := hexRGB(a)
+	br, bg, bb := hexRGB(b)
+	return fmt.Sprintf("#%02x%02x%02x",
+		int(float64(ar)+weight*float64(br-ar)),
+		int(float64(ag)+weight*float64(bg-ag)),
+		int(float64(ab)+weight*float64(bb-ab)))
 }
 
 // GTK3CSS renders the GTK3 named-color override. It only takes effect when

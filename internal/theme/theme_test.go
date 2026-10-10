@@ -64,6 +64,13 @@ func TestGTK4CSS(t *testing.T) {
 	if strings.Contains(css, "card-bg-color") {
 		t.Errorf("gtk4 css must stay conservative:\n%s", css)
 	}
+	// The sidebar is derived from the window color, in the palette's hue.
+	if !strings.Contains(css, "--sidebar-bg-color: #") {
+		t.Errorf("gtk4 css lacks a derived sidebar color:\n%s", css)
+	}
+	if strings.Contains(css, "--sidebar-bg-color: #1a1b26;") {
+		t.Errorf("the sidebar must be derived from the window color:\n%s", css)
+	}
 }
 
 func TestAccentHex(t *testing.T) {
