@@ -1,0 +1,58 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "description": [
+    "Pins DeskOS keeps by hand: the platform bootc base image (tag + digest),",
+    "the binary artifacts of the example, and the scanner installer tags.",
+    "The Dockerfile/actions managers from config:recommended cover the rest.",
+    "NOTE: a binary artifact has a sha256 that Renovate cannot compute, so its",
+    "PR bumps the version only and the checksum must be filled before merge;",
+    "the base-image digest IS updated automatically."
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Platform bootc base image (tag + digest)",
+      "managerFilePatterns": ["/^resources/platforms/[^/]+\\.yaml$/"],
+      "matchStrings": [
+        "image: (?<depName>\\S+):(?<currentValue>[\\w.\\-]+)\\n(?:\\s*#[^\\n]*\\n)?\\s+digest: (?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Binary artifact releases (GitHub)",
+      "managerFilePatterns": ["/^examples/.*/software/[^/]+\\.yaml$/"],
+      "matchStrings": [
+        "url: https://github\\.com/(?<depName>[^/]+/[^/]+)/releases/download/v?(?<currentValue>[^/]+)/"
+      ],
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "description": "Syft installer tag in supply-chain.yml",
+      "managerFilePatterns": ["/^\\.github/workflows/supply-chain\\.yml$/"],
+      "matchStrings": ["SYFT_VERSION: (?<currentValue>v[\\d.]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "anchore/syft",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Grype installer tag in supply-chain.yml",
+      "managerFilePatterns": ["/^\\.github/workflows/supply-chain\\.yml$/"],
+      "matchStrings": ["GRYPE_VERSION: (?<currentValue>v[\\d.]+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "anchore/grype",
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Base images and scanners: review before merging",
+      "matchDatasources": ["docker", "github-releases"],
+      "addLabels": ["renovate", "pinned-input"]
+    }
+  ]
+}
