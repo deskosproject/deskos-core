@@ -18,8 +18,10 @@ unmodified boot whose overlay was kept (bootcheck.py --keep-overlay).
 
 import argparse
 import base64
+import hashlib
 import json
 import os
+import shlex
 import sys
 
 import bootcheck
@@ -38,9 +40,49 @@ MCELOG_FAILED_PROPS = {"LoadState": "loaded", "ActiveState": "failed", "SubState
 MCELOG_JOURNAL_SIGNATURE = ("does not support this processor", "edac_mce_amd")
 DOCK_UUID = "dash-to-dock@micxgx.gmail.com"
 
-SESSION_SCRIPT = f"""#!/bin/bash
+def session_script(seed_skel, app, skel_rels):
+    """The script the desktop autostart runs inside the GNOME session.
+
+    It records the session state. With seed_skel it copies /etc/skel into the
+    test user's HOME (the test user comes from sysusers, which does not copy
+    skel, so without this the image's per-user seeds never apply). With app it
+    opens a window before the report, so a captured frame shows the themed
+    widgets. skel_rels are the seed paths (relative to /etc/skel) whose content
+    the run must confirm reached the user.
+    """
+    seed = ""
+    if seed_skel:
+        seed = (
+            "# The test user comes from sysusers, which does not copy /etc/skel.\n"
+            "# Copy it as useradd -m would, so the session reflects a real account\n"
+            "# and the image's per-user seeds apply.\n"
+            'cp -a /etc/skel/. "$HOME"/ 2>/dev/null || true\n'
+        )
+    launch = ""
+    if app:
+        launch = (
+            "# Open an application so a captured frame shows the themed widgets.\n"
+            f"setsid {app} >/dev/null 2>&1 &\n"
+            "sleep 5\n"
+        )
+    skel = ""
+    if skel_rels:
+        quoted = " ".join(shlex.quote(r) for r in skel_rels)
+        skel = (
+            f"skel_rels=({quoted})\n"
+            'for i in "${!skel_rels[@]}"; do\n'
+            '  p="$HOME/${skel_rels[$i]}"\n'
+            '  if [ -f "$p" ]; then echo "skelseed_$i=present:$(sha256sum "$p" | cut -d" " -f1)"; '
+            'else echo "skelseed_$i=missing"; fi\n'
+            "done\n"
+        )
+    appcheck = ""
+    if app:
+        name = os.path.basename(app.split()[0])
+        appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
+    return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
-sleep 20
+{seed}{launch}sleep 20
 out={RESULTS}
 {{
 echo "session_type=$XDG_SESSION_TYPE"
@@ -51,7 +93,7 @@ echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 gnome-extensions info {DOCK_UUID} | awk -F': ' '/Enabled:/{{print "dock_enabled="$2}} /State:/{{print "dock_state="$2}}'
 echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
-timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
+{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
 }} > "$out.tmp"
@@ -119,7 +161,7 @@ def tmpfiles_arg(text):
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
-def credentials(mode):
+def credentials(mode, seed_skel=False, app=None, skel_rels=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -128,6 +170,7 @@ def credentials(mode):
     ]
     creds = {}
     if mode == "session":
+        script = session_script(seed_skel, app, skel_rels)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -136,7 +179,7 @@ def credentials(mode):
             f"f {HOME}/.config/gnome-initial-setup-done 0644 {USER} {USER} - yes",
             f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
             f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
-            f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(SESSION_SCRIPT)}",
+            f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
             f"f+ /etc/gdm/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
         ]
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
@@ -285,7 +328,7 @@ def dconf_value(plan, key):
     return None
 
 
-def evaluate(values, plan, journal=""):
+def evaluate(values, plan, journal="", skel_rels=()):
     checks = []
 
     def check(name, ok, detail):
@@ -316,6 +359,17 @@ def evaluate(values, plan, journal=""):
         detail += f"; known non-blocking: {','.join(known)} (see Platform diagnostics)"
     check("no unexpected failed system units", unexpected == [], detail)
     check("no failed user units", values.get("user_failed_units", "?") == "", f"failed={values.get('user_failed_units')}")
+    # With --seed-skel, the run proves the image's per-user seeds reached the
+    # user: the file exists in $HOME and its content is the generated one.
+    generated = plan.get("artifact", {}).get("generatedFiles") or []
+    for i, rel in enumerate(skel_rels):
+        want = next((f for f in generated if f.get("path") == "/etc/skel/" + rel), None)
+        got = values.get(f"skelseed_{i}", "missing")
+        expect = "present:" + hashlib.sha256(want["content"].encode()).hexdigest() if want else "?"
+        check(f"theme seed reaches the user ({rel})", got == expect, f"got {got} want {expect}")
+    if "app_running" in values:
+        check("the sample app is running", values.get("app_running", "0") not in ("", "0"),
+              f"app_running={values.get('app_running')}")
     return checks
 
 
@@ -330,6 +384,9 @@ def main():
     p.add_argument("--boot-timeout", type=int, default=900)
     p.add_argument("--shutdown-timeout", type=int, default=120)
     p.add_argument("--interval", type=float, default=3.0)
+    p.add_argument("--seed-skel", action="store_true",
+                   help="copy /etc/skel into the test user's HOME, as useradd -m would, and check the generated seeds")
+    p.add_argument("--app", help="open this command in the session so a captured frame shows the themed widgets")
     p.add_argument("--qemu")
     p.add_argument("--ovmf-code")
     p.add_argument("--ovmf-vars")
@@ -337,12 +394,18 @@ def main():
     if a.mode == "session" and not a.plan:
         p.error("--plan is required for --mode session")
     plan = json.load(open(a.plan)) if a.plan else {}
+    skel_rels = []
+    if a.seed_skel:
+        for f in plan.get("artifact", {}).get("generatedFiles") or []:
+            path = f.get("path", "")
+            if path.startswith("/etc/skel/"):
+                skel_rels.append(path[len("/etc/skel/"):])
 
     run_args = argparse.Namespace(
         disk=a.disk, out=a.out, qemu=a.qemu, ovmf_code=a.ovmf_code, ovmf_vars=a.ovmf_vars,
         memory=a.memory, cpus=a.cpus, boot_timeout=a.boot_timeout, shutdown_timeout=a.shutdown_timeout,
         interval=a.interval, stable_frames=5, expect_splash=False, hash_disk=True, keep_overlay=False,
-        extra_qemu=smbios_args(credentials(a.mode)), until_serial=MARK_END, guest_powers_off=True,
+        extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels)), until_serial=MARK_END, guest_powers_off=True,
     )
     try:
         summary = bootcheck.run(run_args)
@@ -356,7 +419,7 @@ def main():
     result = {"mode": a.mode, "instrumented": True, "boot": summary["result"], "boot_failures": summary["failures"],
               "values": values, "plan_workstation": plan.get("workstation", {}).get("name")}
     if a.mode == "session":
-        result["checks"] = evaluate(values, plan, journal)
+        result["checks"] = evaluate(values, plan, journal, skel_rels)
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
         ok = summary["result"] == "pass" and all(c["pass"] for c in result["checks"])
     else:
