@@ -98,6 +98,38 @@ def check(record, cves, plan=None, today=None):
     return problems
 
 
+def effective_record(record, cves):
+    """Return what this scan actually accepted: the observed match combos.
+
+    The reviewed record is a standing approval; a single image may use only
+    part of it. This is what the publish attests, so the signed decision
+    names the exact matches accepted, not the whole approval.
+    """
+    approved = combos(record)
+    accepted = []
+    seen = set()
+    for match in cves.get("matches") or []:
+        vid = match["vulnerability"]["id"]
+        if vid not in approved:
+            continue
+        found = match_combos(match)
+        if found is None:
+            continue
+        for combo in sorted(found):
+            if combo in approved[vid] and (vid,) + combo not in seen:
+                seen.add((vid,) + combo)
+                pkg, kind, version, path = combo
+                accepted.append(
+                    {"id": vid, "package": pkg, "type": kind, "version": version, "path": path}
+                )
+    return {
+        "owner": record["owner"],
+        "review": record["review"],
+        "base": record["base"],
+        "accepted": accepted,
+    }
+
+
 def emit_gate(record):
     """Return the Grype configuration that applies the record's exceptions."""
     lines = [
@@ -132,6 +164,7 @@ def main(argv=None):
     parser.add_argument("--exceptions", required=True, help="the reviewed record")
     parser.add_argument("--plan", help="deskosctl plan.json, to check the base digest")
     parser.add_argument("--emit-gate", metavar="FILE", help="write the Grype gate configuration")
+    parser.add_argument("--effective", metavar="FILE", help="write what this scan actually accepted")
     args = parser.parse_args(argv)
 
     record = load_json(args.exceptions)
@@ -144,15 +177,16 @@ def main(argv=None):
     if not args.cves:
         parser.error("--cves is required unless --emit-gate is given")
 
-    problems = check(
-        record,
-        load_json(args.cves),
-        load_json(args.plan) if args.plan else None,
-    )
+    cves = load_json(args.cves)
+    problems = check(record, cves, load_json(args.plan) if args.plan else None)
     if problems:
         for p in problems:
             print(f"error: {p}", file=sys.stderr)
         return 1
+    if args.effective:
+        with open(args.effective, "w", encoding="utf-8") as fh:
+            json.dump(effective_record(record, cves), fh, indent=2)
+            fh.write("\n")
     total = sum(len(e["matches"]) for e in record["exceptions"])
     print(f"ok: {len(record['exceptions'])} exception(s), {total} approved match(es), review {record['review']}")
     return 0

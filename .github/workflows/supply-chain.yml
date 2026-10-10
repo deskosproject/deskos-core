@@ -126,7 +126,8 @@ jobs:
           out=$(python3 tests/supply-chain/check_exceptions.py \
             --cves cves.json \
             --exceptions tests/supply-chain/exceptions.json \
-            --plan ctx/plan.json)
+            --plan ctx/plan.json \
+            --effective "$WORK/effective-exceptions.json")
           echo "$out"
           { echo "### Accepted vulnerability exceptions"; echo; echo "$out"; } >> "$GITHUB_STEP_SUMMARY"
           python3 tests/supply-chain/check_exceptions.py \
@@ -201,12 +202,20 @@ jobs:
           cosign sign --yes "$ref"
           cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
           # The accepted-risk decision is part of the signed record, not only
-          # of a 14-day Actions artifact: attest the reviewed exceptions.
+          # of a 14-day Actions artifact: attest the standing approval and,
+          # separately, the exact matches this image accepted.
           cosign attest --yes --type "https://deskos.org/supply-chain/exceptions/v1" \
             --predicate tests/supply-chain/exceptions.json "$ref"
+          cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
+            --predicate "$WORK/effective-exceptions.json" "$ref"
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+          cosign verify-attestation \
+            --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            | tee -a cosign-verify.txt
           cosign logout quay.io
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
@@ -227,6 +236,7 @@ jobs:
             ctx/plan.json
             ctx/generated-manifest.json
             ${{ env.WORK }}/gate.grype.yaml
+            ${{ env.WORK }}/effective-exceptions.json
             ${{ env.WORK }}/image.txt
             ${{ env.WORK }}/bootcheck/summary.md
             ${{ env.WORK }}/session/session.md

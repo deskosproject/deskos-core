@@ -89,6 +89,19 @@ class CheckExceptionsTest(unittest.TestCase):
         text = check_exceptions.emit_gate(rec)
         self.assertEqual(text.count("version: go1.2"), 1)
 
+    def test_effective_record_lists_observed_matches(self):
+        eff = check_exceptions.effective_record(record(), {"matches": [match(), match(vid="GO-2")]})
+        self.assertEqual(eff["owner"], "tester")
+        self.assertEqual(eff["review"], "2999-01-01")
+        self.assertEqual(
+            eff["accepted"],
+            [{"id": "GO-1", "package": "stdlib", "type": "go-module", "version": "go1.2", "path": "/usr/bin/a"}],
+        )
+
+    def test_effective_record_ignores_unobserved_and_unapproved(self):
+        eff = check_exceptions.effective_record(record(), {"matches": [match(path="/usr/bin/z")]})
+        self.assertEqual(eff["accepted"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

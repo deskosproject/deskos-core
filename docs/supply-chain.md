@@ -104,7 +104,10 @@ raw report and the gate — an expired review, a moved base layer, a new
 component, a new version or an unapproved Critical fails the build — and
 `--emit-gate` writes the Grype gate configuration from it, so the gate can
 never accept more than the record approves. The record is uploaded with the
-evidence and attested on the published digest.
+evidence and attested on the published digest, together with a second
+attestation of the matches this image actually accepted (a standing
+approval is often wider than one image's need); both are verified by
+digest, signature and predicated type.
 
 CentOS Stream 10 baseline from that first run (Grype, distro `centos-10`):
 0 Critical, 1866 High, 26735 Medium, 10263 Low, 124 Unknown. The High count
