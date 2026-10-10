@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -179,12 +180,9 @@ func paletteFrompalette(dir string) (theme.Palette, string, string, error) {
 			accent = name
 		}
 	}
-	mode := ""
-	switch colors["mode"] {
-	case "dark":
-		mode = "dark"
-	case "light":
-		mode = "light"
+	mode := colors["mode"]
+	if mode != "" && mode != "dark" && mode != "light" {
+		return theme.Palette{}, "", "", fmt.Errorf("%s: mode=%q is not dark or light", dir, mode)
 	}
 	return p, accent, mode, nil
 }
@@ -256,8 +254,18 @@ func applyUser(dir string, p theme.Palette, accent string, mode string) int {
 				failures++
 			}
 		}
-		dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(ptyxisProfileUUID))
-		dwrite("/org/gnome/Ptyxis/profile-uuids", "["+gvariantString(ptyxisProfileUUID)+"]")
+		// Preserve the user's profiles: add ours only if it is missing, and
+		// keep their default profile instead of replacing it.
+		uuids := gvariantStrings(dconfRead("/org/gnome/Ptyxis/profile-uuids"))
+		if !slices.Contains(uuids, ptyxisProfileUUID) {
+			uuids = append(uuids, ptyxisProfileUUID)
+		}
+		dwrite("/org/gnome/Ptyxis/profile-uuids", gvariantStringList(uuids))
+		if len(gvariantStrings(dconfRead("/org/gnome/Ptyxis/default-profile-uuid"))) == 0 {
+			dwrite("/org/gnome/Ptyxis/default-profile-uuid", gvariantString(ptyxisProfileUUID))
+		} else {
+			fmt.Println("note: kept the user's Ptyxis default profile; the DeskOS palette is installed and selectable")
+		}
 		dwrite("/org/gnome/Ptyxis/Profiles/"+ptyxisProfileUUID+"/palette", gvariantString(p.Name))
 	}
 	return failures
@@ -265,6 +273,43 @@ func applyUser(dir string, p theme.Palette, accent string, mode string) int {
 
 func gvariantString(s string) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(s) + "'"
+}
+
+// dconfRead returns the value at path (GVariant text), or "" if it is unset or
+// dconf is unavailable.
+func dconfRead(path string) string {
+	out, err := exec.Command("dconf", "read", path).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// gvariantStrings returns the quoted strings inside a GVariant value like
+// "['a', 'b']" or "'a'".
+func gvariantStrings(v string) []string {
+	var out []string
+	for {
+		i := strings.IndexByte(v, '\'')
+		if i < 0 {
+			return out
+		}
+		rest := v[i+1:]
+		j := strings.IndexByte(rest, '\'')
+		if j < 0 {
+			return out
+		}
+		out = append(out, rest[:j])
+		v = rest[j+1:]
+	}
+}
+
+func gvariantStringList(items []string) string {
+	parts := make([]string, len(items))
+	for i, s := range items {
+		parts[i] = gvariantString(s)
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
 }
 
 // firstBackground returns the theme's first background image, if any.
@@ -316,6 +361,7 @@ func writeFile(path, content string) error {
 // user set them, and it does not remove the files deskos-theme wrote under
 // $HOME.
 func resetGNOMEDefaults() {
+	failures := 0
 	for _, k := range [][2]string{
 		{"org.gnome.desktop.interface", "color-scheme"},
 		{"org.gnome.desktop.interface", "accent-color"},
@@ -325,7 +371,12 @@ func resetGNOMEDefaults() {
 	} {
 		if err := run("gsettings", "reset", k[0], k[1]); err != nil {
 			fmt.Printf("deskos-theme: gsettings reset %s %s: %v\n", k[0], k[1], err)
+			failures++
 		}
+	}
+	if failures > 0 {
+		fmt.Fprintf(os.Stderr, "deskos-theme: %d key(s) could not be reset\n", failures)
+		os.Exit(1)
 	}
 	fmt.Println("reset the GNOME keys DeskOS manages; the files under $HOME are untouched")
 }
