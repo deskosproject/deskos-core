@@ -72,6 +72,31 @@ func TestRepoKeyNameIgnoresTheAssetName(t *testing.T) {
 	}
 }
 
+// Two repositories may share a signing key; its file is written once.
+func TestRepoKeysSharedBetweenRepositories(t *testing.T) {
+	content := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n"
+	sum := sha256.Sum256([]byte(content))
+	k := plan.RepoKey{Name: "shared.asc", Content: content, SHA256: hex.EncodeToString(sum[:])}
+	p := &plan.Plan{}
+	p.Artifact.RpmRepositories = []plan.RpmRepository{
+		{ID: "a", DisplayName: "a", BaseURL: "https://example.org/a", Enabled: true, GPGCheck: true, GPGKeys: []plan.RepoKey{k}},
+		{ID: "b", DisplayName: "b", BaseURL: "https://example.org/b", Enabled: true, GPGCheck: true, GPGKeys: []plan.RepoKey{k}},
+	}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for _, f := range files {
+		if strings.HasPrefix(f.Path, "repos/etc/pki/rpm-gpg/") {
+			n++
+		}
+	}
+	if n != 1 {
+		t.Errorf("wrote %d key files, want 1 (shared keys must not duplicate)", n)
+	}
+}
+
 // A tar.gz member is installed only after the extraction proves it is a plain
 // file: tar would extract a symlink or hardlink member as such, and install
 // would then copy whatever it points at.

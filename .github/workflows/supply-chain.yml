@@ -56,6 +56,12 @@ jobs:
           ./bin/deskosctl render ./resources --workstation deskos-core-centos10 --output ctx
           ./bin/deskosctl sbom ./resources --workstation deskos-core-centos10 --output declared.sbom.cdx.json
 
+      - name: The publishable image has no unchecked repository
+        # Publication policy (kept out of `deskosctl validate`, which stays a
+        # model check): a repository whose GPG check is disabled cannot back a
+        # published image.
+        run: jq -e 'all(.artifact.rpmRepositories[]; .gpgCheck)' ctx/plan.json > /dev/null
+
       - name: Put container storage and the large artifacts on /mnt
         # The root disk is small; the same layout as vm-bootcheck.yml.
         run: |
@@ -88,15 +94,16 @@ jobs:
 
       - name: Install Syft and Grype (pinned)
         env:
+          # The release tag, and the commit install.sh is fetched at: a moved
+          # tag cannot change the installer, and the installer verifies the
+          # release checksums of the binaries it downloads.
           SYFT_VERSION: v1.54.0
+          SYFT_INSTALL: cc326e45a6213360266dda4b30cc68095946d676
           GRYPE_VERSION: v0.120.0
+          GRYPE_INSTALL: 10fbc043ecbaf8436daa9efac9f1632557caf277
         run: |
-          # Pinned release tags, so the scanner a run uses is fixed. Residual
-          # trust: install.sh comes from the tag, not a pinned commit, and a
-          # tag can move; the installer does verify the release checksums. Pin
-          # the installer by commit if that residual trust must go.
-          curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
-          curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_VERSION/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
+          curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
+          curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Installed SBOM (Syft)

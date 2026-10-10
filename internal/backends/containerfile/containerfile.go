@@ -64,6 +64,7 @@ func Render(p *plan.Plan) ([]File, error) {
 	r := &renderer{p: p}
 	r.add(PlanPath, 0o644, planJSON)
 
+	seenKeys := map[string]bool{}
 	for _, repo := range p.Artifact.RpmRepositories {
 		if repo.ID == rhsmRepoID {
 			return nil, fmt.Errorf("RPM repository id %q would be written as %s, which RPM builds reserve for subscription-manager", repo.ID, rhsmRepoFile)
@@ -72,7 +73,14 @@ func Render(p *plan.Plan) ([]File, error) {
 			if sum := sha256.Sum256([]byte(key.Content)); hex.EncodeToString(sum[:]) != key.SHA256 {
 				return nil, fmt.Errorf("RPM repository %s: gpg key %s does not match its sha256", repo.ID, key.Name)
 			}
-			r.add(path.Join(reposDir, repoGPGDir, repoKeyName(key)), 0o644, []byte(key.Content))
+			name := repoKeyName(key)
+			// Two repositories may share a signing key; its file is written
+			// once and both repository files point at it.
+			if seenKeys[name] {
+				continue
+			}
+			seenKeys[name] = true
+			r.add(path.Join(reposDir, repoGPGDir, name), 0o644, []byte(key.Content))
 		}
 		r.add(path.Join(reposDir, "etc/yum.repos.d", repo.ID+".repo"), 0o644, repoFile(repo))
 	}
