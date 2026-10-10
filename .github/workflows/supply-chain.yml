@@ -192,15 +192,13 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # The commit tag is the immutable reference, recorded and compared
-          # by digest. :latest is a convenience tag moved to the same digest
-          # in the same run, so the learning path never pulls an old image.
+          # Push the immutable commit tag by digest, sign and verify it, and
+          # only then move :latest to it: a failed signature must never leave
+          # :latest pointing at an unsigned image.
           sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
           sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
-          sudo podman tag "$IMAGE" "$DEST:latest"
-          sudo podman push "$DEST:latest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           cosign sign --yes "$ref"
           cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
@@ -219,6 +217,9 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
             | tee -a cosign-verify.txt
+          # :latest moves only after the digest is signed and verified.
+          sudo podman tag "$IMAGE" "$DEST:latest"
+          sudo podman push "$DEST:latest"
           cosign logout quay.io
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
