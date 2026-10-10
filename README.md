@@ -55,10 +55,10 @@ the [Quickstart](#quickstart)), then look at the workstation DeskOS Core
 already ships — no files to write yet:
 
 ```bash
-# Core is embedded: this composes cleanly with no resources of your own.
-./deskosctl-$VERSION-linux-amd64 validate
+# This composes cleanly with no resources of your own.
+./deskosctl validate
 # The composed machine, before anything is built.
-./deskosctl-$VERSION-linux-amd64 plan --workstation deskos-core-centos10
+./deskosctl plan --workstation deskos-core-centos10
 ```
 
 `plan` prints what the image will contain and where each value came from.
@@ -97,16 +97,15 @@ built*, and `deskosctl render` writes a **deterministic** build context:
 the same inputs always give the same bytes. Every resource kind, with an
 example, is in [**docs/resources.md**](docs/resources.md).
 
-A `Workstation` is the resource you author: a machine definition. It
-compiles into a workstation **image** (a bootable container image). The
-name is DeskOS's composition kind, not a Fedora Workstation edition.
+A `Workstation` is the resource you author: a machine definition that
+compiles into a workstation **image** (a bootable container image).
 
 ## Quickstart
 
 The whole flow, and the same steps CI runs:
 
 ```bash
-# 1. deskosctl. DeskOS Core is embedded, so there is nothing else to download.
+# 1. Get deskosctl (one binary).
 curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/deskosctl-linux-amd64
 curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/SHA256SUMS
 sha256sum -c --ignore-missing SHA256SUMS
@@ -187,9 +186,7 @@ in [**docs/install.md**](docs/install.md).
 ## What DeskOS is not
 
 - **Not a distribution with editions.** Organizations compose their own
-  workstations from DeskOS Core, their baseline and their roles. A
-  `Workstation` here is the machine you compose, not the Fedora
-  Workstation edition and not a DeskOS edition.
+  workstations from DeskOS Core, their baseline and their roles.
 - **Not configuration management.** DeskOS owns the *image*, not the
   running machine; Ansible, Satellite, MDM and EDR keep managing
   endpoints.

@@ -135,25 +135,20 @@ git tag -a vX.Y.Z -m "deskosctl vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-> [!IMPORTANT]
-> The copy-paste version in [install.md](install.md) and in this file is
-> concrete, not a placeholder. Bump it in the commit you tag: the release job
-> refuses a tag the docs do not name, so it cannot go stale.
-
-To download and verify `v0.9.3`, the current release (DeskOS Core is embedded
-in the binary; the resources tar is published for inspection and
-`deskosctl core export` writes it):
+To download and verify the current release. The version-less asset names
+track the latest release; use a `vX.Y.Z` name to pin one:
 
 ```bash
-gh release download v0.9.3 --repo deskosproject/deskos-core
+gh release download --repo deskosproject/deskos-core \
+  --pattern 'deskosctl-linux-amd64' --pattern 'SHA256SUMS'
 sha256sum -c --ignore-missing SHA256SUMS
-chmod +x deskosctl-v0.9.3-linux-amd64
+chmod +x deskosctl-linux-amd64
 ```
 
 or without `gh`:
 
 ```bash
-base=https://github.com/deskosproject/deskos-core/releases/download/v0.9.3
-curl -fL -O "$base/deskosctl-v0.9.3-linux-amd64" -O "$base/SHA256SUMS"
+base=https://github.com/deskosproject/deskos-core/releases/latest/download
+curl -fL -O "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 ```

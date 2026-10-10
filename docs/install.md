@@ -76,26 +76,18 @@ reboot (see [Updates](architecture.md#updates)).
 Build on a **registered RHEL 10 host** logged in to `registry.redhat.io`,
 as root (the build runs as root).
 
-**1. Get `deskosctl`** — DeskOS Core is embedded in it — of the desired
-release from
+**1. Get `deskosctl`** from
 [GitHub Releases](https://github.com/deskosproject/deskos-core/releases).
-`SHA256SUMS` covers the binary and the resources tar (kept for inspection;
-`--ignore-missing` checks only what you fetched). No Go toolchain or git is
-needed:
+The version-less asset names track the latest release; use a `vX.Y.Z` name
+to pin one. No Go toolchain or git is needed:
 
 ```bash
-VERSION=v0.9.3
-base=https://github.com/deskosproject/deskos-core/releases/download/$VERSION
+base=https://github.com/deskosproject/deskos-core/releases/latest/download
 mkdir deskos && cd deskos
-curl -fL -O "$base/deskosctl-$VERSION-linux-amd64" -O "$base/SHA256SUMS"
+curl -fL -O "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
-install -D -m 0755 "deskosctl-$VERSION-linux-amd64" bin/deskosctl
+install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 ```
-
-> [!NOTE]
-> Use `v0.2.1` or later: it is the first release that ships the resources
-> archive, and binaries before `v0.2.0` render a schema step that fails on
-> RHEL 10.2.
 
 **2. Declare a RHEL 10 workstation** in a resource root of your own, for
 example `my-org/workstations/core-rhel10.yaml`:
