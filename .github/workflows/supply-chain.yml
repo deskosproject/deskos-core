@@ -97,10 +97,10 @@ jobs:
           # The release tag, and the commit install.sh is fetched at: a moved
           # tag cannot change the installer, and the installer verifies the
           # release checksums of the binaries it downloads.
-          SYFT_VERSION: v1.54.0
-          SYFT_INSTALL: cc326e45a6213360266dda4b30cc68095946d676
-          GRYPE_VERSION: v0.120.0
-          GRYPE_INSTALL: 10fbc043ecbaf8436daa9efac9f1632557caf277
+          SYFT_VERSION: v1.54.1
+          SYFT_INSTALL: 749cd89ef26db65d5102d879f5dd63a174312b1e
+          GRYPE_VERSION: v0.120.1
+          GRYPE_INSTALL: 0d30618ef52e666f1c626f4cc463eb940cb6e498
         run: |
           curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
           curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
@@ -180,11 +180,14 @@ jobs:
       - name: Install cosign
         if: inputs.publish && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          # The action defaults to an older cosign; pin the release we verify.
+          cosign-release: 'v3.1.3'
 
       - name: Publish, sign and attest the scanned image
         # CentOS Stream 10 only; RHEL images are never published. The
         # signature is keyless: it is bound to this workflow's OIDC
-        # identity, and the installed SBOM is attached as an attestation.
+        # identity, and a signed attestation references the installed SBOM.
         if: inputs.publish && github.ref == 'refs/heads/main'
         env:
           DEST: quay.io/deskos/deskos-core
@@ -200,8 +203,7 @@ jobs:
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # Rekor (the transparency log) is reached over the network and has
-          # been flaky from hosted runners; retry the signing steps rather
+          # Rekor is reached over the network; retry the signing steps rather
           # than fail an image that already passed scan, boot and session.
           retry() {
             local n=0
@@ -213,7 +215,15 @@ jobs:
             done
           }
           retry cosign sign --yes "$ref"
-          retry cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
+          # Rekor's public instance caps an attestation at 100 KB and an SBOM
+          # is far larger, so the signed statement references the SBOM by
+          # digest; the SBOM itself travels as workflow evidence.
+          sha="$(sha256sum installed.sbom.cdx.json | cut -d' ' -f1)"
+          jq -n --arg sha "$sha" --slurpfile s installed.sbom.cdx.json \
+            '{name:"installed.sbom.cdx.json", format:$s[0].bomFormat, specVersion:$s[0].specVersion, sha256:$sha, components:($s[0].components|length)}' \
+            > sbom-reference.json
+          retry cosign attest --yes --type "https://deskos.org/supply-chain/sbom/v1" \
+            --predicate sbom-reference.json "$ref"
           # The accepted-risk decision is part of the signed record, not only
           # of a 14-day Actions artifact: attest the standing approval and,
           # separately, the exact matches this image accepted.
@@ -224,6 +234,11 @@ jobs:
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+          cosign verify-attestation \
+            --type "https://deskos.org/supply-chain/sbom/v1" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            | tee -a cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
@@ -249,6 +264,7 @@ jobs:
             digest.txt
             cosign-verify.txt
             tests/supply-chain/exceptions.json
+            sbom-reference.json
             ctx/plan.json
             ctx/generated-manifest.json
             ${{ env.WORK }}/gate.grype.yaml

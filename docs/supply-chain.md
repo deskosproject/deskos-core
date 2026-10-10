@@ -121,20 +121,29 @@ is dominated by the kernel (one entry per subpackage) and Firefox.
 
 The same workflow, with `publish` on `main`, pushes the scanned image and
 signs it **keyless** with [cosign](https://docs.sigstore.dev/): Fulcio
-issues a short-lived certificate bound to the workflow's OIDC identity,
-Rekor records the signature, and the **installed** SBOM is attached as a
-CycloneDX attestation. The digest is the unit of promotion.
+issues a short-lived certificate bound to the workflow's OIDC identity and
+Rekor records the signature. Three attestations are attached: a reference to
+the **installed** SBOM (its format and SHA-256), the reviewed exceptions, and
+the matches this image accepted.
+
+Rekor's public instance caps an attestation at 100 KB, and an SBOM is far
+larger, so the SBOM itself travels as workflow evidence and the signed
+statement references it by digest. The digest is the unit of promotion.
 
 ```bash
+ref=quay.io/deskos/deskos-core@sha256:…
 cosign verify \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
-  quay.io/deskos/deskos-core@sha256:…
-cosign verify-attestation --type cyclonedx \
+  "$ref"
+cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' \
-  quay.io/deskos/deskos-core@sha256:…
+  "$ref"
 ```
+
+The reference carries the SBOM's SHA-256, so a verifier checks the evidence
+artifact against it.
 
 Keyless signing needs a GitHub Actions OIDC identity, so it covers the
 CentOS Stream 10 CI path. **RHEL builds run on the entitled factory host
