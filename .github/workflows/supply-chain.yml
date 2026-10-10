@@ -200,14 +200,26 @@ jobs:
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          cosign sign --yes "$ref"
-          cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
+          # Rekor (the transparency log) is reached over the network and has
+          # been flaky from hosted runners; retry the signing steps rather
+          # than fail an image that already passed scan, boot and session.
+          retry() {
+            local n=0
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge 5 ] && { echo "gave up after $n attempts: $*" >&2; return 1; }
+              echo "attempt $n failed; retrying in $((n*15))s: $*" >&2
+              sleep $((n*15))
+            done
+          }
+          retry cosign sign --yes "$ref"
+          retry cosign attest --yes --type cyclonedx --predicate installed.sbom.cdx.json "$ref"
           # The accepted-risk decision is part of the signed record, not only
           # of a 14-day Actions artifact: attest the standing approval and,
           # separately, the exact matches this image accepted.
-          cosign attest --yes --type "https://deskos.org/supply-chain/exceptions/v1" \
+          retry cosign attest --yes --type "https://deskos.org/supply-chain/exceptions/v1" \
             --predicate tests/supply-chain/exceptions.json "$ref"
-          cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
+          retry cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --predicate "$WORK/effective-exceptions.json" "$ref"
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
