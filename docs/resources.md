@@ -27,7 +27,7 @@ spec:
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
-| `desktop.deskos.org` | `GnomeProfile` |
+| `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
 All kinds are `v1alpha1`. Their JSON Schemas are in
@@ -318,6 +318,42 @@ spec:
   Shell 49.4 overwrites them at first login.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
   through the Platform's application launcher (`gtk-launch` on EL10).
+
+### `Theme`
+
+A **named, reusable look** — the palette theme scheme adapted to the
+surfaces GNOME itself defines. A Theme maps a palette onto the same GNOME
+setting domain as `GnomeProfile`, so it layers, locks and conflicts like
+any other appearance setting:
+
+```yaml
+apiVersion: desktop.deskos.org/v1alpha1
+kind: Theme
+metadata:
+  name: tokyo-night
+spec:
+  mode: dark                    # dark | light
+  accent: "#7aa2f7"             # any #RRGGBB; mapped to the closest GNOME accent
+  iconTheme: Yaru-blue
+  cursorTheme: Adwaita
+  fonts:
+    monospace: { family: JetBrains Mono, size: 11 }
+  wallpaper:
+    light: ../assets/tokyo-night-light.svg
+    dark: ../assets/tokyo-night-dark.svg
+```
+
+- **`mode`** lowers to `appearance.colorScheme` (`dark` → `prefer-dark`).
+- **`accent`** is any hex; it is mapped to the closest of GNOME's nine
+  accents **by hue** (a light green stays green), with a `slate` fallback
+  for near-achromatic colors.
+- **`wallpaper`**, **`fonts`**, **`iconTheme`** and **`cursorTheme`** are
+  the same shapes and lowering as in `GnomeProfile.appearance`.
+
+A Theme is included by a `Profile` like any other resource. Applying the
+rest of a palette (backgrounds, terminal colors, a full libadwaita or Shell
+recolor) needs CSS assets or the `user-theme` extension; see
+[ADR 0013](adr/0013-theme.md).
 
 ### `BootProfile`
 

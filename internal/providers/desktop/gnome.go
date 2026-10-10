@@ -228,7 +228,7 @@ var (
 )
 
 // Providers returns the desktop.deskos.org providers.
-func Providers() []registry.Provider { return []registry.Provider{gnomeProfile{}} }
+func Providers() []registry.Provider { return []registry.Provider{gnomeProfile{}, theme{}} }
 
 type gnomeProfile struct{}
 

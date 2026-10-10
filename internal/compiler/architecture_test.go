@@ -39,10 +39,11 @@ func TestSchemasMatchProviders(t *testing.T) {
 	for p := range have {
 		t.Errorf("schema %s has no provider", p)
 	}
-	// UpdatePolicy became the eleventh kind (ADR 0007) and TrustAnchor the
-	// twelfth (ADR 0009), each by an explicit decision.
-	if n := len(c.Registry.Providers()); n != 12 {
-		t.Errorf("v1alpha1 exposes %d kinds, want exactly 12", n)
+	// UpdatePolicy became the eleventh kind (ADR 0007), TrustAnchor the
+	// twelfth (ADR 0009) and Theme the thirteenth (ADR 0013), each by an
+	// explicit decision.
+	if n := len(c.Registry.Providers()); n != 13 {
+		t.Errorf("v1alpha1 exposes %d kinds, want exactly 13", n)
 	}
 }
 
