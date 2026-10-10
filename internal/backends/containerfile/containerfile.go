@@ -157,7 +157,9 @@ func Render(p *plan.Plan) ([]File, error) {
 			return nil, err
 		}
 		r.addImage(path.Join(systemdUnitDir, u.Service), 0o644, svc)
-		r.addImage(path.Join(systemdUnitDir, u.Timer), 0o644, timer)
+		if timer != nil {
+			r.addImage(path.Join(systemdUnitDir, u.Timer), 0o644, timer)
+		}
 	}
 	r.addImage(imagePlanPath, 0o644, planJSON)
 
@@ -478,15 +480,8 @@ func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 	default:
 		return nil, nil, fmt.Errorf("scheduled update kind %q is not supported", u.Kind)
 	}
-	if u.Schedule != "daily" && u.Schedule != "weekly" {
-		return nil, nil, fmt.Errorf("scheduled %s update: schedule %q is not daily or weekly", u.Kind, u.Schedule)
-	}
-	if !updateUnitRE.MatchString(u.Service) || !updateUnitRE.MatchString(u.Timer) ||
-		!strings.HasSuffix(u.Service, ".service") || !strings.HasSuffix(u.Timer, ".timer") {
-		return nil, nil, fmt.Errorf("scheduled %s update: invalid unit names %q and %q", u.Kind, u.Service, u.Timer)
-	}
-	if !updateDelayRE.MatchString(u.RandomizedDelay) {
-		return nil, nil, fmt.Errorf("scheduled %s update: invalid randomized delay %q", u.Kind, u.RandomizedDelay)
+	if !updateUnitRE.MatchString(u.Service) || !strings.HasSuffix(u.Service, ".service") {
+		return nil, nil, fmt.Errorf("scheduled %s update: invalid service name %q", u.Kind, u.Service)
 	}
 	if u.RequireACPower {
 		cond += "ConditionACPower=true\n"
@@ -500,6 +495,20 @@ func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 		"[Service]\n" +
 		"Type=oneshot\n" +
 		"ExecStart=" + exec + "\n")
+	// A service with no timer runs on demand (an endpoint command), not on a
+	// schedule.
+	if u.Timer == "" && u.Schedule == "" {
+		return service, nil, nil
+	}
+	if u.Schedule != "daily" && u.Schedule != "weekly" {
+		return nil, nil, fmt.Errorf("scheduled %s update: schedule %q is not daily or weekly", u.Kind, u.Schedule)
+	}
+	if !updateUnitRE.MatchString(u.Timer) || !strings.HasSuffix(u.Timer, ".timer") {
+		return nil, nil, fmt.Errorf("scheduled %s update: invalid timer name %q", u.Kind, u.Timer)
+	}
+	if !updateDelayRE.MatchString(u.RandomizedDelay) {
+		return nil, nil, fmt.Errorf("scheduled %s update: invalid randomized delay %q", u.Kind, u.RandomizedDelay)
+	}
 	timer = []byte(generatedHeader + "[Unit]\n" +
 		"Description=" + desc + " (" + u.Schedule + ")\n" +
 		"Documentation=" + doc + "\n\n" +

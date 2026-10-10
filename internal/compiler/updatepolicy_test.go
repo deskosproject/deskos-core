@@ -132,8 +132,14 @@ func TestUpdatePolicyComposition(t *testing.T) {
 			"org.yaml":   profile("org", "organization", "UpdatePolicy/org"),
 			"u-org.yaml": updatePolicy("org", "  image: {automatic: false}\n"),
 		}).dir(t))
-		if _, ok := scheduled(p, plan.UpdateImage); ok || strings.Contains(units(p), "deskos-image-update") {
-			t.Error("disabled image updates are still scheduled")
+		// The timer is not scheduled, but the service stays so an endpoint
+		// command can run the same, non-rebooting update on demand.
+		u, ok := scheduled(p, plan.UpdateImage)
+		if !ok || u.Timer != "" || u.Schedule != "" {
+			t.Errorf("with automatic false the image service must stay unscheduled: %+v", u)
+		}
+		if strings.Contains(units(p), "deskos-image-update") {
+			t.Error("no update unit is enabled when image updates are off")
 		}
 		if got := masks(p); got != "stock-update.service stock-update.timer" {
 			t.Errorf("the platform updater must stay masked, masks = %q", got)

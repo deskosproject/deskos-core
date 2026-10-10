@@ -153,7 +153,22 @@ func lowerUpdateArea(c *compose.Composition, p *plan.Plan, a updateArea) error {
 			p.MaskUnit(u, auto.Provenance...)
 		}
 	}
+	if a.kind == plan.UpdateFlatpak {
+		// The on-demand service needs the Flatpak package too, so the package
+		// is installed whether or not the timer is scheduled.
+		if pl.Flatpak.Package == "" {
+			return fmt.Errorf("%s declares no flatpak.package; %s cannot be applied\n  set by: %s", c.Platform.ID(), auto.Key, describe(auto.Provenance))
+		}
+		p.AddPackage(pl.Flatpak.Package, auto.Provenance...)
+	}
 	if !enabled {
+		// The service is still generated: an administrator can start the same,
+		// non-rebooting update on demand with an endpoint command, without
+		// re-enabling the timer. Only the timer follows `automatic`.
+		p.Artifact.ScheduledUpdates = append(p.Artifact.ScheduledUpdates, plan.ScheduledUpdate{
+			Kind: a.kind, Service: a.service,
+			Provenance: append([]model.Provenance(nil), auto.Provenance...),
+		})
 		return nil
 	}
 	sched, ok := c.Result.Scalar(DomainUpdate, a.key("schedule"))
@@ -166,12 +181,6 @@ func lowerUpdateArea(c *compose.Composition, p *plan.Plan, a updateArea) error {
 	if ac, ok := c.Result.Scalar(DomainUpdate, a.key("requireACPower")); ok {
 		requireAC = ac.Value.(bool)
 		prov = append(prov, ac.Provenance...)
-	}
-	if a.kind == plan.UpdateFlatpak {
-		if pl.Flatpak.Package == "" {
-			return fmt.Errorf("%s declares no flatpak.package; %s cannot be applied\n  set by: %s", c.Platform.ID(), auto.Key, describe(auto.Provenance))
-		}
-		p.AddPackage(pl.Flatpak.Package, auto.Provenance...)
 	}
 	p.Artifact.ScheduledUpdates = append(p.Artifact.ScheduledUpdates, plan.ScheduledUpdate{
 		Kind: a.kind, Service: a.service, Timer: a.timer,
