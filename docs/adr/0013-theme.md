@@ -64,14 +64,18 @@ installer or GNOME Initial Setup inherit them; libadwaita 1.4+, GTK3 and
 Ptyxis read them. Whether Ptyxis honours the preset profile is not yet
 verified in a booted session.
 
-Still out: a **Ghostty** profile (its own config format; DayTwo's terminal)
-and the **GNOME Shell** stylesheet. The Shell replaces its whole stylesheet
-and needs the `user-theme` extension, so it is a separate, RPM-shaped track;
-GNOME 47+ already tints the Shell with `accent-color`.
+The **GNOME Shell** is themed by `deskos-theme apply --shell-css`: it
+replaces gnome-shell's Adwaita base colors in the distro's compiled
+stylesheet and writes two packs (`deskos-a`/`deskos-b`), so the running Shell
+can be told to reload by switching between them. It needs the **User Themes**
+extension, and derived colors (shadows, borders) stay as compiled. The
+command also generates a **Ghostty** theme, and reads either a DeskOS `Theme`
+or an **palette** theme directory (`colors.toml`).
 
 ## Consequences
 
 - The public API has **exactly thirteen kinds**; a test enforces the count.
 - Themes are how DeskOS expresses "many looks" without repeating settings;
   an palette `colors.toml` is the reference palette shape.
-- **Not yet:** a Ghostty profile and the GNOME Shell recoloring.
+- `deskos-theme` is the runtime applier (best effort); the compiler bakes the
+  install-time default. Neither is verified in a booted session yet.

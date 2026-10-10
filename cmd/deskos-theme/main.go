@@ -29,6 +29,9 @@ func main() {
 	palette := fs.String("palette", "", "an palette theme directory (colors.toml + backgrounds)")
 	user := fs.Bool("user", false, "write to $HOME instead of a system root")
 	root := fs.String("root", "/", "system root to write under")
+	shellCSS := fs.String("shell-css", "", "the distro's compiled gnome-shell.css to theme (best effort)")
+	extensions := fs.String("extensions", "background-logo@fedorahosted.org,dash-to-dock@micxgx.gmail.com",
+		"the enabled-extensions the image already writes, to repeat in the shell drop in")
 	_ = fs.Parse(os.Args[2:])
 
 	if *palette == "" {
@@ -53,6 +56,31 @@ func main() {
 		base = *root
 	}
 	files := artifacts(base, *user, p)
+	if *shellCSS != "" {
+		css, err := os.ReadFile(*shellCSS)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "deskos-theme: %v\n", err)
+			os.Exit(1)
+		}
+		patched := theme.PatchShellCSS(string(css), p)
+		shellDir := filepath.Join(base, "usr/share/themes")
+		dconfPath := ""
+		if *user {
+			shellDir = filepath.Join(base, ".local/share/themes")
+		} else {
+			dconfPath = filepath.Join(base, "etc/dconf/db/distro.d/61-deskos-shell")
+		}
+		for _, pack := range []string{"a", "b"} {
+			files[filepath.Join(shellDir, theme.ShellTheme(pack), "gnome-shell/gnome-shell.css")] = patched
+		}
+		if dconfPath != "" {
+			files[dconfPath] = theme.ShellDconf(strings.Split(*extensions, ","), theme.ShellTheme("a"))
+		} else {
+			fmt.Println("user mode: enable the shell theme with:")
+			fmt.Println("  gnome-extensions enable " + theme.UserThemeExtension)
+			fmt.Println("  gsettings set org.gnome.shell.extensions.user-theme name " + theme.ShellTheme("a"))
+		}
+	}
 	names := make([]string, 0, len(files))
 	for n := range files {
 		names = append(names, n)
