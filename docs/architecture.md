@@ -333,15 +333,14 @@ bit.** External inputs that can still change between builds:
 
 - the base image tag, unless `bootc.digest` is set (CentOS Stream 10 and
   RHEL 10 pin their x86_64 manifests);
-- RPM repository metadata and packages;
-- RPM repository GPG keys, which are fetched by URL with no independent
-  identity.
+- RPM repository metadata and packages.
 
-`BinaryArtifact` already pins an exact version and SHA-256, and RPM
-files pin a SHA-256 and a repository-local signing key. The goal is
-that every external input has an immutable, verifiable identity;
-candidate mechanisms (repository-local key assets, SHA-256, expected
-fingerprints, lockfile entries) are not chosen yet.
+`BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
+SHA-256 and a signing key; and **RPM repository signing keys are local
+assets**, read into the plan and placed in the image, so a dnf transaction
+never trusts a key fetched by URL. The remaining goal is that every
+external input has an immutable, verifiable identity; candidate mechanisms
+(lockfile entries, base digests) are not chosen yet.
 
 ## Managed baseline
 

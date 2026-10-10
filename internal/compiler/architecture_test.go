@@ -51,7 +51,7 @@ func TestSchemasMatchProviders(t *testing.T) {
 func TestUnknownFieldsRejectedBySchemaAndTypes(t *testing.T) {
 	docs := map[string]string{
 		"PackageSet":     "apiVersion: software.deskos.org/v1alpha1\nkind: PackageSet\nmetadata: {name: x}\nspec:\n  packages: [git]\n  script: echo hi\n",
-		"RpmRepository":  "apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata: {name: x}\nspec:\n  id: x\n  displayName: x\n  baseURL: https://example.org/x\n  gpgKeys: [https://example.org/k]\n  command: curl | bash\n",
+		"RpmRepository":  "apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata: {name: x}\nspec:\n  id: x\n  displayName: x\n  baseURL: https://example.org/x\n  gpgKeyFiles: [keys/x.asc]\n  command: curl | bash\n",
 		"GnomeProfile":   "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata: {name: x}\nspec:\n  defaults:\n    dconf: {org/gnome/x: y}\n",
 		"Profile":        "apiVersion: core.deskos.org/v1alpha1\nkind: Profile\nmetadata: {name: x}\nspec:\n  layer: role\n  resources: []\n  postInstall: x\n",
 		"Workstation":    "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata: {name: x}\nspec:\n  platformRef: p\n  profiles: [a]\n  hooks: [x]\n",

@@ -33,11 +33,14 @@ const (
 	PlanPath          = "plan.json"
 	ManifestPath      = "generated-manifest.json"
 	reposDir          = "repos"
-	rpmKeysDir        = "rpm-keys"
-	rootfsDir         = "rootfs"
-	imagePlanPath     = "/usr/share/deskos/plan.json"
-	dconfFileName     = "50-deskos"
-	schemasDir        = "/usr/share/glib-2.0/schemas"
+	// repoGPGDir is where repository signing keys are placed in the image;
+	// the repository files reference them by file://, never by URL.
+	repoGPGDir    = "/etc/pki/rpm-gpg"
+	rpmKeysDir    = "rpm-keys"
+	rootfsDir     = "rootfs"
+	imagePlanPath = "/usr/share/deskos/plan.json"
+	dconfFileName = "50-deskos"
+	schemasDir    = "/usr/share/glib-2.0/schemas"
 	// Numbered above distribution overrides (for example 10_ from centos-logos).
 	gsettingsOverridePath = schemasDir + "/50_deskos.gschema.override"
 	kargsPath             = "/usr/lib/bootc/kargs.d/50-deskos.toml"
@@ -64,6 +67,12 @@ func Render(p *plan.Plan) ([]File, error) {
 	for _, repo := range p.Artifact.RpmRepositories {
 		if repo.ID == rhsmRepoID {
 			return nil, fmt.Errorf("RPM repository id %q would be written as %s, which RPM builds reserve for subscription-manager", repo.ID, rhsmRepoFile)
+		}
+		for _, key := range repo.GPGKeys {
+			if sum := sha256.Sum256([]byte(key.Content)); hex.EncodeToString(sum[:]) != key.SHA256 {
+				return nil, fmt.Errorf("RPM repository %s: gpg key %s does not match its sha256", repo.ID, key.Name)
+			}
+			r.add(path.Join(reposDir, repoGPGDir, repoKeyName(key)), 0o644, []byte(key.Content))
 		}
 		r.add(path.Join(reposDir, "etc/yum.repos.d", repo.ID+".repo"), 0o644, repoFile(repo))
 	}
@@ -224,9 +233,20 @@ func repoFile(r plan.RpmRepository) []byte {
 	fmt.Fprintf(&b, "enabled=%d\n", boolInt(r.Enabled))
 	fmt.Fprintf(&b, "gpgcheck=%d\n", boolInt(r.GPGCheck))
 	if len(r.GPGKeys) > 0 {
-		fmt.Fprintf(&b, "gpgkey=%s\n", strings.Join(r.GPGKeys, " "))
+		refs := make([]string, 0, len(r.GPGKeys))
+		for _, k := range r.GPGKeys {
+			refs = append(refs, "file://"+path.Join(repoGPGDir, repoKeyName(k)))
+		}
+		fmt.Fprintf(&b, "gpgkey=%s\n", strings.Join(refs, " "))
 	}
 	return []byte(b.String())
+}
+
+// repoKeyName is the file name a repository's key takes in the image. It is
+// derived from the key's sha256, never from the asset name, so a resource
+// cannot inject repository directives through a crafted file name.
+func repoKeyName(k plan.RepoKey) string {
+	return k.SHA256 + ".asc"
 }
 
 // desktopFile writes a Desktop Entry Specification file; Exec is a validated
@@ -566,7 +586,12 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 			src := `"$tmp/download"`
 			if bin.Archive == "tar.gz" {
 				w("    tar -xzf \"$tmp/download\" -C \"$tmp\" --no-same-owner -- %s; \\\n", shq(bin.Member))
+				// The member must be a plain file. tar extracts a symlink or
+				// hardlink member as such, and install would then copy whatever
+				// it points at (possibly a file from the build environment).
 				src = `"$tmp"/` + shq(bin.Member)
+				w("    [ -f %s ] && [ ! -L %s ] && [ \"$(stat -c %%h %s)\" = 1 ] || { echo %s >&2; exit 1; }; \\\n",
+					src, src, src, shq("archive member "+bin.Member+" is not a regular file"))
 			}
 			w("    install -D -m %s %s %s; \\\n", bin.Mode, src, shq(bin.Destination))
 		}

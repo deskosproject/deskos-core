@@ -240,24 +240,34 @@ func (packageSet) Contribute(res *model.Resource, s *compose.Scope) error {
 
 // ------------------------------------------------------------- RpmRepository
 
-// RpmRepositorySpec describes an RPM repository.
+// RpmRepositorySpec describes an RPM repository. Its signing keys are local
+// asset files, read into the plan and placed in the image, so a dnf
+// transaction never trusts a key fetched from the network at build time.
 type RpmRepositorySpec struct {
 	ID          string   `json:"id"`
 	DisplayName string   `json:"displayName"`
 	BaseURL     string   `json:"baseURL"`
 	Enabled     *bool    `json:"enabled,omitempty"`
 	GPGCheck    *bool    `json:"gpgCheck,omitempty"`
-	GPGKeys     []string `json:"gpgKeys,omitempty"`
+	GPGKeyFiles []string `json:"gpgKeyFiles,omitempty"`
+}
+
+// RepoKey is one repository signing key read from a local asset: its bytes
+// travel in the plan and its file is placed in the image.
+type RepoKey struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+	SHA256  string `json:"sha256"`
 }
 
 // Repository is the normalized, composed repository definition.
 type Repository struct {
-	ID          string   `json:"id"`
-	DisplayName string   `json:"displayName"`
-	BaseURL     string   `json:"baseURL"`
-	Enabled     bool     `json:"enabled"`
-	GPGCheck    bool     `json:"gpgCheck"`
-	GPGKeys     []string `json:"gpgKeys"`
+	ID          string    `json:"id"`
+	DisplayName string    `json:"displayName"`
+	BaseURL     string    `json:"baseURL"`
+	Enabled     bool      `json:"enabled"`
+	GPGCheck    bool      `json:"gpgCheck"`
+	GPGKeys     []RepoKey `json:"gpgKeys"`
 }
 
 type rpmRepository struct{}
@@ -280,12 +290,20 @@ func (rpmRepository) Decode(res *model.Resource) error {
 	if err := httpsURL(s.BaseURL, true); err != nil {
 		errs.Add(model.Errorf(res, "baseURL: %v", err))
 	}
-	for _, k := range s.GPGKeys {
-		if err := httpsURL(k, false); err != nil {
-			errs.Add(model.Errorf(res, "gpgKeys: %v", err))
+	r := Repository{ID: s.ID, DisplayName: s.DisplayName, BaseURL: s.BaseURL, Enabled: true, GPGCheck: true}
+	for _, f := range s.GPGKeyFiles {
+		key, err := assets.Read(res, f)
+		if err != nil {
+			errs.Add(model.Errorf(res, "gpgKeyFiles: %v", err))
+			continue
 		}
+		text := string(key.Data)
+		if !armorRE.MatchString(text) || !strings.HasPrefix(strings.TrimSpace(text), armorBegin) || !strings.HasSuffix(strings.TrimSpace(text), armorEnd) {
+			errs.Add(model.Errorf(res, "gpgKeyFiles %s must be an ASCII-armored OpenPGP public key", key.Path))
+			continue
+		}
+		r.GPGKeys = append(r.GPGKeys, RepoKey{Name: path.Base(key.Path), Content: text, SHA256: key.SHA256})
 	}
-	r := Repository{ID: s.ID, DisplayName: s.DisplayName, BaseURL: s.BaseURL, Enabled: true, GPGCheck: true, GPGKeys: s.GPGKeys}
 	if s.Enabled != nil {
 		r.Enabled = *s.Enabled
 	}
@@ -293,10 +311,10 @@ func (rpmRepository) Decode(res *model.Resource) error {
 		r.GPGCheck = *s.GPGCheck
 	}
 	if r.GPGCheck && len(r.GPGKeys) == 0 {
-		errs.Add(model.Errorf(res, "gpgKeys are required when gpgCheck is enabled"))
+		errs.Add(model.Errorf(res, "gpgKeyFiles are required when gpgCheck is enabled"))
 	}
 	if r.GPGKeys == nil {
-		r.GPGKeys = []string{}
+		r.GPGKeys = []RepoKey{}
 	}
 	res.Object = &r
 	return errs.Err()

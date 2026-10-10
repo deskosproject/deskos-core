@@ -140,6 +140,21 @@ func TestTrustAnchorRejectsAbsoluteAssetPath(t *testing.T) {
 	mustFail(t, err, "does not match pattern")
 }
 
+// A traversal in trust.anchorsDir is rejected by the schema and by the typed
+// pattern, so a certificate cannot be written outside /etc.
+func TestTrustAnchorRejectsTraversalAnchorsDir(t *testing.T) {
+	plat := strings.Replace(platformYAML, "/etc/pki/ca-trust/source/anchors", "/etc/../../usr/share/deskos", 1)
+	dir := fixture{
+		"platform.yaml":     plat,
+		"ws.yaml":           workstation("trav-ws", "org"),
+		"profiles/org.yaml": profile("org", "organization", "TrustAnchor/trav"),
+		"system/t.yaml":     trustAnchorYAML("trav", "trav", "../assets/trav.crt"),
+		"assets/trav.crt":   testCertPEM(t, "Trav"),
+	}.dir(t)
+	_, err := planOf(t, "trav-ws", dir)
+	mustFail(t, err, "does not match pattern")
+}
+
 func TestTrustAnchorRejectsDuplicateAnchorName(t *testing.T) {
 	cert := testCertPEM(t, "Dup")
 	dir := fixture{

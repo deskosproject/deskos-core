@@ -120,11 +120,10 @@ CentOS Stream 10 CI path. **RHEL builds run on the entitled factory host
 with no OIDC**: sign them with a cosign key kept outside this repository
 and verify against its public key.
 
-The signing steps are **experimental and have not been dispatched**. Open
-design point: a digest should be boot-tested, scanned and signed in one
-run; today `vm-bootcheck` publishes the boot-tested image and this workflow
-signs the scanned one, so promoting a single digest needs the two gates
-unified.
+The signing steps are **experimental and have not been dispatched**. The
+gates are now unified: `supply-chain.yml` is the single publish path, and it
+boots, scans, signs and attests the same image before it is promoted.
+`vm-bootcheck.yml` is a pure check.
 
 ## Promotion gate (proposed)
 

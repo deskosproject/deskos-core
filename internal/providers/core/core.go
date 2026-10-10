@@ -195,7 +195,7 @@ var (
 	pkgRE         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 	kargRE        = regexp.MustCompile(`^[a-z][a-z0-9_.-]*$`)
 	plymouthDirRE = regexp.MustCompile(`^/usr/share/plymouth/themes/[a-z0-9][a-z0-9_.-]*$`)
-	trustDirRE    = regexp.MustCompile(`^/etc/[A-Za-z0-9/._-]+$`)
+	trustDirRE    = regexp.MustCompile(`^/etc(/[A-Za-z0-9._-]*[A-Za-z0-9_-])+$`)
 	trustCmdRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 )
 
