@@ -173,7 +173,8 @@ file it came from.
 ## Get DeskOS
 
 DeskOS Core for CentOS Stream 10 is published as a bootable container
-image; the digest to pull is in the [Quickstart](#quickstart) above.
+image; pull `quay.io/deskos/deskos-core:latest` (see the
+[Quickstart](#quickstart)).
 Downloadable disks are not published yet: make a **QCOW2** or an
 **installer ISO** from the image with `bootc-image-builder`, as described
 in [**docs/install.md**](docs/install.md).

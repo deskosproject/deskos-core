@@ -81,7 +81,7 @@ tags are rejected, and no field accepts shell, templates or hooks.
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
-| `desktop.deskos.org` | `GnomeProfile` |
+| `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
 Schemas live in `schemas/` and are embedded in `deskosctl`. Each kind is
@@ -164,7 +164,7 @@ it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
-  `FileInstall`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
+  `FileInstall`, `GeneratedFile`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
   `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
   `PlymouthTheme`, `SystemdEnable`, `SystemdMask`, `ScheduledUpdate`,
@@ -295,7 +295,7 @@ Firefox RPM on both platforms.
 | Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) |
 | Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] |
 | Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] |
-| Automated runs | `vm-bootcheck.yml`, manual; with `publish` it pushes the tested image [^cs10-run] | `tests/rhel/factory.py`, every head of `main`, as the `deskos/rhel10` commit status |
+| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | `tests/rhel/factory.py`, every head of `main`, as the `deskos/rhel10` commit status |
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] |
 
@@ -455,11 +455,11 @@ handles, Flatpak applications included:
 Core sets `manual` (a default, no lock), so GNOME Software never updates
 behind the image while users can still update Flatpak applications.
 
-**Not modeled.** A terminal shortcut needs a custom keybinding whose
-command names a terminal: EL10 has no native terminal key and no
-default-terminal launcher outside EPEL (`xdg-terminal-exec`). The
+**Terminal shortcut.** `GnomeProfile.defaults.keyboard.terminal` names a
+`.desktop` id bound to Ctrl+Alt+T (EL10 has no native terminal key and no
+default-terminal launcher outside EPEL). **Not modeled:** the
 AppIndicator extension is packaged only in EPEL, so no Platform declares
-it. GNOME Initial Setup shows its third-party repositories page only
+it; GNOME Initial Setup shows its third-party repositories page only
 when `fedora-third-party` is installed, which EL10 does not ship. See
 [research notes](research-notes.md#gnome-user-settings-2026-10-04).
 

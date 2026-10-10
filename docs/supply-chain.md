@@ -76,7 +76,8 @@ scanner does not enumerate all of them, and `generated-manifest.json` and
 the boot/session checks cover those.
 
 The job first ran on 2026-10-06 (run `37466048646`, success, 0 Critical).
-The Syft/Grype versions must be pinned before this gate blocks a release.
+Syft and Grype are pinned in the workflow before the gate can block a
+release.
 
 ## Severity policy and VEX
 
@@ -141,11 +142,11 @@ The gates are unified: `supply-chain.yml` is the single publish path, and it
 boots, scans, signs and attests the same image before it is promoted; it is
 dispatched manually with `publish=true`. `vm-bootcheck.yml` is a pure check.
 
-## Promotion gate (proposed)
+## Promotion gate
 
 A digest moves forward only when, for that digest:
 
-1. `make check` and the boot/session checks pass (see
+1. the render validates and the boot/session checks pass (see
    [development.md](development.md) and `tests/vm`, `tests/rhel`);
 2. the installed SBOM contains every component the declared SBOM lists;
 3. the CVE scan is at or below the agreed threshold;

@@ -137,9 +137,8 @@ diagnosed.
 
 The GitHub workflow `.github/workflows/vm-bootcheck.yml` runs the same
 build, boot and session checks. It is manual only (`workflow_dispatch`),
-and the QCOW2 it builds is test input that is not uploaded. Run with
-`publish` on `main`, it pushes the image that passed both checks to
-`quay.io/deskos/deskos-core` as `:<commit>` and `:latest`.
+and the QCOW2 it builds is test input that is not uploaded. It is a pure
+check: the publish path is `supply-chain.yml`.
 
 Unit tests: `python3 -m unittest discover -s tests/vm` (run by CI, not by
 `make check`).

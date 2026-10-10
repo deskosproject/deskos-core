@@ -53,9 +53,10 @@ each slice is reviewed on its own:
   run `37162282876` on commit `8ab0cc9`.
   Triggering it automatically on changes to image inputs is *not
   decided*.
-- **Publishing:** the same workflow, run with `publish` on `main`, pushes
-  the image that passed its checks to `quay.io/deskos/deskos-core` as
-  `:<commit>` and `:latest`. CentOS Stream 10 only.
+- **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
+  `main`, builds, scans and boots the image and then pushes and signs it to
+  `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
+  10 only. `vm-bootcheck.yml` is a pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
   for CentOS Stream 10 and RHEL 10.
 - **Open:** decide how to treat `bootc container lint` warnings from
@@ -135,8 +136,9 @@ how-to: [supply-chain.md](supply-chain.md).
   signs it **keyless** with `cosign`, attaching the installed SBOM as a
   CycloneDX attestation.
 - Remaining for stage 3: key-based signing on the RHEL factory host (no
-  OIDC there), and unifying the boot-check and scan gates so one digest is
-  tested, scanned and signed together.
+  OIDC there), and channel promotion (candidate, canary, pilot, stable).
+  The boot-check and scan gates are already unified in `supply-chain.yml`:
+  one digest is built, scanned, booted and then signed.
 - **Policy:**
   [ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md) — the gate
   blocks on Critical, High is tracked, and every exception is an explicit
