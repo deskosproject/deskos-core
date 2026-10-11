@@ -173,3 +173,29 @@ how-to: [supply-chain.md](supply-chain.md).
   drives the units and reads the files listed in ADR 0007.
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
+
+## Open work (2026-10-11)
+
+Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
+its own.
+
+- **Documentation restructure.** `docs/resources.md` (518 lines) and
+  `docs/architecture.md` (652) mix reference with state. Split them and add
+  `compatibility.md` (one matrix: platform, base digest, GNOME versions,
+  evidence, date), `troubleshooting.md` (symptom → check → remedy) and
+  `migration.md` (v1alpha1 changes, e.g. `gpgKeys` → `gpgKeyFiles`), plus
+  `resources/{core,software,desktop,system}.md`. Keep `research-notes` a
+  dated archive, not current status. Add a short glossary and an explicit
+  `YAML → plan → Containerfile → image → disk` line.
+- **Durable SBOM storage.** The publish attests the SBOM **by reference**
+  (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The
+  full SBOM is a 14-day workflow artifact; publish it to durable,
+  digest-indexed storage. Test an OCI referrer in a real registry first.
+- **RHEL bootc-image-builder pin.** The factory pins
+  `…/bootc-image-builder@sha256:7f5baead…`, older than the current `10.2`
+  (`2185ac51…`); bump it and re-run the boot check before adopting.
+- **Renovate.** `renovate.json` is in both repositories; deploying it (app
+  or action, PAT, `registry.redhat.io` credentials) is open.
+- **Flaky boot check.** The graphical-splash assertion has failed once on an
+  otherwise good image (the disk booted; the splash was not captured). Make
+  the check robust, or retry, so the gate is not intermittent.
