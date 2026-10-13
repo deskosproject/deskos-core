@@ -202,8 +202,8 @@ in [**docs/install.md**](docs/install.md).
 | | CentOS Stream 10 | RHEL 10 |
 |---|---|---|
 | Compose and render | deterministic | deterministic |
-| Image build, `bootc container lint` | CI | entitled factory host |
-| Boot to GNOME, session checks | CI (`vm-bootcheck`) | factory host (`deskos/rhel10` status) |
+| Image build, `bootc container lint` | CI | downstream organization |
+| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) |
 | Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** |
 | GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) |
 

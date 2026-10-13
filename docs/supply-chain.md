@@ -176,7 +176,7 @@ dispatched manually with `publish=true`. `vm-bootcheck.yml` is a pure check.
 A digest moves forward only when, for that digest:
 
 1. the render validates and the boot/session checks pass (see
-   [development.md](development.md) and `tests/vm`, `tests/rhel`);
+   [development.md](development.md) and `tests/vm`);
 2. the installed SBOM contains every component the declared SBOM lists;
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.

@@ -30,8 +30,6 @@ jobs:
         run: go test ./...
       - name: VM boot check harness unit tests
         run: python3 -m unittest discover -s tests/vm
-      - name: RHEL factory harness unit tests
-        run: python3 -m unittest discover -s tests/rhel
       - name: supply-chain harness unit tests
         run: python3 -m unittest discover -s tests/supply-chain
       - name: build deskosctl

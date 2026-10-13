@@ -25,7 +25,6 @@ Run tests:
 ```bash
 go test ./...
 python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
-python3 -m unittest discover -s tests/rhel # RHEL factory harness, same
 python3 -m unittest discover -s tests/supply-chain # SBOM comparison harness, same
 ```
 
@@ -66,8 +65,7 @@ Contributors build the image from their checkout instead of pulling it.
 The QCOW2 and ISO commands in [Installing DeskOS](install.md) work
 unchanged with `localhost/deskos-core-centos10` as the image reference.
 [tests/vm/README.md](../tests/vm/README.md) boots the disk and checks the
-GNOME session against the plan; [`tests/rhel/`](../tests/rhel/README.md)
-does the same for RHEL on an entitled host.
+GNOME session against the plan.
 
 ### Example: baseline and role
 

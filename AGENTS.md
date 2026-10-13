@@ -38,10 +38,12 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
 9. **Platform gaps are reported, not hidden.** A requirement the platform
    cannot meet fails composition with a reason; never substitute silently.
 10. **Say only what was verified.** Compilation is deterministic; images
-    are not yet bit-for-bit reproducible. RHEL 10.2 has one clean entitled
-    build of an earlier revision of the example and one manual,
-    owner-observed boot; there is no automated boot or E2E evidence on RHEL
-    (see `docs/architecture.md`, "Validation status").
+    are not yet bit-for-bit reproducible. RHEL composition and rendering are
+    validated by tests; the entitled RHEL build and boot were validated once
+    on the retired factory host, and this repository no longer builds RHEL.
+    RHEL build validation runs in
+    a downstream organization's repository. There is no E2E test on
+    either platform (see `docs/architecture.md`, "Validation status").
 11. **AI is not part of compiler semantics.** Compilation must work with
     no model, no network and no SaaS API, and identical inputs must keep
     producing identical plans and build contexts. No resource kind,

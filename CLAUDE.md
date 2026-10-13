@@ -220,12 +220,15 @@ status", records: composition and rendering are validated; the entitled
 RHEL 10.2 build of the example workstation (image `0e65bf4b...`, pinned
 base) passed `bootc container lint` with every layer free of build-host
 subscription state, and its QCOW2 passed `bootcheck.py` and
-`sessioncheck.py` on the factory VM under nested KVM; `tests/rhel/factory.py`
-repeats this for each head of `main` and publishes the `deskos/rhel10`
-commit status. There is no RHEL job in GitHub Actions and no E2E test. Flatpak
-preinstall on RHEL is shown only by a private workstation build: a
+`sessioncheck.py` under nested KVM. That build is historical: the RHEL
+factory host was retired and this repository no longer runs a RHEL build or
+publishes a `deskos/rhel10` status. RHEL build and boot validation now runs
+in a downstream organization's repository on GitHub-hosted runners.
+There is no RHEL job in this repository's GitHub Actions and no E2E test.
+Flatpak preinstall on RHEL is shown only by a private workstation build: a
 system `flatpak preinstall` in the image installed its Flathub apps once
-the Platform excluded `redhat-flatpak-preinstall-firefox`. Do not claim more until an entitled build shows it.
+the Platform excluded `redhat-flatpak-preinstall-firefox`. Do not claim more
+until a build shows it.
 
 Do not weaken architecture merely because the current developer machine
 cannot perform an authenticated RHEL build.
@@ -374,9 +377,6 @@ At the end of substantial work, explain:
   `go test ./internal/compiler -update` and review the diff.
 - `tests/vm`: QEMU boot and instrumented session checks for built disks
   (`python3 -m unittest discover -s tests/vm` for their unit tests).
-- `tests/rhel`: `factory.py`, the RHEL build, layer scan, boot and
-  session validation run on an entitled host; it publishes only a commit
-  status (`python3 -m unittest discover -s tests/rhel`).
 - `.github/workflows`: `ci.yml` (checks on push and pull requests),
   `vm-bootcheck.yml` (manual CS10 build, boot and session checks) and
   `release.yml` (tag-driven `deskosctl` release).

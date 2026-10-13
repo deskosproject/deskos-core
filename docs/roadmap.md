@@ -12,10 +12,12 @@ organization.
 
 ## Milestone 1: entitled RHEL 10 build and boot validation
 
-- **Done:** entitled build of `example-devops-rhel10` on a pinned base
-  (image `0e65bf4b...`), lint passed, all layers scanned free of
+- **Done (retired):** entitled build of `example-devops-rhel10` on a pinned
+  base (image `0e65bf4b...`), lint passed, all layers scanned free of
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
-  QCOW2 in the factory VM.
+  QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
+  now runs in a downstream organization's repository on GitHub-hosted
+  runners, and this repository is CentOS Stream 10 only.
 - RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
   with a private workstation that declares Flathub apps.
 
@@ -38,8 +40,7 @@ each slice is reviewed on its own:
    ([ADR 0006](adr/0006-bootprofile-tenth-kind.md)).
 4. Quiet graphical boot with the stock Plymouth theme (kargs.d, Plymouth
    in the initramfs). **Implemented**; seen on CS10 Core UEFI VMs
-   (`bootcheck.py`), and on RHEL 10.2 through the factory host
-   (`tests/rhel/factory.py`).
+   (`bootcheck.py`), and on RHEL 10.2 through the retired factory host.
 5. DeskOS and organization splash watermark (`BootProfile.watermark`,
    DeskOS-owned theme), with the DeskOS lockup. Seen at boot and
    shutdown on UEFI VMs. Organization marks only with recorded
@@ -87,9 +88,9 @@ Details in
 - Browser against harness-served content, offline login, GDM logo check.
 - Reboot and shutdown splash in the session run; Tier C lifecycle
   (upgrade, rollback).
-- RHEL: `tests/rhel/factory.py` runs the boot and session checks on the
-  factory host for each head of `main` (`deskos/rhel10` status); no
-  reference matching or E2E.
+- RHEL: the build, boot and session checks run in
+  a downstream organization's repository (GitHub-hosted); no reference
+  matching or E2E.
 
 ## Later
 

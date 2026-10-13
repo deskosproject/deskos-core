@@ -295,9 +295,13 @@ Firefox RPM on both platforms.
 | Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) |
 | Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] |
 | Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] |
-| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | `tests/rhel/factory.py`, every head of `main`, as the `deskos/rhel10` commit status |
+| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository |
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] |
+
+The RHEL column is historical: the RHEL factory host was retired and this
+repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
+status. Composition and rendering for RHEL stay covered by the tests.
 
 [^rhel-build]: Image `0e65bf4b` on RHEL 10.2, base `d13af792...`; lint
 passed with the three known warnings.

@@ -14,9 +14,9 @@ disposable experiment, then on booted CS10 Core VMs; see
 image or in primary source; **"seen"** means observed on a booted screen.
 
 > [!NOTE]
-> Verified on CS10 unless stated. On RHEL 10.2, the factory host boots
-> `example-devops-rhel10` (Core plus the example organization) through
-> the same boot and session checks (`tests/rhel/factory.py`).
+> Verified on CS10 unless stated. On RHEL 10.2, the retired factory host
+> booted `example-devops-rhel10` (Core plus the example organization)
+> through the same boot and session checks.
 
 ## Goal
 
@@ -190,8 +190,8 @@ warning (see
 
 ## VM QA
 
-Implemented in `tests/vm/` (CS10 in CI; RHEL through
-`tests/rhel/factory.py` on the factory host): Tier A without reference matching
+Implemented in `tests/vm/` (CS10 in CI; RHEL on the retired factory host):
+Tier A without reference matching
 (`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
 systemd credentials over SMBIOS and a serial report, no SSH or qecore);
 see [`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)

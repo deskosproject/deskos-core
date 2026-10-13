@@ -36,8 +36,8 @@ installed as an additional tool and *is not an equivalent*. See
 Composition and rendering are **validated for both targets**. The RHEL
 10.2 workstation is built on an entitled factory VM, passes
 `bootc container lint` with no build-host subscription state, and its
-QCOW2 passes the boot and session checks there, for each head of `main`
-(`tests/rhel/factory.py`). An earlier revision of the CentOS Stream 10
+QCOW2 passes the boot and session checks there (retired factory host). An
+earlier revision of the CentOS Stream 10
 workstation was built with Podman; the current one is not built. Neither
 target has an E2E test.
 
