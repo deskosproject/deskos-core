@@ -7,7 +7,8 @@
     "The Dockerfile/actions managers from config:recommended cover the rest.",
     "NOTE: a binary artifact has a sha256 that Renovate cannot compute, so its",
     "PR bumps the version only and the checksum must be filled before merge;",
-    "the base-image digest IS updated automatically."
+    "the CentOS Stream 10 base-image digest IS updated automatically, while the",
+    "RHEL 10 one is moved by hand (see the packageRules below)."
   ],
   "customManagers": [
     {
@@ -53,6 +54,11 @@
       "description": "Base images and scanners: review before merging",
       "matchDatasources": ["docker", "github-releases"],
       "addLabels": ["renovate", "pinned-input"]
+    },
+    {
+      "description": "The RHEL 10 base image needs a Red Hat subscription to list its tags and refuses anonymous reads; this repository carries no subscription credential, so that digest is a deliberate, hand-made move. Disabled here so the dashboard does not show a permanent lookup failure.",
+      "matchPackageNames": ["registry.redhat.io/**"],
+      "enabled": false
     }
   ]
 }
