@@ -41,6 +41,10 @@ dnf install podman skopeo qemu-kvm qemu-img edk2-ovmf python3 git golang
 podman login --authfile /root/.config/containers/auth.json registry.redhat.io
 ```
 
+The host Go may be older than `go.mod` (the RHEL `golang` package lags
+patches). The harness builds with `GOTOOLCHAIN=auto`, so Go fetches the
+toolchain `go.mod` requires, as the CI's `setup-go` does.
+
 The tool checkout is updated **deliberately, not by the timer**:
 
 ```bash

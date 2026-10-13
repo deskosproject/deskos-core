@@ -185,7 +185,9 @@ def validate(sha, work, repo):
         run(["git", "init", "-q", src], log)
         run(["git", "-C", src, "fetch", "-q", "--depth=1", f"https://github.com/{repo}.git", sha], log, timeout=600)
         run(["git", "-C", src, "checkout", "-q", "FETCH_HEAD"], log)
-        env_go = ["env", "GOTOOLCHAIN=local", "GOFLAGS=-mod=readonly"]
+        # GOTOOLCHAIN=auto: use the toolchain go.mod asks for, downloading it
+        # when the host Go is older (the RHEL golang package lags patches).
+        env_go = ["env", "GOTOOLCHAIN=auto", "GOFLAGS=-mod=readonly"]
         run(env_go + ["go", "build", "-o", "bin/deskosctl", "./cmd/deskosctl"], log, cwd=src, timeout=900)
         run(["bin/deskosctl", "render", *RESOURCE_ROOTS, "--workstation", WORKSTATION, "--output", ctx], log, cwd=src)
         key = validation_key(src, ctx)
