@@ -45,7 +45,7 @@ pipeline, never inside compiler semantics.** The compiler may only
 |---|---|---|
 | 1 | Declared SBOM: `deskosctl sbom`, deterministic, tested | **done** (v0.8.0) |
 | 2 | CI: render → build the CS10 image → Syft SBOM → Grype scan → upload artifacts, fail on critical; compare declared vs installed | **done**: `supply-chain.yml` runs it; the gate passed on 2026-10-10 |
-| 3 | Signing and provenance: `cosign sign` over the digest and an SBOM attestation; promotion by digest | **done** on the RHEL factory host (key-based, 2026-10-10); keyless in CI |
+| 3 | Signing and provenance: `cosign sign` over the digest and an SBOM attestation; promotion by digest | **done**: keyless for CentOS Stream 10 in CI, key-based for RHEL in a downstream organization's pipeline (2026-10-14) |
 | 4 | Evidence travels with the artifact: ship the SBOM beside `plan.json`; an endpoint command reports it | planned |
 | 5 | Compliance resources (`TrustPolicy`, `ComplianceProfile`) and OpenSCAP execution | later |
 
@@ -56,8 +56,9 @@ The how-to for stages 1–3 is [docs/supply-chain.md](../supply-chain.md).
 - The compiler stays deterministic, offline and model-free; evidence is
   additive and optional for the compiler itself.
 - Scanning needs a **built image**: CentOS Stream 10 runs in CI (`vm-bootcheck`
-  style); RHEL needs the entitled factory host. No scan is claimed before
-  one has run.
+  style); RHEL runs in a downstream organization's pipeline, which owns the
+  entitled build host and holds the evidence. No scan is claimed before one has
+  run.
 - The tooling is vendor-neutral: CycloneDX is the format, Syft/Grype/cosign
   are open source, so the plan survives a change of pipeline.
 - This is a **publication gate**, not a controller: it governs which digest

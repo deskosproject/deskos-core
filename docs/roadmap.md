@@ -136,8 +136,10 @@ how-to: [supply-chain.md](supply-chain.md).
   evidence. With `publish` on `main` it also pushes the scanned image and
   signs it **keyless** with `cosign`, attaching the installed SBOM as a
   CycloneDX attestation.
-- Remaining for stage 3: key-based signing on the RHEL factory host (no
-  OIDC there), and channel promotion (candidate, canary, pilot, stable).
+- Remaining for stage 3: channel promotion (candidate, canary, pilot, stable).
+  Key-based signing for RHEL moved to a downstream organization's pipeline,
+  which owns the entitled build host and signs with no OIDC and no transparency
+  log (2026-10-14).
   The boot-check and scan gates are already unified in `supply-chain.yml`:
   one digest is built, scanned, booted and then signed.
 - **Policy:**

@@ -161,11 +161,11 @@ cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
   | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
 ```
 
-**RHEL builds** run on the entitled factory host with no OIDC: they are
-signed with a cosign **key** kept outside this repository and verified
-against its public key. That key's rotation, and the fact that verification
-without a transparency log carries less evidence than the keyless path, are
-recorded with the organization.
+**RHEL builds** run in a downstream organization's pipeline, which owns the
+entitled build host, with no OIDC: they are signed with a cosign **key** kept
+outside this repository and verified against its public key. That key's
+rotation, and the fact that verification without a transparency log carries
+less evidence than the keyless path, are recorded with the organization.
 
 The gates are unified: `supply-chain.yml` is the single publish path, and it
 boots, scans, signs and attests the same image before it is promoted; it is
