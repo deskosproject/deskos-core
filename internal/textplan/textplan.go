@@ -145,7 +145,7 @@ func Write(out io.Writer, p *plan.Plan) error {
 	} else {
 		section(w, "Flatpak remotes (system)", len(pr.FlatpakRemotes))
 		for _, r := range pr.FlatpakRemotes {
-			pf("    %s\t%s\t%s\n", r.Name, r.URL, origins(r.Provenance))
+			pf("    %s\t%s\t%s\n", r.Name, r.RemoteURL(), origins(r.Provenance))
 		}
 		section(w, "Flatpak applications (preinstalled at startup)", len(pr.FlatpakApplications))
 		for _, app := range pr.FlatpakApplications {

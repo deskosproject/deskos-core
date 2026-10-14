@@ -170,7 +170,8 @@ it.
   `PlymouthTheme`, `SystemdEnable`, `SystemdMask`, `ScheduledUpdate`,
   `DefaultTarget`.
 - **Provisioning**: system Flatpak remotes and applications, materialized
-  on the machine by upstream `flatpak preinstall`.
+  on the machine by upstream `flatpak preinstall`. An OCI remote that names
+  an authenticator also carries the unit that points the remote at it.
 - **Enrollment**: reserved and empty.
 
 Every item keeps its provenance. The plan is **canonical**: sorted, no
@@ -298,6 +299,7 @@ Firefox RPM on both platforms.
 | Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository |
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] |
+| OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as CentOS Stream 10 |
 
 The RHEL column is historical: the RHEL factory host was retired and this
 repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
@@ -400,6 +402,23 @@ The unit is `WantedBy=multi-user.target`, `Type=exec`, and ordered after
 units it wants (systemd v257 `unit_add_default_target_dependency`), so
 **DeskOS adds no network wait to any boot target**; `Type=exec` means
 nothing waits for the download itself. It does not restart.
+
+A remote is OSTree by default. `transport: oci` makes it an index of
+Flatpak images in a container registry instead: the remote file carries
+`Url=oci+https://...` and no signing key, because the registry and its
+images are what get verified, and it has no collection to deploy sideloads
+into. Flatpak keeps an OCI remote's authenticator in the remote's own
+configuration, and the `.flatpakrepo` format has no key for it, so an OCI
+remote that names one gets a second generated unit,
+`deskos-flatpak-oci-authenticator.service`. It runs
+`flatpak remote-add --if-not-exists --from` (a no-op once the remotes.d
+entry has been imported) and then
+`flatpak remote-modify --authenticator-name`, which is the documented way
+to attach an authenticator. It runs only local commands, so it adds no
+network wait to a boot target, and it is ordered before the preinstall
+unit, because the applications that unit installs may need it. The
+credentials are not part of the artifact: the authenticator reads them from
+the machine, for example from `/etc/flatpak/oci-auth.json`.
 
 Offline boot, observed by booting the reference image under systemd in a
 container with no network and a 25-second simulated `nm-online` timeout:

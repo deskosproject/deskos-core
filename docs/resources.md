@@ -235,7 +235,8 @@ same `id` conflict unless their entries are identical.
 
 ### `FlatpakRemote` and `FlatpakSet`
 
-A **system** Flatpak remote, and applications preinstalled from it:
+A **system** Flatpak remote, and applications preinstalled from it. The
+`transport` field selects the repository model and defaults to `ostree`:
 
 ```yaml
 apiVersion: software.deskos.org/v1alpha1
@@ -248,6 +249,31 @@ spec:
   collectionID: org.flathub.Stable
   gpgKeyFile: keys/flathub.gpg
 ```
+
+An **OCI** remote is an index of Flatpak images in a container registry,
+which flatpak reads over the `oci+https` transport. The registry and its
+images carry the signatures, so an OCI remote has no `gpgKeyFile` and no
+`collectionID`, and `url` stays a plain `https://` URL: DeskOS adds the
+scheme. A registry that asks for credentials names its authenticator, and
+the machine supplies them; the artifact never carries a token.
+
+```yaml
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakRemote
+metadata:
+  name: katello
+spec:
+  title: Katello
+  transport: oci
+  url: https://satellite.example.com
+  authenticator: org.flatpak.Authenticator.Oci
+```
+
+DeskOS writes `/usr/share/flatpak/remotes.d/<name>.flatpakrepo`. That file
+format cannot carry an authenticator, so a remote that names one also gets
+a unit that points the remote at it once the remote exists. The credentials
+stay on the machine, for example in `/etc/flatpak/oci-auth.json`, and are
+not part of the image.
 
 ```yaml
 apiVersion: software.deskos.org/v1alpha1
