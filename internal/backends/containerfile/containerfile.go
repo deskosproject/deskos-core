@@ -46,6 +46,7 @@ const (
 	kargsPath             = "/usr/lib/bootc/kargs.d/50-deskos.toml"
 	dracutConfPath        = "/usr/lib/dracut/dracut.conf.d/50-deskos.conf"
 	systemdUnitDir        = "/usr/lib/systemd/system"
+	flatpakRemotesDir     = "/usr/share/flatpak/remotes.d"
 )
 
 // File is one file of the build context.
@@ -143,13 +144,17 @@ func Render(p *plan.Plan) ([]File, error) {
 		}
 	}
 	for _, rm := range p.Provisioning.FlatpakRemotes {
-		r.addImage(path.Join("/usr/share/flatpak/remotes.d", rm.Name+".flatpakrepo"), 0o644, flatpakRepoFile(rm))
+		r.addImage(path.Join(flatpakRemotesDir, rm.Name+".flatpakrepo"), 0o644, flatpakRepoFile(rm))
 	}
 	for _, app := range p.Provisioning.FlatpakApplications {
 		r.addImage(path.Join("/usr/share/flatpak/preinstall.d", app.ID+".preinstall"), 0o644, preinstallFile(app))
 	}
 	if u := p.Provisioning.FlatpakPreinstallUnit; u != "" {
 		r.addImage(path.Join(systemdUnitDir, u), 0o644, preinstallUnit())
+	}
+	if u := p.Provisioning.FlatpakAuthenticatorUnit; u != "" {
+		r.addImage(path.Join(systemdUnitDir, u), 0o644,
+			flatpakAuthenticatorUnit(p.Provisioning.FlatpakRemotes, p.Provisioning.FlatpakPreinstallUnit))
 	}
 	for _, u := range p.Artifact.ScheduledUpdates {
 		svc, timer, err := updateUnits(u)
@@ -406,13 +411,17 @@ func dconfLocks(db *plan.DconfDatabase) []byte {
 	return []byte(b.String())
 }
 
+// flatpakRepoFile renders the /usr/share/flatpak/remotes.d entry of a remote.
+// The file format is documented in flatpakrepo(5): it carries a URL, a title
+// and an OSTree signing key, but it cannot express an OCI authenticator or the
+// credentials behind it, which is why those get their own unit.
 func flatpakRepoFile(r plan.FlatpakRemote) []byte {
 	var b strings.Builder
 	b.WriteString(generatedHeader)
 	b.WriteString("[Flatpak Repo]\n")
 	b.WriteString("Version=1\n")
 	fmt.Fprintf(&b, "Title=%s\n", r.Title)
-	fmt.Fprintf(&b, "Url=%s\n", r.URL)
+	fmt.Fprintf(&b, "Url=%s\n", r.RemoteURL())
 	if r.Homepage != "" {
 		fmt.Fprintf(&b, "Homepage=%s\n", r.Homepage)
 	}
@@ -422,10 +431,53 @@ func flatpakRepoFile(r plan.FlatpakRemote) []byte {
 	if r.Description != "" {
 		fmt.Fprintf(&b, "Description=%s\n", r.Description)
 	}
-	if r.CollectionID != "" {
-		fmt.Fprintf(&b, "DeploySideloadCollectionID=%s\n", r.CollectionID)
+	// An OCI remote is verified by the registry and its images rather than by
+	// an OSTree summary key, and it has no collection to deploy sideloads into.
+	if r.Transport != plan.FlatpakTransportOCI {
+		if r.CollectionID != "" {
+			fmt.Fprintf(&b, "DeploySideloadCollectionID=%s\n", r.CollectionID)
+		}
+		fmt.Fprintf(&b, "GPGKey=%s\n", r.GPGKey)
 	}
-	fmt.Fprintf(&b, "GPGKey=%s\n", r.GPGKey)
+	return []byte(b.String())
+}
+
+// flatpakAuthenticatorUnit points OCI remotes at their authenticator. The
+// remote file cannot carry one, so it is applied on the machine once the remote
+// exists: remote-add is a no-op when the remotes.d entry was already imported,
+// and remote-modify stores the authenticator in the remote's own config. The
+// credentials are not part of the artifact; the authenticator reads them from
+// the machine. The unit only runs local commands, so it adds no network wait to
+// any boot target, and it is ordered before the preinstall unit when there is
+// one, because the apps that unit installs may need the authenticator.
+func flatpakAuthenticatorUnit(remotes []plan.FlatpakRemote, preinstallUnit string) []byte {
+	var b strings.Builder
+	b.WriteString(generatedHeader)
+	b.WriteString(`[Unit]
+Description=Point OCI Flatpak remotes at their authenticator
+Documentation=man:flatpak-remote-modify(1)
+After=multi-user.target
+`)
+	if preinstallUnit != "" {
+		fmt.Fprintf(&b, "Before=%s\n", preinstallUnit)
+	}
+	b.WriteString(`
+[Service]
+Type=oneshot
+`)
+	for _, r := range remotes {
+		if r.Authenticator == "" {
+			continue
+		}
+		fmt.Fprintf(&b, "ExecStart=/usr/bin/flatpak remote-add --system --if-not-exists --from %s %s\n",
+			r.Name, path.Join(flatpakRemotesDir, r.Name+".flatpakrepo"))
+		fmt.Fprintf(&b, "ExecStart=/usr/bin/flatpak remote-modify --system --authenticator-name=%s %s\n",
+			r.Authenticator, r.Name)
+	}
+	b.WriteString(`
+[Install]
+WantedBy=multi-user.target
+`)
 	return []byte(b.String())
 }
 

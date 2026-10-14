@@ -14,6 +14,7 @@ import (
 
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/model"
+	"github.com/deskosproject/deskos-core/internal/plan"
 	"github.com/deskosproject/deskos-core/internal/providers/assets"
 	"github.com/deskosproject/deskos-core/internal/registry"
 )
@@ -460,29 +461,45 @@ func (binaryArtifact) Contribute(res *model.Resource, s *compose.Scope) error {
 
 // ------------------------------------------------------------- FlatpakRemote
 
+// The two Flatpak repository models. OSTree is what DeskOS has always
+// rendered; OCI is an index of Flatpak images in a container registry, which
+// flatpak reads over the oci+https transport and which carries no signing key.
+const (
+	TransportOSTree = plan.FlatpakTransportOSTree
+	TransportOCI    = plan.FlatpakTransportOCI
+)
+
+// authenticatorRE matches a Flatpak authenticator name. An authenticator is an
+// application id, for example org.flatpak.Authenticator.Oci.
+var authenticatorRE = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$`)
+
 // FlatpakRemoteSpec describes a system Flatpak remote. The remote name is
 // metadata.name.
 type FlatpakRemoteSpec struct {
-	Title        string `json:"title"`
-	URL          string `json:"url"`
-	Homepage     string `json:"homepage,omitempty"`
-	Comment      string `json:"comment,omitempty"`
-	Description  string `json:"description,omitempty"`
-	CollectionID string `json:"collectionID,omitempty"`
-	GPGKeyFile   string `json:"gpgKeyFile"`
+	Title         string `json:"title"`
+	Transport     string `json:"transport,omitempty"`
+	URL           string `json:"url"`
+	Homepage      string `json:"homepage,omitempty"`
+	Comment       string `json:"comment,omitempty"`
+	Description   string `json:"description,omitempty"`
+	CollectionID  string `json:"collectionID,omitempty"`
+	Authenticator string `json:"authenticator,omitempty"`
+	GPGKeyFile    string `json:"gpgKeyFile,omitempty"`
 }
 
 // Remote is the composed remote definition.
 type Remote struct {
-	Name         string `json:"name"`
-	Title        string `json:"title"`
-	URL          string `json:"url"`
-	Homepage     string `json:"homepage,omitempty"`
-	Comment      string `json:"comment,omitempty"`
-	Description  string `json:"description,omitempty"`
-	CollectionID string `json:"collectionID,omitempty"`
-	GPGKey       string `json:"gpgKey"`
-	GPGKeySHA256 string `json:"gpgKeySHA256"`
+	Name          string `json:"name"`
+	Title         string `json:"title"`
+	Transport     string `json:"transport"`
+	URL           string `json:"url"`
+	Homepage      string `json:"homepage,omitempty"`
+	Comment       string `json:"comment,omitempty"`
+	Description   string `json:"description,omitempty"`
+	CollectionID  string `json:"collectionID,omitempty"`
+	Authenticator string `json:"authenticator,omitempty"`
+	GPGKey        string `json:"gpgKey,omitempty"`
+	GPGKeySHA256  string `json:"gpgKeySHA256,omitempty"`
 }
 
 type flatpakRemote struct{}
@@ -512,19 +529,51 @@ func (flatpakRemote) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "homepage: %v", err))
 		}
 	}
-	if s.CollectionID != "" && !collIDRE.MatchString(s.CollectionID) {
-		errs.Add(model.Errorf(res, "invalid collectionID %q", s.CollectionID))
+	transport := s.Transport
+	if transport == "" {
+		transport = TransportOSTree
 	}
-	r := Remote{Name: res.Metadata.Name, Title: s.Title, URL: s.URL, Homepage: s.Homepage, Comment: s.Comment, Description: s.Description, CollectionID: s.CollectionID}
-	key, err := assets.Read(res, s.GPGKeyFile)
-	if err != nil {
-		errs.Add(model.Errorf(res, "gpgKeyFile: %v", err))
-	} else if len(key.Data) == 0 || key.Data[0]&0x80 == 0 {
-		errs.Add(model.Errorf(res, "gpgKeyFile %s must be a binary OpenPGP public key (not ASCII-armored)", key.Path))
-	} else {
-		sum := sha256.Sum256(key.Data)
-		r.GPGKey = base64.StdEncoding.EncodeToString(key.Data)
-		r.GPGKeySHA256 = hex.EncodeToString(sum[:])
+	if transport != TransportOSTree && transport != TransportOCI {
+		errs.Add(model.Errorf(res, "transport must be %s or %s, got %q", TransportOSTree, TransportOCI, s.Transport))
+	}
+	r := Remote{Name: res.Metadata.Name, Title: s.Title, Transport: transport, URL: s.URL, Homepage: s.Homepage, Comment: s.Comment, Description: s.Description}
+	switch transport {
+	case TransportOCI:
+		// An OCI remote is signed by the registry rather than by an OSTree
+		// summary key, and the credentials belong to the machine, not to the
+		// image: the authenticator reads them from the Flatpak OCI credentials.
+		r.Authenticator = s.Authenticator
+		if s.Authenticator != "" && !authenticatorRE.MatchString(s.Authenticator) {
+			errs.Add(model.Errorf(res, "invalid authenticator %q", s.Authenticator))
+		}
+		if s.GPGKeyFile != "" {
+			errs.Add(model.Errorf(res, "gpgKeyFile is not allowed for the %s transport", TransportOCI))
+		}
+		if s.CollectionID != "" {
+			errs.Add(model.Errorf(res, "collectionID is not allowed for the %s transport", TransportOCI))
+		}
+	case TransportOSTree:
+		if s.Authenticator != "" {
+			errs.Add(model.Errorf(res, "authenticator is only allowed for the %s transport", TransportOCI))
+		}
+		r.CollectionID = s.CollectionID
+		if s.CollectionID != "" && !collIDRE.MatchString(s.CollectionID) {
+			errs.Add(model.Errorf(res, "invalid collectionID %q", s.CollectionID))
+		}
+		if s.GPGKeyFile == "" {
+			errs.Add(model.Errorf(res, "gpgKeyFile is required for the %s transport", TransportOSTree))
+		} else {
+			key, err := assets.Read(res, s.GPGKeyFile)
+			if err != nil {
+				errs.Add(model.Errorf(res, "gpgKeyFile: %v", err))
+			} else if len(key.Data) == 0 || key.Data[0]&0x80 == 0 {
+				errs.Add(model.Errorf(res, "gpgKeyFile %s must be a binary OpenPGP public key (not ASCII-armored)", key.Path))
+			} else {
+				sum := sha256.Sum256(key.Data)
+				r.GPGKey = base64.StdEncoding.EncodeToString(key.Data)
+				r.GPGKeySHA256 = hex.EncodeToString(sum[:])
+			}
+		}
 	}
 	res.Object = &r
 	return errs.Err()
@@ -532,7 +581,11 @@ func (flatpakRemote) Decode(res *model.Resource) error {
 
 func (flatpakRemote) Contribute(res *model.Resource, s *compose.Scope) error {
 	r := res.Object.(*Remote)
-	s.AddKeyed(DomainFlatpakRemotes, r.Name, *r, fmt.Sprintf("%s (gpg key sha256 %s)", r.URL, r.GPGKeySHA256))
+	detail := fmt.Sprintf("%s (gpg key sha256 %s)", r.URL, r.GPGKeySHA256)
+	if r.Transport == TransportOCI {
+		detail = fmt.Sprintf("%s (%s transport)", r.URL, TransportOCI)
+	}
+	s.AddKeyed(DomainFlatpakRemotes, r.Name, *r, detail)
 	return nil
 }
 

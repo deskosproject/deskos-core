@@ -463,6 +463,150 @@ spec:
 	mustFail(t, err, `composition conflict for Flatpak application "org.example.Alpha"`)
 }
 
+// An OCI remote is an index of Flatpak images in a container registry: flatpak
+// reads it over the oci+https transport, the registry signs the images, and the
+// authenticator that supplies credentials cannot live in the remote file, so a
+// unit applies it once the remote exists.
+func TestFlatpakOCIRemote(t *testing.T) {
+	remote := `apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakRemote
+metadata:
+  name: katello
+spec:
+  title: Katello
+  transport: oci
+  url: https://satellite.example.com
+  authenticator: org.flatpak.Authenticator.Oci
+`
+	set := `apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: katello-apps
+spec:
+  remote: katello
+  applications:
+    - id: org.mozilla.firefox
+`
+	files := base.with(fixture{
+		"remote.yaml": remote,
+		"set.yaml":    set,
+		"ws.yaml":     workstation("ws", "a"),
+		"a.yaml":      profile("a", "foundation", "FlatpakSet/katello-apps"),
+	})
+	p := mustPlan(t, "ws", files.dir(t))
+
+	if len(p.Provisioning.FlatpakRemotes) != 1 {
+		t.Fatalf("remotes = %+v", p.Provisioning.FlatpakRemotes)
+	}
+	r := p.Provisioning.FlatpakRemotes[0]
+	if r.Transport != plan.FlatpakTransportOCI || r.Authenticator != "org.flatpak.Authenticator.Oci" {
+		t.Errorf("remote = %+v", r)
+	}
+	if r.GPGKey != "" || r.GPGKeySHA256 != "" {
+		t.Errorf("an oci remote carries no signing key: %+v", r)
+	}
+	if got := r.RemoteURL(); got != "oci+https://satellite.example.com" {
+		t.Errorf("remote URL = %q", got)
+	}
+	if p.Provisioning.FlatpakAuthenticatorUnit == "" {
+		t.Error("authenticator unit missing")
+	}
+	if got := units(p); !strings.Contains(got, "deskos-flatpak-oci-authenticator.service") {
+		t.Errorf("authenticator unit not enabled: %q", got)
+	}
+
+	rendered, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := string(fileData(t, rendered, "rootfs/usr/share/flatpak/remotes.d/katello.flatpakrepo"))
+	for _, want := range []string{"Title=Katello\n", "Url=oci+https://satellite.example.com\n"} {
+		if !strings.Contains(repo, want) {
+			t.Errorf("remote file lacks %q:\n%s", want, repo)
+		}
+	}
+	// The OCI transport has no OSTree summary key to verify against and no
+	// collection to deploy sideloads into.
+	for _, bad := range []string{"GPGKey=", "DeploySideloadCollectionID="} {
+		if strings.Contains(repo, bad) {
+			t.Errorf("remote file contains %q:\n%s", bad, repo)
+		}
+	}
+
+	unit := string(fileData(t, rendered, "rootfs/usr/lib/systemd/system/deskos-flatpak-oci-authenticator.service"))
+	for _, want := range []string{
+		"ExecStart=/usr/bin/flatpak remote-add --system --if-not-exists --from katello /usr/share/flatpak/remotes.d/katello.flatpakrepo\n",
+		"ExecStart=/usr/bin/flatpak remote-modify --system --authenticator-name=org.flatpak.Authenticator.Oci katello\n",
+		"Before=deskos-flatpak-preinstall.service\n",
+		"Type=oneshot\n",
+	} {
+		if !strings.Contains(unit, want) {
+			t.Errorf("authenticator unit lacks %q:\n%s", want, unit)
+		}
+	}
+	// It only runs local commands, so it adds no network wait to a boot target.
+	for _, bad := range []string{"network-online", "Restart="} {
+		if strings.Contains(unit, bad) {
+			t.Errorf("authenticator unit contains %q:\n%s", bad, unit)
+		}
+	}
+
+	// An OCI remote with no authenticator is a public registry index: it
+	// compiles, and nothing has to be applied on the machine.
+	public := files.with(fixture{"remote.yaml": strings.Replace(remote, "  authenticator: org.flatpak.Authenticator.Oci\n", "", 1)})
+	pub := mustPlan(t, "ws", public.dir(t))
+	if pub.Provisioning.FlatpakAuthenticatorUnit != "" {
+		t.Error("a public oci remote needs no authenticator unit")
+	}
+	if got := units(pub); strings.Contains(got, "deskos-flatpak-oci-authenticator.service") {
+		t.Errorf("authenticator unit enabled for a public remote: %q", got)
+	}
+}
+
+func TestFlatpakRemoteTransportValidation(t *testing.T) {
+	// The typed decoder enforces the same rules as the schema, so a future
+	// schema regression cannot silently weaken them.
+	c := newCompiler(t)
+	gvk := "software.deskos.org/v1alpha1"
+	for name, tc := range map[string]struct{ doc, want string }{
+		"oci with a signing key":       {`{"title":"T","transport":"oci","url":"https://example.org/","gpgKeyFile":"key.gpg"}`, "gpgKeyFile is not allowed"},
+		"oci with a collection":        {`{"title":"T","transport":"oci","url":"https://example.org/","collectionID":"org.example.Stable"}`, "collectionID is not allowed"},
+		"ostree with an authenticator": {`{"title":"T","url":"https://example.org/","gpgKeyFile":"key.gpg","authenticator":"org.flatpak.Authenticator.Oci"}`, "authenticator is only allowed"},
+		"ostree without a key":         {`{"title":"T","url":"https://example.org/"}`, "gpgKeyFile is required"},
+		"unknown transport":            {`{"title":"T","transport":"docker","url":"https://example.org/","gpgKeyFile":"key.gpg"}`, "transport must be ostree or oci"},
+		"authenticator not an app id":  {`{"title":"T","transport":"oci","url":"https://example.org/","authenticator":"not an id"}`, "invalid authenticator"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			res := rawResource(gvk, "FlatpakRemote", "r", tc.doc)
+			prov, err := c.Registry.Lookup(res.GVK())
+			if err != nil {
+				t.Fatal(err)
+			}
+			mustFail(t, prov.Decode(res), tc.want)
+		})
+	}
+
+	// The schema carries the same rules, so the document is rejected before the
+	// typed decoder ever sees it.
+	schema := base.with(fixture{
+		"remote.yaml": `apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakRemote
+metadata:
+  name: katello
+spec:
+  title: Katello
+  transport: oci
+  url: https://satellite.example.com
+  gpgKeyFile: key.gpg
+`,
+		"key.gpg": "\x99\x01binary-key-placeholder",
+		"ws.yaml": workstation("ws", "a"),
+		"a.yaml":  profile("a", "foundation", "FlatpakRemote/katello"),
+	})
+	_, err := planOf(t, "ws", schema.dir(t))
+	mustFail(t, err, "schema validation failed")
+}
+
 func TestGnomeLocksAndDock(t *testing.T) {
 	defaults := `    dock:
       enabled: true

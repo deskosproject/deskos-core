@@ -12,7 +12,14 @@ import (
 
 // PreinstallUnit runs the upstream `flatpak preinstall` at startup. The
 // target platforms ship the preinstall mechanism but no unit invoking it.
-const PreinstallUnit = "deskos-flatpak-preinstall.service"
+//
+// AuthenticatorUnit points OCI remotes at their authenticator once the remote
+// exists. A .flatpakrepo file cannot carry one, so flatpak keeps it in the
+// remote's runtime configuration and it has to be applied on the machine.
+const (
+	PreinstallUnit    = "deskos-flatpak-preinstall.service"
+	AuthenticatorUnit = "deskos-flatpak-oci-authenticator.service"
+)
 
 // IconCachePackage provides gtk-update-icon-cache on CentOS Stream 10 and RHEL 10.
 const IconCachePackage = "gtk-update-icon-cache"
@@ -113,15 +120,24 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 
 	remotes := map[string]Remote{}
 	var flatpakProv []model.Provenance
+	var authenticatorProv []model.Provenance
 	for _, k := range r.Keyed(DomainFlatpakRemotes) {
 		rm := k.Value.(Remote)
 		remotes[rm.Name] = rm
 		flatpakProv = append(flatpakProv, k.Provenance...)
+		if rm.Authenticator != "" {
+			authenticatorProv = append(authenticatorProv, k.Provenance...)
+		}
 		p.Provisioning.FlatpakRemotes = append(p.Provisioning.FlatpakRemotes, plan.FlatpakRemote{
-			Name: rm.Name, Title: rm.Title, URL: rm.URL, Homepage: rm.Homepage, Comment: rm.Comment,
-			Description: rm.Description, CollectionID: rm.CollectionID,
-			GPGKey: rm.GPGKey, GPGKeySHA256: rm.GPGKeySHA256, Provenance: k.Provenance,
+			Name: rm.Name, Title: rm.Title, Transport: rm.Transport, URL: rm.URL, Homepage: rm.Homepage,
+			Comment: rm.Comment, Description: rm.Description, CollectionID: rm.CollectionID,
+			Authenticator: rm.Authenticator, GPGKey: rm.GPGKey, GPGKeySHA256: rm.GPGKeySHA256,
+			Provenance: k.Provenance,
 		})
+	}
+	if len(authenticatorProv) > 0 {
+		p.Provisioning.FlatpakAuthenticatorUnit = AuthenticatorUnit
+		p.EnableUnit(AuthenticatorUnit, authenticatorProv...)
 	}
 	apps := r.Keyed(DomainFlatpakApps)
 	if len(apps) > 0 && !pl.Flatpak.Preinstall {

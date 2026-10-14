@@ -311,6 +311,13 @@ type DefaultTarget struct {
 	Provenance []model.Provenance `json:"provenance"`
 }
 
+// Flatpak remote transports. The plan carries the transport because the
+// backend renders a different remote file for each one.
+const (
+	FlatpakTransportOSTree = "ostree"
+	FlatpakTransportOCI    = "oci"
+)
+
 // Provisioning is intent materialized when a machine is provisioned. The
 // descriptors are image-owned; the content they describe is not.
 type Provisioning struct {
@@ -319,19 +326,33 @@ type Provisioning struct {
 	// FlatpakPreinstallUnit is the systemd unit that runs the upstream
 	// `flatpak preinstall` at startup; empty when nothing is preinstalled.
 	FlatpakPreinstallUnit string `json:"flatpakPreinstallUnit,omitempty"`
+	// FlatpakAuthenticatorUnit is the systemd unit that points OCI remotes at
+	// their authenticator at startup; empty when no remote declares one.
+	FlatpakAuthenticatorUnit string `json:"flatpakAuthenticatorUnit,omitempty"`
 }
 
 type FlatpakRemote struct {
-	Name         string             `json:"name"`
-	Title        string             `json:"title"`
-	URL          string             `json:"url"`
-	Homepage     string             `json:"homepage,omitempty"`
-	Comment      string             `json:"comment,omitempty"`
-	Description  string             `json:"description,omitempty"`
-	CollectionID string             `json:"collectionID,omitempty"`
-	GPGKey       string             `json:"gpgKey"`
-	GPGKeySHA256 string             `json:"gpgKeySHA256"`
-	Provenance   []model.Provenance `json:"provenance"`
+	Name          string             `json:"name"`
+	Title         string             `json:"title"`
+	Transport     string             `json:"transport"`
+	URL           string             `json:"url"`
+	Homepage      string             `json:"homepage,omitempty"`
+	Comment       string             `json:"comment,omitempty"`
+	Description   string             `json:"description,omitempty"`
+	CollectionID  string             `json:"collectionID,omitempty"`
+	Authenticator string             `json:"authenticator,omitempty"`
+	GPGKey        string             `json:"gpgKey,omitempty"`
+	GPGKeySHA256  string             `json:"gpgKeySHA256,omitempty"`
+	Provenance    []model.Provenance `json:"provenance"`
+}
+
+// RemoteURL is the URL as flatpak spells it: the OCI transport carries an oci+
+// scheme prefix, every other transport is the URL itself.
+func (r FlatpakRemote) RemoteURL() string {
+	if r.Transport == FlatpakTransportOCI {
+		return "oci+" + r.URL
+	}
+	return r.URL
 }
 
 type FlatpakPreinstall struct {

@@ -674,6 +674,7 @@
       {
         "name": "flathub",
         "title": "Flathub",
+        "transport": "ostree",
         "url": "https://dl.flathub.org/repo/",
         "homepage": "https://flathub.org/",
         "comment": "Central repository of Flatpak applications",

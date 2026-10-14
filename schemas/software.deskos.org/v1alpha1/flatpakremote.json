@@ -15,16 +15,46 @@
     "spec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["title", "url", "gpgKeyFile"],
+      "required": ["title", "url"],
       "properties": {
         "title": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+        "transport": {
+          "description": "Repository model. ostree (the default) is a Flatpak OSTree repository and needs a signing key. oci is an index of Flatpak images in an OCI registry, which flatpak reads over the oci+https transport.",
+          "type": "string",
+          "enum": ["ostree", "oci"]
+        },
         "url": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
         "homepage": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
         "comment": { "$ref": "../../common/definitions.json#/$defs/singleLine" },
         "description": { "$ref": "../../common/definitions.json#/$defs/singleLine" },
         "collectionID": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+$" },
+        "authenticator": {
+          "description": "Name of the Flatpak authenticator that supplies credentials for an oci remote, for example org.flatpak.Authenticator.Oci. The credentials themselves are not part of the artifact: the authenticator reads them from the machine's Flatpak OCI credentials.",
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_-]*(\\.[A-Za-z_][A-Za-z0-9_-]*)+$"
+        },
         "gpgKeyFile": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "transport": { "const": "oci" } },
+            "required": ["transport"]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "required": ["gpgKeyFile"] },
+                { "required": ["collectionID"] }
+              ]
+            }
+          },
+          "else": {
+            "required": ["gpgKeyFile"],
+            "not": { "required": ["authenticator"] }
+          }
+        }
+      ]
     }
   }
 }
