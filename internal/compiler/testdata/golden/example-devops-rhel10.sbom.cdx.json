@@ -14,7 +14,7 @@
         },
         {
           "name": "deskos:baseImage",
-          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978"
+          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
         }
       ]
     }
@@ -354,11 +354,11 @@
     {
       "type": "operating-system",
       "name": "registry.redhat.io/rhel10/rhel-bootc:10.2",
-      "version": "sha256:ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978",
+      "version": "sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "ec35d7e31fa1bb16ebd50fe35f4d431440fd559a30f61310a61723403dd7e978"
+          "content": "d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
         }
       ]
     }
