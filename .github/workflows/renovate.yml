@@ -1,0 +1,56 @@
+name: renovate
+
+# Runs Renovate, which keeps the pins in renovate.json current: the bootc base
+# image digest of each platform, the binary artifacts of the example, and the
+# scanner installers. Renovate only proposes: it opens a pull request, and a
+# human reviews and merges it, the same gate as any other change here.
+#
+# Anonymous reads reach the CentOS Stream 10 base image on quay.io. They do not
+# reach the RHEL 10 base image: registry.redhat.io needs a Red Hat subscription
+# to list tags and refuses anonymous access, and this repository carries no
+# subscription credential, because building RHEL contexts needs an entitled
+# build host, which is a factory input (docs/architecture.md). That digest is
+# therefore moved by hand and deliberately, as its resource comment asks, and
+# renovate.json disables that dependency so the dashboard does not show a
+# permanent lookup failure.
+#
+# Daily at 06:00 UTC. renovate.json decides when Renovate may open a pull
+# request.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: Renovate log level
+        required: false
+        default: info
+        type: choice
+        options:
+          - debug
+          - info
+          - warn
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
+        env:
+          LOG_LEVEL: ${{ inputs.logLevel || 'info' }}
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+        with:
+          token: ${{ secrets.RENOVATE_TOKEN }}

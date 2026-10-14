@@ -91,7 +91,9 @@ automation.
 
 - Work from a scoped, labelled issue; if it is unclear, ask instead of
   guessing.
-- Branch from `main`; never commit or push to `main`.
+- Branch from `main`; never commit or push to `main`. The branch is protected:
+  a pull request and a green `validate` check are required, and administrators
+  are not exempt, so a direct push is rejected even for a maintainer.
 - Open a PR. `make check` and the golden diff must be green before review.
 - A human reviews and merges. An agent does not self-merge, and an agent
   review never substitutes for a maintainer's approval.
