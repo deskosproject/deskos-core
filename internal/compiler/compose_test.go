@@ -816,10 +816,10 @@ func TestDockSemantics(t *testing.T) {
 	})
 }
 
-// Core enables Dash to Dock with its upstream defaults; favorites stay
-// native GNOME Shell state, ordered and independent of the dock.
-func TestCoreDockDefault(t *testing.T) {
-	const coreFavorites = "['firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Settings.desktop']"
+// Core sets no dock and no favorites: the shell layout is the platform's look and
+// feel, or an organization's choice. An organization that wants Dash to Dock
+// enables it from its own layer, and then its options apply.
+func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 	dockKeys := func(p *plan.Plan) []string {
 		var out []string
 		for _, d := range p.Artifact.Dconf.Defaults {
@@ -835,54 +835,44 @@ func TestCoreDockDefault(t *testing.T) {
 	}
 	t.Run("core", func(t *testing.T) {
 		p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
-		if v, _ := dconf(p, "/org/gnome/shell/favorite-apps"); v != coreFavorites {
-			t.Errorf("favorite-apps = %s", v)
+		if v, ok := dconf(p, "/org/gnome/shell/favorite-apps"); ok {
+			t.Errorf("Core writes favorite-apps = %s", v)
 		}
-		if v, _ := dconf(p, "/org/gnome/shell/enabled-extensions"); v != "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']" {
-			t.Errorf("enabled-extensions = %s", v)
+		if v, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok {
+			t.Errorf("Core writes enabled-extensions = %s", v)
 		}
-		if !hasDockPackage(p) {
-			t.Error("Core does not install Dash to Dock")
+		if hasDockPackage(p) {
+			t.Error("Core installs Dash to Dock")
 		}
 		if k := dockKeys(p); len(k) != 0 {
-			t.Errorf("Core sets dock options %q; it keeps the extension defaults", k)
+			t.Errorf("Core sets dock options %q", k)
 		}
 	})
-	t.Run("organization disables the dock", func(t *testing.T) {
+	t.Run("organization enables the dock itself", func(t *testing.T) {
 		org := fixture{
 			"org.yaml": profile("org", "organization", "GnomeProfile/org-desktop"),
-			"g.yaml":   gnome("org-desktop", "    dock:\n      enabled: false\n"),
+			"g.yaml":   gnome("org-desktop", "    dock:\n      enabled: true\n      position: bottom\n"),
 			"ws.yaml":  orgWorkstation,
 		}.dir(t)
 		p := mustPlan(t, "org-ws", resourcesRoot, org)
-		if hasDockPackage(p) {
-			t.Error("a disabled dock is still installed")
+		if !hasDockPackage(p) {
+			t.Error("the organization's dock is not installed")
 		}
-		if _, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok {
-			t.Error("enabled-extensions written although the platform default lacks the dock")
+		if v, _ := dconf(p, "/org/gnome/shell/extensions/dash-to-dock/dock-position"); v != "'BOTTOM'" {
+			t.Errorf("dock-position = %s", v)
 		}
-		if k := dockKeys(p); len(k) != 0 {
-			t.Errorf("a disabled dock writes %q", k)
-		}
-		for _, w := range p.Warnings {
-			if strings.Contains(w, "masked") {
-				t.Errorf("unexpected warning %q: Core sets no dock options", w)
-			}
-		}
-		if v, _ := dconf(p, "/org/gnome/shell/favorite-apps"); v != coreFavorites {
-			t.Errorf("favorite-apps = %s; favorites do not depend on the dock", v)
+		if v, ok := dconf(p, "/org/gnome/shell/favorite-apps"); ok {
+			t.Errorf("favorites are still written although Core sets none: %s", v)
 		}
 	})
-	t.Run("organization dock options above the Core default", func(t *testing.T) {
+	t.Run("dock options without enabling the dock are refused", func(t *testing.T) {
 		org := fixture{
 			"org.yaml": profile("org", "organization", "GnomeProfile/org-desktop"),
 			"g.yaml":   gnome("org-desktop", "    dock:\n      position: bottom\n"),
 			"ws.yaml":  orgWorkstation,
 		}.dir(t)
-		p := mustPlan(t, "org-ws", resourcesRoot, org)
-		if v, _ := dconf(p, "/org/gnome/shell/extensions/dash-to-dock/dock-position"); v != "'BOTTOM'" {
-			t.Errorf("dock-position = %s", v)
-		}
+		_, err := planOf(t, "org-ws", resourcesRoot, org)
+		mustFail(t, err, "dock.position requires dock.enabled: true")
 	})
 }
 
