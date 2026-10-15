@@ -1,6 +1,6 @@
 # ADR 0015: A second package manager, and where the package database lives
 
-**Status:** proposed
+**Status:** accepted (2026-10-15)
 
 ## Context
 
