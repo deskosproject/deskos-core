@@ -16,19 +16,22 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
    role < workstation`. Sets union, keyed definitions must match, scalars
    take the highest layer and conflict within one layer. File, root and
    profile order never change output (ADR 0003).
-4. **Exactly twelve public kinds** in v1alpha1: Platform, Profile,
+4. **Exactly thirteen public kinds** in v1alpha1: Platform, Profile,
    Workstation, PackageSet, RpmRepository, BinaryArtifact, FlatpakRemote,
    FlatpakSet, GnomeProfile, BootProfile (ADR 0006), UpdatePolicy
-   (ADR 0007), TrustAnchor (ADR 0009). A test enforces the count; adding a
-   kind needs an explicit decision.
+   (ADR 0007), TrustAnchor (ADR 0009), Theme (ADR 0013). A test enforces the
+   count (`internal/compiler/architecture_test.go`); adding a kind needs an
+   explicit decision.
 5. **No escape hatches.** No `script`, `command`, `postInstall` or other
    shell fields, no raw kernel arguments or Plymouth script themes, no
    templating, and nothing that manages a user's `$HOME`
    or personal tooling (ADR 0005).
-6. **RHEL starts from the official base.** A RHEL workstation is built
-   `FROM registry.redhat.io/rhel10/rhel-bootc`, never from a CentOS-derived
-   DeskOS image. RHEL-derived images are never publicly published or
-   redistributed (ADR 0004).
+6. **Each platform starts from its vendor's official base** (ADR 0004). A RHEL
+   workstation is built `FROM registry.redhat.io/rhel10/rhel-bootc`, never from
+   a CentOS-derived DeskOS image. RHEL-derived images are never publicly
+   published or redistributed. A platform whose vendor publishes no bootc base
+   may be added only as an organization-owned base, with a named owner and a
+   declared support tier (ADR 0014).
 7. **Core and organizations stay separate.** DeskOS Core carries no
    organization or role software; organizations extend it from their own
    resource roots without copying it.
@@ -97,7 +100,8 @@ automation.
 - Open a PR. `make check` and the golden diff must be green before review.
 - A human reviews and merges. An agent does not self-merge, and an agent
   review never substitutes for a maintainer's approval.
-- Trailer: `Assisted-by: <agent> <model>`. Never `Co-authored-by:`.
+- Never `Co-authored-by:`. No attribution trailer is required: a human
+  reviews and owns every change.
 
 **Evidence, not telemetry.** Reports and feedback are user-owned and
 opt-in, the same principle as the artifact factory: DeskOS never phones
