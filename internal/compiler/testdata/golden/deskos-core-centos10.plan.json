@@ -147,17 +147,6 @@
         ]
       },
       {
-        "name": "gnome-shell-extension-dash-to-dock",
-        "provenance": [
-          {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "plymouth",
         "provenance": [
           {
@@ -364,58 +353,10 @@
           ]
         },
         {
-          "key": "/org/gnome/desktop/wm/preferences/button-layout",
-          "type": "s",
-          "value": "'appmenu:minimize,maximize,close'",
-          "setting": "windows.buttons",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
-            },
-            {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
-            }
-          ]
-        },
-        {
           "key": "/org/gnome/login-screen/logo",
           "type": "s",
           "value": "'/usr/share/deskos/branding/deskos-login-logo.svg'",
           "setting": "appearance.loginLogo",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/shell/enabled-extensions",
-          "type": "as",
-          "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']",
-          "setting": "dock.enabled",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/shell/favorite-apps",
-          "type": "as",
-          "value": "['firefox.desktop', 'org.gnome.Nautilus.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'org.gnome.Settings.desktop']",
-          "setting": "shell.favorites",
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
