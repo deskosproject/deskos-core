@@ -728,12 +728,6 @@
               "profile": "example-baseline",
               "layer": "organization",
               "source": "baseline-and-role/desktop/example-desktop.yaml:1"
-            },
-            {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
             }
           ]
         },

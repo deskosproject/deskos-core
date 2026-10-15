@@ -4,24 +4,11 @@ metadata:
   name: deskos-core
 spec:
   defaults:
-    windows:
-      buttons: [minimize, maximize, close]
-      buttonPlacement: right
     appearance:
       wallpaper:
         light: ../assets/deskos/deskos-light.svg
         dark: ../assets/deskos/deskos-dark.svg
       loginLogo: ../assets/deskos/deskos-login-logo.svg
-    shell:
-      favorites:
-        - firefox.desktop
-        - org.gnome.Nautilus.desktop
-        - org.gnome.Ptyxis.desktop
-        - org.gnome.TextEditor.desktop
-        - org.gnome.Settings.desktop
-    # Dash to Dock with its upstream defaults; favorites stay native GNOME state.
-    dock:
-      enabled: true
     # GNOME Software offers updates but never downloads or applies them on its own.
     software:
       updates: manual
@@ -31,3 +18,7 @@ spec:
       lock:
         enabled: true
         delay: 0s
+    # Window buttons, shell favorites and Dash to Dock are deliberately absent.
+    # They are the platform's look and feel, or an organization's choice, not the
+    # foundation's: Ubuntu ships its own GNOME layout and button placement, and an
+    # organization that wants Dash to Dock adds it from its own layer.
