@@ -30,6 +30,11 @@
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
     },
     {
+      "name": "deskos-splash",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-splash.yaml:1"
+    },
+    {
       "name": "rhel-family",
       "layer": "foundation",
       "source": "resources/profiles/rhel-family.yaml:1"
@@ -156,10 +161,10 @@
         "name": "plymouth",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -167,10 +172,10 @@
         "name": "plymouth-scripts",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -178,10 +183,10 @@
         "name": "plymouth-system-theme",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -189,10 +194,10 @@
         "name": "plymouth-theme-spinner",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -260,10 +265,10 @@
         "asset": "resources/assets/deskos/deskos-splash-watermark.png",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       }
@@ -441,10 +446,10 @@
         "setting": "boot.quiet",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -453,10 +458,10 @@
         "setting": "boot.splash",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-splash",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       }
@@ -467,10 +472,10 @@
       ],
       "provenance": [
         {
-          "resource": "BootProfile/deskos-core",
-          "profile": "deskos-core",
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-splash",
           "layer": "foundation",
-          "source": "resources/system/deskos-core.yaml:1"
+          "source": "resources/system/deskos-splash.yaml:1"
         }
       ]
     },
@@ -482,10 +487,10 @@
       "setting": "boot.watermark",
       "provenance": [
         {
-          "resource": "BootProfile/deskos-core",
-          "profile": "deskos-core",
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-splash",
           "layer": "foundation",
-          "source": "resources/system/deskos-core.yaml:1"
+          "source": "resources/system/deskos-splash.yaml:1"
         }
       ]
     },
