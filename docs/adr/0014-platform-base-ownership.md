@@ -1,6 +1,6 @@
 # ADR 0014: Platform base ownership and support tiers
 
-**Status:** proposed
+**Status:** accepted (2026-10-15)
 
 ## Context
 
