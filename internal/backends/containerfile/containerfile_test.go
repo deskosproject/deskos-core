@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
 )
 
@@ -160,5 +161,53 @@ func TestBinaryArchiveGuardRejectsSymlinkMember(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(dir, "out-evil")); err == nil && bytes.Contains(data, []byte("TOPSECRET")) {
 		t.Error("the symlink member leaked the file it points at")
+	}
+}
+
+// A deb platform renders APT transactions: the same package model, a different
+// command, and none of the RPM-only surface (dnf, group flags, RHSM state).
+func TestDebPlatformRendersAPT(t *testing.T) {
+	p := &plan.Plan{
+		Platform: plan.Platform{
+			Name: "ubuntu-26.04", DisplayName: "Ubuntu 26.04 LTS",
+			PackageManager: model.PackageManagerDeb,
+		},
+	}
+	p.Artifact.BaseImage = plan.BaseImage{
+		Image: "example.org/deskos/ubuntu-bootc:26.04",
+		Ref:   "example.org/deskos/ubuntu-bootc:26.04",
+	}
+	p.Artifact.PackageGroups = []plan.PackageGroupInstall{
+		{Name: "workstation", Members: []string{"ubuntu-desktop-minimal"}},
+	}
+	p.Artifact.Packages = []plan.PackageInstall{{Name: "curl"}}
+
+	out, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cf string
+	for _, f := range out {
+		if strings.HasSuffix(f.Path, "Containerfile") {
+			cf = string(f.Data)
+		}
+	}
+	if cf == "" {
+		t.Fatal("no Containerfile rendered")
+	}
+	for _, want := range []string{
+		"apt-get -y install",
+		"'ubuntu-desktop-minimal'",
+		"'curl'",
+		"apt-get clean && rm -rf /var/lib/apt/lists/*",
+	} {
+		if !strings.Contains(cf, want) {
+			t.Errorf("rendered Containerfile lacks %q", want)
+		}
+	}
+	for _, unwanted := range []string{"dnf", "--exclude=", "rhsm", "redhat.repo"} {
+		if strings.Contains(cf, unwanted) {
+			t.Errorf("a deb platform renders RPM-only surface: %q", unwanted)
+		}
 	}
 }

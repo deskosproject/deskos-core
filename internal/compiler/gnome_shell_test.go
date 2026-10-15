@@ -119,7 +119,7 @@ func TestGnomeShellLowering(t *testing.T) {
 			t.Errorf("%s = %q (set %v), want %q", key, v, ok, want)
 		}
 	}
-	if !slices.ContainsFunc(p.Artifact.RpmPackages, func(r plan.RpmInstall) bool { return r.Name == "gtk3" }) {
+	if !slices.ContainsFunc(p.Artifact.Packages, func(r plan.PackageInstall) bool { return r.Name == "gtk3" }) {
 		t.Error("keyboard.terminal does not install the platform's application launcher package gtk3")
 	}
 

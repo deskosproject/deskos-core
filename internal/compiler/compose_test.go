@@ -54,6 +54,7 @@ spec:
   family: test
   release: "1"
   architectures: [x86_64]
+  packageManager: rpm
   bootc:
     image: example.org/test/bootc:1
   distribution: {redistributable: true, requiresSubscription: false}
@@ -154,7 +155,7 @@ func mustFail(t *testing.T, err error, want ...string) {
 
 func packages(p *plan.Plan) []string {
 	var out []string
-	for _, pkg := range p.Artifact.RpmPackages {
+	for _, pkg := range p.Artifact.Packages {
 		out = append(out, pkg.Name)
 	}
 	return out
@@ -241,7 +242,7 @@ func TestPackageSetUnionAndCollapse(t *testing.T) {
 	if got, want := strings.Join(packages(p), " "), "git podman vim-enhanced zsh"; got != want {
 		t.Fatalf("packages = %q, want %q", got, want)
 	}
-	for _, pkg := range p.Artifact.RpmPackages {
+	for _, pkg := range p.Artifact.Packages {
 		if pkg.Name == "podman" && len(pkg.Provenance) != 2 {
 			t.Errorf("podman should keep provenance from both sets, got %+v", pkg.Provenance)
 		}
@@ -1146,7 +1147,7 @@ func TestPackageGroupExcludePackages(t *testing.T) {
 	}
 	p := mustPlan(t, "ws", fx.dir(t))
 	got := map[string]string{}
-	for _, g := range p.Artifact.RpmGroups {
+	for _, g := range p.Artifact.PackageGroups {
 		got[g.Name] = strings.Join(g.ExcludePackages, " ")
 	}
 	if got["workstation"] != "setroubleshoot setroubleshoot-server" || got["office"] != "libreoffice-help-en setroubleshoot" {

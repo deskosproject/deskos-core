@@ -21,13 +21,14 @@ var (
 // compiler needs. Platform-specific behavior is read from here and nowhere
 // else.
 type PlatformSpec struct {
-	DisplayName   string         `json:"displayName"`
-	Family        string         `json:"family"`
-	Release       string         `json:"release"`
-	Architectures []string       `json:"architectures"`
-	Bootc         BootcBase      `json:"bootc"`
-	Distribution  Distribution   `json:"distribution"`
-	PackageGroups []PackageGroup `json:"packageGroups,omitempty"`
+	DisplayName    string         `json:"displayName"`
+	Family         string         `json:"family"`
+	Release        string         `json:"release"`
+	Architectures  []string       `json:"architectures"`
+	PackageManager string         `json:"packageManager"`
+	Bootc          BootcBase      `json:"bootc"`
+	Distribution   Distribution   `json:"distribution"`
+	PackageGroups  []PackageGroup `json:"packageGroups,omitempty"`
 	// UnavailablePackages records known packages the platform does not
 	// provide from a supported repository, so requests fail at compile time.
 	UnavailablePackages []UnavailablePackage `json:"unavailablePackages,omitempty"`
@@ -54,10 +55,22 @@ type Distribution struct {
 // PackageGroup maps a DeskOS package-group name to platform RPM groups.
 // ExcludePackages are group members the platform does not install with it.
 type PackageGroup struct {
-	Name            string   `json:"name"`
-	RpmGroups       []string `json:"rpmGroups"`
+	Name string `json:"name"`
+	// RpmGroups and Members are the two shapes a platform's group mapping can
+	// take: RPM group ids, or the platform's own metapackage names. A platform
+	// declares one, according to its package manager.
+	RpmGroups       []string `json:"rpmGroups,omitempty"`
+	Members         []string `json:"members,omitempty"`
 	ExcludePackages []string `json:"excludePackages,omitempty"`
 	Graphical       bool     `json:"graphical,omitempty"`
+}
+
+// AllMembers returns the group's members, whichever shape the platform used.
+func (g PackageGroup) AllMembers() []string {
+	if len(g.Members) > 0 {
+		return g.Members
+	}
+	return g.RpmGroups
 }
 
 // BootPlatform holds the platform's boot splash facts: kernel arguments that
@@ -235,9 +248,21 @@ func (platformProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "package group %q is mapped twice", g.Name))
 		}
 		seen[g.Name] = true
-		for _, rg := range g.RpmGroups {
-			if !rpmGroupRE.MatchString(rg) {
-				errs.Add(model.Errorf(res, "package group %q: invalid RPM group id %q", g.Name, rg))
+		if (len(g.RpmGroups) > 0) == (len(g.Members) > 0) {
+			errs.Add(model.Errorf(res, "package group %q: declare either rpmGroups or members, not both", g.Name))
+		}
+		if len(g.Members) > 0 && s.PackageManager != model.PackageManagerDeb {
+			errs.Add(model.Errorf(res, "package group %q: members are for a deb platform; %s is %s", g.Name, s.DisplayName, s.PackageManager))
+		}
+		if len(g.RpmGroups) > 0 && s.PackageManager == model.PackageManagerDeb {
+			errs.Add(model.Errorf(res, "package group %q: rpmGroups are for an RPM platform; %s is %s", g.Name, s.DisplayName, s.PackageManager))
+		}
+		if s.PackageManager == model.PackageManagerDeb && len(g.ExcludePackages) > 0 {
+			errs.Add(model.Errorf(res, "package group %q: deb has no package exclusion flag", g.Name))
+		}
+		for _, rg := range g.AllMembers() {
+			if !pkgRE.MatchString(rg) {
+				errs.Add(model.Errorf(res, "package group %q: invalid member %q", g.Name, rg))
 			}
 		}
 		excluded := map[string]bool{}

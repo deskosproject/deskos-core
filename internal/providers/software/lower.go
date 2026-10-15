@@ -46,8 +46,8 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 				m.Name, c.Platform.ID(), strings.Join(known, ", "), describe(m.Provenance)))
 			continue
 		}
-		p.Artifact.RpmGroups = append(p.Artifact.RpmGroups, plan.RpmGroupInstall{
-			Name: m.Name, RpmGroups: g.RpmGroups, ExcludePackages: g.ExcludePackages, Provenance: m.Provenance,
+		p.Artifact.PackageGroups = append(p.Artifact.PackageGroups, plan.PackageGroupInstall{
+			Name: m.Name, Members: g.AllMembers(), ExcludePackages: g.ExcludePackages, Provenance: m.Provenance,
 		})
 		if g.Graphical {
 			graphical = append(graphical, m.Provenance...)
@@ -87,6 +87,11 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, k := range r.Keyed(DomainRpmFiles) {
+		if pl.PackageManager == model.PackageManagerDeb {
+			errs.Add(fmt.Errorf("rpmFiles requires an RPM platform: %s is %s\n  requested by: %s",
+				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
+			continue
+		}
 		f := k.Value.(RpmFile)
 		p.Artifact.RpmFiles = append(p.Artifact.RpmFiles, plan.RpmFileInstall{
 			URL: f.URL, SHA256: f.SHA256, GPGKey: f.GPGKey, GPGKeySHA256: f.GPGKeySHA256,

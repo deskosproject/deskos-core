@@ -99,10 +99,10 @@ type coreView struct {
 
 func viewOf(p *plan.Plan) coreView {
 	var v coreView
-	for _, g := range p.Artifact.RpmGroups {
-		v.Groups = append(v.Groups, g.Name+"="+strings.Join(g.RpmGroups, ","))
+	for _, g := range p.Artifact.PackageGroups {
+		v.Groups = append(v.Groups, g.Name+"="+strings.Join(g.Members, ","))
 	}
-	for _, x := range p.Artifact.RpmPackages {
+	for _, x := range p.Artifact.Packages {
 		v.Packages = append(v.Packages, x.Name)
 	}
 	for _, x := range p.Artifact.SystemdUnits {

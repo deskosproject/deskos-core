@@ -280,7 +280,7 @@ func TestRenderRejectsRepositoryNamedLikeRHSM(t *testing.T) {
 	p := &plan.Plan{Format: plan.Format}
 	p.Artifact.BaseImage.Ref = "example.org/base:1"
 	p.Artifact.RpmRepositories = []plan.RpmRepository{{ID: "redhat", DisplayName: "x", BaseURL: "https://example.org/x", Enabled: true}}
-	p.Artifact.RpmPackages = []plan.RpmInstall{{Name: "x"}}
+	p.Artifact.Packages = []plan.PackageInstall{{Name: "x"}}
 	if err := p.Normalize(); err != nil {
 		t.Fatal(err)
 	}

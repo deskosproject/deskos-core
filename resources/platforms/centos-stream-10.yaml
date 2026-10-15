@@ -7,6 +7,7 @@ spec:
   family: centos
   release: "10"
   architectures: [x86_64]
+  packageManager: rpm
   bootc:
     image: quay.io/centos-bootc/centos-bootc:stream10
     # x86_64 manifest (config sha256:fc93399b...), created 2026-09-28; move it deliberately.

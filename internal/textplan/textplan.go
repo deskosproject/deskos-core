@@ -57,16 +57,16 @@ func Write(out io.Writer, p *plan.Plan) error {
 		}
 		pf("    %s\t%s%s\t%s\n", r.ID, r.BaseURL, state, origins(r.Provenance))
 	}
-	section(w, "RPM groups", len(a.RpmGroups))
-	for _, g := range a.RpmGroups {
+	section(w, "Package groups", len(a.PackageGroups))
+	for _, g := range a.PackageGroups {
 		excl := ""
 		if len(g.ExcludePackages) > 0 {
 			excl = " (without " + strings.Join(g.ExcludePackages, ", ") + ")"
 		}
-		pf("    %s\t-> %s%s\t%s\n", g.Name, strings.Join(g.RpmGroups, ", "), excl, origins(g.Provenance))
+		pf("    %s\t-> %s%s\t%s\n", g.Name, strings.Join(g.Members, ", "), excl, origins(g.Provenance))
 	}
-	section(w, "RPM packages", len(a.RpmPackages))
-	for _, pkg := range a.RpmPackages {
+	section(w, "Packages", len(a.Packages))
+	for _, pkg := range a.Packages {
 		pf("    %s\t%s\n", pkg.Name, origins(pkg.Provenance))
 	}
 	section(w, "RPM files (signed, without repository)", len(a.RpmFiles))

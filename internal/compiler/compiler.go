@@ -107,6 +107,7 @@ func (c *Compiler) Plan(cat *compose.Catalog, workstation string) (*plan.Plan, e
 		Platform: plan.Platform{
 			Name: pl.Metadata.Name, DisplayName: plSpec.DisplayName, Family: plSpec.Family,
 			Release: plSpec.Release, Architectures: plSpec.Architectures,
+			PackageManager:       plSpec.PackageManager,
 			Redistributable:      plSpec.Distribution.Redistributable,
 			RequiresSubscription: plSpec.Distribution.RequiresSubscription,
 			Source:               pl.Source.String(),

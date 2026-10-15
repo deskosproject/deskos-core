@@ -206,7 +206,7 @@ func TestRpmFilesRender(t *testing.T) {
 	}
 	checkRHSMRuns(t, "ws", p, cf)
 
-	pkgs := strings.Index(cf, "# RPM packages\n")
+	pkgs := strings.Index(cf, "# Packages\n")
 	if pkgs < 0 || strings.Index(cf, "# RPM files") < pkgs {
 		t.Error("RPM files are not installed after the package transaction")
 	}

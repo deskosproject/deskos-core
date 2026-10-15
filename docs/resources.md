@@ -95,10 +95,17 @@ spec:
 
 ### `Platform`
 
-Facts about an OS target (bootc base image, RPM groups, GNOME, boot, image
-update and Flatpak capabilities, redistribution). DeskOS ships `centos-stream-10` and
+Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
+`deb`), its package-group mapping, GNOME, boot, image update and Flatpak
+capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10` and
 `rhel-10` in [`resources/platforms/`](../resources/platforms/); see
 [architecture.md](architecture.md#core-organizations-and-roles).
+
+A package-group mapping names the platform's own members: `rpmGroups` for an RPM
+platform, `members` (its metapackage names) for a deb one. A platform declares one
+or the other, according to its package manager, and `rpmFiles` is RPM-only, so a
+deb platform that requests one fails at compile time instead of rendering
+nonsense.
 
 ### `PackageSet`
 
