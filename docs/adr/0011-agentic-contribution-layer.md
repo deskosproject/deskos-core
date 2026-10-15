@@ -32,9 +32,9 @@ Keep the two layers separate. The agentic maintenance layer is
 - **Evidence, not telemetry.** Reports and feedback are user-owned and
   opt-in; DeskOS never phones home.
 
-The concrete contribution workflow — scope, branch/PR rules, the
-`Assisted-by:` trailer — lives in [`AGENTS.md`](../../AGENTS.md), "Agentic
-contribution", and is the operating procedure this ADR formalizes.
+The concrete contribution workflow — scope and branch/PR rules — lives in
+[`AGENTS.md`](../../AGENTS.md), "Agentic contribution", and is the operating
+procedure this ADR formalizes.
 
 ## Consequences
 
