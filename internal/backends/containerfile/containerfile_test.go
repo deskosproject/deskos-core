@@ -16,7 +16,7 @@ import (
 )
 
 func TestPlymouthThemeNeedsInitramfs(t *testing.T) {
-	p := &plan.Plan{}
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.PlymouthTheme = &plan.PlymouthTheme{Name: "deskos", Dir: "/usr/share/plymouth/themes/deskos"}
 	if _, err := Render(p); err == nil || !strings.Contains(err.Error(), "needs an initramfs regeneration") {
 		t.Errorf("Render = %v", err)
@@ -50,7 +50,7 @@ func TestRepoKeyNameIgnoresTheAssetName(t *testing.T) {
 	if got := repoKeyName(k); got != k.SHA256+".asc" {
 		t.Errorf("repoKeyName = %q, want %q", got, k.SHA256+".asc")
 	}
-	p := &plan.Plan{}
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.RpmRepositories = []plan.RpmRepository{{
 		ID: "r", DisplayName: "r", BaseURL: "https://example.org/r", Enabled: true, GPGCheck: true,
 		GPGKeys: []plan.RepoKey{k},
@@ -78,7 +78,7 @@ func TestRepoKeysSharedBetweenRepositories(t *testing.T) {
 	content := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n"
 	sum := sha256.Sum256([]byte(content))
 	k := plan.RepoKey{Name: "shared.asc", Content: content, SHA256: hex.EncodeToString(sum[:])}
-	p := &plan.Plan{}
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.RpmRepositories = []plan.RpmRepository{
 		{ID: "a", DisplayName: "a", BaseURL: "https://example.org/a", Enabled: true, GPGCheck: true, GPGKeys: []plan.RepoKey{k}},
 		{ID: "b", DisplayName: "b", BaseURL: "https://example.org/b", Enabled: true, GPGCheck: true, GPGKeys: []plan.RepoKey{k}},
@@ -102,7 +102,7 @@ func TestRepoKeysSharedBetweenRepositories(t *testing.T) {
 // file: tar would extract a symlink or hardlink member as such, and install
 // would then copy whatever it points at.
 func TestBinaryArchiveMemberGuard(t *testing.T) {
-	p := &plan.Plan{}
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{
 		Artifact: "tool", Version: "1", URL: "https://example.org/tool.tar.gz",
 		SHA256: strings.Repeat("a", 64), Archive: "tar.gz", Member: "tool",
@@ -209,5 +209,22 @@ func TestDebPlatformRendersAPT(t *testing.T) {
 		if strings.Contains(cf, unwanted) {
 			t.Errorf("a deb platform renders RPM-only surface: %q", unwanted)
 		}
+	}
+}
+
+// A platform that names a package manager DeskOS does not know fails to render,
+// instead of falling back to another manager's commands. Adding a manager (Arch's
+// pacman, for example) means adding it to the table and to the Platform schema.
+func TestUnknownPackageManagerFails(t *testing.T) {
+	p := &plan.Plan{
+		Platform: plan.Platform{Name: "arch", DisplayName: "Arch", PackageManager: "pacman"},
+	}
+	p.Artifact.BaseImage = plan.BaseImage{
+		Image: "example.org/arch/bootc:latest",
+		Ref:   "example.org/arch/bootc:latest",
+	}
+	_, err := Render(p)
+	if err == nil || !strings.Contains(err.Error(), `package manager "pacman" is not supported`) {
+		t.Errorf("Render = %v, want an unsupported package manager error", err)
 	}
 }

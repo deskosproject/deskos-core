@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
 )
 
@@ -277,7 +278,7 @@ func TestWriteDirValidRenders(t *testing.T) {
 }
 
 func TestRenderRejectsRepositoryNamedLikeRHSM(t *testing.T) {
-	p := &plan.Plan{Format: plan.Format}
+	p := &plan.Plan{Format: plan.Format, Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.BaseImage.Ref = "example.org/base:1"
 	p.Artifact.RpmRepositories = []plan.RpmRepository{{ID: "redhat", DisplayName: "x", BaseURL: "https://example.org/x", Enabled: true}}
 	p.Artifact.Packages = []plan.PackageInstall{{Name: "x"}}
