@@ -16,7 +16,7 @@ func testPlan() *plan.Plan {
 		Platform:    plan.Platform{Name: "rhel-10", Release: "10"},
 	}
 	p.Artifact.BaseImage = plan.BaseImage{Image: "registry.example/rhel-bootc:10", Digest: digest, Ref: "registry.example/rhel-bootc:10@" + digest}
-	p.Artifact.RpmPackages = []plan.RpmInstall{{Name: "git"}, {Name: "bootc"}}
+	p.Artifact.Packages = []plan.PackageInstall{{Name: "git"}, {Name: "bootc"}}
 	p.Artifact.RpmFiles = []plan.RpmFileInstall{{URL: "https://example.org/x/zoom_x86_64.rpm", SHA256: strings.Repeat("b", 64)}}
 	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{Artifact: "oc", Version: "4.22.15", Destination: "/usr/local/bin/oc", SHA256: strings.Repeat("c", 64)}}
 	p.Provisioning.FlatpakApplications = []plan.FlatpakPreinstall{{ID: "org.gnome.Firmware", Branch: "stable", Remote: "flathub"}}

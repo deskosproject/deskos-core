@@ -86,7 +86,7 @@ func Build(p *plan.Plan) ([]byte, error) {
 	}
 	add(base)
 
-	for _, x := range a.RpmPackages {
+	for _, x := range a.Packages {
 		add(Component{Type: "library", Name: x.Name,
 			Properties: []Property{{Name: "deskos:source", Value: "rpm"}}})
 	}

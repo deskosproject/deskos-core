@@ -128,6 +128,7 @@ spec:
   family: test
   release: "1"
   architectures: [x86_64]
+  packageManager: rpm
   bootc: {image: example.org/p/bootc:1, digest: "sha256:` + strings.Repeat("0", 64) + `"}
   distribution: {redistributable: true, requiresSubscription: false}
   gnome:

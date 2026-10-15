@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
 )
 
@@ -58,6 +59,10 @@ type File struct {
 
 // Render produces the complete build context in canonical order.
 func Render(p *plan.Plan) ([]File, error) {
+	mgr, err := managerFacts(p.Platform.PackageManager)
+	if err != nil {
+		return nil, err
+	}
 	planJSON, err := p.JSON()
 	if err != nil {
 		return nil, err
@@ -168,7 +173,7 @@ func Render(p *plan.Plan) ([]File, error) {
 	}
 	r.addImage(imagePlanPath, 0o644, planJSON)
 
-	r.add(ContainerfilePath, 0o644, containerfile(p, r.hasRepos, r.hasRootfs))
+	r.add(ContainerfilePath, 0o644, containerfile(p, r.hasRepos, r.hasRootfs, mgr))
 
 	sort.Slice(r.files, func(i, j int) bool { return r.files[i].Path < r.files[j].Path })
 	for i := 1; i < len(r.files); i++ {
@@ -585,7 +590,7 @@ func boolInt(b bool) int {
 
 func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'"'"'`) + "'" }
 
-func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
+func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byte {
 	a := p.Artifact
 	var b strings.Builder
 	w := func(format string, args ...any) { fmt.Fprintf(&b, format, args...) }
@@ -601,32 +606,25 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	}
 	w("\nFROM %s\n", a.BaseImage.Ref)
 
-	if len(a.RpmGroups) > 0 {
-		var ids, excluded []string
-		for _, g := range a.RpmGroups {
-			ids = append(ids, g.RpmGroups...)
-			excluded = append(excluded, g.ExcludePackages...)
-		}
-		sort.Strings(excluded)
-		var args []string
-		for _, x := range slices.Compact(excluded) {
-			args = append(args, "--exclude="+x)
-		}
-		w("\n# RPM groups\n")
-		rpmTransaction(w, nil, "dnf -y group install", append(args, ids...))
+	if len(a.PackageGroups) > 0 {
+		w("\n# Package groups\n")
+		pkgTransaction(w, mgr, nil, mgr.groupInstall, groupArgs(mgr, a.PackageGroups))
 	}
 
 	if hasRepos {
 		w("\n# RPM repositories\nCOPY %s/ /\n", reposDir)
 	}
 
-	if len(a.RpmPackages) > 0 {
-		args := enableRepos(a.RpmRepositories)
-		for _, pkg := range a.RpmPackages {
+	if len(a.Packages) > 0 {
+		var args []string
+		if p.Platform.PackageManager != model.PackageManagerDeb {
+			args = enableRepos(a.RpmRepositories)
+		}
+		for _, pkg := range a.Packages {
 			args = append(args, pkg.Name)
 		}
-		w("\n# RPM packages\n")
-		rpmTransaction(w, nil, "dnf -y install", args)
+		w("\n# Packages\n")
+		pkgTransaction(w, mgr, nil, mgr.install, args)
 	}
 
 	if len(a.RpmFiles) > 0 {
@@ -645,7 +643,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 			args = append(args, rpm)
 		}
 		w("\n# RPM files (sha256- and signature-verified)\nCOPY %s/ %s/\n", rpmKeysDir, rpmKeysImageDir)
-		rpmTransaction(w, pre, "dnf -y install", args, "rm -rf "+rpmFilesDir)
+		pkgTransaction(w, mgr, pre, mgr.install, args, "rm -rf "+rpmFilesDir)
 	}
 
 	for _, group := range groupBinaries(a.Binaries) {
@@ -766,7 +764,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool) []byte {
 	}
 
 	w("\n# Cleanup and bootc validation\n")
-	w("RUN rm -rf /var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /var/log/hawkey.log /tmp/* /var/tmp/* \\\n")
+	w("RUN rm -rf %s /tmp/* /var/tmp/* \\\n", mgr.caches)
 	w("    && bootc container lint\n")
 
 	// Labels last, so workstations on one platform share earlier layers.
@@ -797,20 +795,93 @@ const (
 	rpmFilesDir     = "/tmp/deskos-rpm-files"
 )
 
-// rpmTransaction emits one dnf transaction whose RHSM state stays out of the
-// committed layer: state directories are tmpfs mounts, and the generated repo
-// file is removed in the same RUN. A pre-existing repo file with that name
-// fails the build instead of being removed.
-func rpmTransaction(w func(string, ...any), pre []string, cmd string, args []string, post ...string) {
-	w("RUN")
-	for i, d := range rhsmStateDirs {
-		sep := " "
-		if i > 0 {
-			sep = " \\\n    "
-		}
-		w("%s--mount=type=tmpfs,target=%s", sep, d)
+// groupVerb and installVerb are the transaction commands for a platform's package
+// manager. An RPM group is a group; a deb platform's group mapping is a set of
+// metapackage names, so it installs like any other package.
+// pkgManager describes how a platform's package manager is driven.
+//
+// Adding a manager means adding an entry here and to the Platform schema. A
+// platform that names one DeskOS does not know fails to render, instead of
+// falling back to another manager's commands: a platform gap is reported, not
+// hidden (invariant 9).
+type pkgManager struct {
+	// install is the command that installs named packages.
+	install string
+	// groupInstall is the command that installs a package-group mapping.
+	groupInstall string
+	// excludes reports whether the manager can exclude a group member.
+	excludes bool
+	// clean removes what one transaction left behind.
+	clean string
+	// caches are the paths an image must not carry after the last transaction.
+	caches string
+	// rhsm reports whether the platform keeps RHSM state during a build.
+	rhsm bool
+}
+
+func managerFacts(mgr string) (pkgManager, error) {
+	switch mgr {
+	case model.PackageManagerRpm:
+		return pkgManager{
+			install:      "dnf -y install",
+			groupInstall: "dnf -y group install",
+			excludes:     true,
+			clean:        "dnf clean all",
+			caches:       "/var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /var/log/hawkey.log",
+			rhsm:         true,
+		}, nil
+	case model.PackageManagerDeb:
+		return pkgManager{
+			install:      "apt-get -y install",
+			groupInstall: "apt-get -y install",
+			clean:        "apt-get clean && rm -rf /var/lib/apt/lists/*",
+			caches:       "/var/cache/apt /var/lib/apt/lists/*",
+		}, nil
 	}
-	w(" \\\n    if [ -e %s ]; then echo 'refusing to run dnf: %s already exists' >&2; exit 1; fi", rhsmRepoFile, rhsmRepoFile)
+	return pkgManager{}, fmt.Errorf("package manager %q is not supported", mgr)
+}
+
+// groupArgs builds a group transaction's arguments. RPM groups carry group ids and
+// per-group exclusions; a deb platform's members are plain package names and deb
+// has no exclusion flag, so a deb platform must not declare exclusions.
+func groupArgs(mgr pkgManager, groups []plan.PackageGroupInstall) []string {
+	if !mgr.excludes {
+		var args []string
+		for _, g := range groups {
+			args = append(args, g.Members...)
+		}
+		return args
+	}
+	var ids, excluded []string
+	for _, g := range groups {
+		ids = append(ids, g.Members...)
+		excluded = append(excluded, g.ExcludePackages...)
+	}
+	sort.Strings(excluded)
+	var args []string
+	for _, x := range slices.Compact(excluded) {
+		args = append(args, "--exclude="+x)
+	}
+	return append(args, ids...)
+}
+
+// pkgTransaction emits one package transaction. The platform's package manager
+// picks the command and the cleanup, and the RPM family's RHSM state stays out of
+// the committed layer: state directories are tmpfs mounts, and the generated repo
+// file is removed in the same RUN. A pre-existing repo file with that name fails
+// the build instead of being removed.
+func pkgTransaction(w func(string, ...any), mgr pkgManager, pre []string, cmd string, args []string, post ...string) {
+	w("RUN")
+	if mgr.rhsm {
+		for i, d := range rhsmStateDirs {
+			sep := " "
+			if i > 0 {
+				sep = " \\\n    "
+			}
+			w("%s--mount=type=tmpfs,target=%s", sep, d)
+		}
+		w(" \\\n    if [ -e %s ]; then echo 'refusing to run dnf: %s already exists' >&2; exit 1; fi", rhsmRepoFile, rhsmRepoFile)
+	}
 	for _, c := range pre {
 		w(" \\\n    && %s", c)
 	}
@@ -818,11 +889,15 @@ func rpmTransaction(w func(string, ...any), pre []string, cmd string, args []str
 	for _, a := range args {
 		w(" \\\n        %s", shq(a))
 	}
-	w(" \\\n    && dnf clean all")
+	w(" \\\n    && %s", mgr.clean)
 	for _, c := range post {
 		w(" \\\n    && %s", c)
 	}
-	w(" \\\n    && rm -f %s\n", rhsmRepoFile)
+	if mgr.rhsm {
+		w(" \\\n    && rm -f %s\n", rhsmRepoFile)
+	} else {
+		w("\n")
+	}
 }
 
 // enableRepos enables declared repositories that are disabled after the build.

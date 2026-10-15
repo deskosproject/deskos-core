@@ -12,6 +12,7 @@ spec:
   family: almalinux
   release: "10"
   architectures: [x86_64]
+  packageManager: rpm
   bootc:
     image: quay.io/almalinuxorg/almalinux-bootc:10
     # quay.io/almalinuxorg/almalinux-bootc:10, 2026-10-07.

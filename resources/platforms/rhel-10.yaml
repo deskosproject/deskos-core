@@ -7,6 +7,7 @@ spec:
   family: rhel
   release: "10"
   architectures: [x86_64]
+  packageManager: rpm
   bootc:
     image: registry.redhat.io/rhel10/rhel-bootc:10.2
     # x86_64 manifest (config sha256:14d164b5...), created 2026-10-12; move it deliberately.

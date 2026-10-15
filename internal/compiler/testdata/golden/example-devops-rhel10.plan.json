@@ -13,6 +13,7 @@
     "architectures": [
       "x86_64"
     ],
+    "packageManager": "rpm",
     "redistributable": false,
     "requiresSubscription": true,
     "source": "resources/platforms/rhel-10.yaml:1"
@@ -153,10 +154,10 @@
         ]
       }
     ],
-    "rpmGroups": [
+    "packageGroups": [
       {
         "name": "workstation",
-        "rpmGroups": [
+        "members": [
           "workstation-product-environment"
         ],
         "excludePackages": [
@@ -172,7 +173,7 @@
         ]
       }
     ],
-    "rpmPackages": [
+    "packages": [
       {
         "name": "NetworkManager",
         "provenance": [

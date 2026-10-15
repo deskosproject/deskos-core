@@ -45,6 +45,7 @@ type Platform struct {
 	Family               string   `json:"family"`
 	Release              string   `json:"release"`
 	Architectures        []string `json:"architectures"`
+	PackageManager       string   `json:"packageManager"`
 	Redistributable      bool     `json:"redistributable"`
 	RequiresSubscription bool     `json:"requiresSubscription"`
 	Source               string   `json:"source"`
@@ -61,8 +62,8 @@ type Artifact struct {
 	BaseImage        BaseImage                `json:"baseImage"`
 	Labels           []Label                  `json:"labels"`
 	RpmRepositories  []RpmRepository          `json:"rpmRepositories"`
-	RpmGroups        []RpmGroupInstall        `json:"rpmGroups"`
-	RpmPackages      []RpmInstall             `json:"rpmPackages"`
+	PackageGroups    []PackageGroupInstall    `json:"packageGroups"`
+	Packages         []PackageInstall         `json:"packages"`
 	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
 	Binaries         []VerifiedBinaryInstall  `json:"binaries"`
 	Files            []FileInstall            `json:"files"`
@@ -112,15 +113,15 @@ type RepoKey struct {
 	SHA256  string `json:"sha256"`
 }
 
-// RpmGroupInstall installs platform RPM groups; ExcludePackages are group members excluded from that install.
-type RpmGroupInstall struct {
+// PackageGroupInstall installs platform RPM groups; ExcludePackages are group members excluded from that install.
+type PackageGroupInstall struct {
 	Name            string             `json:"name"`
-	RpmGroups       []string           `json:"rpmGroups"`
+	Members         []string           `json:"members"`
 	ExcludePackages []string           `json:"excludePackages,omitempty"`
 	Provenance      []model.Provenance `json:"provenance"`
 }
 
-type RpmInstall struct {
+type PackageInstall struct {
 	Name       string             `json:"name"`
 	Provenance []model.Provenance `json:"provenance"`
 }
@@ -376,7 +377,7 @@ type Lowerer interface {
 
 // AddPackage adds an RPM package, merging provenance with existing entries.
 func (p *Plan) AddPackage(name string, prov ...model.Provenance) {
-	p.Artifact.RpmPackages = append(p.Artifact.RpmPackages, RpmInstall{Name: name, Provenance: prov})
+	p.Artifact.Packages = append(p.Artifact.Packages, PackageInstall{Name: name, Provenance: prov})
 }
 
 // MaskUnit adds a systemd unit to mask.
@@ -395,12 +396,12 @@ func (p *Plan) Normalize() error {
 	a := &p.Artifact
 	sort.Slice(a.Labels, func(i, j int) bool { return a.Labels[i].Name < a.Labels[j].Name })
 	sort.Slice(a.RpmRepositories, func(i, j int) bool { return a.RpmRepositories[i].ID < a.RpmRepositories[j].ID })
-	sort.Slice(a.RpmGroups, func(i, j int) bool { return a.RpmGroups[i].Name < a.RpmGroups[j].Name })
-	for i := range a.RpmGroups {
-		a.RpmGroups[i].ExcludePackages = sortedUnique(a.RpmGroups[i].ExcludePackages)
+	sort.Slice(a.PackageGroups, func(i, j int) bool { return a.PackageGroups[i].Name < a.PackageGroups[j].Name })
+	for i := range a.PackageGroups {
+		a.PackageGroups[i].ExcludePackages = sortedUnique(a.PackageGroups[i].ExcludePackages)
 	}
-	a.RpmPackages = mergeByName(a.RpmPackages, func(x RpmInstall) string { return x.Name },
-		func(x *RpmInstall) *[]model.Provenance { return &x.Provenance })
+	a.Packages = mergeByName(a.Packages, func(x PackageInstall) string { return x.Name },
+		func(x *PackageInstall) *[]model.Provenance { return &x.Provenance })
 	a.SystemdUnits = mergeByName(a.SystemdUnits, func(x SystemdEnable) string { return x.Unit },
 		func(x *SystemdEnable) *[]model.Provenance { return &x.Provenance })
 	a.SystemdMasks = mergeByName(a.SystemdMasks, func(x SystemdMask) string { return x.Unit },
@@ -570,11 +571,11 @@ func nonNil(p *Plan) {
 	if a.RpmRepositories == nil {
 		a.RpmRepositories = []RpmRepository{}
 	}
-	if a.RpmGroups == nil {
-		a.RpmGroups = []RpmGroupInstall{}
+	if a.PackageGroups == nil {
+		a.PackageGroups = []PackageGroupInstall{}
 	}
-	if a.RpmPackages == nil {
-		a.RpmPackages = []RpmInstall{}
+	if a.Packages == nil {
+		a.Packages = []PackageInstall{}
 	}
 	if a.RpmFiles == nil {
 		a.RpmFiles = []RpmFileInstall{}

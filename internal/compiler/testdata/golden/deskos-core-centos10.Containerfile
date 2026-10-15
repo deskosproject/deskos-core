@@ -5,7 +5,7 @@
 
 FROM quay.io/centos-bootc/centos-bootc:stream10@sha256:98cb998076992ed9052a7a989a7e8df3d1774a02c37bce7dec05ba8e3242f726
 
-# RPM groups
+# Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
@@ -17,7 +17,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
-# RPM packages
+# Packages
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
