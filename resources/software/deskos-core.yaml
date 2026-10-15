@@ -5,12 +5,12 @@ metadata:
 spec:
   groups:
     - workstation
+  # Distribution-independent packages only. A browser, a firewall and an
+  # application channel are platform choices, not foundation ones: the RHEL family
+  # keeps its own in PackageSet/rhel-family, and a platform whose vendor ships
+  # none of them is free to choose (ADR 0014). They cannot live here, because
+  # composition unions sets and no organization could take them back (ADR 0003).
   packages:
     - bootc
     - NetworkManager
-    - firefox
-    - flatpak
-    - firewalld
     - xdg-utils
-  enableUnits:
-    - firewalld.service

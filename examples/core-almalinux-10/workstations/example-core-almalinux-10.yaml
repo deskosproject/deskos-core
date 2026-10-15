@@ -7,3 +7,4 @@ spec:
   platformRef: almalinux-10
   profiles:
     - deskos-core
+    - rhel-family

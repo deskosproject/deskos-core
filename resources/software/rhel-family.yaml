@@ -1,0 +1,20 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: rhel-family
+spec:
+  # The RHEL family's own choices: the browser it ships, the firewall it manages,
+  # and the application channel it supports. These are platform facts, not
+  # foundation ones.
+  #
+  # They used to sit in the deskos-core PackageSet, where no organization could
+  # take them back: composition unions sets and offers no removal (ADR 0003), so a
+  # foundation that names them forces them on every platform. An Ubuntu
+  # workstation does not want firewalld, and its firefox is a stub for a snap.
+  # ADR 0014 asks for these to leave the common foundation.
+  packages:
+    - firefox
+    - firewalld
+    - flatpak
+  enableUnits:
+    - firewalld.service
