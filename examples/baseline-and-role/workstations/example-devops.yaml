@@ -7,6 +7,7 @@ spec:
   platformRef: rhel-10
   profiles:
     - deskos-core
+    - rhel-family
     - example-baseline
     - example-devops
 ---
@@ -20,5 +21,6 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - rhel-family
     - example-baseline
     - example-devops

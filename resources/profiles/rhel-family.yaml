@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: rhel-family
+spec:
+  layer: foundation
+  description: The RHEL family's own software choices (browser, firewall, Flatpak), for workstations on a platform of that family.
+  resources:
+    - kind: PackageSet
+      name: rhel-family

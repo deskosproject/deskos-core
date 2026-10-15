@@ -7,3 +7,4 @@ spec:
   platformRef: rhel-10
   profiles:
     - deskos-core
+    - rhel-family

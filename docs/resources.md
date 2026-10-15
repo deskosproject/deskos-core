@@ -115,13 +115,15 @@ spec:
   packages:
     - bootc
     - NetworkManager
-    - firefox
-    - flatpak
-    - firewalld
     - xdg-utils
-  enableUnits:
-    - firewalld.service
 ```
+
+The foundation names distribution-independent packages only. A browser, a firewall
+and an application channel are platform choices: the RHEL family keeps its own in
+`PackageSet/rhel-family`, which workstations on those platforms add through
+`Profile/rhel-family`. They cannot live in the foundation, because composition
+unions sets and offers no removal (ADR 0003), so every platform would be forced to
+carry them (ADR 0014).
 
 `rpmFiles` installs **signed RPMs that the vendor publishes without a
 repository**. Each entry needs an https URL that is not a floating

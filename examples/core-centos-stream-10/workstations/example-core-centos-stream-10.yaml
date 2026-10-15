@@ -7,3 +7,4 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - rhel-family

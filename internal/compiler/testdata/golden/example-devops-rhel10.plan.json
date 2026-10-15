@@ -24,6 +24,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "rhel-family",
+      "layer": "foundation",
+      "source": "resources/profiles/rhel-family.yaml:1"
+    },
+    {
       "name": "example-baseline",
       "layer": "organization",
       "source": "baseline-and-role/profiles/example-baseline.yaml:1"
@@ -238,10 +243,10 @@
         "name": "firefox",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
+            "resource": "PackageSet/rhel-family",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
+            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
@@ -249,10 +254,10 @@
         "name": "firewalld",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
+            "resource": "PackageSet/rhel-family",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
+            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
@@ -260,16 +265,16 @@
         "name": "flatpak",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
-          },
-          {
             "resource": "UpdatePolicy/deskos-core",
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/system/deskos-core-updates.yaml:1"
+          },
+          {
+            "resource": "PackageSet/rhel-family",
+            "profile": "rhel-family",
+            "layer": "foundation",
+            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
@@ -1012,10 +1017,10 @@
         "unit": "firewalld.service",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
+            "resource": "PackageSet/rhel-family",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
+            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
