@@ -8,5 +8,4 @@ spec:
   profiles:
     - deskos-core
     - rhel-family
-    - deskos-splash
     - deskos-reference-apps

@@ -25,9 +25,9 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
-      "name": "deskos-splash",
+      "name": "deskos-look",
       "layer": "foundation",
-      "source": "resources/profiles/deskos-splash.yaml:1"
+      "source": "resources/profiles/deskos-look.yaml:1"
     },
     {
       "name": "rhel-family",
@@ -366,7 +366,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -377,7 +377,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -388,7 +388,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -399,7 +399,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -563,7 +563,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -938,7 +938,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -950,7 +950,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
           }
@@ -964,7 +964,7 @@
       "provenance": [
         {
           "resource": "BootProfile/deskos-splash",
-          "profile": "deskos-splash",
+          "profile": "deskos-look",
           "layer": "foundation",
           "source": "resources/system/deskos-splash.yaml:1"
         }
@@ -979,7 +979,7 @@
       "provenance": [
         {
           "resource": "BootProfile/deskos-splash",
-          "profile": "deskos-splash",
+          "profile": "deskos-look",
           "layer": "foundation",
           "source": "resources/system/deskos-splash.yaml:1"
         }

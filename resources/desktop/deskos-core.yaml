@@ -4,11 +4,6 @@ metadata:
   name: deskos-core
 spec:
   defaults:
-    appearance:
-      wallpaper:
-        light: ../assets/deskos/deskos-light.svg
-        dark: ../assets/deskos/deskos-dark.svg
-      loginLogo: ../assets/deskos/deskos-login-logo.svg
     # GNOME Software offers updates but never downloads or applies them on its own.
     software:
       updates: manual
@@ -18,7 +13,8 @@ spec:
       lock:
         enabled: true
         delay: 0s
-    # Window buttons, shell favorites and Dash to Dock are deliberately absent.
-    # They are the platform's look and feel, or an organization's choice, not the
-    # foundation's: Ubuntu ships its own GNOME layout and button placement, and an
-    # organization that wants Dash to Dock adds it from its own layer.
+    # Wallpaper, login logo, window buttons, shell favorites and Dash to Dock are
+    # deliberately absent. They are the platform's look and feel, or an
+    # organization's choice, not the foundation's: Ubuntu ships its own GNOME
+    # layout and its own artwork, and an organization that wants the DeskOS look
+    # adds the deskos-look profile from its own layer.
