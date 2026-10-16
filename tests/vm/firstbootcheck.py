@@ -75,6 +75,12 @@ echo "gis_marker=$(ls -A /var/lib/gnome-initial-setup/ 2>/dev/null | paste -sd, 
 echo "gis_user=$(getent passwd gnome-initial-setup | cut -d: -f1,3,7)"
 echo "session_detail=$(for s in $(loginctl list-sessions --no-legend 2>/dev/null | awk '{{print $1}}'); do loginctl show-session "$s" -p Name -p User -p Type -p Class -p Service --value 2>/dev/null | paste -sd/ -; done | paste -sd'|' -)"
 echo "accounts_cached=$(ls -A /var/lib/AccountsService/users/ 2>/dev/null | paste -sd, -)"
+# GDM asks AccountsService whether any user exists, and starts the initial-setup
+# session only when none does. The cache *files* are not that answer; the cached
+# user list is.
+echo "accounts_list=$(gdbus call --system --dest org.freedesktop.Accounts --object-path /org/freedesktop/Accounts --method org.freedesktop.Accounts.ListCachedUsers 2>/dev/null | cut -c1-160)"
+echo "accounts_ubuntu=$(gdbus call --system --dest org.freedesktop.Accounts --object-path /org/freedesktop/Accounts --method org.freedesktop.Accounts.FindUserByName ubuntu 2>/dev/null | cut -c1-80)"
+echo "uid1000=$(awk -F: '$3 >= 1000 {{print $1"("$3","$6","$7")"}}' /etc/passwd | paste -sd, -)"
 echo "gdm_journal=$(journalctl -b -u gdm.service --no-pager 2>/dev/null | grep -iE 'initial|greeter|no user|session' | tail -6 | tr -s ' ' | cut -c1-170 | paste -sd'|' -)"
 echo {MARK_END}
 }} > /dev/ttyS0
