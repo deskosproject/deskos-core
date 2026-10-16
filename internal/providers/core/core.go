@@ -21,14 +21,20 @@ var (
 // compiler needs. Platform-specific behavior is read from here and nowhere
 // else.
 type PlatformSpec struct {
-	DisplayName    string         `json:"displayName"`
-	Family         string         `json:"family"`
-	Release        string         `json:"release"`
-	Architectures  []string       `json:"architectures"`
-	PackageManager string         `json:"packageManager"`
-	Bootc          BootcBase      `json:"bootc"`
-	Distribution   Distribution   `json:"distribution"`
-	PackageGroups  []PackageGroup `json:"packageGroups,omitempty"`
+	DisplayName    string   `json:"displayName"`
+	Family         string   `json:"family"`
+	Release        string   `json:"release"`
+	Architectures  []string `json:"architectures"`
+	PackageManager string   `json:"packageManager"`
+	// Owner is the person or team accountable for the base this platform starts
+	// from, and Tier is how that base is supported ("vendor" or "organization").
+	// ADR 0014 requires both, and says an unnamed owner is not a tier but an
+	// omission; recording them in the resource is what makes them reviewable.
+	Owner         string         `json:"owner,omitempty"`
+	Tier          string         `json:"tier,omitempty"`
+	Bootc         BootcBase      `json:"bootc"`
+	Distribution  Distribution   `json:"distribution"`
+	PackageGroups []PackageGroup `json:"packageGroups,omitempty"`
 	// PackageAliases maps a requested package name to the name this platform
 	// publishes it under. A foundation may name a package the way one family does;
 	// a platform that publishes it under another name says so here, instead of the
