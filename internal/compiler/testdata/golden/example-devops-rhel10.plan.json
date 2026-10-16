@@ -20,14 +20,14 @@
   },
   "profiles": [
     {
+      "name": "deskos-boot",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-boot.yaml:1"
+    },
+    {
       "name": "deskos-core",
       "layer": "foundation",
       "source": "resources/profiles/deskos-core.yaml:1"
-    },
-    {
-      "name": "deskos-look",
-      "layer": "foundation",
-      "source": "resources/profiles/deskos-look.yaml:1"
     },
     {
       "name": "rhel-family",
@@ -366,7 +366,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-boot",
-            "profile": "deskos-look",
+            "profile": "deskos-boot",
             "layer": "foundation",
             "source": "resources/system/deskos-boot.yaml:1"
           }
@@ -377,7 +377,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-boot",
-            "profile": "deskos-look",
+            "profile": "deskos-boot",
             "layer": "foundation",
             "source": "resources/system/deskos-boot.yaml:1"
           }
@@ -388,20 +388,9 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-boot",
-            "profile": "deskos-look",
+            "profile": "deskos-boot",
             "layer": "foundation",
             "source": "resources/system/deskos-boot.yaml:1"
-          }
-        ]
-      },
-      {
-        "name": "plymouth-theme-spinner",
-        "provenance": [
-          {
-            "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-look",
-            "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -552,20 +541,6 @@
             "profile": "example-baseline",
             "layer": "organization",
             "source": "baseline-and-role/desktop/example-desktop.yaml:1"
-          }
-        ]
-      },
-      {
-        "path": "/usr/share/plymouth/themes/deskos/watermark.png",
-        "mode": "0644",
-        "sha256": "0c5746f4613eb72c7a2d7c39d27d127ec74aec04c96de14a6afec160c0c85ac1",
-        "asset": "resources/assets/deskos/deskos-splash-watermark.png",
-        "provenance": [
-          {
-            "resource": "BootProfile/deskos-splash",
-            "profile": "deskos-look",
-            "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       }
@@ -938,7 +913,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-boot",
-            "profile": "deskos-look",
+            "profile": "deskos-boot",
             "layer": "foundation",
             "source": "resources/system/deskos-boot.yaml:1"
           }
@@ -950,7 +925,7 @@
         "provenance": [
           {
             "resource": "BootProfile/deskos-boot",
-            "profile": "deskos-look",
+            "profile": "deskos-boot",
             "layer": "foundation",
             "source": "resources/system/deskos-boot.yaml:1"
           }
@@ -964,30 +939,9 @@
       "provenance": [
         {
           "resource": "BootProfile/deskos-boot",
-          "profile": "deskos-look",
+          "profile": "deskos-boot",
           "layer": "foundation",
           "source": "resources/system/deskos-boot.yaml:1"
-        },
-        {
-          "resource": "BootProfile/deskos-splash",
-          "profile": "deskos-look",
-          "layer": "foundation",
-          "source": "resources/system/deskos-splash.yaml:1"
-        }
-      ]
-    },
-    "plymouthTheme": {
-      "name": "deskos",
-      "dir": "/usr/share/plymouth/themes/deskos",
-      "framesFrom": "/usr/share/plymouth/themes/spinner",
-      "watermark": "/usr/share/plymouth/themes/deskos/watermark.png",
-      "setting": "boot.watermark",
-      "provenance": [
-        {
-          "resource": "BootProfile/deskos-splash",
-          "profile": "deskos-look",
-          "layer": "foundation",
-          "source": "resources/system/deskos-splash.yaml:1"
         }
       ]
     },

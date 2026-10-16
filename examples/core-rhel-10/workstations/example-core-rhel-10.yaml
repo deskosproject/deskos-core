@@ -8,4 +8,6 @@ spec:
   profiles:
     - deskos-core
     - rhel-family
-    - deskos-look
+    # RHEL 10 keeps its own wallpaper and its own splash; it only needs the boot
+    # to stop printing text.
+    - deskos-boot

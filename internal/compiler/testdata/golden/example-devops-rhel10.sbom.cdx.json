@@ -253,16 +253,6 @@
     },
     {
       "type": "library",
-      "name": "plymouth-theme-spinner",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "podman",
       "properties": [
         {

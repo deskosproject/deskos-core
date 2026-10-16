@@ -8,7 +8,7 @@ spec:
   profiles:
     - deskos-core
     - rhel-family
-    - deskos-look
+    - deskos-boot
     - example-baseline
     - example-devops
 ---

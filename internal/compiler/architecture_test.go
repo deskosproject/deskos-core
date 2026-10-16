@@ -181,7 +181,11 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 			t.Errorf("the example DevOps workstation is missing %s", want)
 		}
 	}
-	for _, pkg := range packages(p) {
+	// The DeskOS look is a workstation's own choice, so the floor an organization
+	// builds on is Core's foundation, not the reference workstation's look.
+	foundation := mustPlan(t, "foundation-ws", resourcesRoot,
+		fixture{"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: foundation-ws\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, rhel-family]\n"}.dir(t))
+	for _, pkg := range packages(foundation) {
 		if pkg != "flatpak" && !slices.Contains(packages(example), pkg) {
 			t.Errorf("the example workstation lost Core package %s", pkg)
 		}
