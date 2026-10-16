@@ -1,33 +1,65 @@
 name: vm-bootcheck (experimental)
 
-# Manual only. Builds DeskOS Core for CentOS Stream 10 from this checkout,
-# makes a QCOW2, runs tests/vm/bootcheck.py on the unmodified disk, then
-# tests/vm/sessioncheck.py on an instrumented boot of the same disk. The QCOW2
-# is test input only and is not uploaded. This is a pure check: the only
-# publish path is supply-chain.yml, which scans and boots the same image and
-# pushes it once. Nested virtualization on GitHub-hosted runners is not
-# officially supported, so a failure here is not by itself evidence of an
-# artifact defect.
+# Boots the artifact and asks the guest what it did, per platform.
+#
+# For CentOS Stream 10: builds the image from this checkout, makes a QCOW2 without the
+# builder's kernel arguments, runs tests/vm/bootcheck.py on the unmodified disk, then
+# tests/vm/sessioncheck.py on an instrumented boot of the same disk, then
+# tests/vm/firstbootcheck.py, which is the one that answers whether the first-boot wizard
+# ran and whether any account could log in.
+#
+# For Ubuntu 26.04 there is no published image to hand to bootc-image-builder, so the disk
+# is written by `bootc install to-disk` out of a compressed OCI layout, which is the
+# recipe the platform's own base documents. That disk has no DeskOS splash, so the boot
+# check runs without --expect-splash, and the first-boot check is the one that says
+# whether the artifact is usable.
+#
+# Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
+# the raw disk are test input and are not uploaded; the only publish path is
+# supply-chain.yml. Nested virtualization on GitHub-hosted runners is not officially
+# supported, so a failure here is not by itself evidence of an artifact defect — but it has
+# worked, and /dev/kvm is enabled below the same way it has been since the first run.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "resources/**"
+      - "examples/**"
+      - "internal/**"
+      - "go.mod"
+      - "tests/vm/**"
+      - ".github/workflows/vm-bootcheck.yml"
+  push:
+    branches: [main]
+    paths:
+      - "resources/**"
+      - "examples/**"
+      - "internal/**"
+      - "go.mod"
+      - "tests/vm/**"
+      - ".github/workflows/vm-bootcheck.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: vm-bootcheck
+  group: vm-bootcheck-${{ github.ref }}
   cancel-in-progress: false
 
 env:
-  IMAGE: localhost/deskos-core-centos10:ci
+  WORK: /mnt/deskos-work
   # bootc-image-builder pinned to the digest used for local test disks.
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
-  WORK: /mnt/deskos-work
+  # The Ubuntu base is pinned by digest in the platform resource, and this is the same
+  # base the platform renders FROM, pulled from the registry the platform names.
+  UBUNTU_BASE: quay.io/deskos/deskos-ubuntu-base:26.04
 
 jobs:
   core-centos10:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 150
+    env:
+      IMAGE: localhost/deskos-core-centos10:ci
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -111,10 +143,18 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
             --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
 
+      - name: First-boot check (is the wizard the session, can an account log in)
+        id: firstboot
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/firstboot" --boot-timeout 900
+
       - name: Summary
         if: always()
         run: |
-          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" "$WORK/journal-failed-boot/session.md"; do
+          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" \
+                   "$WORK/firstboot/firstboot.md" "$WORK/journal-failed-boot/session.md"; do
             if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
           done
 
@@ -127,7 +167,121 @@ jobs:
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck
             ${{ env.WORK }}/session
+            ${{ env.WORK }}/firstboot
             ${{ env.WORK }}/journal-failed-boot
             !${{ env.WORK }}/**/*.qcow2
+          retention-days: 14
+          if-no-files-found: warn
+
+  core-ubuntu-2604:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      IMAGE: localhost/deskos-core-ubuntu-2604:ci
+      OCI: /mnt/deskos-work/oci
+      DISK: /mnt/deskos-work/disk.raw
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the Ubuntu build context
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render ./examples/core-ubuntu-2604 \
+            --workstation example-core-ubuntu-2604 --output ctx
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU, OVMF and skopeo
+        run: |
+          # skopeo is not on the runner image, and the Ubuntu path needs it to write the
+          # compressed OCI layout the install reads.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
+
+      - name: Build the image from the pinned base
+        timeout-minutes: 40
+        run: |
+          # The platform's FROM is the base pinned by digest, so this pulls exactly what
+          # the platform names; the tag is written here only for the evidence file.
+          sudo podman pull "$UBUNTU_BASE"
+          grep '^FROM ' ctx/Containerfile
+          sudo podman build --pull=missing -t "$IMAGE" ctx
+
+      - name: Record image evidence
+        run: |
+          mkdir -p "$WORK/evidence"
+          cp ctx/plan.json ctx/generated-manifest.json "$WORK/evidence/"
+          grep '^FROM ' ctx/Containerfile > "$WORK/evidence/base.txt"
+          sudo podman image inspect "$IMAGE" --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' | tee "$WORK/evidence/image.txt"
+          sudo podman run --rm --network=none "$IMAGE" dpkg -l > "$WORK/evidence/dpkg-l.txt"
+          sudo podman run --rm --network=none "$IMAGE" sh -c 'command -v flatpak || echo "no flatpak"; ls /usr/share/flatpak 2>&1' \
+            | tee "$WORK/evidence/flatpak.txt"
+
+      - name: Write the disk from a compressed OCI layout
+        timeout-minutes: 30
+        run: |
+          # Layers must be compressed or the composefs import refuses them, and it is what
+          # the install mounts as its source; this is the recipe the base documents.
+          sudo skopeo copy containers-storage:"$IMAGE" "oci:$OCI:test"
+          truncate -s 32G "$DISK"
+          sudo podman run --rm --privileged --pid=host \
+            --security-opt label=type:unconfined_t \
+            -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+            -v "$OCI:/src-oci:ro" -v "$(dirname "$DISK"):/output" \
+            "$IMAGE" bootc install to-disk --via-loopback "/output/$(basename "$DISK")" \
+            --source-imgref oci:/src-oci:test \
+            --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+
+      - name: Boot check (unmodified raw disk)
+        id: boot
+        timeout-minutes: 15
+        run: |
+          # No --expect-splash: the Ubuntu base carries Canonical's boot experience, not
+          # DeskOS's, and this disk is the platform's own artifact.
+          python3 tests/vm/bootcheck.py --disk "$DISK" \
+            --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
+
+      - name: First-boot check (is the wizard the session, can an account log in)
+        id: firstboot
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/firstbootcheck.py --disk "$DISK" \
+            --out "$WORK/firstboot" --boot-timeout 900
+
+      - name: Summary
+        if: always()
+        run: |
+          for f in "$WORK/bootcheck/summary.md" "$WORK/firstboot/firstboot.md"; do
+            if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+
+      - name: Upload boot check evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vm-evidence-core-ubuntu-2604
+          path: |
+            ${{ env.WORK }}/evidence
+            ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/firstboot
+            !${{ env.WORK }}/**/*.qcow2
+            !${{ env.WORK }}/*.raw
           retention-days: 14
           if-no-files-found: warn
