@@ -196,10 +196,16 @@ class CheckPlanTest(ServerCase):
         r = self.check({"artifact": {"binaries": [{"artifact": "x"}]}})
         self.assertIn("declares no url", r.failures[0])
 
-    def test_a_body_over_the_bound_fails(self):
+    def test_a_body_over_the_bound_fails_as_unverified_not_as_broken(self):
+        # Codex's objection, kept as a test: refusing to download is not evidence the
+        # artifact is broken, and it is also not a pass — a gate that goes green without
+        # verifying is theatre.
         r = self.check({"artifact": {"binaries": [
-            {"artifact": "x", "url": self.base + "/big", "sha256": "00"}]}}, limit=100)
-        self.assertIn("larger than", r.failures[0])
+            {"artifact": "zoom", "url": self.base + "/big", "sha256": "00"}]}}, limit=100)
+        self.assertEqual(len(r.failures), 1)
+        self.assertIn("not verified", r.failures[0])
+        self.assertIn("raise --max-bytes", r.failures[0])
+        self.assertNotIn("broken", r.failures[0])
 
     def test_a_repository_serving_repomd_is_verified(self):
         r = self.check({"artifact": {"rpmRepositories": [

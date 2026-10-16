@@ -11,7 +11,11 @@ old checksum, and **would have merged**, because nothing fetched the URL.
 What it covers, and what it does not:
 
 - `binaries[].url` and `rpmFiles[].url`: **required** to carry a sha256 (the model
-  requires it), required to resolve (2xx), and the bytes must hash to it.
+  requires it), required to resolve (2xx), and the bytes must hash to it. An artifact
+  larger than `--max-bytes` is a **failure that says it was not verified**, with its
+  Content-Length reported — not a claim that it is broken, which was never read, but the
+  run cannot be green either: a gate that passes without verifying is theatre. The bound
+  exists to stop an unbounded stream; raising it is a decision the size makes informed.
 - `rpmRepositories[].gpgKeys[].content`: required to **look like** an armored public key
   — the armor lines, and a body with key-sized lines. That is a shape check, not a
   parse: proving it *is* a key means importing it, which needs GnuPG (the build has
@@ -47,7 +51,7 @@ import urllib.request
 UA = "deskosctl-artifact-check"
 # A body larger than this is refused rather than downloaded: a plan is data, and a URL
 # serving an unbounded stream would otherwise hold a job open until its own timeout.
-MAX_BYTES = 256 * 1024 * 1024
+MAX_BYTES = 1024 * 1024 * 1024
 # Time allowed for one artifact, handed to the socket. See the module comment.
 ARTIFACT_SECONDS = 120.0
 REPODATA = "repodata/repomd.xml"
@@ -58,8 +62,10 @@ ARMOR_MIN_LINE = 40
 class Response:
     """One GET: the status is an answer, and an HTTPError is one too."""
 
-    def __init__(self, status=None, digest=None, prefix=None, error=None):
+    def __init__(self, status=None, digest=None, prefix=None, error=None,
+                 length=None, too_large=False):
         self.status, self.digest, self.prefix, self.error = status, digest, prefix, error
+        self.length, self.too_large = length, too_large
 
     @property
     def ok(self):
@@ -89,6 +95,7 @@ def fetch(url, timeout, digest=False, limit=MAX_BYTES, deadline=None, prefix=Fal
         with urllib.request.urlopen(req, timeout=timeout) as r:
             read_chunk = getattr(r, "read1", r.read)
             status = r.status
+            length = r.headers.get("Content-Length")
             while digest or prefix:
                 if deadline is not None and time.monotonic() > deadline:
                     return Response(status, None, None, "ran out of time reading the body")
@@ -97,7 +104,10 @@ def fetch(url, timeout, digest=False, limit=MAX_BYTES, deadline=None, prefix=Fal
                     break
                 read += len(chunk)
                 if read > limit:
-                    return Response(status, None, None, f"body is larger than {limit} bytes")
+                    # Not downloading something is not evidence that it is broken: the
+                    # caller decides, and the size is reported so the decision is informed.
+                    return Response(status, length=length, too_large=True,
+                                    error=f"larger than the {limit} byte bound")
                 if prefix and len(head) < 64:
                     head += chunk[:64 - len(head)]
                     if not digest and len(head) >= 64:
@@ -193,7 +203,14 @@ def check_plan(path, timeout, r, artifact_seconds=ARTIFACT_SECONDS, limit=MAX_BY
                 continue
             got = fetch(url, timeout, digest=True, limit=limit,
                         deadline=time.monotonic() + artifact_seconds)
-            if not got.ok:
+            if got.too_large:
+                # Not a claim that the artifact is broken — it was never read — but the
+                # run cannot be green either: a gate that passes without verifying is
+                # theatre. The size is reported so raising the bound is a decision.
+                size = f", Content-Length {got.length}" if got.length else ""
+                r.failed(what, f"not verified: {got.error}{size} ({url}); "
+                               f"raise --max-bytes to verify it")
+            elif not got.ok:
                 r.failed(what, f"{got.reason()} ({url})")
             elif got.digest != sha256:
                 r.failed(what, f"sha256 {got.digest} != declared {sha256}")
