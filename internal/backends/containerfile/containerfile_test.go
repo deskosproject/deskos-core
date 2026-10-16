@@ -205,11 +205,80 @@ func TestDebPlatformRendersAPT(t *testing.T) {
 			t.Errorf("rendered Containerfile lacks %q", want)
 		}
 	}
+	// apt installs nothing without indexes, and each transaction removes them.
+	update, install := strings.Index(cf, "apt-get update"), strings.Index(cf, "apt-get -y install")
+	if update < 0 || update > install {
+		t.Errorf("apt-get update must come before the install in the same RUN\n%s", cf)
+	}
 	for _, unwanted := range []string{"dnf", "--exclude=", "rhsm", "redhat.repo"} {
 		if strings.Contains(cf, unwanted) {
 			t.Errorf("a deb platform renders RPM-only surface: %q", unwanted)
 		}
 	}
+}
+
+// A rendered RUN must be valid shell. Rendering does not prove it: a transaction
+// whose first command carries a leading "&&" renders fine and only fails when the
+// image is built, which is how the deb path shipped an invalid first RUN.
+func TestRenderedRunIsValidShell(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no sh to check the rendered shell")
+	}
+	for _, mgr := range []string{model.PackageManagerRpm, model.PackageManagerDeb} {
+		p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: mgr}}
+		p.Artifact.BaseImage = plan.BaseImage{Image: "example.org/base:1", Ref: "example.org/base:1"}
+		p.Artifact.PackageGroups = []plan.PackageGroupInstall{{Name: "workstation", Members: []string{"group-member"}}}
+		p.Artifact.Packages = []plan.PackageInstall{{Name: "a-package"}}
+		out, err := Render(p)
+		if err != nil {
+			t.Fatalf("%s: %v", mgr, err)
+		}
+		for _, f := range out {
+			if !strings.HasSuffix(f.Path, "Containerfile") {
+				continue
+			}
+			for _, body := range runBodies(string(f.Data)) {
+				cmd := exec.Command("sh", "-n")
+				cmd.Stdin = strings.NewReader(body)
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Errorf("%s: a RUN is not valid shell: %v\n%s\n--- rendered ---\n%s", mgr, err, out, body)
+				}
+			}
+		}
+	}
+}
+
+// runBodies returns the shell of every RUN instruction: the Dockerfile flags are
+// dropped and backslash continuations are joined into one script.
+func runBodies(cf string) []string {
+	var bodies []string
+	lines := strings.Split(cf, "\n")
+	for i := 0; i < len(lines); i++ {
+		if !strings.HasPrefix(lines[i], "RUN") {
+			continue
+		}
+		body := strings.TrimPrefix(lines[i], "RUN")
+		for strings.HasSuffix(strings.TrimRight(body, " \t"), "\\") && i+1 < len(lines) {
+			i++
+			body += "\n" + lines[i]
+		}
+		bodies = append(bodies, dropRunFlags(body))
+	}
+	return bodies
+}
+
+// dropRunFlags removes the leading --mount=... flags of a RUN: they are Dockerfile
+// syntax, not shell.
+func dropRunFlags(body string) string {
+	body = strings.TrimLeft(body, " \t\n\\")
+	for strings.HasPrefix(body, "--mount=") {
+		end := strings.IndexAny(body, " \t\n")
+		if end < 0 {
+			return ""
+		}
+		body = strings.TrimLeft(body[end:], " \t\n\\")
+	}
+	return body
 }
 
 // A platform that names a package manager DeskOS does not know fails to render,
