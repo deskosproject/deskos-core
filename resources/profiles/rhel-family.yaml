@@ -8,3 +8,7 @@ spec:
   resources:
     - kind: PackageSet
       name: rhel-family
+    # Flatpak updates travel with the Flatpak channel: the family declares the
+    # channel, so it also declares the consent to update it.
+    - kind: UpdatePolicy
+      name: rhel-family

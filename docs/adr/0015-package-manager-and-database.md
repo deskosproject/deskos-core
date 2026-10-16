@@ -70,6 +70,11 @@ the design:
 - `deskos-ubuntu-base` gains a requirement it does not meet yet: a usable package
   database inside the image. Until it does, an Ubuntu derived image is technically
   buildable but blind, and this ADR says that is not good enough.
+  **Status (2026-10-16): met.** `deskos-ubuntu-base` keeps dpkg's administration
+  directory in `/usr/lib/sysimage/dpkg`, and a derived image installs incrementally
+  (`dpkg -l` reports 1509 packages there, and a derived `FROM` installing a package
+  reports "already the newest version"). The decision above is unchanged; its
+  consequence is satisfied.
 - Package-level determinism keeps the shape it has today: inputs are pinned and
   the plan records what was requested, but a package transaction is resolved by the
   distribution's archive, exactly as the RPM path is resolved by its repositories.
