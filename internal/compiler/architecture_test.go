@@ -158,6 +158,22 @@ func TestExampleVirtManagerGapIsReported(t *testing.T) {
 	}
 }
 
+// A repository kind belongs to one package manager's world. Asking a deb platform
+// for an RPM repository is a gap to report, not a file to copy where nothing
+// reads it.
+func TestRpmRepositoryOnADebPlatformIsReported(t *testing.T) {
+	deb := strings.Replace(platformYAML, "  packageManager: rpm\n", "  packageManager: deb\n", 1)
+	deb = strings.Replace(deb, "rpmGroups: [workstation-product-environment]", "members: [test-desktop]", 1)
+	dir := fixture{
+		"platform.yaml": deb,
+		"p.yaml":        profile("core", "foundation", "RpmRepository/epel"),
+		"repo.yaml":     "apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata:\n  name: epel\nspec:\n  id: epel\n  displayName: EPEL\n  baseURL: https://example.org/epel/\n  gpgCheck: false\n",
+		"ws.yaml":       workstation("ws", "core"),
+	}.dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "an RPM repository requires an RPM platform", "Platform/test-platform is deb", "RpmRepository/epel")
+}
+
 // A platform may publish a requested package under another name. The foundation
 // keeps one name, the platform that uses another says so, and the plan carries
 // the platform's name.

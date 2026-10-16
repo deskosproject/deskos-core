@@ -74,6 +74,14 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, k := range r.Keyed(DomainRepositories) {
+		// A repository kind belongs to one package manager's world. Asking another
+		// platform for it is a gap to report, not a file to copy where nothing reads
+		// it (invariant 9).
+		if pl.PackageManager != model.PackageManagerRpm {
+			errs.Add(fmt.Errorf("an RPM repository requires an RPM platform: %s is %s\n  requested by: %s",
+				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
+			continue
+		}
 		repo := k.Value.(Repository)
 		keys := make([]plan.RepoKey, 0, len(repo.GPGKeys))
 		for _, key := range repo.GPGKeys {
@@ -90,7 +98,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, k := range r.Keyed(DomainRpmFiles) {
-		if pl.PackageManager == model.PackageManagerDeb {
+		if pl.PackageManager != model.PackageManagerRpm {
 			errs.Add(fmt.Errorf("rpmFiles requires an RPM platform: %s is %s\n  requested by: %s",
 				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
 			continue
