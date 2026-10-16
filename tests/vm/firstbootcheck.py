@@ -109,10 +109,20 @@ def check(checks, name, ok, detail):
     checks.append({"check": name, "pass": bool(ok), "detail": detail})
 
 
+# Units the artifact does not own that can only fail for a reason the emulator
+# causes are reported by observations(), never judged here: sessioncheck.py owns
+# that judgement, with the known guest signature documented in tests/vm/README.md.
+
+
 def evaluate(values):
-    """The three things a first boot must show. Every value that can differ between
-    images is quoted in the detail, and the full failed-unit list is reported even
-    where it is not asserted, so a run cannot hide what it did not judge.
+    """What a first boot must show: the first-boot wizard is the session that came
+    up, and no account can log in with a password. Failed units are not judged here
+    — they are reported by observations() — because the rule that tolerates a known
+    guest signature needs the CPU, the unit's properties and its journal, and
+    sessioncheck.py already applies it to the same disk in the same job. This check
+    could only say "a unit failed", which on a VM is the platform's own diagnostics
+    (mcelog without a Machine Check device), and a second, cruder rule for the same
+    claim is how two rules drift apart.
     """
     checks = []
     gis = values.get("gis_processes", "")
@@ -125,15 +135,22 @@ def evaluate(values):
     loginable = values.get("loginable_accounts")
     check(checks, "no account can log in with a password",
           loginable == "", f"loginable_accounts={loginable!r} homes={values.get('homes')!r}")
-
-    # Service units only. On the Ubuntu image the sssd responder sockets report
-    # `dependency` because sssd.service is skipped by its own condition (sssd is
-    # installed unconfigured); that is a socket, not a service, and the full list is
-    # reported below either way.
-    failed = values.get("system_failed_services")
-    check(checks, "no failed system service units",
-          failed == "", f"failed_services={failed!r} all_failed={values.get('system_failed_units')!r}")
     return checks
+
+
+def observations(values):
+    """What a run reports without judging it, so that nothing it did not judge is
+    hidden. The failed units are here rather than in evaluate(): judging them is
+    sessioncheck.py's job, with the known-guest rule it documents, applied to the
+    same disk in the same job.
+    """
+    def reported(key):
+        raw = values.get(key)
+        if raw is None:
+            return "unknown"
+        return raw or "none"
+    return {"failed_services": reported("system_failed_services"),
+            "failed_units": reported("system_failed_units")}
 
 
 def main():
@@ -169,7 +186,7 @@ def main():
     ok = summary["result"] == "pass" and all(c["pass"] for c in checks)
     result = {"mode": "firstboot", "instrumented": True,
               "boot": summary["result"], "boot_failures": summary["failures"],
-              "values": values, "checks": checks,
+              "values": values, "checks": checks, "observations": observations(values),
               "result": "pass" if ok else "fail"}
     with open(os.path.join(a.out, "firstboot.json"), "w") as f:
         json.dump(result, f, indent=2)
@@ -177,6 +194,10 @@ def main():
     lines = [f"# First-boot check (instrumented boot): {result['result'].upper()}", "",
              f"- Boot: {summary['result']} {summary['failures']}"]
     lines += [f"- {'PASS' if c['pass'] else 'FAIL'}: {c['check']} ({c['detail']})" for c in checks]
+    obs = result["observations"]
+    lines += [f"- Reported, not judged here: failed services {obs['failed_services']}; "
+              f"all failed units {obs['failed_units']} "
+              f"(sessioncheck.py judges these, with its known-guest rule)"]
     lines += ["", "Frames: summary.md. Serial: serial.log."]
     with open(os.path.join(a.out, "firstboot.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
