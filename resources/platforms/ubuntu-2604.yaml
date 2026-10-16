@@ -15,11 +15,14 @@ spec:
   packageManager: deb
   bootc:
     image: quay.io/deskos/deskos-ubuntu-base:26.04
-    # The manifest digest of the base built with no third-party apt source (no
-    # Flatpak and no Flatpak PPA). Confirmed against the registry on 2026-10-16:
-    # `:26.04` and `:latest` both resolve to this digest. It is a digest of the
-    # pushed image, not of a local build, and it moves deliberately.
-    digest: sha256:fb40ad209ce3e89d250024f3affcd71e437a43205655bb4a4b7531fd2fc3fcb2
+    # The manifest digest of the base with no third-party apt source and no
+    # inherited account. The account mattered: GDM starts GNOME Initial Setup only
+    # when no user exists and asks AccountsService, which counted the uid-1000
+    # `ubuntu` account the upstream container image ships — so the wizard never ran.
+    # With it removed, `tests/vm/firstbootcheck.py` reports the wizard running.
+    # Confirmed against the registry on 2026-10-16: `:26.04` and `:latest` both
+    # resolve to this digest. It moves deliberately.
+    digest: sha256:0ef21d0691c298a1e2d7d8737807ff9d9bf384784bc545fa816f8b5dca0c1fc5
   distribution:
     # Ubuntu's archive is freely redistributable and needs no subscription. The
     # base, however, is maintained by the Project DeskOS and not by Canonical:

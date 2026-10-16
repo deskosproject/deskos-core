@@ -295,19 +295,22 @@ Firefox RPM on both EL platforms.
 | Image builds, `bootc container lint` passes | **validated** (CI) | **validated** on the factory host [^rhel-build] | **validated** in a lab, on the digest the platform pins |
 | Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version") |
 | Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] | not measured |
-| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (lab); no logged-in session measured |
+| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (lab): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
 | Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository | none |
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 | not measured by a session check. The lab install's first-boot journal has no failed *services*: `sssd.service` is skipped by its own condition (sssd is installed unconfigured) and its responder sockets report `dependency`, and the recipe's own tmpfiles line logs `Invalid age '-d'` |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] | **not offered**: 26.04 publishes no `flatpak preinstall` and the base carries no third-party apt source, so a `FlatpakSet` fails composition with that reason (measured, invariant 9) |
 | OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as CentOS Stream 10 | same as the Flatpak row: not offered |
 
 Ubuntu 26.04 is measured outside CI, and only up to where its base allows. Its
-derived image builds and boots to GNOME Initial Setup, which is also the evidence
-that no account can log in there: the image's only uid-1000 account is the locked,
-home-less `ubuntu` the upstream container image ships, and GDM does not offer it.
-What Ubuntu does not have is a system Flatpak channel, and the platform says so
-rather than pretending (invariant 9). Every Ubuntu claim above rests on one manual
-lab run, not on CI.
+derived image builds and boots to GNOME **Initial Setup**: the wizard runs, and no
+account can log in — both asserted by asking the guest with
+`tests/vm/firstbootcheck.py`. That check is also what found the wizard's absence and
+its cause: GDM counts users through AccountsService, and the uid-1000 account the
+upstream container image ships was suppressing it. That is precisely what a
+screenshot cannot see, because GDM's greeter draws a `Username` field too. What
+Ubuntu does not have is a system Flatpak channel, and the platform says so rather
+than pretending (invariant 9). Every Ubuntu claim above rests on one manual lab run,
+not on CI.
 
 The RHEL column is historical: the RHEL factory host was retired and this
 repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
