@@ -260,16 +260,16 @@
         "name": "flatpak",
         "provenance": [
           {
-            "resource": "UpdatePolicy/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/system/deskos-core-updates.yaml:1"
-          },
-          {
             "resource": "PackageSet/rhel-family",
             "profile": "rhel-family",
             "layer": "foundation",
             "source": "resources/software/rhel-family.yaml:1"
+          },
+          {
+            "resource": "UpdatePolicy/rhel-family",
+            "profile": "rhel-family",
+            "layer": "foundation",
+            "source": "resources/system/rhel-family-updates.yaml:1"
           }
         ]
       },
@@ -950,10 +950,10 @@
         "unit": "deskos-flatpak-update.timer",
         "provenance": [
           {
-            "resource": "UpdatePolicy/deskos-core",
-            "profile": "deskos-core",
+            "resource": "UpdatePolicy/rhel-family",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/system/deskos-core-updates.yaml:1"
+            "source": "resources/system/rhel-family-updates.yaml:1"
           }
         ]
       },
@@ -1025,10 +1025,10 @@
         "requireACPower": true,
         "provenance": [
           {
-            "resource": "UpdatePolicy/deskos-core",
-            "profile": "deskos-core",
+            "resource": "UpdatePolicy/rhel-family",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/system/deskos-core-updates.yaml:1"
+            "source": "resources/system/rhel-family-updates.yaml:1"
           }
         ]
       },

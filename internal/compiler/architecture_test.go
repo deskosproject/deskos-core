@@ -199,6 +199,49 @@ func TestPlatformPackageAliasResolvesTheName(t *testing.T) {
 	}
 }
 
+// A platform that cannot preinstall system Flatpaks says so, and a FlatpakSet
+// asked of it fails with that reason instead of compiling something that would
+// never install (invariant 9).
+func TestFlatpakSetNeedsPreinstallAndThePlatformSaysSo(t *testing.T) {
+	noPreinstall := strings.Replace(platformYAML,
+		"  flatpak: {package: flatpak, preinstall: true}\n",
+		"  flatpak: {preinstall: false}\n", 1)
+	dir := fixture{
+		"platform.yaml": noPreinstall,
+		"p.yaml":        profile("core", "foundation", "FlatpakSet/deskos-reference-apps"),
+		"ws.yaml":       workstation("ws", "core"),
+	}.dir(t)
+	_, err := planOf(t, "ws", resourcesRoot, dir)
+	mustFail(t, err, "does not support Flatpak preinstallation", "Platform/test-platform", "FlatpakSet/deskos-reference-apps")
+}
+
+// Ubuntu 26.04 offers no system Flatpak channel, and the composition says so: with
+// this platform, the Plan asks for no Flatpak package, no preinstall unit and no
+// Flatpak update timer. 26.04 publishes no `flatpak preinstall` and the base it
+// pins carries no third-party apt source, so the platform declares the gap instead
+// of pretending (invariant 9). What this test covers is the Plan; that the built
+// image carries no Flatpak is a separate measurement of the image, recorded in the
+// validation table of docs/architecture.md.
+func TestUbuntuDeclaresNoSystemFlatpakChannel(t *testing.T) {
+	dir := fixture{
+		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: ubuntu-ws\nspec:\n  platformRef: ubuntu-2604\n  profiles: [deskos-core]\n",
+	}.dir(t)
+	p := mustPlan(t, "ubuntu-ws", resourcesRoot, dir)
+	if got := packages(p); slices.Contains(got, "flatpak") {
+		t.Errorf("packages = %v, want no Flatpak: Ubuntu declares no system Flatpak channel", got)
+	}
+	for _, u := range p.Artifact.SystemdUnits {
+		if strings.Contains(u.Unit, "flatpak") {
+			t.Errorf("unit %s is enabled: the RHEL family's application channel is not Ubuntu's", u.Unit)
+		}
+	}
+	for _, s := range p.Artifact.ScheduledUpdates {
+		if s.Kind == plan.UpdateFlatpak {
+			t.Errorf("scheduled update %s: want none on Ubuntu", s.Service)
+		}
+	}
+}
+
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
