@@ -196,7 +196,14 @@ def run(args):
         raise HarnessError("qemu-img not found")
 
     overlay = os.path.join(out, "overlay.qcow2")
-    subprocess.run([qemu_img, "create", "-q", "-f", "qcow2", "-F", "qcow2", "-b", disk, overlay], check=True)
+    # Do not assume the backing format. bootc-image-builder writes qcow2, while a
+    # disk from `bootc install to-disk` is raw, and both should be checkable with
+    # the same harness.
+    backing_format = json.loads(subprocess.run(
+        [qemu_img, "info", "--output=json", disk],
+        check=True, capture_output=True, text=True).stdout)["format"]
+    subprocess.run([qemu_img, "create", "-q", "-f", "qcow2", "-F", backing_format,
+                    "-b", disk, overlay], check=True)
     vars_copy = os.path.join(out, "OVMF_VARS.fd")
     shutil.copyfile(vars_template, vars_copy)
     qmp_path = os.path.join(out, "qmp.sock")
@@ -357,7 +364,7 @@ def write_summary(out, s):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--disk", required=True, help="qcow2 disk to boot (never written)")
+    p.add_argument("--disk", required=True, help="disk to boot (never written): qcow2 from bootc-image-builder, or raw from `bootc install to-disk`")
     p.add_argument("--out", required=True, help="new output directory")
     p.add_argument("--qemu")
     p.add_argument("--ovmf-code")

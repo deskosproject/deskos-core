@@ -29,6 +29,29 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
+**Or install to a raw disk**, which is the path for a platform whose image is not
+published — Ubuntu 26.04 today. The harness detects the backing format, so a raw
+disk and a QCOW2 are both accepted:
+
+```bash
+deskosctl render --workstation <workstation> --output ctx
+sudo podman build -t localhost/<workstation>:test ctx
+# The composefs import rejects uncompressed layers, so recompress into an OCI
+# layout, which is also what the install mounts as its source:
+sudo skopeo copy containers-storage:localhost/<workstation>:test oci:/tmp/oci:test
+truncate -s 32G disk.raw
+# --target-imgref is the reference the installed system will update from. It must
+# be the reference of the image being installed (this derivative's own published
+# reference once it has one); leaving it out records the lab path, and pointing it
+# at the base would replace the derivative with the base at the next update.
+sudo podman run --rm --privileged --pid=host --security-opt label=type:unconfined_t \
+    -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+    -v /tmp/oci:/src-oci:ro -v "$PWD":/output \
+    localhost/<workstation>:test bootc install to-disk --via-loopback /output/disk.raw \
+    --source-imgref oci:/src-oci:test --target-imgref <published reference> \
+    --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+```
+
 ## Running
 
 ```bash
