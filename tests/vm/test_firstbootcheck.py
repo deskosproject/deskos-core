@@ -32,24 +32,23 @@ class EvaluateTest(unittest.TestCase):
         got = results(dict(GOOD, loginable_accounts="someone", homes="someone"))
         self.assertFalse(got["no account can log in with a password"])
 
-    def test_failed_service_fails(self):
-        got = results(dict(GOOD, system_failed_services="gdm.service"))
-        self.assertFalse(got["no failed system service units"])
+    def test_failed_units_are_reported_and_do_not_gate(self):
+        # Judging a failed unit needs the known guest signature (CPU, unit
+        # properties, journal), and sessioncheck.py applies it to the same disk in
+        # the same job. Here a failed unit is reported and does not fail this
+        # check, which is the wizard and the accounts question.
+        values = dict(GOOD, system_failed_services="mcelog.service",
+                      system_failed_units="mcelog.service,sssd-nss.socket")
+        self.assertTrue(all(results(values).values()), results(values))
+        obs = fb.observations(values)
+        self.assertEqual(obs["failed_services"], "mcelog.service")
+        self.assertEqual(obs["failed_units"], "mcelog.service,sssd-nss.socket")
 
-    def test_missing_failed_services_fails(self):
-        # A report that does not say is not a pass: unknown is not clean.
+    def test_a_report_that_does_not_say_is_unknown_not_clean(self):
         values = dict(GOOD)
         del values["system_failed_services"]
-        self.assertFalse(results(values)["no failed system service units"])
-
-    def test_failed_sockets_are_reported_but_not_asserted(self):
-        # The Ubuntu image's sssd responder sockets report `dependency` because
-        # sssd.service is skipped by its own condition. That is a socket, not a
-        # service, and the full list stays in the detail so nothing is hidden.
-        checks = fb.evaluate(GOOD)
-        self.assertTrue(all(c["pass"] for c in checks))
-        detail = [c["detail"] for c in checks if c["check"] == "no failed system service units"][0]
-        self.assertIn("sssd-nss.socket", detail)
+        self.assertEqual(fb.observations(values)["failed_services"], "unknown")
+        self.assertEqual(fb.observations(GOOD)["failed_services"], "none")
 
 
 class CredentialsTest(unittest.TestCase):
