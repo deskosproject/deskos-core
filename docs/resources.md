@@ -103,9 +103,7 @@ capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
-or the other, according to its package manager. `packageAliases` maps a name the
-foundation uses to the name this platform publishes it under, so the foundation
-keeps one name instead of one per platform. `rpmFiles` and `RpmRepository` are
+or the other, according to its package manager. `rpmFiles` and `RpmRepository` are
 RPM-only: a platform that is not RPM fails at compile time when either is
 requested, instead of rendering nonsense or copying files where nothing reads
 them.
@@ -122,18 +120,22 @@ metadata:
 spec:
   groups:
     - workstation
-  packages:
-    - bootc
-    - NetworkManager
-    - xdg-utils
 ```
 
-The foundation names distribution-independent packages only. A browser, a firewall
-and an application channel are platform choices: the RHEL family keeps its own in
-`PackageSet/rhel-family`, which workstations on those platforms add through
-`Profile/rhel-family`. They cannot live in the foundation, because composition
-unions sets and offers no removal (ADR 0003), so every platform would be forced to
-carry them (ADR 0014).
+The foundation names its own metapackage group and no individual packages: the
+vendor's base already carries what a desktop needs (measured: `NetworkManager` is in
+both bases, so naming it installed nothing, and naming it forced Core to know one
+family's spelling of it). A browser, a firewall and an application channel are
+platform or organization choices: the RHEL family keeps its browser, its firewall
+and its application channel in `PackageSet/rhel-family`, which workstations on those
+platforms add through `Profile/rhel-family`. They cannot live in the foundation,
+because composition unions sets and offers no removal (ADR 0003), so every platform
+would be forced to carry them (ADR 0014).
+
+Naming nothing has a price worth stating: nothing here asserts that a platform's
+base carries what a desktop needs, so "the base has NetworkManager" became a fact to
+check per base rather than a requirement the model enforces. That check belongs to
+whoever validates a base digest, not to the foundation.
 
 `rpmFiles` installs **signed RPMs that the vendor publishes without a
 repository**. Each entry needs an https URL that is not a floating

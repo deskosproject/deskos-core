@@ -3,7 +3,7 @@ kind: PackageSet
 metadata:
   name: rhel-family
 spec:
-  # The RHEL family's own choices: the browser it ships, the firewall it manages,
+  # The RHEL family's own choices: the browser it ships, the firewall it manages
   # and the application channel it supports. These are platform facts, not
   # foundation ones.
   #
@@ -12,6 +12,11 @@ spec:
   # foundation that names them forces them on every platform. An Ubuntu
   # workstation does not want firewalld, and its firefox is a stub for a snap.
   # ADR 0014 asks for these to leave the common foundation.
+  #
+  # firewalld belongs here and not in the foundation because it is the family's own
+  # firewall and it is not in the base: measured, neither the CentOS Stream 10 base
+  # nor the Ubuntu base ships it, so this family installs it deliberately and
+  # enables it. A platform that wants no firewall simply does not take this profile.
   packages:
     - firefox
     - firewalld
