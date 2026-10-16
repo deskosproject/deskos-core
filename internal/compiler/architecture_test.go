@@ -199,6 +199,30 @@ func TestPlatformPackageAliasResolvesTheName(t *testing.T) {
 	}
 }
 
+// ADR 0014 wants the owner and the tier recorded in the Platform resource, and says
+// an unnamed owner is not a tier but an omission. The schema types both, so a
+// platform cannot name an empty owner or a tier that does not exist.
+func TestPlatformOwnerAndTierAreTyped(t *testing.T) {
+	with := func(fields string) string {
+		return strings.Replace(platformYAML, "  displayName: Test Platform\n",
+			"  displayName: Test Platform\n"+fields, 1)
+	}
+	c := newCompiler(t)
+	for name, doc := range map[string]string{
+		"empty owner":   with("  owner: \"\"\n  tier: organization\n"),
+		"unknown tier":  with("  owner: The Example Team\n  tier: partner\n"),
+		"tier no owner": with("  tier: organization\n"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := c.Load([]string{fixture{"platform.yaml": doc}.dir(t)})
+			mustFail(t, err, "schema validation failed")
+		})
+	}
+	if _, err := c.Load([]string{fixture{"platform.yaml": with("  owner: The Example Team\n  tier: organization\n")}.dir(t)}); err != nil {
+		t.Errorf("a declared owner and tier should load: %v", err)
+	}
+}
+
 // A platform that cannot preinstall system Flatpaks says so, and a FlatpakSet
 // asked of it fails with that reason instead of compiling something that would
 // never install (invariant 9).

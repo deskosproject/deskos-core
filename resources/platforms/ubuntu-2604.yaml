@@ -7,6 +7,10 @@ spec:
   displayName: Ubuntu 26.04 LTS
   family: ubuntu
   release: "26.04"
+  # ADR 0014: an organization-owned base names its owner and its tier in the
+  # resource, not in a comment. An unnamed owner is not a tier.
+  owner: the Project DeskOS
+  tier: organization
   architectures: [x86_64]
   packageManager: deb
   bootc:
@@ -18,8 +22,9 @@ spec:
     digest: sha256:fb40ad209ce3e89d250024f3affcd71e437a43205655bb4a4b7531fd2fc3fcb2
   distribution:
     # Ubuntu's archive is freely redistributable and needs no subscription. The
-    # base, however, is maintained by DeskOS and not by Canonical: the support
-    # tier is organization, and nothing here claims vendor support (ADR 0014).
+    # base, however, is maintained by the Project DeskOS and not by Canonical:
+    # `owner` and `tier` above say who is accountable, and nothing here claims
+    # vendor support (ADR 0014).
     redistributable: true
     requiresSubscription: false
   packageGroups:
