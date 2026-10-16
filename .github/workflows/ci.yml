@@ -32,6 +32,8 @@ jobs:
         run: python3 -m unittest discover -s tests/vm
       - name: supply-chain harness unit tests
         run: python3 -m unittest discover -s tests/supply-chain
+      - name: artifact check unit tests
+        run: python3 -m unittest discover -s tests/artifacts
       - name: build deskosctl
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples

@@ -1,0 +1,73 @@
+name: artifacts
+
+# Resolve every network artifact the examples declare, and verify its checksum.
+#
+# This is the check `validate` and `plan` cannot be: they do not touch the network —
+# which is what keeps compilation deterministic and offline — and that is also why a
+# declared URL that 404s, or a version bumped without its asset name and checksum,
+# reaches an image build instead of failing here. It happened: a Renovate pull request
+# on the downstream repository moved a `BinaryArtifact`'s release tag, left the asset
+# filename at the old version and kept the old checksum, and it would have merged,
+# because nothing fetched the URL.
+#
+# It proves what a plan can prove: a binary or rpm file resolves and hashes to its
+# declared sha256, and a repository serves repodata. A probe that cannot prove anything
+# (a URL carrying a dnf variable) is reported as inconclusive, never as a pass.
+#
+# It needs no KVM, no image and no registry: it renders a context and fetches. It runs on
+# every pull request because it is cheap, and it catches that class of change for the
+# plans in its matrix. The plan where the Renovate bump went wrong lives in a downstream
+# repository, so this does not close that incident on its own: that repository has to run
+# the check against its own plan, and until it does, the incident stays open.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The reference organization on RHEL 10: one BinaryArtifact and four signed
+          # repositories, which is where a version bump goes wrong.
+          - example: examples/baseline-and-role
+            workstation: example-devops-rhel10
+          # The minimal ones declare no artifact, and that is worth checking too: a
+          # plan that declares nothing must not be reported as a failure.
+          - example: examples/core-centos-stream-10
+            workstation: example-core-centos-stream-10
+          - example: examples/core-ubuntu-2604
+            workstation: example-core-ubuntu-2604
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the context, which is what declares the artifacts
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render "${{ matrix.example }}" \
+            --workstation "${{ matrix.workstation }}" --output ctx
+          python3 tests/artifacts/resolve.py ctx/plan.json --summary resolve.md
+
+      - name: Keep the summary
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: resolve-${{ matrix.workstation }}
+          path: resolve.md
+          retention-days: 7
+          if-no-files-found: warn
