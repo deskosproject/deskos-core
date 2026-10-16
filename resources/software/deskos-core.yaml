@@ -5,15 +5,20 @@ metadata:
 spec:
   groups:
     - workstation
-  # Distribution-independent packages only. A browser, a firewall and an
-  # application channel are platform choices, not foundation ones: the RHEL family
-  # keeps its own in PackageSet/rhel-family, and a platform whose vendor ships
-  # none of them is free to choose (ADR 0014). They cannot live here, because
-  # composition unions sets and no organization could take them back (ADR 0003).
-  # bootc is deliberately absent: every platform starts from its vendor's bootc
-  # base (ADR 0004), so the base provides it, and it is not an archive package on
-  # every platform — the Ubuntu base builds it from source. A request to install
-  # it would fail there.
-  packages:
-    - NetworkManager
-    - xdg-utils
+  # The foundation names no individual packages, for two measured reasons
+  # (2026-10-16):
+  #
+  #  - NetworkManager is already in the base of both families (measured:
+  #    NetworkManager 1.58 in the CentOS Stream 10 base, network-manager 1.54.3 in
+  #    the Ubuntu base), so naming it installed nothing. It also forced Core to
+  #    carry one family's spelling of it and to ask every platform for a
+  #    translation. ADR 0004 does not want Core to know either spelling.
+  #  - A browser, a firewall and an application channel are platform or
+  #    organization choices (ADR 0014), not foundation ones. They cannot live
+  #    here, because composition unions sets and no organization could take them
+  #    back (ADR 0003).
+  #
+  # What is left is the workstation group, which maps to each platform's own
+  # desktop metapackage. bootc is deliberately absent too: every platform starts
+  # from its vendor's bootc base (ADR 0004), and on Ubuntu bootc is not an archive
+  # package at all.

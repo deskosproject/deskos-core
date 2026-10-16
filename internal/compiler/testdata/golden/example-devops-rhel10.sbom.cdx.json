@@ -63,16 +63,6 @@
     },
     {
       "type": "library",
-      "name": "NetworkManager",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "buildah",
       "properties": [
         {
@@ -314,16 +304,6 @@
     {
       "type": "library",
       "name": "virt-viewer",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "xdg-utils",
       "properties": [
         {
           "name": "deskos:source",

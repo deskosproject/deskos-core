@@ -180,17 +180,6 @@
     ],
     "packages": [
       {
-        "name": "NetworkManager",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "buildah",
         "provenance": [
           {
@@ -468,17 +457,6 @@
             "profile": "example-devops",
             "layer": "role",
             "source": "baseline-and-role/software/example-devops.yaml:13"
-          }
-        ]
-      },
-      {
-        "name": "xdg-utils",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
           }
         ]
       }

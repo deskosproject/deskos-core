@@ -84,17 +84,6 @@
     ],
     "packages": [
       {
-        "name": "NetworkManager",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "firefox",
         "provenance": [
           {
@@ -187,17 +176,6 @@
             "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
-          }
-        ]
-      },
-      {
-        "name": "xdg-utils",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
           }
         ]
       }
