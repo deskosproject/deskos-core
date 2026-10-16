@@ -35,11 +35,6 @@ type PlatformSpec struct {
 	Bootc         BootcBase      `json:"bootc"`
 	Distribution  Distribution   `json:"distribution"`
 	PackageGroups []PackageGroup `json:"packageGroups,omitempty"`
-	// PackageAliases maps a requested package name to the name this platform
-	// publishes it under. A foundation may name a package the way one family does;
-	// a platform that publishes it under another name says so here, instead of the
-	// foundation carrying one name per platform.
-	PackageAliases map[string]string `json:"packageAliases,omitempty"`
 	// UnavailablePackages records known packages the platform does not
 	// provide from a supported repository, so requests fail at compile time.
 	UnavailablePackages []UnavailablePackage `json:"unavailablePackages,omitempty"`
@@ -49,6 +44,7 @@ type PlatformSpec struct {
 	Updates             *UpdatesPlatform     `json:"updates,omitempty"`
 	Flatpak             FlatpakPlatform      `json:"flatpak"`
 	Trust               *TrustPlatform       `json:"trust,omitempty"`
+	IconCache           *IconCachePlatform   `json:"iconCache,omitempty"`
 }
 
 // BootcBase is the official bootc base image. Digest pins it when set.
@@ -154,6 +150,16 @@ type TrustPlatform struct {
 	UpdateCommand string `json:"updateCommand"`
 }
 
+// IconCachePlatform is how a platform regenerates the GTK icon theme cache after
+// the build copies icons into it, because no package trigger runs for files the
+// build writes. Both facts are the platform's: the package that provides the tool,
+// and the command line that refreshes one cache directory, which it takes as its
+// last argument. Core knows neither name.
+type IconCachePlatform struct {
+	Package string `json:"package"`
+	Command string `json:"command"`
+}
+
 // PackageGroup returns the named mapping.
 func (p *PlatformSpec) PackageGroup(name string) (PackageGroup, bool) {
 	for _, g := range p.PackageGroups {
@@ -162,15 +168,6 @@ func (p *PlatformSpec) PackageGroup(name string) (PackageGroup, bool) {
 		}
 	}
 	return PackageGroup{}, false
-}
-
-// PackageName returns the name this platform publishes a requested package
-// under, which is the requested name unless the platform declares an alias.
-func (p *PlatformSpec) PackageName(requested string) string {
-	if alias, ok := p.PackageAliases[requested]; ok {
-		return alias
-	}
-	return requested
 }
 
 // Unavailable reports why a package cannot be installed on the platform.

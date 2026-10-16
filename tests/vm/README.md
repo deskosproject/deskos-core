@@ -156,6 +156,39 @@ with `bootcheck.py --keep-overlay` again and writes the journal of the
 previous (tested) boot, which is how a failed unmodified boot is
 diagnosed.
 
+## First-boot check (instrumented boot, no account added)
+
+`firstbootcheck.py` answers what a screenshot cannot. It boots the same unmodified
+disk through an overlay, adds **no account and no session**, and has the guest
+report whether the first-boot wizard is the session that came up, whether any
+account could log in with a password, and whether any service unit failed.
+
+It exists because `bootcheck.py` classifies pixels and concludes at the first stable
+graphical screen — on Ubuntu 26.04 that screen is GDM, not the wizard — so it reports
+the same PASS with the wizard suppressed, and suppressing it is exactly the defect
+the base cleanup fixed.
+
+```bash
+python3 tests/vm/firstbootcheck.py --disk disk.raw --out firstboot-1
+```
+
+The guest waits up to five minutes for `gnome-initial-setup` before reporting, so
+`--boot-timeout` has to cover that. Results are in `firstboot.md` and
+`firstboot.json`, with the raw guest values and the frames.
+
+What it asserts, and what it only reports:
+
+- the wizard (`gnome-initial-setup`) is running;
+- no account with uid >= 1000, a usable shell, and a password that is neither locked
+  (`!` or `*`) nor empty;
+- no failed **service** units.
+
+The full failed-unit list is reported even where it is not asserted, so a run cannot
+hide what it did not judge. On the Ubuntu image the sssd responder sockets report
+`dependency` because `sssd.service` is skipped by its own condition (sssd is
+installed unconfigured); those are sockets, not services. Like the session check,
+this is an instrumented boot, and is reported as one.
+
 ## CI and unit tests
 
 The GitHub workflow `.github/workflows/vm-bootcheck.yml` runs the same

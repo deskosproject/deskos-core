@@ -697,7 +697,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		steps = append(steps, "dconf update")
 	}
 	for _, c := range a.IconCaches {
-		steps = append(steps, "gtk-update-icon-cache --force --quiet "+shq(c.Dir))
+		steps = append(steps, c.Command+" "+shq(c.Dir))
 	}
 	if a.TrustStore != nil {
 		steps = append(steps, shq(a.TrustStore.Command))

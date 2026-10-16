@@ -63,3 +63,8 @@ spec:
   trust:
     anchorsDir: /etc/pki/ca-trust/source/anchors
     updateCommand: update-ca-trust
+  iconCache:
+    # Which package provides the icon cache tool and how it is invoked are this
+    # platform's names, not Core's (ADR 0004).
+    package: gtk-update-icon-cache
+    command: gtk-update-icon-cache --force --quiet

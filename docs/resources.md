@@ -108,6 +108,17 @@ RPM-only: a platform that is not RPM fails at compile time when either is
 requested, instead of rendering nonsense or copying files where nothing reads
 them.
 
+**A package or tool name belongs to a platform, never to Core.** When Core needs a
+program the platform may spell differently, the platform declares it: `flatpak.package`
+for the application channel, `trust.updateCommand` for the trust store, and
+`iconCache.package` with `iconCache.command` for the tool that refreshes an icon
+theme cache. Core carries no name of its own and no table translating one platform's
+name into another's — a table has to be maintained per platform pair, and it gets
+worse with every platform added. A platform that declares nothing where a name is
+needed reports the gap at compile time (invariant 9): a desktop entry with an icon
+on a platform with no `iconCache` fails composition, rather than shipping an icon
+that never appears.
+
 ### `PackageSet`
 
 Packages, RPM groups (named by the Platform) and units to enable:

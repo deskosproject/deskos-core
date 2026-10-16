@@ -36,9 +36,6 @@ spec:
     - name: workstation
       members: [ubuntu-desktop-minimal]
       graphical: true
-  packageAliases:
-    # Ubuntu publishes NetworkManager as network-manager.
-    NetworkManager: network-manager
   displayManager: gdm.service
   # Ubuntu's graphical splash uses "splash" where the RHEL family uses "rhgb".
   # Plymouth itself is not in the base yet: the build installs it from the
@@ -66,3 +63,9 @@ spec:
     # FlatpakSet therefore fails composition with that reason (invariant 9). The
     # vendor's own application channel on Ubuntu is snap, which DeskOS does not model.
     preinstall: false
+  iconCache:
+    # Measured on this base: the package is `gtk-update-icon-cache` and
+    # /usr/bin/gtk-update-icon-cache is a symlink to the gtk4 tool, which takes the
+    # same flags. Core knows neither name (ADR 0004).
+    package: gtk-update-icon-cache
+    command: gtk-update-icon-cache --force --quiet

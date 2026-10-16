@@ -70,11 +70,6 @@
             }
           }
         },
-        "packageAliases": {
-          "type": "object",
-          "propertyNames": { "$ref": "../../common/definitions.json#/$defs/packageName" },
-          "additionalProperties": { "$ref": "../../common/definitions.json#/$defs/packageName" }
-        },
         "unavailablePackages": {
           "type": "array",
           "items": {
@@ -169,6 +164,18 @@
           "properties": {
             "anchorsDir": { "type": "string", "pattern": "^/etc(/[A-Za-z0-9._-]*[A-Za-z0-9_-])+$" },
             "updateCommand": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$" }
+          }
+        },
+        "iconCache": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package", "command"],
+          "properties": {
+            "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+            "command": {
+              "type": "string", "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._+= /-]*$"
+            }
           }
         }
       }
