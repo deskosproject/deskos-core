@@ -21,8 +21,8 @@ const (
 	AuthenticatorUnit = "deskos-flatpak-oci-authenticator.service"
 )
 
-// IconCachePackage provides gtk-update-icon-cache on CentOS Stream 10 and RHEL 10.
-const IconCachePackage = "gtk-update-icon-cache"
+// IconCachePackage lives on the platform, not here: the package that provides the
+// icon cache tool is a platform fact, like the tool's command line.
 
 // Lowerer translates composed software intent into Plan IR.
 type Lowerer struct{}
@@ -127,8 +127,20 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 			Path: e.IconPath, Mode: "0644", SHA256: e.IconSHA256, Asset: e.IconAsset, AssetFile: e.IconFile,
 			Provenance: k.Provenance,
 		})
-		p.Artifact.IconCaches = append(p.Artifact.IconCaches, plan.IconCacheUpdate{Dir: HicolorDir, Provenance: k.Provenance})
-		p.AddPackage(IconCachePackage, k.Provenance...)
+		// Copying icons leaves the theme's cache stale and no package trigger runs
+		// for files the build writes, so the cache is regenerated here. Which
+		// package provides the tool and how it is invoked are the platform's facts
+		// (ADR 0004): Core knows neither name, and a platform that carries no icon
+		// cache tool reports the gap instead of shipping an entry with no icon.
+		if pl.IconCache == nil {
+			errs.Add(fmt.Errorf("a desktop entry with an icon needs an icon cache: %s declares no iconCache, so the icon would not appear\n  requested by: %s",
+				c.Platform.ID(), describe(k.Provenance)))
+			continue
+		}
+		p.Artifact.IconCaches = append(p.Artifact.IconCaches, plan.IconCacheUpdate{
+			Dir: HicolorDir, Command: pl.IconCache.Command, Provenance: k.Provenance,
+		})
+		p.AddPackage(pl.IconCache.Package, k.Provenance...)
 	}
 
 	remotes := map[string]Remote{}

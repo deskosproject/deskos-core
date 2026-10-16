@@ -44,6 +44,7 @@ type PlatformSpec struct {
 	Updates             *UpdatesPlatform     `json:"updates,omitempty"`
 	Flatpak             FlatpakPlatform      `json:"flatpak"`
 	Trust               *TrustPlatform       `json:"trust,omitempty"`
+	IconCache           *IconCachePlatform   `json:"iconCache,omitempty"`
 }
 
 // BootcBase is the official bootc base image. Digest pins it when set.
@@ -147,6 +148,16 @@ type FlatpakPlatform struct {
 type TrustPlatform struct {
 	AnchorsDir    string `json:"anchorsDir"`
 	UpdateCommand string `json:"updateCommand"`
+}
+
+// IconCachePlatform is how a platform regenerates the GTK icon theme cache after
+// the build copies icons into it, because no package trigger runs for files the
+// build writes. Both facts are the platform's: the package that provides the tool,
+// and the command line that refreshes one cache directory, which it takes as its
+// last argument. Core knows neither name.
+type IconCachePlatform struct {
+	Package string `json:"package"`
+	Command string `json:"command"`
 }
 
 // PackageGroup returns the named mapping.
