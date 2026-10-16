@@ -11,8 +11,9 @@ spec:
   packageManager: deb
   bootc:
     image: quay.io/deskos/deskos-ubuntu-base:26.04
-    # x86_64 manifest, pushed 2026-10-16; move it deliberately.
-    digest: sha256:bc82a0338a9fcc4f6bc2f8da9fb830a70dd9bb5b179a2fc09b6a18664de66f0a
+    # x86_64 manifest of the cleaned base (no proof-of-concept account), pushed
+    # 2026-10-16; move it deliberately.
+    digest: sha256:3e246a49e3e2235d831329b3cc065e5c49e438ae5233e11ef973a5f45fa60373
   distribution:
     # Ubuntu's archive is freely redistributable and needs no subscription. The
     # base, however, is maintained by DeskOS and not by Canonical: the support
