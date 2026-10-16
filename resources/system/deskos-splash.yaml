@@ -1,0 +1,10 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: BootProfile
+metadata:
+  name: deskos-splash
+spec:
+  # DeskOS lockup at the bottom of the splash (DeskOS theme). It replaces the
+  # platform's own splash and needs the platform's boot.spinnerFrames, so a
+  # workstation asks for it explicitly. It is the artwork only: deskos-boot must
+  # apply as well, for it to have a graphical splash to sit on.
+  watermark: ../assets/deskos/deskos-splash-watermark.png

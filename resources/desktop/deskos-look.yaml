@@ -1,0 +1,14 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-look
+spec:
+  defaults:
+    # The DeskOS artwork: the wallpaper and the login-screen lockup. Opt-in, and
+    # an organization that overrides either scalar still wins, so a workstation
+    # can take the DeskOS splash and keep its own wallpaper.
+    appearance:
+      wallpaper:
+        light: ../assets/deskos/deskos-light.svg
+        dark: ../assets/deskos/deskos-dark.svg
+      loginLogo: ../assets/deskos/deskos-login-logo.svg

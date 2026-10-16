@@ -25,6 +25,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-look",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-look.yaml:1"
+    },
+    {
       "name": "deskos-reference-apps",
       "layer": "foundation",
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
@@ -90,17 +95,6 @@
         ]
       },
       {
-        "name": "bootc",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "firefox",
         "provenance": [
           {
@@ -156,10 +150,10 @@
         "name": "plymouth",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -167,10 +161,10 @@
         "name": "plymouth-scripts",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -178,10 +172,10 @@
         "name": "plymouth-system-theme",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -189,10 +183,10 @@
         "name": "plymouth-theme-spinner",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       },
@@ -218,10 +212,10 @@
         "asset": "resources/assets/deskos/deskos-dark.svg",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
+            "source": "resources/desktop/deskos-look.yaml:1"
           }
         ]
       },
@@ -232,10 +226,10 @@
         "asset": "resources/assets/deskos/deskos-light.svg",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
+            "source": "resources/desktop/deskos-look.yaml:1"
           }
         ]
       },
@@ -246,10 +240,10 @@
         "asset": "resources/assets/deskos/deskos-login-logo.svg",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
+            "source": "resources/desktop/deskos-look.yaml:1"
           }
         ]
       },
@@ -260,10 +254,10 @@
         "asset": "resources/assets/deskos/deskos-splash-watermark.png",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-splash.yaml:1"
           }
         ]
       }
@@ -281,10 +275,10 @@
           "setting": "appearance.wallpaper",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
+              "source": "resources/desktop/deskos-look.yaml:1"
             }
           ]
         },
@@ -295,10 +289,10 @@
           "setting": "appearance.wallpaper",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
+              "source": "resources/desktop/deskos-look.yaml:1"
             }
           ]
         },
@@ -337,10 +331,10 @@
           "setting": "appearance.wallpaper",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
+              "source": "resources/desktop/deskos-look.yaml:1"
             }
           ]
         },
@@ -365,10 +359,10 @@
           "setting": "appearance.loginLogo",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-core.yaml:1"
+              "source": "resources/desktop/deskos-look.yaml:1"
             }
           ]
         },
@@ -412,10 +406,10 @@
         "setting": "appearance.wallpaper",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
+            "source": "resources/desktop/deskos-look.yaml:1"
           }
         ]
       },
@@ -427,10 +421,10 @@
         "setting": "appearance.wallpaper",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/desktop/deskos-core.yaml:1"
+            "source": "resources/desktop/deskos-look.yaml:1"
           }
         ]
       }
@@ -441,10 +435,10 @@
         "setting": "boot.quiet",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -453,10 +447,10 @@
         "setting": "boot.splash",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-core",
-            "profile": "deskos-core",
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-core.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       }
@@ -467,10 +461,16 @@
       ],
       "provenance": [
         {
-          "resource": "BootProfile/deskos-core",
-          "profile": "deskos-core",
+          "resource": "BootProfile/deskos-boot",
+          "profile": "deskos-look",
           "layer": "foundation",
-          "source": "resources/system/deskos-core.yaml:1"
+          "source": "resources/system/deskos-boot.yaml:1"
+        },
+        {
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-look",
+          "layer": "foundation",
+          "source": "resources/system/deskos-splash.yaml:1"
         }
       ]
     },
@@ -482,10 +482,10 @@
       "setting": "boot.watermark",
       "provenance": [
         {
-          "resource": "BootProfile/deskos-core",
-          "profile": "deskos-core",
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-look",
           "layer": "foundation",
-          "source": "resources/system/deskos-core.yaml:1"
+          "source": "resources/system/deskos-splash.yaml:1"
         }
       ]
     },

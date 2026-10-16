@@ -10,7 +10,9 @@ spec:
       name: deskos-core
     - kind: GnomeProfile
       name: deskos-core
-    - kind: BootProfile
-      name: deskos-core
     - kind: UpdatePolicy
       name: deskos-core
+    # The look is deliberately absent here: wallpaper, login logo and boot splash
+    # are the platform's look and feel, or an organization's choice, not the
+    # foundation's. A workstation that wants them adds the deskos-look profile,
+    # and one that wants only a quiet graphical boot adds deskos-boot.

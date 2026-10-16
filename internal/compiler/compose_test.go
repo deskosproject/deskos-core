@@ -877,6 +877,90 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 	})
 }
 
+// Core decides nothing about the look: no wallpaper, no login logo, no boot
+// splash. They are the platform's look and feel, or an organization's choice, not
+// the foundation's. A workstation that wants the DeskOS look adds the deskos-look
+// profile, one that wants only a quiet graphical boot adds deskos-boot, and an
+// organization that overrides a scalar still wins.
+func TestCoreSetsNoLook(t *testing.T) {
+	const ws = "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: %s\nspec:\n  platformRef: centos-stream-10\n  profiles: [%s]\n"
+	const logoKey = "/org/gnome/login-screen/logo"
+	wallpaper := func(p *plan.Plan) bool {
+		for _, d := range p.Artifact.GSettings {
+			if d.Setting == "appearance.wallpaper" {
+				return true
+			}
+		}
+		return false
+	}
+	themeFiles := func(p *plan.Plan) []string {
+		var out []string
+		for _, f := range p.Artifact.Files {
+			if strings.Contains(f.Path, "/plymouth/themes/") {
+				out = append(out, f.Path)
+			}
+		}
+		return out
+	}
+	t.Run("core", func(t *testing.T) {
+		f := fixture{"ws.yaml": fmt.Sprintf(ws, "no-look", "deskos-core, rhel-family")}
+		p := mustPlan(t, "no-look", resourcesRoot, f.dir(t))
+		if len(p.Artifact.KernelArguments) != 0 {
+			t.Errorf("Core sets kernel arguments %+v", p.Artifact.KernelArguments)
+		}
+		if p.Artifact.Initramfs != nil {
+			t.Errorf("Core regenerates the initramfs: %+v", p.Artifact.Initramfs)
+		}
+		if p.Artifact.PlymouthTheme != nil {
+			t.Errorf("Core installs the DeskOS splash theme: %+v", p.Artifact.PlymouthTheme)
+		}
+		if files := themeFiles(p); len(files) != 0 {
+			t.Errorf("Core writes Plymouth theme files %q", files)
+		}
+		if wallpaper(p) {
+			t.Error("Core sets a wallpaper")
+		}
+		if v, ok := dconf(p, logoKey); ok {
+			t.Errorf("Core sets the login logo to %s", v)
+		}
+	})
+	t.Run("deskos-look opts in", func(t *testing.T) {
+		f := fixture{"ws.yaml": fmt.Sprintf(ws, "with-look", "deskos-core, rhel-family, deskos-look")}
+		p := mustPlan(t, "with-look", resourcesRoot, f.dir(t))
+		if p.Artifact.PlymouthTheme == nil {
+			t.Fatal("deskos-look does not install the DeskOS splash theme")
+		}
+		if len(p.Artifact.KernelArguments) == 0 || p.Artifact.Initramfs == nil {
+			t.Errorf("deskos-look sets no boot: kargs %+v, initramfs %+v", p.Artifact.KernelArguments, p.Artifact.Initramfs)
+		}
+		if files := themeFiles(p); len(files) == 0 {
+			t.Error("deskos-look writes no theme file")
+		}
+		if !wallpaper(p) {
+			t.Error("deskos-look sets no wallpaper")
+		}
+		if _, ok := dconf(p, logoKey); !ok {
+			t.Error("deskos-look sets no login logo")
+		}
+	})
+	t.Run("deskos-boot opts in without the look", func(t *testing.T) {
+		f := fixture{"ws.yaml": fmt.Sprintf(ws, "boot-only", "deskos-core, rhel-family, deskos-boot")}
+		p := mustPlan(t, "boot-only", resourcesRoot, f.dir(t))
+		if len(p.Artifact.KernelArguments) == 0 || p.Artifact.Initramfs == nil {
+			t.Errorf("deskos-boot sets no boot: kargs %+v, initramfs %+v", p.Artifact.KernelArguments, p.Artifact.Initramfs)
+		}
+		if p.Artifact.PlymouthTheme != nil {
+			t.Errorf("deskos-boot installs the DeskOS splash theme: %+v", p.Artifact.PlymouthTheme)
+		}
+		if wallpaper(p) {
+			t.Error("deskos-boot sets a wallpaper")
+		}
+		if v, ok := dconf(p, logoKey); ok {
+			t.Errorf("deskos-boot sets the login logo to %s", v)
+		}
+	})
+}
+
 func TestDockDisableOverridesPlatformDefault(t *testing.T) {
 	const uuid = "dash-to-dock@micxgx.gmail.com"
 	off := fixture{

@@ -284,7 +284,7 @@ still installs it. The CS10 Platform excludes setroubleshoot this way; see
 `redhat-flatpak-preinstall-firefox`: its Firefox Flatpak comes from an
 OCI remote whose authenticator needs a session bus, so a system
 `flatpak preinstall` fails for every declared Flatpak. Core installs the
-Firefox RPM on both platforms.
+Firefox RPM on both EL platforms.
 
 ## Validation status
 
@@ -300,6 +300,11 @@ Firefox RPM on both platforms.
 | Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 |
 | Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] |
 | OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as CentOS Stream 10 |
+
+Ubuntu 26.04 composes and renders, and is deliberately not in this table: its image
+has not been built or booted from the pinned digest, and its organization-owned base
+still carries the proof-of-concept account, so none of the claims above are made for
+it yet.
 
 The RHEL column is historical: the RHEL factory host was retired and this
 repository no longer builds or boots RHEL or publishes a `deskos/rhel10`

@@ -8,3 +8,4 @@ spec:
   profiles:
     - deskos-core
     - rhel-family
+    - deskos-look

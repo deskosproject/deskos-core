@@ -1,0 +1,53 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  # The release is 26.04; a resource name allows no dot, so it carries no dot here.
+  name: ubuntu-2604
+spec:
+  displayName: Ubuntu 26.04 LTS
+  family: ubuntu
+  release: "26.04"
+  architectures: [x86_64]
+  packageManager: deb
+  bootc:
+    image: quay.io/deskos/deskos-ubuntu-base:26.04
+    # x86_64 manifest, pushed 2026-10-16; move it deliberately.
+    digest: sha256:bc82a0338a9fcc4f6bc2f8da9fb830a70dd9bb5b179a2fc09b6a18664de66f0a
+  distribution:
+    # Ubuntu's archive is freely redistributable and needs no subscription. The
+    # base, however, is maintained by DeskOS and not by Canonical: the support
+    # tier is organization, and nothing here claims vendor support (ADR 0014).
+    redistributable: true
+    requiresSubscription: false
+  packageGroups:
+    # The workstation group maps to the platform's own metapackage. The base
+    # already ships it, so on this platform the group installs nothing.
+    - name: workstation
+      members: [ubuntu-desktop-minimal]
+      graphical: true
+  packageAliases:
+    # Ubuntu publishes NetworkManager as network-manager.
+    NetworkManager: network-manager
+  displayManager: gdm.service
+  # Ubuntu's graphical splash uses "splash" where the RHEL family uses "rhgb".
+  # Plymouth itself is not in the base yet: the build installs it from the
+  # platform's own archive. Whether a DeskOS boot theme belongs on a platform
+  # whose boot experience is its own is the same question the dock raised, and it
+  # is not decided here.
+  boot:
+    splashKernelArgument: splash
+    quietKernelArgument: quiet
+    plymouthPackages: [plymouth, plymouth-themes]
+    plymouthDracutModule: plymouth
+  # The base ships bootc's own update units, enabled by default.target.wants.
+  updates:
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+  gnome:
+    dconfDatabase: distro
+    loginScreen: true
+  flatpak:
+    # The base carries Flatpak 1.18, so the preinstall mechanism a FlatpakSet
+    # needs is present. Measured on the base: the generated unit installs the
+    # declared application on first boot.
+    package: flatpak
+    preinstall: true

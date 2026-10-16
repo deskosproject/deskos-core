@@ -86,9 +86,11 @@ func Build(p *plan.Plan) ([]byte, error) {
 	}
 	add(base)
 
+	// The platform's package manager is where the package came from, so a deb image
+	// does not claim its packages came from RPM.
 	for _, x := range a.Packages {
 		add(Component{Type: "library", Name: x.Name,
-			Properties: []Property{{Name: "deskos:source", Value: "rpm"}}})
+			Properties: []Property{{Name: "deskos:source", Value: p.Platform.PackageManager}}})
 	}
 	for _, x := range a.RpmFiles {
 		add(Component{Type: "library", Name: rpmFileName(x.URL),

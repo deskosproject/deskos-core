@@ -158,6 +158,47 @@ func TestExampleVirtManagerGapIsReported(t *testing.T) {
 	}
 }
 
+// A repository kind belongs to one package manager's world. Asking a deb platform
+// for an RPM repository is a gap to report, not a file to copy where nothing
+// reads it.
+func TestRpmRepositoryOnADebPlatformIsReported(t *testing.T) {
+	deb := strings.Replace(platformYAML, "  packageManager: rpm\n", "  packageManager: deb\n", 1)
+	deb = strings.Replace(deb, "rpmGroups: [workstation-product-environment]", "members: [test-desktop]", 1)
+	dir := fixture{
+		"platform.yaml": deb,
+		"p.yaml":        profile("core", "foundation", "RpmRepository/epel"),
+		"repo.yaml":     "apiVersion: software.deskos.org/v1alpha1\nkind: RpmRepository\nmetadata:\n  name: epel\nspec:\n  id: epel\n  displayName: EPEL\n  baseURL: https://example.org/epel/\n  gpgCheck: false\n",
+		"ws.yaml":       workstation("ws", "core"),
+	}.dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "an RPM repository requires an RPM platform", "Platform/test-platform is deb", "RpmRepository/epel")
+}
+
+// A platform may publish a requested package under another name. The foundation
+// keeps one name, the platform that uses another says so, and the plan carries
+// the platform's name.
+func TestPlatformPackageAliasResolvesTheName(t *testing.T) {
+	aliased := strings.Replace(platformYAML,
+		"  flatpak: {package: flatpak, preinstall: true}\n",
+		"  packageAliases: {NetworkManager: network-manager}\n  flatpak: {package: flatpak, preinstall: true}\n", 1)
+	dir := fixture{
+		"platform.yaml": aliased,
+		"p.yaml":        profile("core", "foundation", "PackageSet/core"),
+		"ps.yaml":       "apiVersion: software.deskos.org/v1alpha1\nkind: PackageSet\nmetadata:\n  name: core\nspec:\n  packages: [NetworkManager, xdg-utils]\n",
+		"ws.yaml":       workstation("ws", "core"),
+	}.dir(t)
+	got := packages(mustPlan(t, "ws", dir))
+	if !slices.Contains(got, "network-manager") {
+		t.Errorf("packages = %v, want the platform's name", got)
+	}
+	if slices.Contains(got, "NetworkManager") {
+		t.Errorf("packages = %v, want the alias resolved", got)
+	}
+	if !slices.Contains(got, "xdg-utils") {
+		t.Errorf("packages = %v, want a name with no alias unchanged", got)
+	}
+}
+
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
@@ -181,7 +222,11 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 			t.Errorf("the example DevOps workstation is missing %s", want)
 		}
 	}
-	for _, pkg := range packages(p) {
+	// The DeskOS look is a workstation's own choice, so the floor an organization
+	// builds on is Core's foundation, not the reference workstation's look.
+	foundation := mustPlan(t, "foundation-ws", resourcesRoot,
+		fixture{"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: foundation-ws\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, rhel-family]\n"}.dir(t))
+	for _, pkg := range packages(foundation) {
 		if pkg != "flatpak" && !slices.Contains(packages(example), pkg) {
 			t.Errorf("the example workstation lost Core package %s", pkg)
 		}

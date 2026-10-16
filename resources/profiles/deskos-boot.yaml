@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-boot
+spec:
+  layer: foundation
+  description: A quiet graphical boot instead of scrolling text, without DeskOS artwork.
+  resources:
+    - kind: BootProfile
+      name: deskos-boot

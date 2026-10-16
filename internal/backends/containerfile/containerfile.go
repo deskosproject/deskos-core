@@ -805,6 +805,9 @@ const (
 // falling back to another manager's commands: a platform gap is reported, not
 // hidden (invariant 9).
 type pkgManager struct {
+	// update refreshes the manager's package indexes. It is empty when the
+	// manager refreshes them on its own, as dnf does.
+	update string
 	// install is the command that installs named packages.
 	install string
 	// groupInstall is the command that installs a package-group mapping.
@@ -832,6 +835,9 @@ func managerFacts(mgr string) (pkgManager, error) {
 		}, nil
 	case model.PackageManagerDeb:
 		return pkgManager{
+			// apt installs nothing without indexes, and the transaction removes
+			// them, so every transaction refreshes them first.
+			update:       "apt-get update",
 			install:      "apt-get -y install",
 			groupInstall: "apt-get -y install",
 			clean:        "apt-get clean && rm -rf /var/lib/apt/lists/*",
@@ -866,10 +872,14 @@ func groupArgs(mgr pkgManager, groups []plan.PackageGroupInstall) []string {
 }
 
 // pkgTransaction emits one package transaction. The platform's package manager
-// picks the command and the cleanup, and the RPM family's RHSM state stays out of
-// the committed layer: state directories are tmpfs mounts, and the generated repo
-// file is removed in the same RUN. A pre-existing repo file with that name fails
-// the build instead of being removed.
+// picks the update, the command and the cleanup, and the RPM family's RHSM state
+// stays out of the committed layer: state directories are tmpfs mounts, and the
+// generated repo file is removed in the same RUN. A pre-existing repo file with
+// that name fails the build instead of being removed.
+//
+// Only the first command is written without a leading "&&": a manager whose
+// transaction needs no preamble has nothing to chain from, and "RUN \ && apt-get
+// ..." is not valid shell.
 func pkgTransaction(w func(string, ...any), mgr pkgManager, pre []string, cmd string, args []string, post ...string) {
 	w("RUN")
 	if mgr.rhsm {
@@ -880,24 +890,37 @@ func pkgTransaction(w func(string, ...any), mgr pkgManager, pre []string, cmd st
 			}
 			w("%s--mount=type=tmpfs,target=%s", sep, d)
 		}
-		w(" \\\n    if [ -e %s ]; then echo 'refusing to run dnf: %s already exists' >&2; exit 1; fi", rhsmRepoFile, rhsmRepoFile)
+	}
+	first := true
+	step := func(format string, a ...any) {
+		if first {
+			w(" \\\n    "+format, a...)
+			first = false
+			return
+		}
+		w(" \\\n    && "+format, a...)
+	}
+	if mgr.rhsm {
+		step("if [ -e %s ]; then echo 'refusing to run dnf: %s already exists' >&2; exit 1; fi", rhsmRepoFile, rhsmRepoFile)
+	}
+	if mgr.update != "" {
+		step("%s", mgr.update)
 	}
 	for _, c := range pre {
-		w(" \\\n    && %s", c)
+		step("%s", c)
 	}
-	w(" \\\n    && %s", cmd)
+	step("%s", cmd)
 	for _, a := range args {
 		w(" \\\n        %s", shq(a))
 	}
-	w(" \\\n    && %s", mgr.clean)
+	step("%s", mgr.clean)
 	for _, c := range post {
-		w(" \\\n    && %s", c)
+		step("%s", c)
 	}
 	if mgr.rhsm {
-		w(" \\\n    && rm -f %s\n", rhsmRepoFile)
-	} else {
-		w("\n")
+		step("rm -f %s", rhsmRepoFile)
 	}
+	w("\n")
 }
 
 // enableRepos enables declared repositories that are disabled after the build.

@@ -23,7 +23,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
         'NetworkManager' \
-        'bootc' \
         'firefox' \
         'firewalld' \
         'flatpak' \

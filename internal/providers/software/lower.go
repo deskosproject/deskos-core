@@ -59,18 +59,29 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, m := range r.Set(DomainPackages) {
-		if reason, ok := pl.Unavailable(m.Name); ok {
+		// The platform may publish a requested package under another name, so the
+		// gap check and the install both use the platform's name.
+		name := pl.PackageName(m.Name)
+		if reason, ok := pl.Unavailable(name); ok {
 			errs.Add(fmt.Errorf("package %q is not available on %s: %s\n  requested by: %s",
-				m.Name, c.Platform.ID(), reason, describe(m.Provenance)))
+				name, c.Platform.ID(), reason, describe(m.Provenance)))
 			continue
 		}
-		p.AddPackage(m.Name, m.Provenance...)
+		p.AddPackage(name, m.Provenance...)
 	}
 	for _, m := range r.Set(DomainUnits) {
 		p.EnableUnit(m.Name, m.Provenance...)
 	}
 
 	for _, k := range r.Keyed(DomainRepositories) {
+		// A repository kind belongs to one package manager's world. Asking another
+		// platform for it is a gap to report, not a file to copy where nothing reads
+		// it (invariant 9).
+		if pl.PackageManager != model.PackageManagerRpm {
+			errs.Add(fmt.Errorf("an RPM repository requires an RPM platform: %s is %s\n  requested by: %s",
+				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
+			continue
+		}
 		repo := k.Value.(Repository)
 		keys := make([]plan.RepoKey, 0, len(repo.GPGKeys))
 		for _, key := range repo.GPGKeys {
@@ -87,7 +98,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, k := range r.Keyed(DomainRpmFiles) {
-		if pl.PackageManager == model.PackageManagerDeb {
+		if pl.PackageManager != model.PackageManagerRpm {
 			errs.Add(fmt.Errorf("rpmFiles requires an RPM platform: %s is %s\n  requested by: %s",
 				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
 			continue

@@ -1,0 +1,16 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-look
+spec:
+  layer: foundation
+  description: The DeskOS look and feel (wallpaper, login logo, boot splash), for workstations whose owner wants it.
+  resources:
+    - kind: GnomeProfile
+      name: deskos-look
+    # The DeskOS splash sits on a graphical boot, so the look carries the boot
+    # behaviour too. A workstation that wants only the behaviour takes deskos-boot.
+    - kind: BootProfile
+      name: deskos-boot
+    - kind: BootProfile
+      name: deskos-splash
