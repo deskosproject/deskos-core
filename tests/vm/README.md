@@ -176,18 +176,28 @@ The guest waits up to five minutes for `gnome-initial-setup` before reporting, s
 `--boot-timeout` has to cover that. Results are in `firstboot.md` and
 `firstboot.json`, with the raw guest values and the frames.
 
-What it asserts, and what it only reports:
+What it asserts:
 
 - the wizard (`gnome-initial-setup`) is running;
 - no account with uid >= 1000, a usable shell, and a password that is neither locked
-  (`!` or `*`) nor empty;
-- no failed **service** units.
+  (`!` or `*`) nor empty.
 
-The full failed-unit list is reported even where it is not asserted, so a run cannot
-hide what it did not judge. On the Ubuntu image the sssd responder sockets report
-`dependency` because `sssd.service` is skipped by its own condition (sssd is
-installed unconfigured); those are sockets, not services. Like the session check,
-this is an instrumented boot, and is reported as one.
+What it only reports:
+
+- the failed system units, by name. Judging them is `sessioncheck.py`'s job with the
+  known guest rule above, and that is deliberate: the rule needs the CPU, the unit's
+  properties and its journal, the session check applies it to the same disk in the
+  same job, and a second, cruder rule for one claim — "no unit failed" — is how two
+  rules drift apart. On a VM that cruder rule also fires for the platform's own
+  diagnostics, such as `mcelog` without a Machine Check device, which the known guest
+  rule tolerates by verifying six conditions first.
+
+The failed-unit list is reported even though it is not judged, so a run cannot hide
+what it did not judge, and a report that does not carry it says `unknown` rather than
+`none`. On the Ubuntu image the sssd responder sockets report `dependency` because
+`sssd.service` is skipped by its own condition (sssd is installed unconfigured);
+those are sockets, not services. Like the session check, this is an instrumented
+boot, and is reported as one.
 
 ## CI and unit tests
 
