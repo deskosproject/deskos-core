@@ -16,8 +16,16 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["displayName", "family", "release", "architectures", "packageManager", "bootc", "distribution", "flatpak"],
+      "allOf": [
+        {
+          "if": { "required": ["tier"] },
+          "then": { "required": ["owner"] }
+        }
+      ],
       "properties": {
         "displayName": { "$ref": "../../common/definitions.json#/$defs/singleLine" },
+        "owner": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+        "tier": { "enum": ["vendor", "organization"] },
         "family": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "packageManager": { "enum": ["rpm", "deb"] },
         "release": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z.-]*$" },
