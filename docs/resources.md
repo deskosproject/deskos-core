@@ -26,7 +26,7 @@ spec:
 | Group | Kinds |
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
-| `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
+| `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
@@ -103,10 +103,10 @@ capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
-or the other, according to its package manager. `rpmFiles` and `RpmRepository` are
-RPM-only: a platform that is not RPM fails at compile time when either is
-requested, instead of rendering nonsense or copying files where nothing reads
-them.
+or the other, according to its package manager. `rpmFiles`, `RpmRepository` and
+`AptRepository` are each one manager's: a platform whose manager is not that one
+fails at compile time when any of them is requested, instead of rendering nonsense
+or copying files where nothing reads them.
 
 **A package or tool name belongs to a platform, never to Core.** When Core needs a
 program the platform may spell differently, the platform declares it: `flatpak.package`
@@ -173,6 +173,14 @@ spec:
       gpgKeyFile: keys/zoom.asc
 ```
 
+A set also says **where its packages come from**, and the reference is typed like
+the repository it names: `repositories` names `RpmRepository` resources and
+`aptRepositories` names `AptRepository` resources. Either includes that repository
+in the image. Neither pins which repository a package is resolved from: that stays
+the package manager's own resolution and priority order at build time, on both
+managers. A set that names the other manager's kind is included, and fails once the
+platform's manager is known, with that reason.
+
 ### `RpmRepository`
 
 An **official vendor repository**:
@@ -193,6 +201,52 @@ spec:
 The signing keys are **local assets**, read into the plan and placed in the
 image (`/etc/pki/rpm-gpg/`), so the repository file references them by
 `file://` and a dnf transaction never trusts a key fetched from the network.
+
+### `AptRepository`
+
+A **signed APT source**, for a platform whose package manager is apt: its suite
+and components, the architectures it serves, and the vendor's key.
+
+```yaml
+apiVersion: software.deskos.org/v1alpha1
+kind: AptRepository
+metadata:
+  name: vscode
+spec:
+  id: vscode
+  displayName: Visual Studio Code - Stable
+  baseURL: https://packages.microsoft.com/repos/code
+  suite: stable
+  components: [main]
+  architectures: [amd64]
+  gpgKeyFiles:
+    - keys/microsoft.asc
+```
+
+It renders as one **deb822** stanza in
+`/etc/apt/sources.list.d/deskos-<id>.sources`, and its key as
+`/etc/apt/keyrings/deskos-<sha256>.asc`; both are copied into the image before the
+first package transaction, so a group member or a package that comes from a
+declared source has the source on disk by then. `Signed-By` names the keyring, and
+apt then requires that repository's own metadata to be signed by that key — an
+unsigned APT source is therefore not expressible, and the rendering refuses one
+with no key rather than writing a source apt would trust against every key it has.
+
+Three of the rules come from apt, not from this project:
+
+- **Suite and components are one decision.** apt tells them apart by the trailing
+  slash: a suite that is an exact archive path ends with `/` and takes no
+  components (the Kubernetes archive is the real case), and a named suite takes at
+  least one.
+- **The id is a file name.** apt reads only letters, digits, dots, hyphens and
+  underscores in `sources.list.d`, and ignores any other name *silently*; a wider
+  id is refused at compile time rather than written where nothing reads it.
+- **`architectures` is optional.** Omitted, apt downloads the indexes for its own
+  architecture list; named, it fetches only those.
+
+This is the same vendor repository the `RpmRepository` example above declares,
+expressed for the other package manager: a repository of one manager is not a
+repository of another (ADR 0015).
 
 ### `BinaryArtifact`
 

@@ -16,8 +16,9 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
    role < workstation`. Sets union, keyed definitions must match, scalars
    take the highest layer and conflict within one layer. File, root and
    profile order never change output (ADR 0003).
-4. **Exactly thirteen public kinds** in v1alpha1: Platform, Profile,
-   Workstation, PackageSet, RpmRepository, BinaryArtifact, FlatpakRemote,
+4. **Exactly fourteen public kinds** in v1alpha1: Platform, Profile,
+   Workstation, PackageSet, RpmRepository, AptRepository (ADR 0015),
+   BinaryArtifact, FlatpakRemote,
    FlatpakSet, GnomeProfile, BootProfile (ADR 0006), UpdatePolicy
    (ADR 0007), TrustAnchor (ADR 0009), Theme (ADR 0013). A test enforces the
    count (`internal/compiler/architecture_test.go`); adding a kind needs an

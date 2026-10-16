@@ -80,7 +80,7 @@ tags are rejected, and no field accepts shell, templates or hooks.
 | Group | Kinds |
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
-| `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
+| `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
@@ -138,8 +138,9 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 *provenance* (resource, including profile, layer, source file and line),
 and conflict errors list every contributor.
 
-References are transitive: a `PackageSet` names the `RpmRepository`
-resources its packages need, a `FlatpakSet` names its `FlatpakRemote`.
+References are transitive: a `PackageSet` names the `RpmRepository` and
+`AptRepository` resources its packages need, a `FlatpakSet` names its
+`FlatpakRemote`.
 Included resources contribute at the layer of the including profile.
 
 ## Providers and the registry
@@ -162,7 +163,8 @@ so a future out-of-process provider protocol can implement it.
 YAML and of Containerfile syntax. `deskosctl plan --format json` prints
 it.
 
-- **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
+- **Artifact**: base image, labels, `RpmRepository`, `AptRepository`,
+  `RpmGroupInstall`
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
   `FileInstall`, `GeneratedFile`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
   `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
@@ -186,31 +188,36 @@ Containerfile
 plan.json                 canonical Plan
 generated-manifest.json   every file with mode and sha256
 repos/etc/yum.repos.d/    one file per RpmRepository
+repos/etc/pki/rpm-gpg/    RPM repository signing keys, named by sha256
+repos/etc/apt/sources.list.d/  one deb822 source per AptRepository
+repos/etc/apt/keyrings/   APT signing keys, named by sha256
 rpm-keys/                 public keys of RPM files, named by sha256
 rootfs/                   image files, copied after package installation
 ```
 
 The Containerfile, in order:
 
-1. one group transaction, with the platform's `--exclude` options;
-2. copies repository files and runs one package transaction;
-3. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
+1. copies the repository files, so every transaction that follows can install
+   from a declared source;
+2. one group transaction, with the platform's `--exclude` options;
+3. one package transaction;
+4. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
    downloads every RPM file, checks its SHA-256, checks its signature
    against its own key in a temporary rpm keyring (an unsigned package or
    another key fails the build), and installs them in one package
    transaction; the image's rpm keyring is not changed;
-4. one verified download per binary artifact;
-5. copies `rootfs/`;
-6. checks the DeskOS GSettings override with
+5. one verified download per binary artifact;
+6. copies `rootfs/`;
+7. checks the DeskOS GSettings override with
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
-7. runs `dconf update`, regenerates the hicolor icon cache when the
+8. runs `dconf update`, regenerates the hicolor icon cache when the
    image installs desktop entry icons, regenerates the platform trust
    store when the image places trust anchors, enables and masks units and
    sets the default target;
-8. installs the Plymouth theme and rebuilds the initramfs when boot intent
+9. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
-9. cleans package caches and ends with `bootc container lint`.
+10. cleans package caches and ends with `bootc container lint`.
 
 Every generated command comes from a typed operation; values are
 validated upstream and quoted again. The plan is also installed as

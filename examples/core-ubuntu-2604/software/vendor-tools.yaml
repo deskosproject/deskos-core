@@ -1,0 +1,36 @@
+# An organization's vendor tooling on Ubuntu, from the vendor's own signed APT
+# source. It is the same vendor repository the RPM example declares, expressed
+# for the other package manager: a repository of one manager is not a repository
+# of another (ADR 0015).
+apiVersion: software.deskos.org/v1alpha1
+kind: AptRepository
+metadata:
+  name: vscode
+spec:
+  # https://code.visualstudio.com/docs/setup/linux
+  id: vscode
+  displayName: Visual Studio Code - Stable
+  baseURL: https://packages.microsoft.com/repos/code
+  # A named suite takes at least one component; an archive whose suite is an
+  # exact path takes none and ends that path with a slash.
+  suite: stable
+  components: [main]
+  architectures: [amd64]
+  # The key is a local asset pinned by this repository's commit, and apt is told
+  # to require it through Signed-By: a source without one is trusted against
+  # every key apt has, and this project does not render that.
+  gpgKeyFiles:
+    - ../assets/apt-keys/microsoft.asc
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-vendor-tools
+spec:
+  packages:
+    - code
+  # The reference is typed like the kind it names. This set needs an APT source;
+  # on a platform whose manager is not apt the composition fails with that reason
+  # instead of including a file nothing reads (invariant 9).
+  aptRepositories:
+    - vscode

@@ -62,6 +62,7 @@ type Artifact struct {
 	BaseImage        BaseImage                `json:"baseImage"`
 	Labels           []Label                  `json:"labels"`
 	RpmRepositories  []RpmRepository          `json:"rpmRepositories"`
+	AptRepositories  []AptRepository          `json:"aptRepositories"`
 	PackageGroups    []PackageGroupInstall    `json:"packageGroups"`
 	Packages         []PackageInstall         `json:"packages"`
 	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
@@ -103,6 +104,23 @@ type RpmRepository struct {
 	GPGCheck    bool               `json:"gpgCheck"`
 	GPGKeys     []RepoKey          `json:"gpgKeys"`
 	Provenance  []model.Provenance `json:"provenance"`
+}
+
+// AptRepository is one signed APT source: a suite, its components, the
+// architectures it serves, and the keys its metadata must be signed by. Suite
+// and components are one decision rather than two, because an exact path ends
+// with a slash and takes no components, and a named suite takes at least one.
+type AptRepository struct {
+	ID          string   `json:"id"`
+	DisplayName string   `json:"displayName"`
+	BaseURL     string   `json:"baseURL"`
+	Suite       string   `json:"suite"`
+	Components  []string `json:"components"`
+	// Architectures is what apt downloads indexes for; empty leaves apt's
+	// own architecture list in charge.
+	Architectures []string           `json:"architectures"`
+	GPGKeys       []RepoKey          `json:"gpgKeys"`
+	Provenance    []model.Provenance `json:"provenance"`
 }
 
 // RepoKey is one repository signing key: its bytes, the file name it is placed
@@ -573,6 +591,9 @@ func nonNil(p *Plan) {
 	}
 	if a.RpmRepositories == nil {
 		a.RpmRepositories = []RpmRepository{}
+	}
+	if a.AptRepositories == nil {
+		a.AptRepositories = []AptRepository{}
 	}
 	if a.PackageGroups == nil {
 		a.PackageGroups = []PackageGroupInstall{}

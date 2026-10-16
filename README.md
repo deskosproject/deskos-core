@@ -42,7 +42,7 @@ artifact in your pipeline.
 
 - **Resource** — a YAML file describing one thing: a package set, a
   repository, a desktop setting, a theme, an update policy. There are
-  **thirteen kinds**; each is small and composable. See
+  **fourteen kinds**; each is small and composable. See
   [docs/resources.md](docs/resources.md).
 - **Profile** — a named group of resources at a **layer**:
   `foundation` < `organization` < `role` < `workstation`. A higher layer

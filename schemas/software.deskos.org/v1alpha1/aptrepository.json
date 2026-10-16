@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/software.deskos.org/v1alpha1/aptrepository.json",
+  "title": "software.deskos.org/v1alpha1 AptRepository",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "software.deskos.org/v1alpha1" },
+    "kind": { "const": "AptRepository" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "displayName", "baseURL", "suite", "gpgKeyFiles"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+        "displayName": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+        "baseURL": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
+        "suite": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 },
+        "components": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" }
+        },
+        "architectures": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$" }
+        },
+        "gpgKeyFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+        }
+      }
+    }
+  }
+}

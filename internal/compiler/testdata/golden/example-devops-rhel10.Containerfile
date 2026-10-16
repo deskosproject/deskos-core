@@ -9,6 +9,9 @@
 
 FROM registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee
 
+# Package repositories
+COPY repos/ /
+
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
@@ -18,9 +21,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'workstation-product-environment' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
-
-# RPM repositories
-COPY repos/ /
 
 # Packages
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \

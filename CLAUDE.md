@@ -254,6 +254,7 @@ Current public resource kinds are limited to:
 - Workstation
 - PackageSet
 - RpmRepository
+- AptRepository (ADR 0015)
 - BinaryArtifact
 - FlatpakRemote
 - FlatpakSet
@@ -261,6 +262,7 @@ Current public resource kinds are limited to:
 - BootProfile (ADR 0006)
 - UpdatePolicy (ADR 0007)
 - TrustAnchor (ADR 0009)
+- Theme (ADR 0013)
 
 Do not expand that list casually.
 

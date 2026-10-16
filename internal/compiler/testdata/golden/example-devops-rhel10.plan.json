@@ -159,6 +159,7 @@
         ]
       }
     ],
+    "aptRepositories": [],
     "packageGroups": [
       {
         "name": "workstation",

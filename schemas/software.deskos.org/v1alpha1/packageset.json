@@ -20,6 +20,7 @@
         "groups": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" } },
         "packages": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/packageName" } },
         "repositories": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/name" } },
+        "aptRepositories": { "type": "array", "items": { "$ref": "../../common/definitions.json#/$defs/name" } },
         "enableUnits": {
           "type": "array",
           "items": { "type": "string", "pattern": "^[A-Za-z0-9@_.:-]+\\.(service|socket|timer|path)$" }

@@ -37,6 +37,8 @@ const (
 	// repoGPGDir is where repository signing keys are placed in the image;
 	// the repository files reference them by file://, never by URL.
 	repoGPGDir    = "/etc/pki/rpm-gpg"
+	aptKeyringDir = "/etc/apt/keyrings"
+	aptSourcesDir = "/etc/apt/sources.list.d"
 	rpmKeysDir    = "rpm-keys"
 	rootfsDir     = "rootfs"
 	imagePlanPath = "/usr/share/deskos/plan.json"
@@ -89,6 +91,25 @@ func Render(p *plan.Plan) ([]File, error) {
 			r.add(path.Join(reposDir, repoGPGDir, name), 0o644, []byte(key.Content))
 		}
 		r.add(path.Join(reposDir, "etc/yum.repos.d", repo.ID+".repo"), 0o644, repoFile(repo))
+	}
+	seenAptKeys := map[string]bool{}
+	for _, src := range p.Artifact.AptRepositories {
+		if len(src.GPGKeys) == 0 {
+			// Never write a source apt would trust against every key it has.
+			return nil, fmt.Errorf("APT source %s: no signing key, and an unsigned source is not rendered", src.ID)
+		}
+		for _, key := range src.GPGKeys {
+			if sum := sha256.Sum256([]byte(key.Content)); hex.EncodeToString(sum[:]) != key.SHA256 {
+				return nil, fmt.Errorf("APT source %s: gpg key %s does not match its sha256", src.ID, key.Name)
+			}
+			name := aptKeyName(key)
+			if seenAptKeys[name] {
+				continue
+			}
+			seenAptKeys[name] = true
+			r.add(path.Join(reposDir, aptKeyringDir, name), 0o644, []byte(key.Content))
+		}
+		r.add(path.Join(reposDir, aptSourcesDir, aptSourceName(src.ID)), 0o644, aptSourceFile(src))
 	}
 	keys := map[string]bool{}
 	for _, f := range p.Artifact.RpmFiles {
@@ -270,6 +291,49 @@ func repoFile(r plan.RpmRepository) []byte {
 // cannot inject repository directives through a crafted file name.
 func repoKeyName(k plan.RepoKey) string {
 	return k.SHA256 + ".asc"
+}
+
+// aptSourceName is the file an APT source is written to. The name is prefixed
+// so it cannot collide with a source the base or a package owns (Ubuntu ships
+// ubuntu.sources), and the id it carries is restricted to the characters apt
+// accepts in this directory — anything else and apt ignores the file in
+// silence, which is why the provider refuses those ids.
+func aptSourceName(id string) string { return "deskos-" + id + ".sources" }
+
+// aptKeyName is the file name an APT keyring takes in the image, derived from
+// the key's sha256 for the same reason repoKeyName is.
+func aptKeyName(k plan.RepoKey) string { return "deskos-" + k.SHA256 + ".asc" }
+
+// aptSourceFile writes one deb822 source. Apt reads these fields itself, and
+// the display name goes where apt documents that a third party describes a
+// repository to a user. Signed-By is a whitespace-separated list of absolute
+// keyring paths and is what makes the source signed: apt then requires the
+// repository's own metadata to carry a signature by one of those keys, so a
+// repository that stops signing stops working instead of quietly going
+// unsigned.
+func aptSourceFile(r plan.AptRepository) []byte {
+	var b strings.Builder
+	b.WriteString(generatedHeader)
+	b.WriteString("Types: deb\n")
+	fmt.Fprintf(&b, "URIs: %s\n", r.BaseURL)
+	fmt.Fprintf(&b, "Suites: %s\n", r.Suite)
+	if len(r.Components) > 0 {
+		fmt.Fprintf(&b, "Components: %s\n", strings.Join(r.Components, " "))
+	}
+	if len(r.Architectures) > 0 {
+		fmt.Fprintf(&b, "Architectures: %s\n", strings.Join(r.Architectures, " "))
+	}
+	if len(r.GPGKeys) > 0 {
+		refs := make([]string, 0, len(r.GPGKeys))
+		for _, k := range r.GPGKeys {
+			refs = append(refs, path.Join(aptKeyringDir, aptKeyName(k)))
+		}
+		fmt.Fprintf(&b, "Signed-By: %s\n", strings.Join(refs, " "))
+	}
+	if r.DisplayName != "" {
+		fmt.Fprintf(&b, "Description: %s\n", r.DisplayName)
+	}
+	return []byte(b.String())
 }
 
 // desktopFile writes a Desktop Entry Specification file; Exec is a validated
@@ -606,13 +670,16 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	}
 	w("\nFROM %s\n", a.BaseImage.Ref)
 
+	// Repositories are on disk before the first package transaction: a
+	// transaction that installs a member of a group, or a package, from a
+	// declared repository needs the repository file to exist by then.
+	if hasRepos {
+		w("\n# Package repositories\nCOPY %s/ /\n", reposDir)
+	}
+
 	if len(a.PackageGroups) > 0 {
 		w("\n# Package groups\n")
 		pkgTransaction(w, mgr, nil, mgr.groupInstall, groupArgs(mgr, a.PackageGroups))
-	}
-
-	if hasRepos {
-		w("\n# RPM repositories\nCOPY %s/ /\n", reposDir)
 	}
 
 	if len(a.Packages) > 0 {

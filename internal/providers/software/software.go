@@ -1,5 +1,5 @@
 // Package software provides the software.deskos.org kinds: PackageSet,
-// RpmRepository, BinaryArtifact, FlatpakRemote and FlatpakSet.
+// RpmRepository, AptRepository, BinaryArtifact, FlatpakRemote and FlatpakSet.
 package software
 
 import (
@@ -26,6 +26,7 @@ func gvk(kind string) model.GVK {
 var (
 	PackageSetGVK     = gvk("PackageSet")
 	RpmRepositoryGVK  = gvk("RpmRepository")
+	AptRepositoryGVK  = gvk("AptRepository")
 	BinaryArtifactGVK = gvk("BinaryArtifact")
 	FlatpakRemoteGVK  = gvk("FlatpakRemote")
 	FlatpakSetGVK     = gvk("FlatpakSet")
@@ -37,6 +38,7 @@ var (
 	DomainPackageGroups  = compose.Domain{ID: "package-group", Label: "package group"}
 	DomainUnits          = compose.Domain{ID: "systemd-unit", Label: "systemd unit"}
 	DomainRepositories   = compose.Domain{ID: "rpm-repository", Label: "RPM repository"}
+	DomainAptSources     = compose.Domain{ID: "apt-source", Label: "APT source"}
 	DomainRpmFiles       = compose.Domain{ID: "rpm-file", Label: "RPM file"}
 	DomainBinaries       = compose.Domain{ID: "binary-destination", Label: "binary install destination"}
 	DomainDesktopEntries = compose.Domain{ID: "desktop-entry", Label: "desktop entry"}
@@ -46,21 +48,33 @@ var (
 
 // Providers returns the software.deskos.org providers.
 func Providers() []registry.Provider {
-	return []registry.Provider{packageSet{}, rpmRepository{}, binaryArtifact{}, flatpakRemote{}, flatpakSet{}}
+	return []registry.Provider{packageSet{}, rpmRepository{}, aptRepository{}, binaryArtifact{}, flatpakRemote{}, flatpakSet{}}
 }
 
 var (
-	pkgRE     = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
-	groupRE   = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
-	unitRE    = regexp.MustCompile(`^[A-Za-z0-9@_.:-]+\.(service|socket|timer|path)$`)
-	repoIDRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]*$`)
-	versionRE = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]*$`)
-	sha256RE  = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	commandRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
-	appIDRE   = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*){2,}$`)
-	branchRE  = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
-	collIDRE  = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$`)
-	textRE    = regexp.MustCompile(`^[^\x00-\x1f\x7f]*$`)
+	pkgRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+	groupRE  = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	unitRE   = regexp.MustCompile(`^[A-Za-z0-9@_.:-]+\.(service|socket|timer|path)$`)
+	repoIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]*$`)
+	// aptIDRE is stricter than repoIDRE on purpose: apt ignores a file in
+	// sources.list.d whose name carries anything but letters, digits, dots,
+	// hyphens and underscores, so an id apt would ignore is refused earlier
+	// rather than written where nothing reads it.
+	aptIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	suiteRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	// A suite that is a path is recognized by its trailing slash, and this
+	// checks only the characters: whether the path makes sense is the archive's
+	// business, and apt says so by refusing the index, not by guessing here.
+	suitePathRE = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
+	componentRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	archRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9-]*$`)
+	versionRE   = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]*$`)
+	sha256RE    = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	commandRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+	appIDRE     = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*){2,}$`)
+	branchRE    = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
+	collIDRE    = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$`)
+	textRE      = regexp.MustCompile(`^[^\x00-\x1f\x7f]*$`)
 )
 
 // httpsURL validates an https URL without whitespace or control characters.
@@ -114,13 +128,18 @@ func checksum(sum string) error {
 
 // ---------------------------------------------------------------- PackageSet
 
-// PackageSetSpec describes system software of the managed baseline.
+// PackageSetSpec describes system software of the managed baseline. Its two
+// repository lists are typed because a repository belongs to one package
+// manager's world: a set says which sources it needs of the platform it will be
+// composed onto, and asking a platform for the other manager's kind is a gap the
+// composition reports (invariant 9).
 type PackageSetSpec struct {
-	Groups       []string      `json:"groups,omitempty"`
-	Packages     []string      `json:"packages,omitempty"`
-	Repositories []string      `json:"repositories,omitempty"`
-	EnableUnits  []string      `json:"enableUnits,omitempty"`
-	RpmFiles     []RpmFileSpec `json:"rpmFiles,omitempty"`
+	Groups          []string      `json:"groups,omitempty"`
+	Packages        []string      `json:"packages,omitempty"`
+	Repositories    []string      `json:"repositories,omitempty"`
+	AptRepositories []string      `json:"aptRepositories,omitempty"`
+	EnableUnits     []string      `json:"enableUnits,omitempty"`
+	RpmFiles        []RpmFileSpec `json:"rpmFiles,omitempty"`
 }
 
 // RpmFileSpec is a signed RPM downloaded without a repository.
@@ -180,6 +199,11 @@ func (packageSet) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "invalid RpmRepository reference %q", r))
 		}
 	}
+	for _, r := range s.AptRepositories {
+		if !model.ValidName(r) {
+			errs.Add(model.Errorf(res, "invalid AptRepository reference %q", r))
+		}
+	}
 	for _, u := range s.EnableUnits {
 		if !unitRE.MatchString(u) {
 			errs.Add(model.Errorf(res, "invalid systemd unit %q (expected .service, .socket, .timer or .path)", u))
@@ -215,9 +239,13 @@ func (packageSet) Decode(res *model.Resource) error {
 }
 
 func (packageSet) References(res *model.Resource) []model.ObjectRef {
+	spec := res.Object.(*PackageSetObject)
 	var refs []model.ObjectRef
-	for _, r := range res.Object.(*PackageSetObject).Repositories {
+	for _, r := range spec.Repositories {
 		refs = append(refs, model.ObjectRef{APIVersion: RpmRepositoryGVK.APIVersion(), Kind: RpmRepositoryGVK.Kind, Name: r})
+	}
+	for _, r := range spec.AptRepositories {
+		refs = append(refs, model.ObjectRef{APIVersion: AptRepositoryGVK.APIVersion(), Kind: AptRepositoryGVK.Kind, Name: r})
 	}
 	return refs
 }
@@ -240,6 +268,28 @@ func (packageSet) Contribute(res *model.Resource, s *compose.Scope) error {
 }
 
 // ------------------------------------------------------------- RpmRepository
+
+// repoKeys reads a repository's signing keys from local assets, never from a
+// URL: a build must not fetch trust material over the network. The ASCII-armor
+// frame is what a keyring of either package manager accepts, and the sha256 of
+// the bytes travels in the plan so the renderer checks the same content.
+func repoKeys(res *model.Resource, files []string, errs *model.ErrorList) []RepoKey {
+	var keys []RepoKey
+	for _, f := range files {
+		key, err := assets.Read(res, f)
+		if err != nil {
+			errs.Add(model.Errorf(res, "gpgKeyFiles: %v", err))
+			continue
+		}
+		text := string(key.Data)
+		if !armorRE.MatchString(text) || !strings.HasPrefix(strings.TrimSpace(text), armorBegin) || !strings.HasSuffix(strings.TrimSpace(text), armorEnd) {
+			errs.Add(model.Errorf(res, "gpgKeyFiles %s must be an ASCII-armored OpenPGP public key", key.Path))
+			continue
+		}
+		keys = append(keys, RepoKey{Name: path.Base(key.Path), Content: text, SHA256: key.SHA256})
+	}
+	return keys
+}
 
 // RpmRepositorySpec describes an RPM repository. Its signing keys are local
 // asset files, read into the plan and placed in the image, so a dnf
@@ -292,19 +342,7 @@ func (rpmRepository) Decode(res *model.Resource) error {
 		errs.Add(model.Errorf(res, "baseURL: %v", err))
 	}
 	r := Repository{ID: s.ID, DisplayName: s.DisplayName, BaseURL: s.BaseURL, Enabled: true, GPGCheck: true}
-	for _, f := range s.GPGKeyFiles {
-		key, err := assets.Read(res, f)
-		if err != nil {
-			errs.Add(model.Errorf(res, "gpgKeyFiles: %v", err))
-			continue
-		}
-		text := string(key.Data)
-		if !armorRE.MatchString(text) || !strings.HasPrefix(strings.TrimSpace(text), armorBegin) || !strings.HasSuffix(strings.TrimSpace(text), armorEnd) {
-			errs.Add(model.Errorf(res, "gpgKeyFiles %s must be an ASCII-armored OpenPGP public key", key.Path))
-			continue
-		}
-		r.GPGKeys = append(r.GPGKeys, RepoKey{Name: path.Base(key.Path), Content: text, SHA256: key.SHA256})
-	}
+	r.GPGKeys = repoKeys(res, s.GPGKeyFiles, &errs)
 	if s.Enabled != nil {
 		r.Enabled = *s.Enabled
 	}
@@ -327,8 +365,117 @@ func (rpmRepository) Contribute(res *model.Resource, s *compose.Scope) error {
 	return nil
 }
 
-// ------------------------------------------------------------ BinaryArtifact
+// ------------------------------------------------------------ AptRepository
 
+// AptRepositorySpec describes a signed APT source. Its keys are local assets
+// like an RPM repository's, and the vendor key is not optional: apt enforces it
+// through Signed-By, so an unsigned APT source is not expressible here (unlike
+// RPM, where gpgCheck can be switched off and the plan carries a warning).
+type AptRepositorySpec struct {
+	ID            string   `json:"id"`
+	DisplayName   string   `json:"displayName"`
+	BaseURL       string   `json:"baseURL"`
+	Suite         string   `json:"suite"`
+	Components    []string `json:"components,omitempty"`
+	Architectures []string `json:"architectures,omitempty"`
+	GPGKeyFiles   []string `json:"gpgKeyFiles"`
+}
+
+// AptSource is the normalized, composed APT source definition.
+type AptSource struct {
+	ID            string    `json:"id"`
+	DisplayName   string    `json:"displayName"`
+	BaseURL       string    `json:"baseURL"`
+	Suite         string    `json:"suite"`
+	Components    []string  `json:"components"`
+	Architectures []string  `json:"architectures"`
+	GPGKeys       []RepoKey `json:"gpgKeys"`
+}
+
+type aptRepository struct{}
+
+func (aptRepository) GVK() model.GVK { return AptRepositoryGVK }
+func (aptRepository) Schema() string { return "software.deskos.org/v1alpha1/aptrepository.json" }
+
+func (aptRepository) Decode(res *model.Resource) error {
+	var s AptRepositorySpec
+	if err := model.DecodeSpec(res, &s); err != nil {
+		return err
+	}
+	var errs model.ErrorList
+	if !aptIDRE.MatchString(s.ID) {
+		errs.Add(model.Errorf(res, "invalid source id %q: apt ignores a file in sources.list.d whose name is not letters, digits, dots, hyphens and underscores", s.ID))
+	}
+	if s.DisplayName == "" || !textRE.MatchString(s.DisplayName) {
+		errs.Add(model.Errorf(res, "displayName is required and must be a single line"))
+	}
+	if err := httpsURL(s.BaseURL, false); err != nil {
+		errs.Add(model.Errorf(res, "baseURL: %v", err))
+	}
+	// apt tells a named suite from an exact path by the trailing slash, and the
+	// two take different halves of the source: an exact path ends the suite with
+	// a slash and takes no components, and a named suite takes at least one.
+	exactPath := strings.HasSuffix(s.Suite, "/")
+	suiteOK := false
+	switch {
+	case s.Suite == "" || !textRE.MatchString(s.Suite) || strings.ContainsAny(s.Suite, " \t"):
+		errs.Add(model.Errorf(res, "suite is required and must be a single value"))
+	case exactPath && suitePathRE.MatchString(s.Suite):
+		suiteOK = true
+	case !exactPath && suiteRE.MatchString(s.Suite):
+		suiteOK = true
+	default:
+		errs.Add(model.Errorf(res, "suite %q is neither a suite name nor a path ending in a slash", s.Suite))
+	}
+	if suiteOK {
+		if exactPath && len(s.Components) > 0 {
+			errs.Add(model.Errorf(res, "suite %q is a path, so components must be omitted", s.Suite))
+		}
+		if !exactPath && len(s.Components) == 0 {
+			errs.Add(model.Errorf(res, "suite %q is not a path, so at least one component is required", s.Suite))
+		}
+	}
+	for _, c := range s.Components {
+		if !componentRE.MatchString(c) {
+			errs.Add(model.Errorf(res, "invalid component %q", c))
+		}
+	}
+	for _, a := range s.Architectures {
+		if !archRE.MatchString(a) {
+			errs.Add(model.Errorf(res, "invalid architecture %q", a))
+		}
+	}
+	r := AptSource{
+		ID: s.ID, DisplayName: s.DisplayName, BaseURL: s.BaseURL, Suite: s.Suite,
+		Components: s.Components, Architectures: s.Architectures,
+	}
+	r.GPGKeys = repoKeys(res, s.GPGKeyFiles, &errs)
+	if len(s.GPGKeyFiles) == 0 {
+		// The schema requires a key file too; this is the same rule where the
+		// rendering needs it, because a source without Signed-By is a source
+		// apt trusts against every key it has.
+		errs.Add(model.Errorf(res, "gpgKeyFiles are required: an APT source is signed by its vendor's key"))
+	}
+	if r.Components == nil {
+		r.Components = []string{}
+	}
+	if r.Architectures == nil {
+		r.Architectures = []string{}
+	}
+	if r.GPGKeys == nil {
+		r.GPGKeys = []RepoKey{}
+	}
+	res.Object = &r
+	return errs.Err()
+}
+
+func (aptRepository) Contribute(res *model.Resource, s *compose.Scope) error {
+	r := res.Object.(*AptSource)
+	s.AddKeyed(DomainAptSources, r.ID, *r, model.Canonical(r))
+	return nil
+}
+
+// ------------------------------------------------------------ BinaryArtifact
 // BinaryArtifactSpec describes a checksum-pinned upstream binary or archive.
 type BinaryArtifactSpec struct {
 	Version      string            `json:"version"`
