@@ -97,15 +97,18 @@ spec:
 
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
-capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10` and
-`rhel-10` in [`resources/platforms/`](../resources/platforms/); see
+capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
+`rhel-10` and `ubuntu-2604` in [`resources/platforms/`](../resources/platforms/); see
 [architecture.md](architecture.md#core-organizations-and-roles).
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
-or the other, according to its package manager, and `rpmFiles` is RPM-only, so a
-deb platform that requests one fails at compile time instead of rendering
-nonsense.
+or the other, according to its package manager. `packageAliases` maps a name the
+foundation uses to the name this platform publishes it under, so the foundation
+keeps one name instead of one per platform. `rpmFiles` and `RpmRepository` are
+RPM-only: a platform that is not RPM fails at compile time when either is
+requested, instead of rendering nonsense or copying files where nothing reads
+them.
 
 ### `PackageSet`
 

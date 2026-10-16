@@ -17,8 +17,11 @@
 **DeskOS is an open workstation artifact factory.** An organization
 describes its workstation as *declarative resources* (applications,
 desktop settings, branding, boot appearance) and DeskOS **compiles** them
-into a bootable container image for **CentOS Stream 10**, **RHEL 10** or
-**Ubuntu 26.04**, from which QCOW2 disks and installer ISOs are built.
+into a deterministic build context for **CentOS Stream 10**, **RHEL 10** or
+**Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context builds a
+bootable image, from which QCOW2 disks and installer ISOs are made; the
+Ubuntu context is not built yet
+([validation status](docs/architecture.md#validation-status)).
 
 > **A workstation is compiled from organizational intent.**
 
@@ -204,9 +207,9 @@ in [**docs/install.md**](docs/install.md).
 | Compose and render | deterministic | deterministic | deterministic |
 | Image build, `bootc container lint` | CI | downstream organization | **not yet** |
 | Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | **not yet** |
-| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | **never** |
+| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | no derived image published yet |
 | Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
-| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | not pinned yet |
+| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
 
 Ubuntu composes and renders today. Its image has **not** been built or booted from
 the pinned digest, and the organization-owned base still carries the
