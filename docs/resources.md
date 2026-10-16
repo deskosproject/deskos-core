@@ -173,12 +173,13 @@ spec:
       gpgKeyFile: keys/zoom.asc
 ```
 
-A set also says **where its packages come from**, and the reference is typed like
+A set also names the **sources its packages need**, and the reference is typed like
 the repository it names: `repositories` names `RpmRepository` resources and
 `aptRepositories` names `AptRepository` resources. Either includes that repository
 in the image. Neither pins which repository a package is resolved from: that stays
 the package manager's own resolution and priority order at build time, on both
-managers. A set that names the other manager's kind is included, and fails once the
+managers, and a package the vendor also ships elsewhere can still come from there.
+A set that names the other manager's kind is included, and fails once the
 platform's manager is known, with that reason.
 
 ### `RpmRepository`
@@ -244,9 +245,10 @@ Three of the rules come from apt, not from this project:
 - **`architectures` is optional.** Omitted, apt downloads the indexes for its own
   architecture list; named, it fetches only those.
 
-This is the same vendor repository the `RpmRepository` example above declares,
-expressed for the other package manager: a repository of one manager is not a
-repository of another (ADR 0015).
+This is the same vendor the `RpmRepository` example above declares, at that
+vendor's APT endpoint — a different archive from the RPM one — expressed for the
+other package manager: a repository of one manager is not a repository of another
+(ADR 0015).
 
 ### `BinaryArtifact`
 
