@@ -140,8 +140,11 @@ jobs:
           if check "$WORK/bootcheck"; then
             exit 0
           fi
-          if ! grep -q 'the graphical boot splash never appeared' "$WORK/bootcheck/summary.md"; then
-            echo 'the boot check failed for something other than the splash' >&2
+          # Only the splash failure is retried, and only when it is the whole list:
+          # the summary is structured, so this reads the list rather than a
+          # rendered page, and a run that failed for anything else fails here.
+          if ! python3 -c "import json,sys; f=json.load(open(sys.argv[1])).get('failures',[]); sys.exit(0 if f==['the graphical boot splash never appeared'] else 1)" "$WORK/bootcheck/summary.json"; then
+            echo 'the boot check failed for something other than the splash alone' >&2
             exit 1
           fi
           echo "::warning::the splash did not appear on the first boot; booting again"

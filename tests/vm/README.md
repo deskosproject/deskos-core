@@ -179,32 +179,38 @@ The guest waits up to five minutes for `gnome-initial-setup` before reporting, s
 What it asserts:
 
 - the wizard (`gnome-initial-setup`) is running;
+- the wizard **is the session that came up**: the guest reports loginctl sessions, and
+  a session by that name must exist on a seat. A process alone is not the session, and
+  a stable GDM screen with the wizard suppressed is exactly what this has to tell
+  apart from the wizard;
 - no account with uid >= 1000, a usable shell, and a password that is neither locked
-  (`!` or `*`) nor empty.
+  (`!` or `*`) nor empty;
+- no unexpected failed system services, judged with **`sessioncheck.py`'s own rule for
+  the known guest signature** — the same function, not a second copy of it — applied
+  here to this boot's observations. The probes it needs (CPU vendor, `edac_mce_amd`,
+  `/dev/mcelog`, the unit's properties, its journal) are collected here too.
 
-What it only reports:
+A guest that does not report the failed services fails: unknown is not clean. Every
+check boots its own overlay, so what is shared is the rule, not another check's
+observations — a unit can fail in this boot and not in the session check's.
 
-- the failed system units, by name. Judging them is `sessioncheck.py`'s job with the
-  known guest rule above, and that is deliberate: the rule needs the CPU, the unit's
-  properties and its journal, the session check applies it to the same disk in the
-  same job, and a second, cruder rule for one claim — "no unit failed" — is how two
-  rules drift apart. On a VM that cruder rule also fires for the platform's own
-  diagnostics, such as `mcelog` without a Machine Check device, which the known guest
-  rule tolerates by verifying six conditions first.
+What it reports in full without judging it:
 
-The failed-unit list is reported even though it is not judged, so a run cannot hide
-what it did not judge, and a report that does not carry it says `unknown` rather than
-`none`. On the Ubuntu image the sssd responder sockets report `dependency` because
-`sssd.service` is skipped by its own condition (sssd is installed unconfigured);
-those are sockets, not services. Like the session check, this is an instrumented
-boot, and is reported as one.
+- the complete failed-unit list, including unit types the check above does not judge.
+  On the Ubuntu image the sssd responder sockets report `dependency` because
+  `sssd.service` is skipped by its own condition (sssd is installed unconfigured);
+  those are sockets, not services. Like the session check, this is an instrumented
+  boot, and is reported as one.
 
 ## CI and unit tests
 
 The GitHub workflow `.github/workflows/vm-bootcheck.yml` runs the same
-build, boot and session checks. It is manual only (`workflow_dispatch`),
-and the QCOW2 it builds is test input that is not uploaded. It is a pure
-check: the publish path is `supply-chain.yml`.
+build, boot and session checks. It runs on pull requests and on `main` for the paths
+that can change an image, and on demand (`workflow_dispatch`), per platform: CentOS
+Stream 10 from this checkout, and Ubuntu 26.04 with no published image to hand to
+`bootc-image-builder`, written by `bootc install to-disk` out of a compressed OCI
+layout. The QCOW2 and the raw disk it builds are test input that is not uploaded. It
+is a pure check: the publish path is `supply-chain.yml`.
 
 Unit tests: `python3 -m unittest discover -s tests/vm` (run by CI, not by
 `make check`).

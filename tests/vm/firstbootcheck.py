@@ -3,8 +3,14 @@
 
 Boots the disk through a throwaway overlay and asks **the guest**, not a screenshot:
 that the first-boot wizard is the session that came up, that no account could log in,
-and that no service unit failed. No account and no session are added: the point is
-the machine as it ships, at its first boot.
+and that no service failed that is not a known guest signature. No account and no
+session are added: the point is the machine as it ships, at its first boot.
+
+The failed units are judged here with `sessioncheck.py`'s own rule and probes — the
+same function, not a second copy of it — so a unit that fails for any reason other
+than the known guest signature fails this check. Every check boots its own overlay,
+so what is shared is the rule and not another check's observations: a unit can fail
+in this boot and not in the session check's.
 
 This exists because `bootcheck.py` classifies pixels. It stops at the first stable
 graphical screen, which on an Ubuntu 26.04 image is GDM, not the wizard — so it
@@ -28,6 +34,7 @@ import bootcheck
 import sessioncheck
 
 MARK_BEGIN = sessioncheck.MARK_BEGIN
+MARK_JOURNAL = sessioncheck.MARK_JOURNAL
 MARK_END = sessioncheck.MARK_END
 WIZARD = "gnome-initial-setup"
 REPORT = "/var/lib/deskos-qa/firstboot-report.sh"
@@ -64,6 +71,14 @@ echo "user_sessions=$(loginctl list-sessions --no-legend 2>/dev/null | awk '{{pr
 echo "sessions_raw=$(loginctl list-sessions --no-legend 2>/dev/null | tr -s ' ' | cut -d' ' -f1-4 | paste -sd'|' -)"
 echo "system_failed_services=$(systemctl --failed --type=service --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+# The same diagnostics the session check collects, because the known guest
+# signature is verified with the same function it uses.
+echo "diag_cpu_vendor=$(awk -F': *' '/^vendor_id/{{print $2; exit}}' /proc/cpuinfo)"
+echo "diag_cpu_family=$(awk -F': *' '/^cpu family/{{print $2; exit}}' /proc/cpuinfo)"
+echo "diag_cpu_model_name=$(awk -F': *' '/^model name/{{print $2; exit}}' /proc/cpuinfo)"
+if test -e /sys/module/edac_mce_amd/initstate; then echo "diag_edac_mce_amd=$(cat /sys/module/edac_mce_amd/initstate)"; elif test -d /sys/module/edac_mce_amd; then echo "diag_edac_mce_amd=present-no-initstate"; else echo "diag_edac_mce_amd=absent"; fi
+test -e /dev/mcelog && echo "diag_dev_mcelog=present" || echo "diag_dev_mcelog=absent"
+echo "diag_mcelog_service=$(systemctl show mcelog.service {' '.join('-p ' + p for p in sessioncheck.MCELOG_PROPS)} 2>/dev/null | paste -sd';' -)"
 # An account that could log in with a password: uid >= 1000, a usable shell, and a
 # shadow field that is neither locked (starts with ! or *) nor empty (no password
 # required). What the upstream image ships may be a locked account with no home;
@@ -82,6 +97,8 @@ echo "accounts_list=$(gdbus call --system --dest org.freedesktop.Accounts --obje
 echo "accounts_ubuntu=$(gdbus call --system --dest org.freedesktop.Accounts --object-path /org/freedesktop/Accounts --method org.freedesktop.Accounts.FindUserByName ubuntu 2>/dev/null | cut -c1-80)"
 echo "uid1000=$(awk -F: '$3 >= 1000 {{print $1"("$3","$6","$7")"}}' /etc/passwd | paste -sd, -)"
 echo "gdm_journal=$(journalctl -b -u gdm.service --no-pager 2>/dev/null | grep -iE 'initial|greeter|no user|session' | tail -6 | tr -s ' ' | cut -c1-170 | paste -sd'|' -)"
+echo {MARK_JOURNAL}
+for u in $(systemctl --failed --no-legend --plain | awk '{{print $1}}'); do echo "--- failed unit $u"; journalctl -b -u "$u" -o short-monotonic --no-pager | tail -n 30; done
 echo {MARK_END}
 }} > /dev/ttyS0
 systemctl poweroff
@@ -114,15 +131,14 @@ def check(checks, name, ok, detail):
 # that judgement, with the known guest signature documented in tests/vm/README.md.
 
 
-def evaluate(values):
-    """What a first boot must show: the first-boot wizard is the session that came
-    up, and no account can log in with a password. Failed units are not judged here
-    — they are reported by observations() — because the rule that tolerates a known
-    guest signature needs the CPU, the unit's properties and its journal, and
-    sessioncheck.py already applies it to the same disk in the same job. This check
-    could only say "a unit failed", which on a VM is the platform's own diagnostics
-    (mcelog without a Machine Check device), and a second, cruder rule for the same
-    claim is how two rules drift apart.
+def evaluate(values, journal=""):
+    """What a first boot must show, each answer quoted from the guest.
+
+    The wizard has to be the session that came up, not merely a process: the guest
+    reports both, and a stable login screen with the wizard suppressed is what a
+    screenshot cannot tell apart from this. Failed services are judged with the
+    session check's own rule for the known guest signature, and a guest that does
+    not report them fails: unknown is not clean.
     """
     checks = []
     gis = values.get("gis_processes", "")
@@ -132,17 +148,40 @@ def evaluate(values):
           f"gis_args={values.get('gis_args')!r} gdm_active={values.get('gdm_active')!r} "
           f"sessions={values.get('user_sessions')!r} sessions_raw={values.get('sessions_raw')!r}")
 
+    sessions = [s for s in values.get("user_sessions", "").split(",") if s]
+    seated = any("seat" in s for s in values.get("sessions_raw", "").split("|"))
+    check(checks, f"the wizard is the session that came up ({WIZARD} on a seat)",
+          WIZARD in sessions and seated,
+          f"user_sessions={values.get('user_sessions')!r} seated={seated} "
+          f"sessions_raw={values.get('sessions_raw')!r}")
+
     loginable = values.get("loginable_accounts")
     check(checks, "no account can log in with a password",
           loginable == "", f"loginable_accounts={loginable!r} homes={values.get('homes')!r}")
+
+    raw = values.get("system_failed_services")
+    if raw is None:
+        check(checks, "no unexpected failed system services", False,
+              "the guest did not report the failed services")
+        return checks
+    failed = [u for u in raw.split(",") if u]
+    # The session check's rule, from the session check, applied to this boot's
+    # observations: it tolerates mcelog.service only when all six conditions hold,
+    # so anything else it says is here.
+    known = sessioncheck.known_failures(values, journal)
+    unexpected = [u for u in failed if u not in known]
+    check(checks, "no unexpected failed system services",
+          not unexpected, f"failed_services={unexpected!r} known_non_blocking={known!r} "
+                          f"all_failed={values.get('system_failed_units')!r} "
+                          f"signature_unmet={sessioncheck.mcelog_amd_mismatches(values, journal)!r}")
     return checks
 
 
 def observations(values):
     """What a run reports without judging it, so that nothing it did not judge is
-    hidden. The failed units are here rather than in evaluate(): judging them is
-    sessioncheck.py's job, with the known-guest rule it documents, applied to the
-    same disk in the same job.
+    hidden. The daily failed-unit list is here in full, including unit types the
+    check above does not judge (a socket that a skipped service left in
+    `dependency`, for instance).
     """
     def reported(key):
         raw = values.get(key)
@@ -181,8 +220,8 @@ def main():
         print(f"firstbootcheck: {e}", file=sys.stderr)
         return 2
 
-    values, _ = sessioncheck.parse_serial(os.path.join(a.out, "serial.log"))
-    checks = evaluate(values)
+    values, journal = sessioncheck.parse_serial(os.path.join(a.out, "serial.log"))
+    checks = evaluate(values, journal)
     ok = summary["result"] == "pass" and all(c["pass"] for c in checks)
     result = {"mode": "firstboot", "instrumented": True,
               "boot": summary["result"], "boot_failures": summary["failures"],
@@ -195,9 +234,9 @@ def main():
              f"- Boot: {summary['result']} {summary['failures']}"]
     lines += [f"- {'PASS' if c['pass'] else 'FAIL'}: {c['check']} ({c['detail']})" for c in checks]
     obs = result["observations"]
-    lines += [f"- Reported, not judged here: failed services {obs['failed_services']}; "
-              f"all failed units {obs['failed_units']} "
-              f"(sessioncheck.py judges these, with its known-guest rule)"]
+    lines += [f"- Reported in full: all failed units {obs['failed_units']} "
+              f"(the services among them are the line above; the rest are unit types "
+              f"this check does not judge)"]
     lines += ["", "Frames: summary.md. Serial: serial.log."]
     with open(os.path.join(a.out, "firstboot.md"), "w") as f:
         f.write("\n".join(lines) + "\n")
