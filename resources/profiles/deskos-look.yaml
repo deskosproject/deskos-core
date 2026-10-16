@@ -8,5 +8,9 @@ spec:
   resources:
     - kind: GnomeProfile
       name: deskos-look
+    # The DeskOS splash sits on a graphical boot, so the look carries the boot
+    # behaviour too. A workstation that wants only the behaviour takes deskos-boot.
+    - kind: BootProfile
+      name: deskos-boot
     - kind: BootProfile
       name: deskos-splash

@@ -3,15 +3,8 @@ kind: BootProfile
 metadata:
   name: deskos-splash
 spec:
-  # Plymouth splash instead of scrolling boot messages; ESC shows details, and
-  # failures are still printed.
-  splash: graphical
-  quiet: true
   # DeskOS lockup at the bottom of the splash (DeskOS theme). It replaces the
-  # platform's own splash, so it needs the platform's boot.spinnerFrames.
-  #
-  # The whole boot look is opt-in. How the machine boots is the platform's
-  # experience, or an organization's choice, not the foundation's: Ubuntu boots
-  # with its own Plymouth theme, and a workstation that wants the DeskOS splash
-  # adds this profile from its own layer.
+  # platform's own splash and needs the platform's boot.spinnerFrames, so a
+  # workstation asks for it explicitly. It is the artwork only: deskos-boot must
+  # apply as well, for it to have a graphical splash to sit on.
   watermark: ../assets/deskos/deskos-splash-watermark.png

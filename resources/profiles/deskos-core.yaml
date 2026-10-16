@@ -12,6 +12,7 @@ spec:
       name: deskos-core
     - kind: UpdatePolicy
       name: deskos-core
-    # The boot look is deliberately absent here: how the machine boots is the
-    # platform's experience, or an organization's choice, not the foundation's.
-    # A workstation that wants the DeskOS splash adds the deskos-splash profile.
+    # The look is deliberately absent here: wallpaper, login logo and boot splash
+    # are the platform's look and feel, or an organization's choice, not the
+    # foundation's. A workstation that wants them adds the deskos-look profile,
+    # and one that wants only a quiet graphical boot adds deskos-boot.

@@ -25,6 +25,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-look",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-look.yaml:1"
+    },
+    {
       "name": "deskos-reference-apps",
       "layer": "foundation",
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
@@ -153,6 +158,50 @@
         ]
       },
       {
+        "name": "plymouth",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-boot.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-scripts",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-boot.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-system-theme",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-boot.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "plymouth-theme-spinner",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-splash.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "xdg-utils",
         "provenance": [
           {
@@ -166,13 +215,98 @@
     ],
     "rpmFiles": [],
     "binaries": [],
-    "files": [],
+    "files": [
+      {
+        "path": "/usr/share/deskos/backgrounds/deskos-dark.svg",
+        "mode": "0644",
+        "sha256": "518eab796895af4f43d534cea4a3c53d171141d576a985d0c987ac2e7cb0feec",
+        "asset": "resources/assets/deskos/deskos-dark.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/deskos/backgrounds/deskos-light.svg",
+        "mode": "0644",
+        "sha256": "2b10b6144731e0a8264b054db88a05182549737819aebb905ce5d8c2e4df713d",
+        "asset": "resources/assets/deskos/deskos-light.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/deskos/branding/deskos-login-logo.svg",
+        "mode": "0644",
+        "sha256": "ec20a63277d6ea9616005cf160c9ebac5aea0b8ba12838c862db61e4895fd839",
+        "asset": "resources/assets/deskos/deskos-login-logo.svg",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      },
+      {
+        "path": "/usr/share/plymouth/themes/deskos/watermark.png",
+        "mode": "0644",
+        "sha256": "0c5746f4613eb72c7a2d7c39d27d127ec74aec04c96de14a6afec160c0c85ac1",
+        "asset": "resources/assets/deskos/deskos-splash-watermark.png",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-splash",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-splash.yaml:1"
+          }
+        ]
+      }
+    ],
     "trustAnchors": [],
     "desktopEntries": [],
     "iconCaches": [],
     "dconf": {
       "name": "distro",
       "defaults": [
+        {
+          "key": "/org/gnome/desktop/background/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-look.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/background/picture-uri-dark",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-dark.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-look.yaml:1"
+            }
+          ]
+        },
         {
           "key": "/org/gnome/desktop/screensaver/lock-delay",
           "type": "u",
@@ -202,6 +336,20 @@
           ]
         },
         {
+          "key": "/org/gnome/desktop/screensaver/picture-uri",
+          "type": "s",
+          "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+          "setting": "appearance.wallpaper",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-look.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/desktop/session/idle-delay",
           "type": "u",
           "value": "uint32 600",
@@ -212,6 +360,20 @@
               "profile": "deskos-core",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/login-screen/logo",
+          "type": "s",
+          "value": "'/usr/share/deskos/branding/deskos-login-logo.svg'",
+          "setting": "appearance.loginLogo",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-look.yaml:1"
             }
           ]
         },
@@ -246,8 +408,98 @@
       ],
       "locks": null
     },
-    "gsettingsVendorDefaults": [],
-    "kernelArguments": [],
+    "gsettingsVendorDefaults": [
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      },
+      {
+        "schema": "org.gnome.desktop.background",
+        "key": "picture-uri-dark",
+        "type": "s",
+        "value": "'file:///usr/share/deskos/backgrounds/deskos-dark.svg'",
+        "setting": "appearance.wallpaper",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-look",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      }
+    ],
+    "kernelArguments": [
+      {
+        "arg": "quiet",
+        "setting": "boot.quiet",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-boot.yaml:1"
+          }
+        ]
+      },
+      {
+        "arg": "rhgb",
+        "setting": "boot.splash",
+        "provenance": [
+          {
+            "resource": "BootProfile/deskos-boot",
+            "profile": "deskos-look",
+            "layer": "foundation",
+            "source": "resources/system/deskos-boot.yaml:1"
+          }
+        ]
+      }
+    ],
+    "initramfs": {
+      "dracutModules": [
+        "plymouth"
+      ],
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-boot",
+          "profile": "deskos-look",
+          "layer": "foundation",
+          "source": "resources/system/deskos-boot.yaml:1"
+        },
+        {
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-look",
+          "layer": "foundation",
+          "source": "resources/system/deskos-splash.yaml:1"
+        }
+      ]
+    },
+    "plymouthTheme": {
+      "name": "deskos",
+      "dir": "/usr/share/plymouth/themes/deskos",
+      "framesFrom": "/usr/share/plymouth/themes/spinner",
+      "watermark": "/usr/share/plymouth/themes/deskos/watermark.png",
+      "setting": "boot.watermark",
+      "provenance": [
+        {
+          "resource": "BootProfile/deskos-splash",
+          "profile": "deskos-look",
+          "layer": "foundation",
+          "source": "resources/system/deskos-splash.yaml:1"
+        }
+      ]
+    },
     "systemdUnits": [
       {
         "unit": "deskos-flatpak-preinstall.service",

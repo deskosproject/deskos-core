@@ -365,10 +365,10 @@
         "name": "plymouth",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-splash",
+            "resource": "BootProfile/deskos-boot",
             "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -376,10 +376,10 @@
         "name": "plymouth-scripts",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-splash",
+            "resource": "BootProfile/deskos-boot",
             "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -387,10 +387,10 @@
         "name": "plymouth-system-theme",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-splash",
+            "resource": "BootProfile/deskos-boot",
             "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -937,10 +937,10 @@
         "setting": "boot.quiet",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-splash",
+            "resource": "BootProfile/deskos-boot",
             "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       },
@@ -949,10 +949,10 @@
         "setting": "boot.splash",
         "provenance": [
           {
-            "resource": "BootProfile/deskos-splash",
+            "resource": "BootProfile/deskos-boot",
             "profile": "deskos-look",
             "layer": "foundation",
-            "source": "resources/system/deskos-splash.yaml:1"
+            "source": "resources/system/deskos-boot.yaml:1"
           }
         ]
       }
@@ -962,6 +962,12 @@
         "plymouth"
       ],
       "provenance": [
+        {
+          "resource": "BootProfile/deskos-boot",
+          "profile": "deskos-look",
+          "layer": "foundation",
+          "source": "resources/system/deskos-boot.yaml:1"
+        },
         {
           "resource": "BootProfile/deskos-splash",
           "profile": "deskos-look",
