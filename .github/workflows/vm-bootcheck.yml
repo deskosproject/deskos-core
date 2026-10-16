@@ -197,8 +197,18 @@ jobs:
   core-ubuntu-2604:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
+    strategy:
+      # The two are independent checks: one failing should not hide the other.
+      fail-fast: false
+      matrix:
+        # The published Core image, and the organization example whose tooling
+        # comes from a declared APT source. The second is what proves the source
+        # and its key against the vendor's own archive: `apt-get update` fails if
+        # the deb822 fields are wrong or the signature is not verified.
+        workstation: [example-core-ubuntu-2604, example-ubuntu-vendor]
     env:
-      IMAGE: localhost/deskos-core-ubuntu-2604:ci
+      WS: ${{ matrix.workstation }}
+      IMAGE: localhost/deskos-core-ubuntu-2604:${{ matrix.workstation }}
       OCI: /mnt/deskos-work/oci
       DISK: /mnt/deskos-work/disk.raw
     steps:
@@ -211,7 +221,7 @@ jobs:
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
           ./bin/deskosctl render ./examples/core-ubuntu-2604 \
-            --workstation example-core-ubuntu-2604 --output ctx
+            --workstation "$WS" --output ctx
           sha256sum ctx/plan.json ctx/generated-manifest.json
 
       - name: Put container storage and outputs on /mnt
@@ -297,7 +307,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: vm-evidence-core-ubuntu-2604
+          name: vm-evidence-core-ubuntu-2604-${{ matrix.workstation }}
           path: |
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck

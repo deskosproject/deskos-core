@@ -1,0 +1,47 @@
+{
+  "format": "manifest.deskos.org/v1alpha1",
+  "backend": "containerfile",
+  "workstation": "example-ubuntu-vendor",
+  "files": [
+    {
+      "path": "Containerfile",
+      "mode": "0644",
+      "sha256": "c21e96267a01a0726734762f0452eb0fab32f3dc9b4ee0d473eb0368e148dadc"
+    },
+    {
+      "path": "plan.json",
+      "mode": "0644",
+      "sha256": "45634c49d62d3ad8f767bbb7997bd3ceb2a8b93ae8fc17f9bc7cbeea41395eea"
+    },
+    {
+      "path": "repos/etc/apt/keyrings/deskos-2fa9c05d591a1582a9aba276272478c262e95ad00acf60eaee1644d93941e3c6.asc",
+      "mode": "0644",
+      "sha256": "2fa9c05d591a1582a9aba276272478c262e95ad00acf60eaee1644d93941e3c6"
+    },
+    {
+      "path": "repos/etc/apt/sources.list.d/deskos-vscode.sources",
+      "mode": "0644",
+      "sha256": "0b95dbab31fe2a7090501bb577f144e1bedef7b72b58f027f417f0c44a479b1d"
+    },
+    {
+      "path": "rootfs/etc/dconf/db/distro.d/50-deskos",
+      "mode": "0644",
+      "sha256": "6378e4358819176c4e158be3212e8457d69aa898c7b6bdbcd8dff73afe7e99bc"
+    },
+    {
+      "path": "rootfs/usr/lib/systemd/system/deskos-image-update.service",
+      "mode": "0644",
+      "sha256": "f1396381e11eda12d9ebb33964b635ea75f0390d2dd6fd9c2fd7ba516c5bc9e7"
+    },
+    {
+      "path": "rootfs/usr/lib/systemd/system/deskos-image-update.timer",
+      "mode": "0644",
+      "sha256": "a400d9116d980e1fd1a999b1bbe7b5c89964646cbf271b93e447f247f3c48fdc"
+    },
+    {
+      "path": "rootfs/usr/share/deskos/plan.json",
+      "mode": "0644",
+      "sha256": "45634c49d62d3ad8f767bbb7997bd3ceb2a8b93ae8fc17f9bc7cbeea41395eea"
+    }
+  ]
+}

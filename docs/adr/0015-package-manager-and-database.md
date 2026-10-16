@@ -48,6 +48,15 @@ the design:
    existing resource for no gain. The public API therefore moves from thirteen
    kinds (ADR 0013) to **fourteen**, and the count test moves with it.
 
+   A `PackageSet` names the sources it needs, and the reference is typed for the
+   same reason the kinds are: `repositories` names `RpmRepository` resources and
+   `aptRepositories` names `AptRepository` resources. A set that names the other
+   manager's kind is included, reaches composition, and fails there with that
+   reason (invariant 9) instead of being written where nothing reads it. What a
+   reference says is worth stating precisely: it includes a source in the image.
+   It does not pin which repository a package comes from — that stays the package
+   manager's own resolution and priority order at build time, on both managers.
+
 4. **The Containerfile backend gains an APT path next to the dnf one.** It renders
    signed APT sources and keys, runs a checked package transaction, and keeps the
    same guarantees the RPM path has: caches and credentials out of the image, no

@@ -80,7 +80,7 @@ tags are rejected, and no field accepts shell, templates or hooks.
 | Group | Kinds |
 |---|---|
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
-| `software.deskos.org` | `PackageSet`, `RpmRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
+| `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
@@ -138,8 +138,9 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 *provenance* (resource, including profile, layer, source file and line),
 and conflict errors list every contributor.
 
-References are transitive: a `PackageSet` names the `RpmRepository`
-resources its packages need, a `FlatpakSet` names its `FlatpakRemote`.
+References are transitive: a `PackageSet` names the `RpmRepository` and
+`AptRepository` resources its packages need, a `FlatpakSet` names its
+`FlatpakRemote`.
 Included resources contribute at the layer of the including profile.
 
 ## Providers and the registry
@@ -162,7 +163,8 @@ so a future out-of-process provider protocol can implement it.
 YAML and of Containerfile syntax. `deskosctl plan --format json` prints
 it.
 
-- **Artifact**: base image, labels, `RpmRepository`, `RpmGroupInstall`
+- **Artifact**: base image, labels, `RpmRepository`, `AptRepository`,
+  `RpmGroupInstall`
   (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
   `FileInstall`, `GeneratedFile`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
   `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
@@ -186,31 +188,36 @@ Containerfile
 plan.json                 canonical Plan
 generated-manifest.json   every file with mode and sha256
 repos/etc/yum.repos.d/    one file per RpmRepository
+repos/etc/pki/rpm-gpg/    RPM repository signing keys, named by sha256
+repos/etc/apt/sources.list.d/  one deb822 source per AptRepository
+repos/etc/apt/keyrings/   APT signing keys, named by sha256
 rpm-keys/                 public keys of RPM files, named by sha256
 rootfs/                   image files, copied after package installation
 ```
 
 The Containerfile, in order:
 
-1. one group transaction, with the platform's `--exclude` options;
-2. copies repository files and runs one package transaction;
-3. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
+1. copies the repository files, so every transaction that follows can install
+   from a declared source;
+2. one group transaction, with the platform's `--exclude` options;
+3. one package transaction;
+4. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
    downloads every RPM file, checks its SHA-256, checks its signature
    against its own key in a temporary rpm keyring (an unsigned package or
    another key fails the build), and installs them in one package
    transaction; the image's rpm keyring is not changed;
-4. one verified download per binary artifact;
-5. copies `rootfs/`;
-6. checks the DeskOS GSettings override with
+5. one verified download per binary artifact;
+6. copies `rootfs/`;
+7. checks the DeskOS GSettings override with
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
-7. runs `dconf update`, regenerates the hicolor icon cache when the
+8. runs `dconf update`, regenerates the hicolor icon cache when the
    image installs desktop entry icons, regenerates the platform trust
    store when the image places trust anchors, enables and masks units and
    sets the default target;
-8. installs the Plymouth theme and rebuilds the initramfs when boot intent
+9. installs the Plymouth theme and rebuilds the initramfs when boot intent
    needs them (see [Boot](#boot));
-9. cleans package caches and ends with `bootc container lint`.
+10. cleans package caches and ends with `bootc container lint`.
 
 Every generated command comes from a typed operation; values are
 validated upstream and quoted again. The plan is also installed as
@@ -293,7 +300,7 @@ Firefox RPM on both EL platforms.
 | Core and the example organization compose and render | **validated** | **validated** | **validated** (CI, `validate`) |
 | Same Core content on every platform | **validated** (test) | **validated** (test) | not asserted: the identity test compares CentOS Stream 10 with RHEL 10 |
 | Image builds, `bootc container lint` passes | **validated** (CI) | **validated** on the factory host [^rhel-build] | **validated** in a lab, on the digest the platform pins |
-| Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version") |
+| Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version"). `example-ubuntu-vendor` does declare sources: it installs `code` from a declared APT source, **validated by hand** against the vendor's archive (apt verified the signature and offered the package), with the CI job that builds and boots that image as the evidence still pending |
 | Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] | not measured |
 | Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (lab): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
 | Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository | none |

@@ -20,6 +20,9 @@ var update = flag.Bool("update", false, "rewrite golden files")
 const (
 	resourcesRoot = "../../resources"
 	exampleRoot   = "../../examples/baseline-and-role"
+	// ubuntuRoot is the Ubuntu example, which carries the second package
+	// manager's vendor source.
+	ubuntuRoot = "../../examples/core-ubuntu-2604"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -78,6 +81,18 @@ func TestGoldenExampleRHELSBOM(t *testing.T) {
 	golden(t, "example-devops-rhel10.sbom.cdx.json", b)
 }
 
+// The Ubuntu example is the one plan whose source comes from an APT repository:
+// its key, its deb822 fields and the order of the file's rendering belong in the
+// evidence like any other artifact.
+func TestGoldenExampleUbuntuVendorPlan(t *testing.T) {
+	p := mustPlan(t, "example-ubuntu-vendor", resourcesRoot, ubuntuRoot)
+	b, err := p.JSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, "example-ubuntu-vendor.plan.json", b)
+}
+
 func TestGoldenContainerfiles(t *testing.T) {
 	for _, tc := range []struct {
 		ws    string
@@ -85,6 +100,7 @@ func TestGoldenContainerfiles(t *testing.T) {
 	}{
 		{"deskos-core-centos10", []string{resourcesRoot}},
 		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
+		{"example-ubuntu-vendor", []string{resourcesRoot, ubuntuRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {

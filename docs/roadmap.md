@@ -99,6 +99,9 @@ Details in
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
   [resources.md](resources.md#rpmrepository)).
+- ~~APT sources as their own kind~~ done: `AptRepository` renders a signed
+  deb822 source and its keyring, and a `PackageSet` names it through
+  `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):

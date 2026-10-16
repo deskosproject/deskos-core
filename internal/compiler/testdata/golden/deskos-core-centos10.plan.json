@@ -61,6 +61,7 @@
       }
     ],
     "rpmRepositories": [],
+    "aptRepositories": [],
     "packageGroups": [
       {
         "name": "workstation",

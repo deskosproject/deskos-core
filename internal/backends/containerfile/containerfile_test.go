@@ -98,6 +98,88 @@ func TestRepoKeysSharedBetweenRepositories(t *testing.T) {
 	}
 }
 
+// An APT source renders as a deb822 stanza apt reads itself, next to the keyring
+// it names, under the paths apt looks at — and both are on disk before the first
+// package transaction, because a group or a package that comes from a declared
+// source needs the source to exist by then.
+func TestAptSourceRendersDeb822ItsKeyringAndTheCopyOrder(t *testing.T) {
+	content := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n"
+	sum := sha256.Sum256([]byte(content))
+	sha := hex.EncodeToString(sum[:])
+	p := &plan.Plan{Platform: plan.Platform{Name: "ubuntu-26.04", DisplayName: "Ubuntu 26.04 LTS", PackageManager: model.PackageManagerDeb}}
+	p.Artifact.BaseImage = plan.BaseImage{Image: "example.org/deskos/ubuntu-bootc:26.04", Ref: "example.org/deskos/ubuntu-bootc:26.04"}
+	p.Artifact.PackageGroups = []plan.PackageGroupInstall{{Name: "workstation", Members: []string{"ubuntu-desktop-minimal"}}}
+	p.Artifact.AptRepositories = []plan.AptRepository{{
+		ID: "vscode", DisplayName: "Visual Studio Code - Stable",
+		BaseURL: "https://packages.microsoft.com/repos/code",
+		Suite:   "stable", Components: []string{"main"}, Architectures: []string{"amd64"},
+		GPGKeys: []plan.RepoKey{{Name: "microsoft.asc", Content: content, SHA256: sha}},
+	}}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var source, keyring, cf string
+	for _, f := range files {
+		switch f.Path {
+		case "repos/etc/apt/sources.list.d/deskos-vscode.sources":
+			source = string(f.Data)
+		case "repos/etc/apt/keyrings/deskos-" + sha + ".asc":
+			keyring = string(f.Data)
+		case "Containerfile":
+			cf = string(f.Data)
+		}
+	}
+	if source == "" {
+		t.Fatal("no deb822 source was rendered")
+	}
+	if keyring != content {
+		t.Errorf("keyring = %q, want the key's bytes where apt and _apt can read them", keyring)
+	}
+	want := "Types: deb\n" +
+		"URIs: https://packages.microsoft.com/repos/code\n" +
+		"Suites: stable\n" +
+		"Components: main\n" +
+		"Architectures: amd64\n" +
+		"Signed-By: /etc/apt/keyrings/deskos-" + sha + ".asc\n" +
+		"Description: Visual Studio Code - Stable\n"
+	if !strings.Contains(source, want) {
+		t.Errorf("source =\n%s\nwant it to contain\n%s", source, want)
+	}
+	copyAt, groupAt := strings.Index(cf, "COPY repos/ /"), strings.Index(cf, "# Package groups")
+	if copyAt < 0 || groupAt < 0 || copyAt > groupAt {
+		t.Errorf("the repository files must be copied before the first package transaction:\n%s", cf)
+	}
+}
+
+// Render never writes a source apt would trust against every key it has, and
+// never writes one whose key does not match the bytes the plan recorded.
+func TestAptSourceWithoutAKeyOrWithTheWrongOneIsNotRendered(t *testing.T) {
+	content := "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n"
+	for name, tc := range map[string]struct {
+		keys []plan.RepoKey
+		want string
+	}{
+		"no key": {want: "no signing key"},
+		"mismatched sha256": {
+			keys: []plan.RepoKey{{Name: "k.asc", Content: content, SHA256: strings.Repeat("0", 64)}},
+			want: "does not match its sha256",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			p := &plan.Plan{Platform: plan.Platform{Name: "ubuntu-26.04", PackageManager: model.PackageManagerDeb}}
+			p.Artifact.BaseImage = plan.BaseImage{Image: "example.org/deskos/ubuntu-bootc:26.04", Ref: "example.org/deskos/ubuntu-bootc:26.04"}
+			p.Artifact.AptRepositories = []plan.AptRepository{{
+				ID: "x", DisplayName: "x", BaseURL: "https://example.org/deb/",
+				Suite: "stable", Components: []string{"main"}, GPGKeys: tc.keys,
+			}}
+			if _, err := Render(p); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("Render = %v, want %q", err, tc.want)
+			}
+		})
+	}
+}
+
 // A tar.gz member is installed only after the extraction proves it is a plain
 // file: tar would extract a symlink or hardlink member as such, and install
 // would then copy whatever it points at.

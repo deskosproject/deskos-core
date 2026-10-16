@@ -94,6 +94,26 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 	}
 
+	for _, k := range r.Keyed(DomainAptSources) {
+		// Same rule as the repository kind above, from the other side: an APT
+		// source is not a file to copy where nothing reads it (invariant 9).
+		if pl.PackageManager != model.PackageManagerDeb {
+			errs.Add(fmt.Errorf("an APT source requires an APT platform: %s is %s\n  requested by: %s",
+				c.Platform.ID(), pl.PackageManager, describe(k.Provenance)))
+			continue
+		}
+		src := k.Value.(AptSource)
+		keys := make([]plan.RepoKey, 0, len(src.GPGKeys))
+		for _, key := range src.GPGKeys {
+			keys = append(keys, plan.RepoKey{Name: key.Name, Content: key.Content, SHA256: key.SHA256})
+		}
+		p.Artifact.AptRepositories = append(p.Artifact.AptRepositories, plan.AptRepository{
+			ID: src.ID, DisplayName: src.DisplayName, BaseURL: src.BaseURL, Suite: src.Suite,
+			Components: src.Components, Architectures: src.Architectures,
+			GPGKeys: keys, Provenance: k.Provenance,
+		})
+	}
+
 	for _, k := range r.Keyed(DomainRpmFiles) {
 		if pl.PackageManager != model.PackageManagerRpm {
 			errs.Add(fmt.Errorf("rpmFiles requires an RPM platform: %s is %s\n  requested by: %s",

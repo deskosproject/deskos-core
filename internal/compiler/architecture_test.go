@@ -40,10 +40,10 @@ func TestSchemasMatchProviders(t *testing.T) {
 		t.Errorf("schema %s has no provider", p)
 	}
 	// UpdatePolicy became the eleventh kind (ADR 0007), TrustAnchor the
-	// twelfth (ADR 0009) and Theme the thirteenth (ADR 0013), each by an
-	// explicit decision.
-	if n := len(c.Registry.Providers()); n != 13 {
-		t.Errorf("v1alpha1 exposes %d kinds, want exactly 13", n)
+	// twelfth (ADR 0009), Theme the thirteenth (ADR 0013) and AptRepository the
+	// fourteenth (ADR 0015), each by an explicit decision.
+	if n := len(c.Registry.Providers()); n != 14 {
+		t.Errorf("v1alpha1 exposes %d kinds, want exactly 14", n)
 	}
 }
 
