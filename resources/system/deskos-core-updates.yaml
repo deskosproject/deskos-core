@@ -8,7 +8,14 @@ spec:
     automatic: true
     schedule: daily
     requireACPower: true
-  flatpak:
-    automatic: true
-    schedule: daily
-    requireACPower: true
+  # Flatpak is deliberately absent, and this is the foundation's policy. Declaring
+  # it here imposed the application channel on every platform that included
+  # deskos-core, including one whose vendor chose a different channel, and it made
+  # the lowerer install the Flatpak package on a base that carries none. An
+  # application channel is a platform or organization choice (ADR 0014), so the
+  # policy that consents to updating it lives next to the channel that declares it:
+  # see UpdatePolicy/rhel-family for the RHEL family.
+  #
+  # Flatpak and the image are separate consents: installing system applications and
+  # letting a timer update them are different decisions, and a platform can want
+  # the first without the second.
