@@ -21,10 +21,9 @@ into a deterministic build context for **CentOS Stream 10**, **RHEL 10** or
 **Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context builds a
 bootable image, from which QCOW2 disks and installer ISOs are made. Ubuntu
 composes and renders in CI, its derived image builds from the pinned base, and
-that image boots to GNOME's login screen. Whether the first-boot wizard starts is
-what `tests/vm/firstbootcheck.py` asks the guest, and as measured on 2026-10-16 it
-does **not**; the cause is not established yet. None of the Ubuntu measurements run
-in CI, and Ubuntu offers no system Flatpak channel
+that image **boots to GNOME Initial Setup**: the wizard runs, which is what
+`tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. None of
+the Ubuntu measurements run in CI, and Ubuntu offers no system Flatpak channel
 ([validation status](docs/architecture.md#validation-status)).
 
 > **A workstation is compiled from organizational intent.**
@@ -210,20 +209,22 @@ in [**docs/install.md**](docs/install.md).
 |---|---|---|---|
 | Compose and render | deterministic | deterministic | deterministic |
 | Image build, `bootc container lint` | CI | downstream organization | built in a lab from the pinned base |
-| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | **boots to GDM** (lab); the **first-boot wizard does not start**, measured by `tests/vm/firstbootcheck.py`, cause not established |
+| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | **boots to GNOME Initial Setup** (lab): the wizard runs and no account can log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
 | System Flatpak channel | Flatpak preinstall | Flatpak preinstall | **none declared**; a `FlatpakSet` fails with that reason |
 | Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | no derived image published yet |
 | Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
 | GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
 
 Ubuntu composes and renders in CI, and everything beyond that is one manual lab run
-on the digest the platform pins: the derived image builds, and it boots to GNOME's
-**login screen**. That no account can log in there **is** measured, by asking the
-guest; that the first-boot wizard starts is **not** — it does not, as of
-2026-10-16, and the cause is not established. Its organization-owned base carries no
-third-party apt source. What Ubuntu has not been given is a system Flatpak channel —
-26.04 publishes no `flatpak preinstall` — so a workstation that declares a
-`FlatpakSet` fails composition with that reason instead of pretending.
+on the digest the platform pins: the derived image builds, and it boots to GNOME
+**Initial Setup** — the wizard runs, and no account can log in, both asserted by
+`tests/vm/firstbootcheck.py` asking the guest rather than reading a screen. That
+check is also how the wizard's absence was found and its cause fixed: GDM counts
+users through AccountsService, and the uid-1000 account the upstream container image
+ships was suppressing it. Its organization-owned base carries no third-party apt
+source. What Ubuntu has not been given is a system Flatpak channel — 26.04 publishes
+no `flatpak preinstall` — so a workstation that declares a `FlatpakSet` fails
+composition with that reason instead of pretending.
 
 Details: [validation status](docs/architecture.md#validation-status).
 
