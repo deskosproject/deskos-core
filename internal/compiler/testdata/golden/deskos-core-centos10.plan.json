@@ -95,17 +95,6 @@
         ]
       },
       {
-        "name": "bootc",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-core",
-            "profile": "deskos-core",
-            "layer": "foundation",
-            "source": "resources/software/deskos-core.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "firefox",
         "provenance": [
           {

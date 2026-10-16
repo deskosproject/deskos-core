@@ -10,7 +10,10 @@ spec:
   # keeps its own in PackageSet/rhel-family, and a platform whose vendor ships
   # none of them is free to choose (ADR 0014). They cannot live here, because
   # composition unions sets and no organization could take them back (ADR 0003).
+  # bootc is deliberately absent: every platform starts from its vendor's bootc
+  # base (ADR 0004), so the base provides it, and it is not an archive package on
+  # every platform — the Ubuntu base builds it from source. A request to install
+  # it would fail there.
   packages:
-    - bootc
     - NetworkManager
     - xdg-utils

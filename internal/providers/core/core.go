@@ -29,6 +29,11 @@ type PlatformSpec struct {
 	Bootc          BootcBase      `json:"bootc"`
 	Distribution   Distribution   `json:"distribution"`
 	PackageGroups  []PackageGroup `json:"packageGroups,omitempty"`
+	// PackageAliases maps a requested package name to the name this platform
+	// publishes it under. A foundation may name a package the way one family does;
+	// a platform that publishes it under another name says so here, instead of the
+	// foundation carrying one name per platform.
+	PackageAliases map[string]string `json:"packageAliases,omitempty"`
 	// UnavailablePackages records known packages the platform does not
 	// provide from a supported repository, so requests fail at compile time.
 	UnavailablePackages []UnavailablePackage `json:"unavailablePackages,omitempty"`
@@ -151,6 +156,15 @@ func (p *PlatformSpec) PackageGroup(name string) (PackageGroup, bool) {
 		}
 	}
 	return PackageGroup{}, false
+}
+
+// PackageName returns the name this platform publishes a requested package
+// under, which is the requested name unless the platform declares an alias.
+func (p *PlatformSpec) PackageName(requested string) string {
+	if alias, ok := p.PackageAliases[requested]; ok {
+		return alias
+	}
+	return requested
 }
 
 // Unavailable reports why a package cannot be installed on the platform.

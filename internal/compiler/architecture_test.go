@@ -158,6 +158,31 @@ func TestExampleVirtManagerGapIsReported(t *testing.T) {
 	}
 }
 
+// A platform may publish a requested package under another name. The foundation
+// keeps one name, the platform that uses another says so, and the plan carries
+// the platform's name.
+func TestPlatformPackageAliasResolvesTheName(t *testing.T) {
+	aliased := strings.Replace(platformYAML,
+		"  flatpak: {package: flatpak, preinstall: true}\n",
+		"  packageAliases: {NetworkManager: network-manager}\n  flatpak: {package: flatpak, preinstall: true}\n", 1)
+	dir := fixture{
+		"platform.yaml": aliased,
+		"p.yaml":        profile("core", "foundation", "PackageSet/core"),
+		"ps.yaml":       "apiVersion: software.deskos.org/v1alpha1\nkind: PackageSet\nmetadata:\n  name: core\nspec:\n  packages: [NetworkManager, xdg-utils]\n",
+		"ws.yaml":       workstation("ws", "core"),
+	}.dir(t)
+	got := packages(mustPlan(t, "ws", dir))
+	if !slices.Contains(got, "network-manager") {
+		t.Errorf("packages = %v, want the platform's name", got)
+	}
+	if slices.Contains(got, "NetworkManager") {
+		t.Errorf("packages = %v, want the alias resolved", got)
+	}
+	if !slices.Contains(got, "xdg-utils") {
+		t.Errorf("packages = %v, want a name with no alias unchanged", got)
+	}
+}
+
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
