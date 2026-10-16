@@ -14,9 +14,11 @@ name: artifacts
 # declared sha256, and a repository serves repodata. A probe that cannot prove anything
 # (a URL carrying a dnf variable) is reported as inconclusive, never as a pass.
 #
-# It needs no KVM, no image and no registry: it renders a context and fetches. Runs on
-# every pull request because it is cheap and it is the one gate that catches that class
-# of change before a human reads it.
+# It needs no KVM, no image and no registry: it renders a context and fetches. It runs on
+# every pull request because it is cheap, and it catches that class of change for the
+# plans in its matrix. The plan where the Renovate bump went wrong lives in a downstream
+# repository, so this does not close that incident on its own: that repository has to run
+# the check against its own plan, and until it does, the incident stays open.
 on:
   push:
     branches: [main]
