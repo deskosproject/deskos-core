@@ -241,6 +241,29 @@ func TestUbuntuDeclaresNoSystemFlatpakChannel(t *testing.T) {
 	}
 }
 
+// A platform with no icon cache tool says so, instead of shipping a desktop entry
+// whose icon never appears: copying icons leaves the theme's cache stale and no
+// package trigger runs for files the build writes (invariant 9). Which package
+// provides the tool, and how it is invoked, are the platform's facts — so a
+// platform that declares neither reports the gap rather than having Core guess a
+// name that is another platform's.
+func TestDesktopEntryNeedsThePlatformIconCache(t *testing.T) {
+	without := strings.Replace(platformYAML,
+		"  iconCache: {package: gtk-update-icon-cache, command: \"gtk-update-icon-cache --force --quiet\"}\n", "", 1)
+	if without == platformYAML {
+		t.Fatal("the fixture no longer declares iconCache, so this test proves nothing")
+	}
+	files := base.with(fixture{
+		"a.yaml":            profile("a", "organization", "BinaryArtifact/ghostty"),
+		"ghostty.yaml":      appArtifact("ghostty", "/usr/local/bin/ghostty", ghosttyEntry),
+		"icons/ghostty.png": pngOf(t, 128, 128),
+		"platform.yaml":     without,
+		"ws.yaml":           workstation("ws", "a"),
+	})
+	_, err := planOf(t, "ws", files.dir(t))
+	mustFail(t, err, "declares no iconCache", "Platform/test-platform", "BinaryArtifact/ghostty")
+}
+
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)

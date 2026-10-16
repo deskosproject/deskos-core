@@ -211,9 +211,12 @@ type DesktopEntry struct {
 }
 
 // IconCacheUpdate regenerates the GTK icon cache of an icon theme directory
-// after image files are copied, since package triggers do not run for them.
+// after image files are copied, since package triggers do not run for them. The
+// command is the platform's: Core does not know which tool refreshes a cache nor
+// how that tool is invoked.
 type IconCacheUpdate struct {
 	Dir        string             `json:"dir"`
+	Command    string             `json:"command"`
 	Provenance []model.Provenance `json:"provenance"`
 }
 

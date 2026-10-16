@@ -68,6 +68,7 @@ spec:
       - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}
   flatpak: {package: flatpak, preinstall: true}
   trust: {anchorsDir: /etc/pki/ca-trust/source/anchors, updateCommand: update-ca-trust}
+  iconCache: {package: gtk-update-icon-cache, command: "gtk-update-icon-cache --force --quiet"}
 `
 
 func workstation(name string, profiles ...string) string {
