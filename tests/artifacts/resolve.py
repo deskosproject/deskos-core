@@ -100,6 +100,8 @@ def fetch(url, timeout, digest=False, limit=MAX_BYTES, deadline=None, prefix=Fal
                     return Response(status, None, None, f"body is larger than {limit} bytes")
                 if prefix and len(head) < 64:
                     head += chunk[:64 - len(head)]
+                    if not digest and len(head) >= 64:
+                        break     # the shape needs 64 bytes; no reason to read the rest
                 if digest:
                     h.update(chunk)
     except urllib.error.HTTPError as e:
