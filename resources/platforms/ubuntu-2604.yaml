@@ -33,9 +33,6 @@ spec:
     - name: workstation
       members: [ubuntu-desktop-minimal]
       graphical: true
-  packageAliases:
-    # Ubuntu publishes NetworkManager as network-manager.
-    NetworkManager: network-manager
   displayManager: gdm.service
   # Ubuntu's graphical splash uses "splash" where the RHEL family uses "rhgb".
   # Plymouth itself is not in the base yet: the build installs it from the

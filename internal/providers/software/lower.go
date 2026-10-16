@@ -59,15 +59,12 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	for _, m := range r.Set(DomainPackages) {
-		// The platform may publish a requested package under another name, so the
-		// gap check and the install both use the platform's name.
-		name := pl.PackageName(m.Name)
-		if reason, ok := pl.Unavailable(name); ok {
+		if reason, ok := pl.Unavailable(m.Name); ok {
 			errs.Add(fmt.Errorf("package %q is not available on %s: %s\n  requested by: %s",
-				name, c.Platform.ID(), reason, describe(m.Provenance)))
+				m.Name, c.Platform.ID(), reason, describe(m.Provenance)))
 			continue
 		}
-		p.AddPackage(name, m.Provenance...)
+		p.AddPackage(m.Name, m.Provenance...)
 	}
 	for _, m := range r.Set(DomainUnits) {
 		p.EnableUnit(m.Name, m.Provenance...)

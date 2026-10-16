@@ -70,11 +70,6 @@
             }
           }
         },
-        "packageAliases": {
-          "type": "object",
-          "propertyNames": { "$ref": "../../common/definitions.json#/$defs/packageName" },
-          "additionalProperties": { "$ref": "../../common/definitions.json#/$defs/packageName" }
-        },
         "unavailablePackages": {
           "type": "array",
           "items": {
