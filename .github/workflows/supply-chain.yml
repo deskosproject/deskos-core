@@ -221,6 +221,7 @@ jobs:
           case "${{ matrix.splash }}" in
             true)  [ -n "$SPLASH" ] || { echo "::error::splash is true but no flag was produced"; exit 1; } ;;
             false) [ -z "$SPLASH" ] || { echo "::error::splash is false but a flag was produced"; exit 1; } ;;
+            *)     echo "::error::every leg must declare splash as true or false, got '${{ matrix.splash }}'"; exit 1 ;;
           esac
           echo "disk=${{ matrix.disk }} diskfile=${{ matrix.diskfile }} splash=${{ matrix.splash }} flag='${SPLASH}'"
 
