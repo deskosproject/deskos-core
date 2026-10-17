@@ -89,14 +89,12 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 				s.Key, c.Platform.ID()))
 		}
 		for _, lk := range locks {
-			if layer := lockLayer(lk.Provenance); layer > model.LayerFoundation {
-				l.errs.Add(fmt.Errorf("%s is locked at %s layer, but %s keeps its vendor's desktop defaults and writes no dconf database\n  locked by: %s",
-					lk.Name, layer, c.Platform.ID(), describe(lk.Provenance)))
-				continue
-			}
-			p.Warnings = append(p.Warnings, fmt.Sprintf(
-				"a lock on %s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
-				lk.Name, c.Platform.ID()))
+			// A lock is enforcement, and Core never locks (AGENTS.md invariant 8), so a
+			// lock here can only be an owner's requirement: this platform cannot enforce
+			// it, and composition fails rather than recording a guarantee that does not
+			// exist.
+			l.errs.Add(fmt.Errorf("%s is locked, but %s keeps its vendor's desktop defaults and writes no dconf database\n  locked by: %s",
+				lk.Name, c.Platform.ID(), describe(lk.Provenance)))
 		}
 		return l.errs.Err()
 	}
@@ -403,18 +401,6 @@ func (l *lowering) disableDock(en compose.Scalar) {
 		}
 	}
 	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
-}
-
-// lockLayer is the highest semantic layer that asked for a lock. A lock is a set
-// member and carries provenance rather than a layer of its own.
-func lockLayer(ps []model.Provenance) model.Layer {
-	top := model.Layer(0)
-	for _, p := range ps {
-		if l, err := model.ParseLayer(p.Layer); err == nil && l > top {
-			top = l
-		}
-	}
-	return top
 }
 
 func describeShort(ps []model.Provenance) string {

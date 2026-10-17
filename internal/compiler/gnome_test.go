@@ -243,18 +243,26 @@ func TestAnOrganizationCannotSetGnomeOnAPlatformThatKeepsItsVendorDesktop(t *tes
 		"organization GnomeProfile/g")
 }
 
-func TestAnOrganizationCannotLockGnomeOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
+func TestNoLockCanBeDeclaredOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
+	// A lock is enforcement, and Core never locks (AGENTS.md invariant 8), so a lock
+	// here is always an owner's requirement that this platform cannot enforce: it
+	// fails composition at any layer, rather than recording a guarantee that does not
+	// exist (docs/adr/0016).
 	platform := strings.Replace(platformYAML,
 		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
-	gnomeWithLock := gnome("g", shellDefaults("      hotCorners: false\n"))
-	gnomeWithLock = strings.Replace(gnomeWithLock, "spec:\n", "spec:\n  locks: [shell.hotCorners]\n", 1)
-	dir := fixture{"platform.yaml": platform}.with(fixture{
-		"ws.yaml": workstation("ws", "org"),
-		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
-		"g.yaml":  gnomeWithLock,
-	}).dir(t)
-	_, err := planOf(t, "ws", dir)
-	mustFail(t, err, "shell.hotCorners is locked at organization layer")
+	for _, layer := range []string{"foundation", "organization"} {
+		t.Run(layer, func(t *testing.T) {
+			gnomeWithLock := strings.Replace(gnome("g", shellDefaults("      hotCorners: false\n")),
+				"spec:\n", "spec:\n  locks: [shell.hotCorners]\n", 1)
+			dir := fixture{"platform.yaml": platform}.with(fixture{
+				"ws.yaml": workstation("ws", "org"),
+				"o.yaml":  profile("org", layer, "GnomeProfile/g"),
+				"g.yaml":  gnomeWithLock,
+			}).dir(t)
+			_, err := planOf(t, "ws", dir)
+			mustFail(t, err, "shell.hotCorners is locked, but Platform/test-platform keeps its vendor's desktop defaults")
+		})
+	}
 }
 
 func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {

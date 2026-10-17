@@ -34,14 +34,21 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
    lock for it: the platform's desktop is the vendor's. A platform with the fact must
    not declare `gnome.dconfDatabase` or `gnome.loginScreen`; a platform without it
    must declare a database. What happens to a declared setting depends on who asked:
-   - a setting or lock that comes from the **foundation** is Core's own opinion, so it
-     is recorded in the plan's warnings as not applied, naming the fact. The omission
-     is visible rather than silent;
-   - a setting or lock a **higher layer** (organization, role, workstation) asked for
-     is a requirement this platform cannot meet: composition **fails** with the reason
-     and the provenance. "Best effort" would turn a lower layer's request into a green
-     `validate`, which is the failure [ADR 0005](0005-managed-baseline-boundary.md) and
-     the platform-gap invariant exist to prevent.
+   - a **lock** always fails composition, at any layer. A lock is enforcement, and
+     Core never locks (AGENTS.md invariant 8), so a lock here can only be an owner's
+     requirement that this platform cannot enforce; recording it as a warning would
+     let a guarantee that does not exist pass `validate`;
+   - a **default** is recorded in the plan's warnings as not applied, naming the fact,
+     because Core's own foundation opinion is what an Ubuntu workstation carries and
+     the platform's nature is what scopes it. The omission stays visible rather than
+     silent.
+   - a known limit of that rule: `foundation` is a **layer**, not ownership — an owner
+     may author a foundation-layer profile, and the layer alone does not prove the
+     opinion is dispensable. Until resources carry an owner, the alternative is to
+     keep Core's GNOME settings out of the profile list an Ubuntu workstation selects,
+     which changes what `deskos-core` gives every other consumer (including an
+     external one that pins releases). That trade is named here rather than settled
+     silently.
 2. Ubuntu 26.04 declares it. A value that must reach an Ubuntu session takes a
    vendor mechanism (a compiled GSettings override, the plan's
    `gsettingsVendorDefaults`), never the dconf database, because no session reads
@@ -61,11 +68,10 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
 - The session check has nothing to assert on Ubuntu instead of a value it could
   never confirm, so its coverage is honest without a weakening: nothing is promised
   there, so nothing is skipped.
-- A foundation setting declared on such a platform is a **warning that names the
-  fact**; a higher layer's is an **error that names the layer and the provenance**.
-  Neither is a silent drop, and neither weakens a check: the platform is not missing
-  a requirement Core asked of itself, and it is not allowed to ignore one its owner
-  asked for.
+- A default declared on such a platform is a **warning that names the fact**; a lock
+  is an **error at any layer**. Neither is a silent drop, and neither weakens a check:
+  the platform is not missing a requirement Core asked of itself, and it cannot be
+  made to hold a guarantee it has no way to enforce.
 - Anything that must still reach the user on Ubuntu has to be delivered the vendor's
   way, which keeps [ADR 0014](0014-platform-base-ownership.md)'s split of who owns
   what intact: the base is the platform's, and DeskOS does not maintain a desktop it
