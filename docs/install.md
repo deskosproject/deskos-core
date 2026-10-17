@@ -167,14 +167,19 @@ pinned by digest in `resources/platforms/ubuntu-2604.yaml`. Get `deskosctl` (ste
 1 of the RHEL section above), then build the image and write a disk with
 `bootc install to-disk`:
 
-**1. Render and build the image**, tagged with the reference your machines will
-update from:
+**1. Render, build and push the image**, tagged with the reference your machines
+will update from:
 
 ```bash
 ./bin/deskosctl render ./examples/core-ubuntu-2604 \
     --workstation example-core-ubuntu-2604 --output ./dist/ubuntu
 sudo podman build -t registry.example.com/deskos/ubuntu:latest ./dist/ubuntu
+sudo podman push registry.example.com/deskos/ubuntu:latest
 ```
+
+The installed machine updates from that reference, so it must be able to reach it:
+a registry your organization hosts, or one you make public. DeskOS does not
+publish an Ubuntu image for you.
 
 **2. Recompress it into an OCI layout**, which the install mounts as its source
 (the composefs import rejects uncompressed layers):
