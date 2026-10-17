@@ -2,7 +2,8 @@
 
 The minimal DeskOS Core composition on Fedora 44, on the Fedora Project's own
 desktop bootc base, Silverblue. It is a **separate resource root** that references
-the shipped `deskos-core` profile and the shipped `fedora-44` Platform by name:
+the shipped `deskos-core` and `deskos-gnome` profiles and the shipped `fedora-44`
+Platform by name:
 
 ```bash
 deskosctl plan ./examples/core-fedora-44 \
@@ -12,7 +13,7 @@ deskosctl plan ./examples/core-fedora-44 \
 | Resource | Contents |
 |---|---|
 | `fedora-44` (platform) | shipped in `resources/platforms/`: Fedora facts on the vendor's bootc desktop base `quay.io/fedora/fedora-silverblue:44` |
-| `example-core-fedora-44` | the target: `fedora-44` + the `deskos-core` profile |
+| `example-core-fedora-44` | the target: `fedora-44` + the `deskos-core` and `deskos-gnome` profiles |
 
 The base is published by the Fedora Project, so the platform follows ADR 0004's
 official-base rule and declares no organization owner or tier (see the platform

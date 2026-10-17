@@ -21,7 +21,7 @@ deskosctl plan ./examples/core-fedora-45 \
 | Resource | Contents |
 |---|---|
 | `fedora-45` (platform, in this root) | Fedora 45 facts on the vendor's bootc desktop base `quay.io/fedora/fedora-silverblue:45`, pinned by digest |
-| `example-core-fedora-45` | the target: `fedora-45` + the `deskos-core` profile |
+| `example-core-fedora-45` | the target: `fedora-45` + the `deskos-core` and `deskos-gnome` profiles |
 
 The facts are measured against the pinned base and are the ones `fedora-44.yaml`
 records, re-read on this release: the comps environment dnf5 resolves for the

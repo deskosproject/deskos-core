@@ -113,7 +113,9 @@ Examples of every kind are in
   compose.
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
-profile. The same Core composes onto `centos-stream-10`, `almalinux-10`,
+profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
+which a workstation selects only when its platform's base lets DeskOS write
+them (ADR 0016). The same Core composes onto `centos-stream-10`, `almalinux-10`,
 `rhel-10`, `fedora-44` and `ubuntu-2604`; a RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
 DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
@@ -512,7 +514,7 @@ handles, Flatpak applications included:
 | `manual` | true | false | offers updates; the user applies them |
 | `disabled` | false | false | no Updates page; another updater owns every update |
 
-Core sets `manual` (a default, no lock), so GNOME Software never updates
+`deskos-gnome` sets `manual` (a default, no lock), so GNOME Software never updates
 behind the image while users can still update Flatpak applications.
 
 **Terminal shortcut.** `GnomeProfile.defaults.keyboard.terminal` names a

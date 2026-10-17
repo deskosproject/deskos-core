@@ -130,7 +130,8 @@ spec:
   displayName: DeskOS Core (RHEL 10)
   platformRef: rhel-10
   profiles:
-    - deskos-core
+    - deskos-core        # packages and the update policy
+    - deskos-gnome       # DeskOS's GNOME defaults
 ```
 
 **3. Render and build it.** Tag it with the reference your machines
