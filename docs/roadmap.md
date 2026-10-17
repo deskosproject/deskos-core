@@ -61,7 +61,19 @@ each slice is reviewed on its own:
   `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
   10 only. `vm-bootcheck.yml` is a pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10, RHEL 10 and Ubuntu 26.04.
+  for CentOS Stream 10, RHEL 10, Fedora 44 and Ubuntu 26.04.
+- **A second Fedora release — plan, not policy.** DeskOS offers **Fedora 44**
+  only: `:45` was a prerelease when it was measured and its base enables
+  `updates-testing`, so it stays an example-only evaluation
+  (`examples/core-fedora-45/`, its own Platform resource, no reference
+  workstation, no image, **not built**). *When* a second Fedora release is
+  supported, the plan is the current release plus the previous one: a platform
+  resource and a re-pinned digest each, a re-validation each, a **separate image
+  repository** each (`quay.io/deskos/deskos-core-fedora44`, so a release cannot
+  change under a machine at `bootc upgrade`), and the older platform retired
+  then. Re-pinning and re-validation are **manual**, like every other base pin
+  ([platforms.md](platforms.md)). The trigger — how DeskOS learns a release is
+  out of prerelease and decides to carry two — is open.
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -121,6 +133,10 @@ Details in
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
+- Build and boot the Fedora 44 platform in CI: its facts are measured against
+  the pinned base and its image builds here (image `5b44f2829d1e`), but no Fedora
+  disk has been booted, so it has no boot, session or first-boot evidence
+  ([platforms.md](platforms.md)).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

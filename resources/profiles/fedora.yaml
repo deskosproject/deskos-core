@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: fedora
+spec:
+  layer: foundation
+  description: The Fedora family's own software choices (browser, firewall, Flatpak), for workstations on a platform of that family.
+  resources:
+    - kind: PackageSet
+      name: fedora
+    # Flatpak updates travel with the Flatpak channel: the family declares the
+    # channel, so it also declares the consent to update it.
+    - kind: UpdatePolicy
+      name: fedora

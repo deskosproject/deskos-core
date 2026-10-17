@@ -23,6 +23,10 @@ const (
 	// ubuntuRoot is the Ubuntu example, which carries the second package
 	// manager's vendor source.
 	ubuntuRoot = "../../examples/core-ubuntu-2604"
+	// fedora45Root is the Fedora 45 evaluation. It carries its own Platform
+	// resource, because DeskOS ships Fedora 44 only: the next Fedora release is
+	// evaluated as an example before anyone commits to it.
+	fedora45Root = "../../examples/core-fedora-45"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -101,6 +105,10 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos10", []string{resourcesRoot}},
 		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
 		{"example-ubuntu-vendor", []string{resourcesRoot, ubuntuRoot}},
+		// Fedora 44's shipped reference workstation: it pins the rendered build
+		// context for the newest platform, so a change to the Fedora facts or to the
+		// backend shows up as a reviewable diff. ci.yml renders the same workstation.
+		{"deskos-core-fedora44", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {
@@ -240,6 +248,11 @@ func TestRenderRefusesForeignDirectory(t *testing.T) {
 // Every dnf transaction keeps subscription-manager state out of its layer:
 // RHSM directories are tmpfs, and the generated redhat.repo is removed in the
 // same RUN. Declared vendor repository files stay in the build context.
+//
+// The Fedora rows are here because this is the backend's shape for *any* RPM
+// platform, not a RHEL one: a Fedora base has no subscription-manager at all, so
+// the test asserts that the same transaction carries the same hygiene rather than
+// claiming Fedora has RHSM state to keep out.
 func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 	for _, tc := range []struct {
 		ws    string
@@ -248,6 +261,8 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		{"deskos-core-centos10", []string{resourcesRoot}},
 		{"example-devops-centos10", []string{resourcesRoot, exampleRoot}},
 		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
+		{"deskos-core-fedora44", []string{resourcesRoot}},
+		{"example-core-fedora-45", []string{resourcesRoot, fedora45Root}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		files, err := containerfile.Render(p)
