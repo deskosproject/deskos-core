@@ -127,9 +127,10 @@ Details in
 - ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux10` in
   `vm-bootcheck.yml` builds and boots `example-core-almalinux-10` with the boot,
   session and first-boot checks ([platforms.md](platforms.md)).
-- A **session check for Ubuntu** — today only the boot and first-boot checks run
-  there — so that its story carries the same evidence as CentOS Stream 10; and a
-  decision on **whether DeskOS publishes the Ubuntu derivative**, and where.
+- ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs
+  `sessioncheck.py` on the Ubuntu disk beside the boot and first-boot checks
+  ([platforms.md](platforms.md)). Still open: the decision on **whether DeskOS
+  publishes the Ubuntu derivative**, and where.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
