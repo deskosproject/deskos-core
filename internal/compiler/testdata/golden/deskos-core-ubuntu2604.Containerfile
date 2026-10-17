@@ -3,7 +3,7 @@
 # Workstation: deskos-core-ubuntu2604
 # Platform:    ubuntu-2604 (Ubuntu 26.04 LTS)
 
-FROM quay.io/deskos/deskos-ubuntu-base:26.04@sha256:0ef21d0691c298a1e2d7d8737807ff9d9bf384784bc545fa816f8b5dca0c1fc5
+FROM quay.io/deskos/deskos-ubuntu-base:26.04@sha256:ec5ce29551fdc9f311aef5c5fa82d147727416bce0fa757f5f272fd8c53303f2
 
 # Package groups
 RUN \

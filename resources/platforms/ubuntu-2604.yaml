@@ -22,7 +22,7 @@ spec:
     # With it removed, `tests/vm/firstbootcheck.py` reports the wizard running.
     # Confirmed against the registry on 2026-10-16: `:26.04` and `:latest` both
     # resolve to this digest. It moves deliberately.
-    digest: sha256:0ef21d0691c298a1e2d7d8737807ff9d9bf384784bc545fa816f8b5dca0c1fc5
+    digest: sha256:ec5ce29551fdc9f311aef5c5fa82d147727416bce0fa757f5f272fd8c53303f2
   distribution:
     # Ubuntu's archive is freely redistributable and needs no subscription. The
     # base, however, is maintained by the Project DeskOS and not by Canonical:
