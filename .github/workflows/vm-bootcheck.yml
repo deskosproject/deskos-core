@@ -65,10 +65,12 @@ jobs:
       fail-fast: false
       matrix:
         # The Core workstation, whose root is the embedded Core, and the
-        # organization example, whose tooling comes from declared RpmRepository
-        # sources. Booting the second is what proves the RPM-source path against
-        # the vendors' own archives. It does not claim the example's virt-manager
-        # requirement is met (see examples/baseline-and-role/README.md).
+        # organization example, which declares four RpmRepository sources. Booting
+        # the second is what builds and boots an image with those sources enabled:
+        # dnf resolves them and installs the packages with GPG checking. It proves
+        # the transaction succeeds, not which source each package came from, and it
+        # does not claim the example's virt-manager requirement is met
+        # (see examples/baseline-and-role/README.md).
         include:
           - workstation: deskos-core-centos10
             root: ""
