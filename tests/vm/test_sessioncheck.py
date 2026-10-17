@@ -306,6 +306,21 @@ class PlanDefaultsTest(unittest.TestCase):
         c = vendor_check(values, "org.gnome.desktop.background", "picture-uri")
         self.assertFalse(c["pass"])
 
+    def test_a_session_difference_exception_names_the_delivery_path(self):
+        # The wallpaper is declared as a dconf default and as a vendor default, so an
+        # exception on one path must not excuse the other (Codex, 2026-10-18).
+        sc.EXPLAINED_SESSION_DIFFERENCES["dconf:/org/gnome/desktop/background/picture-uri"] = \
+            "the desktop rewrites it on first login"
+        try:
+            values = dict(GOOD, dconf_2="'file:///other.svg'", vendor_0="'file:///other.svg'")
+            d = default_check(values, "/org/gnome/desktop/background/picture-uri")
+            self.assertTrue(d["pass"])
+            self.assertTrue(d["skipped"])
+            self.assertIn("the desktop rewrites it on first login", d["detail"])
+            self.assertFalse(vendor_check(values, "org.gnome.desktop.background", "picture-uri")["pass"])
+        finally:
+            sc.EXPLAINED_SESSION_DIFFERENCES.clear()
+
     def test_a_plan_without_defaults_asserts_none(self):
         checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})
         self.assertEqual(sc.default_coverage(checks)["declared"], 0)

@@ -76,8 +76,16 @@ UNORDERED_DEFAULTS = {
 # is a fresh account on a fresh install, so nothing has had the chance to set a
 # value a user would set. A key the desktop itself rewrites on first login is the
 # exception, declared here with the reason the report prints, so the gap is written
-# down instead of assumed.
+# down instead of assumed. The entry names the delivery path as well as the key,
+# because the same key can be declared on more than one (the wallpaper is a dconf
+# default and a GSettings vendor default), and an exception on one path must not
+# excuse the other: the key is "dconf:<dconf key>" or "gsettings:<schema> <key>".
 EXPLAINED_SESSION_DIFFERENCES = {}
+
+
+def difference_id(source, key):
+    """The report's identity for one declared default: delivery path and key."""
+    return f"{source}:{key}"
 
 
 def default_reads(image_database, vendor):
@@ -89,9 +97,11 @@ def default_reads(image_database, vendor):
     database alone, through a profile that names only it, so a default something
     overrode is told apart from a default the image never carried. For a GSettings
     vendor default the session value comes first, then the compiled schema default
-    (`GSETTINGS_BACKEND=memory` reads it): that is the override's own value, and on
-    a platform whose dconf profile does not read the DeskOS database it is the only
-    path that delivers the default at all. Each list is read from a file the
+    (`GSETTINGS_BACKEND=memory` reads it), which is the value the schemas resolve to
+    apart from any dconf value. That read says the compiled default is the declared
+    one; it does not attribute the value to DeskOS's own override file, because a
+    vendor's override carrying the same value reads the same. The drop-in's content
+    is the backend's, covered by its own tests. Each list is read from a file the
     harness writes from the plan, so it is the plan's and not this script's.
     """
     image_read = ""
@@ -590,11 +600,12 @@ def read_state(want, got, key, typ, verb):
     return "different", f"{verb} {got}, want {want}"
 
 
-def default_verdict(key, image, session, where):
+def default_verdict(ident, image, session, where):
     """Pass, detail and coverage for one declared default, from its two reads.
 
-    `where` names the image-side source of the default (the image's own dconf
-    database, or the compiled schema default the override lands in).
+    `ident` is the difference_id of the delivery path and key, and `where` names
+    the image-side source of the default (the image's own dconf database, or the
+    compiled schema default the override lands in).
 
     The image is the strict claim: a declared default the image does not carry is a
     failure, whether or not the session happens to see the same value, because the
@@ -610,7 +621,7 @@ def default_verdict(key, image, session, where):
     if image[0] != "verified":
         return False, f"{detail}; the image is not shown to carry the declared default", False
     if session[0] in ("different", "missing"):
-        why = EXPLAINED_SESSION_DIFFERENCES.get(key)
+        why = EXPLAINED_SESSION_DIFFERENCES.get(ident)
         if why:
             return True, f"{detail}; {why}", True
         return False, detail, False
@@ -681,14 +692,15 @@ def evaluate(values, plan, journal="", skel_rels=()):
         key, typ = d["key"], d.get("type")
         image = read_state(d["value"], values.get(f"dconfdb_{i}"), key, typ, "carries")
         session = read_state(d["value"], values.get(f"dconf_{i}"), key, typ, "sees")
-        ok, detail, skipped = default_verdict(key, image, session, where)
+        ok, detail, skipped = default_verdict(difference_id("dconf", key), image, session, where)
         check(DEFAULT_CHECK_PREFIX + key, ok, detail, skipped=skipped,
               coverage={"source": "dconf", "key": key, "image": image[0], "session": session[0]})
     for i, d in enumerate(plan_vendor_defaults(plan)):
         key, typ = d["key"], d.get("type")
+        ident = difference_id("gsettings", d["schema"] + " " + key)
         image = read_state(d["value"], values.get(f"vendordb_{i}"), key, typ, "carries")
         session = read_state(d["value"], values.get(f"vendor_{i}"), key, typ, "sees")
-        ok, detail, skipped = default_verdict(key, image, session, "the compiled schema default")
+        ok, detail, skipped = default_verdict(ident, image, session, "the compiled schema default")
         check(VENDOR_CHECK_PREFIX + d["schema"] + " " + key, ok, detail, skipped=skipped,
               coverage={"source": "gsettings override", "key": d["schema"] + " " + key,
                         "image": image[0], "session": session[0]})

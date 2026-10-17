@@ -133,17 +133,25 @@ separately:
   through a profile naming only the image's own dconf database, so the
   value the image ships is known apart from the value the session ends up
   with. For a vendor default the guest reads the compiled schema default
-  with `GSETTINGS_BACKEND=memory`. A declared default the image does not
-  carry **fails**, whether or not the session happens to see the plan's
-  value: the session showing the right value does not prove DeskOS put it
-  there, and the value could come from anywhere.
+  with `GSETTINGS_BACKEND=memory`, which is the value the schemas resolve to
+  apart from any dconf value. That read confirms the compiled default is the
+  declared one; it does not attribute the value to DeskOS's own
+  `*.gschema.override`, because a vendor's override carrying the same value
+  reads the same — the drop-in's content is the backend's, covered by its
+  own tests. A declared default the image does not carry **fails**, whether
+  or not the session happens to see the plan's value: the session showing
+  the right value does not prove DeskOS put it there, and the value could
+  come from anywhere.
 - **The session ends up with it.** The value the session sees must match the
   plan. The run is a fresh account on a fresh install, so nothing legitimate
   has set a value yet: a session value that differs **fails**, because a
   declared default that does not reach the user is the defect this check
   exists for. A key the desktop itself rewrites on first login is the only
-  exception, and it is declared in `EXPLAINED_SESSION_DIFFERENCES` with the
-  reason the report prints — not skipped by default.
+  exception, declared in `EXPLAINED_SESSION_DIFFERENCES` with the reason the
+  report prints — not skipped by default. The entry names the delivery path
+  as well as the key (`dconf:<key>` or `gsettings:<schema> <key>`), because
+  the same key can be declared on both paths (the wallpaper is) and an
+  exception on one must not excuse the other.
 
 A read the guest cannot make is not a contradiction, so it is not failed: if
 the image carries the default but the session cannot see it (its dconf
