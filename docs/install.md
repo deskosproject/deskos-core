@@ -47,8 +47,16 @@ build cannot change what you install:
 image=quay.io/deskos/deskos-core-centos10:latest
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
-# the same builder command, with
-#   "quay.io/deskos/deskos-core-centos10@$digest"
+
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" \
+    "quay.io/deskos/deskos-core-centos10@$digest"
 ```
 
 > A `localhost/` image is **not an update source**: an installed machine updates
@@ -79,7 +87,10 @@ The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 in `config.toml`. The kickstart DeskOS needs is in
 [installer-iso.md](installer-iso.md), together with the warning that it
 **erases every disk**. Machines installed from it update from the image
-reference it was built from (`quay.io/deskos/deskos-core-centos10:latest`): Core
+reference it was built from, so an ISO built from a `localhost/` image leaves them
+**without an update source**: publish your own reachable reference before handing
+out the ISO ([installer-iso.md](installer-iso.md)). Once DeskOS publishes, that
+reference is `quay.io/deskos/deskos-core-centos10:latest`: Core
 stages the new image daily, on AC power, and it applies at the next
 reboot (see [Updates](operations.md)).
 
