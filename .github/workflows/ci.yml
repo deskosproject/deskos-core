@@ -50,6 +50,49 @@ jobs:
           ./bin/deskosctl plan ./examples/core-rhel-10 --workstation example-core-rhel-10
       - name: plan example RHEL workstation
         run: ./bin/deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel10
+      - name: the pinned bases exist in their registries
+        timeout-minutes: 10
+        run: |
+          # A base pinned by digest is a promise that its registry still serves
+          # that digest, and publishing the base breaks it. On 2026-10-17 the
+          # Ubuntu base was republished with a different digest, the platform kept
+          # the old one, and every Ubuntu build answered `manifest unknown` for
+          # over an hour — including a merge, because the VM legs do not gate it.
+          # Nothing caught it earlier because the platform and its goldens pinned
+          # the same stale digest: they agreed with each other while the registry
+          # disagreed.
+          #
+          # Deliberately not a Go test and not part of `make check`: the compiler
+          # and its tests must work with no network (AGENTS.md, invariant 11).
+          # This is a CI step, and it only reads.
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends skopeo >/dev/null
+          python3 - <<'PY' > /tmp/pins.txt
+          import glob, yaml
+          for f in sorted(glob.glob('resources/platforms/*.yaml')):
+              d = yaml.safe_load(open(f)) or {}
+              b = (d.get('spec') or {}).get('bootc') or {}
+              if b.get('image') and b.get('digest'):
+                  print(f.split('/')[-1], b['image'], b['digest'])
+          PY
+          while read -r platform image digest; do
+            err="$(sudo skopeo inspect "docker://$image@$digest" 2>&1 >/dev/null || true)"
+            case "$err" in
+              "")
+                echo "ok        $platform  $image@${digest:0:19}…" ;;
+              *"manifest unknown"*|*"not found"*)
+                echo "::error::$platform pins $image@$digest, which its registry does not serve any more. Re-pin it to the digest the registry serves."
+                exit 1 ;;
+              *"unauthorized"*|*"authentication required"*|*"denied"*|*"credentials"*)
+                # An entitled registry (RHEL) cannot be checked anonymously, and
+                # `unauthorized` does not distinguish private from absent: report
+                # it and claim neither.
+                echo "unchecked $platform  $image@${digest:0:19}… (registry needs credentials)" ;;
+              *)
+                echo "::error::$platform could not be checked: $err"
+                exit 1 ;;
+            esac
+          done < /tmp/pins.txt
       - name: render twice and compare
         run: |
           # The embedded Core, twice (determinism), and a Core passed in two
