@@ -120,10 +120,11 @@ func viewOf(p *plan.Plan) coreView {
 	return v
 }
 
-// The same DeskOS Core semantics compose to the same planned artifact content
-// on CentOS Stream 10, RHEL 10 and AlmaLinux 10; only the base image differs.
+// The same DeskOS Core semantics produce the same planned content on the EL10
+// platforms — CentOS Stream 10, RHEL 10 and AlmaLinux 10 — over the fields
+// viewOf compares (groups, packages, units, dconf defaults, files, target).
 // This proves composition, not that the images build or boot.
-func TestCoreComposesIdenticallyOnEveryPlatform(t *testing.T) {
+func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core]\n"
 	}

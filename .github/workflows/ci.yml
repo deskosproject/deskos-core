@@ -60,6 +60,8 @@ jobs:
             ./bin/deskosctl render --no-core ./resources ./examples/baseline-and-role --workstation "$ws" --output "dist/c/$ws"
             ./bin/deskosctl render --no-core ./examples/baseline-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
           done
+          # The AlmaLinux example renders too: its platform is shipped.
+          ./bin/deskosctl render ./examples/core-almalinux-10 --workstation example-core-almalinux-10 --output dist/alma
           diff -r dist/a dist/b
           diff -r dist/a dist/c
           diff -r dist/a dist/d
