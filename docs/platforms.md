@@ -8,8 +8,8 @@ DeskOS compiles the same Core intent onto a platform's own bootc base
 ([ADR 0004](adr/0004-core-is-platform-independent.md)). A platform whose vendor
 publishes no bootc base may be added as an organization-owned base with a named
 owner and a declared tier ([ADR 0014](adr/0014-platform-base-ownership.md)) —
-Ubuntu is that case. DeskOS publishes one repository per platform
-(`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …), and nothing has been
+Ubuntu is that case. Publishing goes to one repository per platform
+(`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …); nothing has been
 published yet.
 
 ## Status

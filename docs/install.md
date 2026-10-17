@@ -22,16 +22,12 @@ boot and session checks. Publishing is manual (the `supply-chain` workflow with
 production, pin the digest you verified.
 
 **1. Get the image, then make a QCOW2 disk** for a virtual machine. Nothing is
-published yet, so today the image is one you build; once the first `publish=true`
-dispatch runs, pull `quay.io/deskos/deskos-core-centos10`. Either way, resolve the
-digest once and build from that digest, so nothing changes what you install in
-between:
+published yet, so today the image is the one you built locally — a `localhost/`
+reference, which is what the builder takes here:
 
 ```bash
-# locally built (`localhost/deskos-core-centos10:test`), or pulled once published
-image=quay.io/deskos/deskos-core-centos10:latest
-sudo podman pull "$image"
-digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
+# The path available today: the image you built, local to this host.
+image=localhost/deskos-core-centos10:test
 
 mkdir -p output
 sudo podman run --rm -it --privileged --pull=missing \
@@ -40,10 +36,24 @@ sudo podman run --rm -it --privileged --pull=missing \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
     build --type qcow2 --no-default-kernel-args \
-    --chown "$(id -u):$(id -g)" \
-    "quay.io/deskos/deskos-core-centos10@$digest"
+    --chown "$(id -u):$(id -g)" "$image"
 ```
 
+Once the first `publish=true` dispatch runs, take the published image instead,
+and resolve `:latest` to a digest first so a publish between the pull and the
+build cannot change what you install:
+
+```bash
+image=quay.io/deskos/deskos-core-centos10:latest
+sudo podman pull "$image"
+digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
+# the same builder command, with
+#   "quay.io/deskos/deskos-core-centos10@$digest"
+```
+
+> A `localhost/` image is **not an update source**: an installed machine updates
+> from the reference it was built from, so anything beyond a lab disk needs a
+> published reference those machines can reach.
 > The CI pins this builder by digest for reproducibility; `:latest` is the
 > same image today.
 

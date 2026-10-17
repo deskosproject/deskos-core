@@ -139,10 +139,11 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-The image is published **per platform**, one repository each, by `supply-chain.yml`
-with `publish=true`: `quay.io/deskos/deskos-core-centos10`, `-almalinux10`, and so on.
-No dispatch has run yet, so **nothing is published today**, and the older single
-repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
+Publishing is **per platform**, one repository each: `supply-chain.yml` with
+`publish=true` sends the image to `quay.io/deskos/deskos-core-centos10`,
+`-almalinux10`, and so on. No dispatch has run yet, so **nothing is published
+today**, and the older single repository (`quay.io/deskos/deskos-core`) has been
+withdrawn. Rendering is deterministic — the same inputs
 give byte-identical output, and `generated-manifest.json` records their SHA-256 —
 so the build context is reproducible from the same commit. The image **build is
 not** yet bit-for-bit reproducible: the base tag and repository content can move
@@ -233,8 +234,8 @@ came from.
 ## Status
 
 Pre-1.0 and experimental: the resource APIs are `v1alpha1` and will change.
-DeskOS publishes **one repository per platform** (`deskos-core-centos10`,
-`-almalinux10`, …), and nothing has been published yet. The platform matrix, with what is
+Publishing goes to **one repository per platform** (`deskos-core-centos10`,
+`-almalinux10`, …); nothing has been published yet. The platform matrix, with what is
 verified on each and how to install it, is [**docs/platforms.md**](docs/platforms.md).
 
 > [!IMPORTANT]
