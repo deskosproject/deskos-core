@@ -111,43 +111,64 @@ with frames as for the boot check.
 
 ### Every default the plan declares
 
-Beyond those named checks, the harness asserts **every dconf default the
-plan declares** and takes the list from the plan itself, so a default
-declared later is asserted without editing `sessioncheck.py`. The guest
-reads each key back with `dconf read` — the effective value the session
-sees, in the same GVariant text the plan stores — and the host compares it
-with the plan's value. `session.json` carries `plan_defaults`
-(`declared`, `asserted`, and the ones set aside with the reason), and
-`session.md` ends with a line naming each asserted default and, separately,
-each one set aside.
+Beyond those named checks, the harness asserts **every default the plan
+declares** and takes the lists from the plan itself, so a default declared
+later is asserted without editing `sessioncheck.py`. There are two declared
+lists and two delivery paths:
 
-An array is compared as a multiset, because the plan does not say whether
-an array's order is significant and GNOME's own lists
-(`enabled-extensions`, `custom-keybindings`) are sets; a reorder is
-reported in the detail, not failed. The order-sensitive assertions stay
-with the checks that own them (the favorites order). Two cases are
-reported without a strict assertion rather than failed, and the report
-says which key and why:
+- **dconf defaults** (`artifact.dconf.defaults`): the guest reads each key
+  with `dconf read`, the effective value the session sees, in the same
+  GVariant text the plan stores.
+- **GSettings vendor defaults** (`artifact.gsettingsVendorDefaults`): the
+  guest reads each schema and key with `gsettings get`, in session and in
+  the compiled schema default. This is the path a
+  `*.gschema.override` takes, and it is the only one that delivers a
+  default on a platform whose dconf profile does not read the DeskOS
+  database.
 
-- **A value the session changed.** The guest also reads each key through a
-  profile naming only the image's own dconf database, so the value the
-  image ships is known. When that value matches the plan but the session's
-  effective value does not, the difference is a user, or a local or site
-  value winning over a default — defaults are not locks — and it is
-  reported, not failed. When the image's database does not carry the
-  plan's default either, the check fails: the image never shipped it.
-- **A value the session cannot see.** The image carries the default, but
-  the session's own dconf profile does not reach the database that holds
-  it (or the effective read fails). The key is reported as skipped with
-  the reason, not asserted. This is the check that tells whether a
-  platform's profile reads the database DeskOS writes to.
+Each declared default is **two claims**, not one, and each claim is read
+separately:
 
-The plan also carries GSettings vendor defaults — the wallpaper keys,
-which exist for sessions outside the DeskOS dconf profile (GNOME Initial
-Setup). Those are the same keys the plan declares in dconf, and this check
-asserts them there; the compiled override file itself is not read, because
-which override wins against a vendor's own is not a question this harness
-settles.
+- **The image carries it.** For a dconf default the guest also reads the key
+  through a profile naming only the image's own dconf database, so the
+  value the image ships is known apart from the value the session ends up
+  with. For a vendor default the guest reads the compiled schema default
+  with `GSETTINGS_BACKEND=memory`. A declared default the image does not
+  carry **fails**, whether or not the session happens to see the plan's
+  value: the session showing the right value does not prove DeskOS put it
+  there, and the value could come from anywhere.
+- **The session ends up with it.** The value the session sees must match the
+  plan. The run is a fresh account on a fresh install, so nothing legitimate
+  has set a value yet: a session value that differs **fails**, because a
+  declared default that does not reach the user is the defect this check
+  exists for. A key the desktop itself rewrites on first login is the only
+  exception, and it is declared in `EXPLAINED_SESSION_DIFFERENCES` with the
+  reason the report prints — not skipped by default.
+
+A read the guest cannot make is not a contradiction, so it is not failed: if
+the image carries the default but the session cannot see it (its dconf
+profile does not reach the database that holds it, or the read fails), the
+key is **reported as unverified with the reason**. That is the case that
+tells whether a platform's profile reads the database DeskOS writes to.
+`session.json` carries `plan_defaults` (`declared`, `in_image`,
+`in_session`, and every read that was not verified with its axis, state and
+reason), and `session.md` prints the counts and each unverified read.
+
+Arrays are compared **in order**, because the plan fixes that order:
+`favorite-apps` has its own order-sensitive check for exactly this reason. An
+array is compared as a multiset only for the keys in `UNORDERED_DEFAULTS`,
+where GNOME itself treats the value as a set and rewrites the whole list
+(`enabled-extensions`, `custom-keybindings`); a reorder there is the same
+value, and the detail says so. Adding a key to that set is a claim about
+GNOME's semantics, so it carries a reason.
+
+The type annotation dconf prints for an empty array is dropped only when it
+is the declared type's own: `@as []` is the `[]` an `as` key stores, while
+`@ai []` is a different value and does not match.
+
+The two lists travel to the guest as files of their own, so the script that
+reads them stays inside the tmpfiles.d argument cap as plans grow
+(`tmpfiles_arg` refuses content the guest would drop in silence).
 
 `platform_diagnostics` in `session.json` (and its section in
 `session.md`) records the guest CPU vendor, family and model,
