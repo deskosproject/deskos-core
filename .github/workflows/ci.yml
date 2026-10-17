@@ -62,6 +62,9 @@ jobs:
           done
           # The AlmaLinux example renders too: its platform is shipped.
           ./bin/deskosctl render ./examples/core-almalinux-10 --workstation example-core-almalinux-10 --output dist/alma
+          # The AlmaLinux reference workstation renders too: it is what the
+          # publish path builds, and its Containerfile is pinned by a golden.
+          ./bin/deskosctl render --workstation deskos-core-almalinux10 --output dist/alma-ref
           # The Fedora reference workstation renders: its platform is shipped and its
           # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
           # fails here rather than in a build nobody runs on a pull request.
