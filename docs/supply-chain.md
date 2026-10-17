@@ -183,6 +183,25 @@ platform that already did. The matrix has **not** been dispatched with
 `publish=true` yet, so the promotion it implements is gated and reviewed, not
 demonstrated: the first such dispatch is its evidence.
 
+## Before accepting a risk, check whether the base moved
+
+A gate that fails on Criticals inside the **base** is not asking for an exception
+first. AlmaLinux publishes a new bootc base every few days, and re-pinning to it is
+the fix that accepts nothing: on 2026-10-17 the gate found Criticals in Go modules
+compiled into `podman`, `skopeo`, `toolbox` and `ipp-usb`, and `quay.io/almalinuxorg/almalinux-bootc:10`
+already served a base built that morning, three days newer than the pinned one.
+The platform moved to it, and the scan after the change is what says whether it was
+enough.
+
+The check is cheap and it is the first thing to do, because the alternative —
+writing an exception — is a decision to ship a known Critical, and that decision
+should be the one left over, not the one reached for.
+
+It does not always work: CentOS Stream 10's `:stream10` served a manifest with the
+**same** config as the pin (same build, re-pushed), so re-pinning could not change
+anything there. That is the case where the risk goes on the record, with a reason,
+an owner and a review date — and not before.
+
 ## Promotion gate
 
 A digest moves forward only when, for that digest:
