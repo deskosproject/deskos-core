@@ -193,6 +193,12 @@ jobs:
           # signed below, so the published digest is the tested one.
           sudo podman image inspect "$IMAGE" --format 'id={{.Id}}' | tee "$WORK/image.txt"
 
+      - name: First-boot check (is the wizard the session, can an account log in)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/firstboot" --boot-timeout 900
+
       - name: Install cosign
         if: inputs.publish && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -201,7 +207,7 @@ jobs:
           cosign-release: 'v3.1.3'
 
       - name: Publish, sign and attest the scanned image
-        # CentOS Stream 10 only; RHEL images are never published. The
+        # One image per platform; RHEL images are never published. The
         # signature is keyless: it is bound to this workflow's OIDC
         # identity, and a signed attestation references the installed SBOM.
         if: inputs.publish && github.ref == 'refs/heads/main'
@@ -245,7 +251,7 @@ jobs:
           # of a 14-day Actions artifact: attest the standing approval and,
           # separately, the exact matches this image accepted.
           retry cosign attest --yes --type "https://deskos.org/supply-chain/exceptions/v1" \
-            --predicate tests/supply-chain/exceptions.json "$ref"
+            --predicate ${{ matrix.exceptions }} "$ref"
           retry cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --predicate "$WORK/effective-exceptions.json" "$ref"
           cosign verify "$ref" \
@@ -266,9 +272,13 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
             | tee -a cosign-verify.txt
-          # :latest moves only after the digest is signed and verified.
+          # :latest moves only after the digest is signed and verified, and only
+          # when the registry returns the same digest: a different one would be a
+          # different image, and the signature would not be about it.
           sudo podman tag "$IMAGE" "$DEST:latest"
-          sudo podman push "$DEST:latest"
+          sudo podman push --digestfile latest-digest.txt "$DEST:latest"
+          latest="$(tr -d '\n\r' < latest-digest.txt)"
+          [ "$latest" = "$digest" ] || { echo "::error::$DEST:latest is $latest, not the signed $digest"; exit 1; }
           # cosign v3 has no `logout`; the credentials live in the runner's
           # docker config, and podman logout clears the registry login.
           sudo podman logout quay.io
@@ -295,5 +305,7 @@ jobs:
             ${{ env.WORK }}/image.txt
             ${{ env.WORK }}/bootcheck/summary.md
             ${{ env.WORK }}/session/session.md
+            ${{ env.WORK }}/firstboot/firstboot.md
+            latest-digest.txt
           retention-days: 14
           if-no-files-found: warn

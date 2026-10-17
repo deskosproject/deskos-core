@@ -63,7 +63,9 @@ grype "$image" -o json > cves.json
 ## CI job
 
 `.github/workflows/supply-chain.yml` (manual, `workflow_dispatch`) builds
-the CentOS Stream 10 Core image from a checkout and runs the steps above:
+one image per platform from a checkout — one matrix leg per publishable
+workstation reference, each with its own exceptions record and destination
+repository — and runs the steps above:
 it writes the declared SBOM, produces `installed.sbom.cdx.json` with Syft
 and `cves.json` with Grype, checks the exceptions record and generates the
 gate configuration from it, fails on the chosen severity, compares the two
@@ -138,7 +140,9 @@ identity, and compare the SBOM you obtained against the hash the reference
 names. Do not use `--insecure-ignore-tlog` on this path.
 
 ```bash
-ref=quay.io/deskos/deskos-core@sha256:…
+# One repository per platform and release:
+# quay.io/deskos/deskos-core-centos10, -almalinux10, …
+ref=quay.io/deskos/deskos-core-centos10@sha256:…
 issuer=https://token.actions.githubusercontent.com
 identity='^https://github\.com/deskosproject/deskos-core/'
 
@@ -171,11 +175,17 @@ The gates are unified: `supply-chain.yml` is the single publish path, and it
 boots, scans, signs and attests the same image before it is promoted; it is
 dispatched manually with `publish=true`. `vm-bootcheck.yml` is a pure check.
 
+The matrix runs with `fail-fast: false`, so one platform failing does not
+stop another from being published: promotions are **independent per
+platform**, and each is gated on its own build, boot, session and first-boot
+checks. A red leg means that platform did not move; it does not retract a
+platform that already did.
+
 ## Promotion gate
 
 A digest moves forward only when, for that digest:
 
-1. the render validates and the boot/session checks pass (see
+1. the render validates and the boot, session and first-boot checks pass (see
    [development.md](development.md) and `tests/vm`);
 2. the installed SBOM contains every component the declared SBOM lists;
 3. the CVE scan is at or below the agreed threshold;
