@@ -99,6 +99,7 @@ func TestGoldenContainerfiles(t *testing.T) {
 		roots []string
 	}{
 		{"deskos-core-centos10", []string{resourcesRoot}},
+		{"deskos-core-almalinux10", []string{resourcesRoot}},
 		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
 		{"example-ubuntu-vendor", []string{resourcesRoot, ubuntuRoot}},
 	} {
