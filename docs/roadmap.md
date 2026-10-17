@@ -17,7 +17,8 @@ organization.
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
   now runs in a downstream organization's repository on GitHub-hosted
-  runners, and this repository is CentOS Stream 10 only.
+  runners, and this repository builds CentOS Stream 10 and Ubuntu 26.04, not
+  RHEL.
 - RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
   with a private workstation that declares Flathub apps.
 
@@ -48,18 +49,19 @@ each slice is reviewed on its own:
 
 ## Milestone 2: independent CentOS CI build
 
-- **CI build:** a manual GitHub workflow (`vm-bootcheck.yml`,
-  `workflow_dispatch` only) builds the CS10 Core image, a test QCOW2 that
-  is not uploaded, and runs the boot and session checks; last passed in
-  run `37162282876` on commit `8ab0cc9`.
-  Triggering it automatically on changes to image inputs is *not
-  decided*.
+- **CI build:** `vm-bootcheck.yml` builds the CentOS Stream 10 workstations
+  (Core and the organization example) into QCOW2 disks and runs the boot,
+  session and first-boot checks on them, and builds the two Ubuntu 26.04
+  workstations into raw disks (`bootc install to-disk`) and runs the boot and
+  first-boot checks, not the session check. It runs on pull requests and on
+  `main` for paths that can change an image, and on demand
+  (`workflow_dispatch`).
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots the image and then pushes and signs it to
   `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
   10 only. `vm-bootcheck.yml` is a pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10 and RHEL 10.
+  for CentOS Stream 10, RHEL 10 and Ubuntu 26.04.
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -69,16 +71,23 @@ Details in
 [`docs/design/visual-identity-and-boot.md`](design/visual-identity-and-boot.md)
 ("VM QA").
 
-**Existing, CS10 only** ([`tests/vm/`](../tests/vm/README.md)):
+**Existing for CentOS Stream 10 and Ubuntu**
+([`tests/vm/`](../tests/vm/README.md)):
 
-- **Tier A, unmodified artifact:** `bootcheck.py` boots the exact QCOW2
-  through an overlay, classifies screendumps (splash, graphical) and
+- **Tier A, unmodified artifact:** `bootcheck.py` boots the exact test disk —
+  a QCOW2 on the EL platforms, a raw disk on Ubuntu — through an overlay,
+  classifies screendumps (splash, graphical) and
   checks ACPI shutdown. It does not match screens against references.
-- **Tier B subset, instrumented session:** `sessioncheck.py` adds a test
+- **Tier B subset, instrumented session (CentOS Stream 10):** `sessioncheck.py`
+  adds a test
   user and GDM autologin through systemd credentials (SMBIOS type 11); a
   report unit writes the results and journal to the serial port. No SSH
   or qecore. Checks the dock, favorites, wallpaper, headless Firefox and
   failed units against the Plan; required checks *fail closed*.
+- **First boot, instrumented, no account:** `firstbootcheck.py` adds no
+  account and no session, and asks the guest whether the first-boot wizard is
+  the session that came up, whether an account could log in, and whether a
+  service failed.
 
 **Remaining:**
 
@@ -103,6 +112,9 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
+- Build and boot the AlmaLinux 10 platform in CI, to lift its facts from
+  "modeled on `rhel-10`" to measured (see
+  [validation status](architecture.md#validation-status)).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.
@@ -157,9 +169,9 @@ how-to: [supply-chain.md](supply-chain.md).
 
 - Channels (candidate, canary, pilot, stable) promoting one digest.
 - **Done:** `UpdatePolicy`
-  ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image
-  and update system Flatpaks from DeskOS timers, daily and on AC power
-  in Core, and the bootc timer that reboots is masked. Validated on a CentOS
+  ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image from a
+  DeskOS timer, daily and on AC power in Core, and the bootc timer that reboots
+  is masked; system Flatpak updates are the EL family's policy. Validated on a CentOS
   Stream 10 VM: the image service staged a new image without rebooting,
   and a manual reboot booted it with the previous one as rollback.
 - **Done:** the `GnomeProfile` shell, clock and keyboard settings
@@ -185,14 +197,14 @@ how-to: [supply-chain.md](supply-chain.md).
 Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
 its own.
 
-- **Documentation restructure.** `docs/resources.md` (518 lines) and
-  `docs/architecture.md` (652) mix reference with state. Split them and add
-  `compatibility.md` (one matrix: platform, base digest, GNOME versions,
-  evidence, date), `troubleshooting.md` (symptom → check → remedy) and
-  `migration.md` (v1alpha1 changes, e.g. `gpgKeys` → `gpgKeyFiles`), plus
-  `resources/{core,software,desktop,system}.md`. Keep `research-notes` a
-  dated archive, not current status. Add a short glossary and an explicit
-  `YAML → plan → Containerfile → image → disk` line.
+- **Documentation restructure (in progress).** The platform matrix now has one
+  home, [platforms.md](platforms.md), and the README states the
+  `YAML → validate → compose → plan → Containerfile → image → disk` line. Still
+  open: splitting `docs/resources.md` into
+  `resources/{core,software,desktop,system}.md`; a `troubleshooting.md`
+  (symptom → check → remedy) and a `migration.md` (v1alpha1 changes, e.g.
+  `gpgKeys` → `gpgKeyFiles`); a compatibility page; and a short glossary. Keep
+  `research-notes` a dated archive, not current status.
 - **Durable SBOM storage.** The publish attests the SBOM **by reference**
   (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The
   full SBOM is a 14-day workflow artifact; publish it to durable,

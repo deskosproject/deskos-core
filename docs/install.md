@@ -1,12 +1,15 @@
 # Installing DeskOS
 
 How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
-published CentOS Stream 10 image or from a private RHEL 10 build.
+published CentOS Stream 10 image, a private RHEL 10 build, an AlmaLinux 10
+build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
 > Downloadable QCOW2 and ISO images are not published yet. Until they
-> are, create them from the container image with `bootc-image-builder`.
-> You need **Linux with rootful Podman** and about **20 GB free**.
+> are, create an EL disk from the container image with
+> `bootc-image-builder`, and an Ubuntu disk with `bootc install to-disk`
+> ([Ubuntu 26.04](#ubuntu-2604) below). You need **Linux with rootful
+> Podman** and about **20 GB free**.
 
 ## CentOS Stream 10
 
@@ -134,3 +137,88 @@ host's subscription state (see [validation status](architecture.md#validation-st
 a build you make is your own to check. The image, disks and ISOs are
 **still RHEL derivatives**: push them only to registries and storage that
 are private to your organization.
+
+## AlmaLinux 10
+
+AlmaLinux 10 is a public, subscription-free EL10 base — the AlmaLinux project's
+own, which that project labels experimental. DeskOS publishes no AlmaLinux image
+and has **not built or booted** one: the steps below have the same shape as the
+CentOS Stream 10 ones and are **proposed, not measured**. The platform's facts
+are EL10 conventions modeled on RHEL 10, not verified against AlmaLinux
+([platforms.md](platforms.md)).
+
+Get `deskosctl` as in step 1 of the RHEL section above, then render the shipped
+example from a checkout of this repository and build it:
+
+```bash
+./bin/deskosctl render ./examples/core-almalinux-10 \
+    --workstation example-core-almalinux-10 --output ./dist/alma
+sudo podman build -t localhost/deskos-alma:test ./dist/alma
+```
+
+Then write the QCOW2 with the public `bootc-image-builder`, as in the CentOS
+Stream 10 steps above.
+
+## Ubuntu 26.04
+
+DeskOS publishes no Ubuntu image and implements no installer ISO for it — there is
+no ISO path here, built or validated. The base is owned by the DeskOS project and
+pinned by digest in `resources/platforms/ubuntu-2604.yaml`. Get `deskosctl` (step
+1 of the RHEL section above), then build the image and write a disk with
+`bootc install to-disk`:
+
+**1. Render, build and push the image**, tagged with the reference your machines
+will update from:
+
+```bash
+./bin/deskosctl render ./examples/core-ubuntu-2604 \
+    --workstation example-core-ubuntu-2604 --output ./dist/ubuntu
+sudo podman build -t registry.example.com/deskos/ubuntu:latest ./dist/ubuntu
+sudo podman push registry.example.com/deskos/ubuntu:latest
+```
+
+The installed machine updates from that reference, so it must be able to reach it:
+a registry your organization hosts, or one you make public. DeskOS does not
+publish an Ubuntu image for you.
+
+**2. Recompress it into an OCI layout**, which the install mounts as its source
+(the composefs import rejects uncompressed layers):
+
+```bash
+sudo skopeo copy \
+    containers-storage:registry.example.com/deskos/ubuntu:latest \
+    oci:/tmp/oci:test
+```
+
+**3. Write a disk with `bootc install to-disk`**, pointing `--target-imgref` at
+the reference from step 1:
+
+```bash
+truncate -s 32G disk.raw
+sudo podman run --rm --privileged --pid=host --security-opt label=type:unconfined_t \
+    -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+    -v /tmp/oci:/src-oci:ro -v "$PWD":/output \
+    registry.example.com/deskos/ubuntu:latest \
+    bootc install to-disk --via-loopback /output/disk.raw \
+    --source-imgref oci:/src-oci:test \
+    --target-imgref registry.example.com/deskos/ubuntu:latest \
+    --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+```
+
+The disk is `disk.raw`.
+
+Three things here that must not be conflated:
+
+- **CI makes a lab disk, not a delivery.** The workflow installs from a local OCI
+  layout with **no `--target-imgref`**; that proves the image builds, installs and
+  boots, and says nothing about where the machine updates from afterwards.
+- **A real install points `--target-imgref` at a derivative you publish** — a
+  private registry, or one you make public — never at the local layout and never
+  at the base: pointing it at the base would replace your derivative with the base
+  at the next update.
+- **Publishing the derivative is your step, and CI does not test it.** DeskOS
+  publishes no Ubuntu image; that the image is built, installed and booted in CI
+  says nothing about a registry you publish to.
+
+After that the disk updates with `bootc` like any other platform
+([operations.md](operations.md)).

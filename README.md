@@ -14,104 +14,109 @@
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/github/license/deskosproject/deskos-core?cacheSeconds=86400"></a>
 </p>
 
-**DeskOS is an open workstation artifact factory.** An organization
-describes its workstation as *declarative resources* (applications,
-desktop settings, branding, boot appearance) and DeskOS **compiles** them
-into a deterministic build context for **CentOS Stream 10**, **RHEL 10** or
-**Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context builds a
-bootable image, from which QCOW2 disks and installer ISOs are made. Ubuntu
-composes and renders in CI, its derived image builds from the pinned base, and
-that image **boots to GNOME Initial Setup**: the wizard runs, which is what
-`tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. None of
-the Ubuntu measurements run in CI, and Ubuntu offers no system Flatpak channel
-([validation status](docs/architecture.md#validation-status)).
+**DeskOS is an open workstation artifact factory.** An organization describes
+its workstation as *declarative resources* — applications, desktop settings,
+branding, boot appearance — and DeskOS **compiles** them, deterministically,
+into a bootc operating-system image:
+
+```text
+YAML → validate → compose → plan → Containerfile → bootc image → disk
+```
+
+The same intent compiles onto four platforms today. They differ in who owns the
+base and how far DeskOS has validated the result:
+
+| Platform | Base | What you can do today |
+|---|---|---|
+| CentOS Stream 10 | vendor | pull the published image, or build and boot it yourself |
+| RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
+| AlmaLinux 10 | vendor (experimental) | composes and renders; not built here yet |
+| Ubuntu 26.04 | the DeskOS project | built and booted in CI; no published image and no ISO — write a disk with `bootc install to-disk` |
+
+The full matrix — base owner, evidence, and how to install each — is in
+[**docs/platforms.md**](docs/platforms.md).
+
+> [!NOTE]
+> **Pre-1.0.** The resource APIs are `v1alpha1` and will change; see
+> [Migrating](docs/roadmap.md).
 
 > **A workstation is compiled from organizational intent.**
 
-## The five-minute tour
+## Why it exists
 
 An organization with more than a handful of Linux desktops ends up with
 **snowflakes**: each machine was installed once, by hand, and then drifted.
-Nobody can say what is on them, reproduce one, or prove one is safe to
-ship. DeskOS takes the machine definition out of each installer's hands: you
-**describe** the workstation in versioned text, and DeskOS **compiles** it
-into one image — built, tested, signed and published like any other
-artifact in your pipeline.
+Nobody can say what is on them, reproduce one, or prove one is safe to ship.
+DeskOS takes the machine definition out of each installer's hands: you
+**describe** the workstation in versioned text, and DeskOS **compiles** it into
+one image — built, tested, signed and published like any other artifact in your
+pipeline.
+
+## The five-minute tour
 
 ### The four words
 
-- **Resource** — a YAML file describing one thing: a package set, a
-  repository, a desktop setting, a theme, an update policy. There are
-  **fourteen kinds**; each is small and composable. See
-  [docs/resources.md](docs/resources.md).
+- **Resource** — a YAML file describing one thing: a package set, a repository,
+  a desktop setting, a theme, an update policy. There are **fourteen kinds**;
+  each is small and composable. See [docs/resources.md](docs/resources.md).
 - **Profile** — a named group of resources at a **layer**:
   `foundation` < `organization` < `role` < `workstation`. A higher layer
   overrides a lower one *on purpose*, never by file order.
-- **Workstation** — the machine: a platform (CentOS Stream 10, RHEL 10 or
-  Ubuntu 26.04) plus the profiles it is made of. This is the file you author.
-- **Plan, then render** — the compiler reads every resource, composes them
-  into a typed **plan** (each value keeps the resource and layer it came
-  from), and `render` writes a **deterministic** build context: the same
-  inputs always give the same bytes.
+- **Workstation** — the machine: a platform plus the profiles it is made of.
+  This is the file you author.
+- **Plan, then render** — the compiler reads every resource, composes them into
+  a typed **plan** (each value keeps the resource and layer it came from), and
+  `render` writes a deterministic build context: the same inputs always give the
+  same bytes.
 
 ### See it work
 
-Get `deskosctl` and stay in the directory where you downloaded it (step 1 of
-the [Quickstart](#quickstart)), then look at the workstation DeskOS Core
-already ships — no files to write yet:
+Get `deskosctl` (step 1 of the [Quickstart](#quickstart)) and look at the
+workstation Core already ships — no files to write yet:
 
-```bash
-# This composes cleanly with no resources of your own.
-./deskosctl validate
-# The composed machine, before anything is built.
-./deskosctl plan --workstation deskos-core-centos10
+```console
+$ ./deskosctl validate
+ok: 1 workstation(s) compose cleanly: deskos-core-centos10
+
+$ ./deskosctl plan --workstation deskos-core-centos10
+WORKSTATION
+  deskos-core-centos10 (DeskOS Core (CentOS Stream 10))
+
+PLATFORM
+  CentOS Stream 10 (centos-stream-10)
+  base image: quay.io/centos-bootc/centos-bootc:stream10 (pinned sha256:98cb9980…)
+  publication: redistributable
+
+PROFILES
+  foundation:  deskos-core
+  foundation:  deskos-look
+  foundation:  deskos-reference-apps
+  foundation:  rhel-family
+
+ARTIFACT
+  RPM repositories
+    none
+  Package groups
+    workstation  -> workstation-product-environment (without setroubleshoot, …)
+  Packages
+    firefox                 [foundation PackageSet/rhel-family]
+    firewalld               [foundation PackageSet/rhel-family]
+    …
 ```
 
-`plan` prints what the image will contain and where each value came from.
-To author your own machine, copy the
+`plan` prints what the image will contain and **where each value came from**. To
+author your own machine, copy the
 [example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/baseline-and-role)
-— a `Workstation` plus the profiles it is made of — and point `deskosctl` at
-that directory. Building the image and a disk needs `podman` and root; that
-is the rest of the [Quickstart](#quickstart).
-
-## How it works
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs" src="docs/images/deskos-flow-light.svg" width="900">
-  </picture>
-</p>
-
-A `Workstation` names a **platform** and the **profiles** it is made of:
-
-```yaml
-apiVersion: core.deskos.org/v1alpha1
-kind: Workstation
-metadata:
-  name: example-devops-centos10
-spec:
-  platformRef: centos-stream-10
-  profiles:
-    - deskos-core        # foundation, shipped by DeskOS
-    - example-baseline   # organization
-    - example-devops     # role
-```
-
-`deskosctl plan` shows the composed workstation *before anything is
-built*, and `deskosctl render` writes a **deterministic** build context:
-the same inputs always give the same bytes. Every resource kind, with an
-example, is in [**docs/resources.md**](docs/resources.md).
-
-A `Workstation` is the resource you author: a machine definition that
-compiles into a workstation **image** (a bootable container image).
+— a `Workstation` plus the profiles it is made of — and point `deskosctl` at that
+directory. Building the image and a disk needs `podman` and root; that is the
+rest of the [Quickstart](#quickstart).
 
 ## Quickstart
 
-The whole flow, and the same steps CI runs:
+The whole flow, which is the render → build → disk flow CI runs:
 
 ```bash
-# 1. Get deskosctl (one binary).
+# 1. Get deskosctl (one binary; no Go toolchain needed).
 curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/deskosctl-linux-amd64
 curl -fLO https://github.com/deskosproject/deskos-core/releases/latest/download/SHA256SUMS
 sha256sum -c --ignore-missing SHA256SUMS
@@ -129,16 +134,54 @@ sudo podman build -t localhost/deskos-core-centos10:test ctx
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
-    quay.io/centos-bootc/bootc-image-builder:latest \
+    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-The published image that passed the boot and session checks is
-`quay.io/deskos/deskos-core:latest`; [docs/install.md](docs/install.md)
-covers QCOW2, ISO and RHEL. Rendering is deterministic — the same inputs
-give byte-identical output, and `generated-manifest.json` records their
-SHA-256 — so the context is reproducible from the same commit; the *build*
-is reproducible but not yet bit-for-bit.
+The image that passed the boot and session checks is published as
+`quay.io/deskos/deskos-core:latest`. Rendering is deterministic — the same inputs
+give byte-identical output, and `generated-manifest.json` records their SHA-256 —
+so the build context is reproducible from the same commit. The image **build is
+not** yet bit-for-bit reproducible: the base tag and repository content can move
+between builds (see [supply-chain inputs](docs/architecture.md#supply-chain-inputs)).
+
+Disks: [docs/install.md](docs/install.md) covers QCOW2, the Anaconda ISO, the
+private RHEL build, and the Ubuntu `bootc install to-disk` path. The canonical
+status of each platform, and what is verified, is in
+[docs/platforms.md](docs/platforms.md).
+
+## How it works
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
+  </picture>
+</p>
+
+*(The figure predates AlmaLinux 10; the platform list is above and in
+[docs/platforms.md](docs/platforms.md).)*
+
+A `Workstation` names a **platform** and the **profiles** it is made of:
+
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-devops-centos10
+spec:
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core        # foundation, shipped by DeskOS
+    - example-baseline   # organization
+    - example-devops     # role
+```
+
+`deskosctl plan` shows the composed workstation *before anything is built*, and
+`deskosctl render` writes the deterministic build context. A `Workstation` is the
+resource you author: a machine definition that compiles into a workstation
+**image** (a bootable container image). Every resource kind, with an example, is
+in [**docs/resources.md**](docs/resources.md).
 
 ## Composition
 
@@ -149,10 +192,9 @@ is reproducible but not yet bit-for-bit.
   </picture>
 </p>
 
-Profiles sit at explicit layers,
-`foundation` < `organization` < `role` < `workstation`, so an
-organization overrides DeskOS Core **on purpose**, never by file order.
-Here the organization shortens Core's screen blank from `10m` to `5m`:
+Profiles sit at explicit layers, `foundation` < `organization` < `role` <
+`workstation`, so an organization overrides DeskOS Core **on purpose**, never by
+file order. Here the organization shortens Core's screen blank from `10m` to `5m`:
 
 ```yaml
 apiVersion: desktop.deskos.org/v1alpha1
@@ -169,64 +211,33 @@ spec:
 ```
 
 - **Sets** (packages, units) are unioned.
-- **Scalars** (GNOME settings) take the highest layer; two different
-  values *at the same layer* are an error.
+- **Scalars** (GNOME settings) take the highest layer; two different values *at
+  the same layer* are an error.
 - **Keyed** definitions (repositories, Flatpaks, binaries) must agree.
 
-Every value in the plan keeps its *provenance*: the resource, layer and
-file it came from.
-
-## Get DeskOS
-
-DeskOS Core for CentOS Stream 10 is published as a bootable container
-image; pull `quay.io/deskos/deskos-core:latest` (see the
-[Quickstart](#quickstart)).
-Downloadable disks are not published yet: make a **QCOW2** or an
-**installer ISO** from the image with `bootc-image-builder`, as described
-in [**docs/install.md**](docs/install.md).
-
-> [!IMPORTANT]
-> **RHEL 10 images are never published.** Organizations with RHEL
-> subscriptions build them privately and keep them inside the
-> organization; see [docs/install.md](docs/install.md#rhel-10-private-builds-only).
+Every value in the plan keeps its *provenance*: the resource, layer and file it
+came from.
 
 ## What DeskOS is not
 
 - **Not a distribution with editions.** Organizations compose their own
   workstations from DeskOS Core, their baseline and their roles.
-- **Not configuration management.** DeskOS owns the *image*, not the
-  running machine; Ansible, Satellite, MDM and EDR keep managing
-  endpoints.
-- **Not a developer environment manager.** Personal tooling (Homebrew,
-  mise, dotfiles, Toolbox contents) stays outside the managed baseline.
+- **Not configuration management.** DeskOS owns the *image*, not the running
+  machine; Ansible, Satellite, MDM and EDR keep managing endpoints.
+- **Not a developer environment manager.** Personal tooling (Homebrew, mise,
+  dotfiles, Toolbox contents) stays outside the managed baseline.
 
 ## Status
 
-> [!NOTE]
-> **Experimental.** The resource APIs are `v1alpha1` and will change.
+Pre-1.0 and experimental: the resource APIs are `v1alpha1` and will change.
+DeskOS **publishes only CentOS Stream 10**; the platform matrix, with what is
+verified on each and how to install it, is [**docs/platforms.md**](docs/platforms.md).
 
-| | CentOS Stream 10 | RHEL 10 | Ubuntu 26.04 |
-|---|---|---|---|
-| Compose and render | deterministic | deterministic | deterministic |
-| Image build, `bootc container lint` | CI | downstream organization | built in a lab from the pinned base |
-| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | **boots to GNOME Initial Setup** (lab): the wizard runs and no account can log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
-| System Flatpak channel | Flatpak preinstall | Flatpak preinstall | **none declared**; a `FlatpakSet` fails with that reason |
-| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | no derived image published yet |
-| Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
-| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
-
-Ubuntu composes and renders in CI, and everything beyond that is one manual lab run
-on the digest the platform pins: the derived image builds, and it boots to GNOME
-**Initial Setup** — the wizard runs, and no account can log in, both asserted by
-`tests/vm/firstbootcheck.py` asking the guest rather than reading a screen. That
-check is also how the wizard's absence was found and its cause fixed: GDM counts
-users through AccountsService, and the uid-1000 account the upstream container image
-ships was suppressing it. Its organization-owned base carries no third-party apt
-source. What Ubuntu has not been given is a system Flatpak channel — 26.04 publishes
-no `flatpak preinstall` — so a workstation that declares a `FlatpakSet` fails
-composition with that reason instead of pretending.
-
-Details: [validation status](docs/architecture.md#validation-status).
+> [!IMPORTANT]
+> **RHEL 10 images are never published.** Organizations with RHEL subscriptions
+> build them privately and keep them inside the organization (the RHEL EULA
+> forbids public redistribution);
+> see [docs/install.md](docs/install.md#rhel-10-private-builds-only).
 
 ## Documentation
 
@@ -234,13 +245,13 @@ By what you want to do:
 
 | | |
 |---|---|
-| **Evaluate** | the tour above; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
-| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds |
+| **Evaluate** | the tour above; [**Platforms**](docs/platforms.md) for status and installation per platform; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds; AlmaLinux 10; the Ubuntu 26.04 `bootc install to-disk` path |
 | **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |
-| **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing; [ADRs](docs/adr/) |
-| **Track** | [Roadmap](docs/roadmap.md) · [Research notes](docs/research-notes.md) |
+| **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing; [ADRs](docs/adr/) and their [index](docs/adr/README.md) |
+| **Track** | [Roadmap](docs/roadmap.md) · [Research notes](docs/research-notes.md) · the [harness](tests/vm/README.md) |
 
 ## License
 

@@ -21,6 +21,7 @@ backend, and what has been validated on each platform.
 [System Flatpaks](#system-flatpaks) ·
 [GNOME](#gnome) ·
 [Boot](#boot) ·
+[Trust store](#trust-store) ·
 [Updates](#updates) ·
 [Drift and mutable `/etc`](#drift-and-mutable-etc) ·
 [Provisioning and enrollment](#provisioning-and-enrollment) ·
@@ -34,7 +35,7 @@ reconcile deployed endpoint state.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -112,10 +113,11 @@ Examples of every kind are in
   compose.
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
-profile. The same Core composes onto `centos-stream-10` and `rhel-10`; a
-RHEL workstation starts from `registry.redhat.io/rhel10/rhel-bootc`,
-**never** from the CentOS-based DeskOS image. A test asserts both
-platforms produce the same Core content.
+profile. The same Core composes onto `centos-stream-10`, `almalinux-10`,
+`rhel-10` and `ubuntu-2604`; a RHEL workstation starts from
+`registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
+DeskOS image. A test asserts CentOS Stream 10, RHEL 10 and AlmaLinux 10
+produce the same Core content; Ubuntu is not compared by that test.
 
 ## Composition
 
@@ -295,71 +297,59 @@ Firefox RPM on both EL platforms.
 
 ## Validation status
 
-| Claim | CentOS Stream 10 | RHEL 10 | Ubuntu 26.04 |
-|---|---|---|---|
-| Core and the example organization compose and render | **validated** | **validated** | **validated** (CI, `validate`) |
-| Same Core content on every platform | **validated** (test) | **validated** (test) | not asserted: the identity test compares CentOS Stream 10 with RHEL 10 |
-| Image builds, `bootc container lint` passes | **validated** (CI) | **validated** on the factory host [^rhel-build] | **validated** in a lab, on the digest the platform pins |
-| Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version"). `example-ubuntu-vendor` does declare sources: it installs `code` from a declared APT source, **validated by hand** against the vendor's archive (apt verified the signature and offered the package), with the CI job that builds and boots that image as the evidence still pending |
-| Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] | not measured |
-| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (lab): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
-| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository | none |
-| Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 | not measured by a session check. The lab install's first-boot journal has no failed *services*: `sssd.service` is skipped by its own condition (sssd is installed unconfigured) and its responder sockets report `dependency`, and the recipe's own tmpfiles line logs `Invalid age '-d'` |
-| Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] | **not offered**: 26.04 publishes no `flatpak preinstall` and the base carries no third-party apt source, so a `FlatpakSet` fails composition with that reason (measured, invariant 9) |
-| OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as CentOS Stream 10 | same as the Flatpak row: not offered |
+The canonical matrix — base owner, what is verified on each platform, and how to
+install it today — is [**platforms.md**](platforms.md). The evidence behind those
+claims is below.
 
-Ubuntu 26.04 is measured outside CI, and only up to where its base allows. Its
-derived image builds and boots to GNOME **Initial Setup**: the wizard runs, and no
-account can log in — both asserted by asking the guest with
-`tests/vm/firstbootcheck.py`. That check is also what found the wizard's absence and
-its cause: GDM counts users through AccountsService, and the uid-1000 account the
-upstream container image ships was suppressing it. That is precisely what a
-screenshot cannot see, because GDM's greeter draws a `Username` field too. What
-Ubuntu does not have is a system Flatpak channel, and the platform says so rather
-than pretending (invariant 9). Every Ubuntu claim above rests on one manual lab run,
-not on CI.
+The RHEL column there is historical: the RHEL factory host was retired, and this
+repository no longer builds or boots RHEL or publishes a `deskos/rhel10` status.
+Composition and rendering for RHEL stay covered by the tests. The Ubuntu
+root-cause story — GDM counting users through AccountsService, and the uid-1000
+account the upstream container image ships suppressing the wizard — is in
+[research notes](research-notes.md).
 
-The RHEL column is historical: the RHEL factory host was retired and this
-repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
-status. Composition and rendering for RHEL stay covered by the tests.
+### Evidence
 
-[^rhel-build]: Image `0e65bf4b` on RHEL 10.2, base `d13af792...`; lint
-passed with the three known warnings.
-[^layers]: All 75 layers of `0e65bf4b` scanned for RHSM paths and the
-build host's entitlement serial, consumer UUID and hostname.
-[^cs10-boot]: `bootcheck.py` on Core disks (pixel classes; frames show the
-DeskOS splash and GNOME Initial Setup over the DeskOS wallpaper);
-`sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper
-as planned and Firefox running headless; the GDM login logo was seen in a
-Core VM. No full E2E.
-[^rhel-boot]: Same checks on the `0e65bf4b` disk, under nested KVM on the
-entitled factory VM (example wallpaper); not in CI; no full E2E.
-[^cs10-run]: Last run `37162282876` on commit `8ab0cc9`, with the approved
-DeskOS identity; it published `quay.io/deskos/deskos-core:8ab0cc9...` and
-`:latest`.
-[^mcelog]: In AMD QEMU guests without `edac_mce_amd`; reported as a known,
-non-blocking diagnostic with its raw failed state (see
-`tests/vm/README.md` and [research-notes.md](research-notes.md)).
-[^flatpak]: `example-devops-rhel10` declares no Flatpaks. A private RHEL
-10.2 workstation with four Flathub apps: `flatpak preinstall --system`
-without a session bus installed all four from `/usr/share/flatpak/preinstall.d`
-in the built image, and its booted disk had no failed preinstall unit.
+- **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
+  classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
+  wallpaper); `sessioncheck.py` confirms Dash to Dock active, favorites and
+  wallpaper as planned and Firefox running headless; the GDM login logo was seen
+  in a Core VM. No full E2E.
+- **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on RHEL 10.2,
+  base `d13af792...`; lint passed with the three known warnings; all 75 layers of
+  `0e65bf4b` scanned free of RHSM paths and the build host's entitlement serial,
+  consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
+  disk under nested KVM on the entitled factory VM (example wallpaper). Not in
+  CI; no full E2E.
+- **Published CentOS Stream 10 image.** Last run `37162282876` on commit
+  `8ab0cc9`, with the approved DeskOS identity; it published
+  `quay.io/deskos/deskos-core:8ab0cc9...` and `:latest`.
+- **Flatpak preinstall (RHEL).** `example-devops-rhel10` declares no Flatpaks; a
+  private RHEL 10.2 workstation with four Flathub apps installed all four from
+  `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
+  session bus), and its booted disk had no failed preinstall unit.
+- **Failed system units.** In AMD QEMU guests without `edac_mce_amd`,
+  `mcelog.service` is the only tolerated failed unit, reported as a known,
+  non-blocking diagnostic with its raw failed state (see
+  [`tests/vm/README.md`](../tests/vm/README.md) and
+  [research-notes.md](research-notes.md)).
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
 `gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
 1.37.1, VS Code 1.140.0 and Chrome 154 from their vendor repositories,
 and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 
-**Still open:** E2E tests on either platform.
+**Still open:** E2E tests on any of the platforms.
 
 ## Supply-chain inputs
 
 **Compilation is deterministic; builds are not yet reproducible bit for
 bit.** External inputs that can still change between builds:
 
-- the base image tag, unless `bootc.digest` is set (CentOS Stream 10 and
-  RHEL 10 pin their x86_64 manifests);
-- RPM repository metadata and packages.
+- the base image tag, unless `bootc.digest` is set — all four Platforms pin a
+  digest;
+- repository metadata and packages: RPM repositories on the EL platforms, APT
+  sources on Ubuntu.
 
 `BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
 SHA-256 and a signing key; and **RPM repository signing keys are local
@@ -406,8 +396,10 @@ unless the RPM is signed by that key.
 
 ## System Flatpaks
 
-DeskOS is **image-first and Flatpak-enabled**. Core installs Flatpak; it
-does not add a remote. Remotes go to `/usr/share/flatpak/remotes.d` and
+DeskOS is **image-first and Flatpak-enabled**. The image that declares a system
+Flatpak channel installs Flatpak — the EL family's `PackageSet/rhel-family` does,
+the foundation does not — and adds no remote. Remotes go to
+`/usr/share/flatpak/remotes.d` and
 applications to `/usr/share/flatpak/preinstall.d`, both image-owned. A
 generated unit runs `flatpak preinstall` once per boot, as the upstream
 man page expects the OS to do. This is *artifact materialization*, not a
@@ -601,10 +593,11 @@ into the build context and a symlink out of the root is refused too.
 
 ## Updates
 
-Both base images enable `bootc-fetch-apply-updates.timer` (a
-`default.target.wants` link in `/usr/lib` that `systemctl disable` does
-not remove). Its service runs `bootc upgrade --apply`, which **reboots**
-whenever a new image is published.
+Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
+image-update unit, and the base image enables it; its service runs
+`bootc upgrade --apply`, which **reboots** whenever a new image is published.
+That is measured on the platforms booted here; AlmaLinux **declares** it and has
+not been booted ([platforms.md](platforms.md)).
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
 `schedule: daily|weekly` and `requireACPower`) lowers to:
@@ -632,7 +625,8 @@ the run is skipped, not failed, until the next scheduled time. Desktops
 and VMs without a known AC connector count as on AC power. Services want
 and follow `network-online.target`; the timers add no boot ordering.
 
-Core sets image and Flatpak updates daily, on AC power only. An
+Core sets the **image** updates daily, on AC power only; system Flatpak updates
+are the EL family's policy (`rhel-family`), not the foundation's. An
 organization overrides single fields at a higher layer; `automatic:
 false` for the image keeps the platform updater masked and schedules
 nothing, leaving updates to an administrator or configuration
@@ -683,7 +677,8 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   green `main`; pin a digest in production.
 - **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
   storage, not on GitHub; until then they are built locally (see
-  [install.md](install.md)). The CI builds QCOW2 disks only as test input.
+  [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) or writes
+  a raw disk (`bootc install to-disk`, Ubuntu) only as test input.
 - **Planned:** promote the same digest through channels (candidate,
   canary, pilot, stable) without rebuilding. A mirror on
   `ghcr.io/deskosproject/deskos-core` is possible and not decided.

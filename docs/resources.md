@@ -43,10 +43,12 @@ against a Core tree you pass, and `deskosctl core export DIR` writes it out.
 
 - File and directory names have no meaning.
 - Asset paths are relative to the YAML file.
-- Every example below is a file from this repository
-  ([`resources/`](../resources/) and
-  [`examples/baseline-and-role/`](../examples/baseline-and-role/)), except the
-  `BinaryArtifact` desktop entry example.
+- Each example below is drawn from this repository, mostly from
+  [`resources/`](../resources/) and [`examples/`](../examples/). Some are
+  shortened for readability, and the few that are not a file of this repository —
+  the `BinaryArtifact` desktop entry, the Flatpak `katello` remote, the
+  `tokyo-night` theme, and the shell/clock/keyboard snippet — are labelled as
+  illustrative.
 
 ## Resource kinds
 
@@ -98,8 +100,9 @@ spec:
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
-`rhel-10` and `ubuntu-2604` in [`resources/platforms/`](../resources/platforms/); see
-[architecture.md](architecture.md#core-organizations-and-roles).
+`almalinux-10`, `rhel-10` and `ubuntu-2604` in
+[`resources/platforms/`](../resources/platforms/); the canonical status of each,
+and how to install it, is [platforms.md](platforms.md).
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
@@ -134,8 +137,9 @@ spec:
 ```
 
 The foundation names its own metapackage group and no individual packages: the
-vendor's base already carries what a desktop needs (measured: `NetworkManager` is in
-both bases, so naming it installed nothing, and naming it forced Core to know one
+vendor's base already carries what a desktop needs (measured: naming
+`NetworkManager` installed nothing because the base already ships it, and naming it
+forced Core to know one
 family's spelling of it). A browser, a firewall and an application channel are
 platform or organization choices: the RHEL family keeps its browser, its firewall
 and its application channel in `PackageSet/rhel-family`, which workstations on those
@@ -487,17 +491,26 @@ the `user-theme` extension and its own stylesheet; see
 
 ### `BootProfile`
 
-**Boot appearance**: graphical splash, quiet boot and the splash
-watermark.
+**Boot appearance**: graphical splash, quiet boot and the splash watermark.
+
+Core ships two: `deskos-boot` (the boot behaviour, no artwork) and
+`deskos-splash` (the DeskOS lockup), which needs `deskos-boot` for a graphical
+splash to sit on.
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
 kind: BootProfile
 metadata:
-  name: deskos-core
+  name: deskos-boot
 spec:
   splash: graphical
   quiet: true
+---
+apiVersion: system.deskos.org/v1alpha1
+kind: BootProfile
+metadata:
+  name: deskos-splash
+spec:
   watermark: ../assets/deskos/deskos-splash-watermark.png
 ```
 
@@ -517,11 +530,13 @@ spec:
     automatic: true
     schedule: daily
     requireACPower: true
-  flatpak:
-    automatic: true
-    schedule: daily
-    requireACPower: true
 ```
+
+Core sets the **image** policy only. `flatpak:` is deliberately absent from it
+([`resources/system/deskos-core-updates.yaml`](../resources/system/deskos-core-updates.yaml)):
+declaring it in the foundation would impose an application channel on every
+platform. An organization that wants unattended Flatpak updates adds `flatpak:`
+at its own layer.
 
 `schedule` is `daily` or `weekly`. Every field is a layered scalar, so an
 organization changes one field and keeps the rest of Core's policy, for
@@ -550,7 +565,7 @@ Each `file` is a PEM X.509 certificate inside the resource root and `name`
 is the file stem in the trust store. Anchors are **keyed** by `name`: the
 same certificate under one name deduplicates, and a different certificate
 under the same name conflicts at any layer. The Platform supplies the
-anchors directory and the update command; on both EL10 platforms that is
+anchors directory and the update command; on the EL platforms that is
 `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust`. The private key
 is neither needed nor accepted. See
 [architecture.md](architecture.md#trust-store).
@@ -583,6 +598,11 @@ project.
 - The public reference workstation uses **CentOS Stream 10**.
 - Organizations that require **RHEL** compile the same Core semantics
   directly onto the official RHEL 10 bootc base.
+- **AlmaLinux 10** composes the same Core on the AlmaLinux project's own
+  bootc base, which the project labels experimental.
+- **Ubuntu 26.04** composes the same Core on a base owned by the Project
+  DeskOS, without the RHEL family's software
+  ([ADR 0014](adr/0014-platform-base-ownership.md)).
 - The RHEL artifact is **not derived** from the CentOS image.
 
 ## Software model

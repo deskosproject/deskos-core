@@ -16,6 +16,14 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 | `deskos-image-update.timer` → `deskos-image-update.service` | `bootc upgrade --quiet` | downloads the next image and **stages** it |
 | `deskos-flatpak-update.timer` → `deskos-flatpak-update.service` | `flatpak update --system --noninteractive --assumeyes` | updates system Flatpak apps and runtimes |
 
+> **Platform scope.** Everything `bootc` here is on every platform. The Flatpak
+> half exists only where the image declares a system Flatpak channel — the EL
+> family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither the
+> package nor the unit without that profile; an organization can still declare
+> them itself. Ubuntu 26.04 declares no channel, so a `FlatpakSet` there fails
+> composition rather than pretending, and the AlmaLinux facts are not verified on
+> a built image ([platforms.md](platforms.md)).
+
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base
 image's own `bootc-fetch-apply-updates.timer` and `.service` are **masked**,
@@ -33,10 +41,15 @@ on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
 
 ```bash
 bootc status                        # booted and staged deployments, image ref
-rpm-ostree status                   # the same, in ostree terms
 systemctl list-timers 'deskos-*'    # when the next update runs
 systemctl status deskos-image-update.service
 journalctl -u deskos-image-update.service --since today
+```
+
+On the EL platforms:
+
+```bash
+rpm-ostree status                   # the same, in ostree terms
 flatpak list --system               # system apps and runtimes
 ```
 
@@ -48,7 +61,6 @@ download-only mode.
 
 ```bash
 sudo systemctl start deskos-image-update.service     # stage the next image
-sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
 sudo reboot                                          # apply the staged image
 ```
 
@@ -57,6 +69,12 @@ To check and stage in one step, without waiting for the timer:
 ```bash
 sudo bootc upgrade
 sudo reboot
+```
+
+On the EL platforms only, the Flatpak half:
+
+```bash
+sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
 ```
 
 ## Roll back
