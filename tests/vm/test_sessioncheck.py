@@ -37,6 +37,14 @@ class TmpfilesTest(unittest.TestCase):
             sc.tmpfiles_arg("x" * (sc.TMPFILES_ARG_MAX + 1))
         self.assertEqual(len(sc.tmpfiles_arg("x" * sc.TMPFILES_ARG_MAX)), sc.TMPFILES_ARG_MAX)
 
+    def test_the_cap_is_on_the_resolved_content_not_the_escaped_form(self):
+        # systemd expands specifiers after unescaping, and the PATH_MAX-1 cap is
+        # on the result, so escaping that only lengthens the text does not count
+        # against it: 4095 B of "%" is 8190 B escaped and is still written.
+        self.assertEqual(len(sc.tmpfiles_arg("%" * sc.TMPFILES_ARG_MAX)), 2 * sc.TMPFILES_ARG_MAX)
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("%" * (sc.TMPFILES_ARG_MAX + 1))
+
     def test_session_credentials(self):
         c = sc.credentials("session")
         self.assertIn("u deskos-qa 1500", c["sysusers.extra"])

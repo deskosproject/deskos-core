@@ -39,8 +39,9 @@ import sessioncheck
 MARK_BEGIN = sessioncheck.MARK_BEGIN
 MARK_JOURNAL = sessioncheck.MARK_JOURNAL
 MARK_END = sessioncheck.MARK_END
-# Emitted before the wait for the wizard, so a lost credential fails the run at
-# once instead of waiting for an end marker that will never arrive.
+# Emitted before the wait for the wizard: if it never arrives the run fails at
+# --ready-timeout, not after the whole boot timeout, waiting for an end marker
+# that will not come.
 MARK_READY = "DESKOS-QA-READY"
 WIZARD = "gnome-initial-setup"
 # The report script is a credential of its own: a tmpfiles.d argument is capped
@@ -52,9 +53,9 @@ REPORT_CREDENTIAL = "firstboot-report.sh"
 WIZARD_WAIT = 300
 
 REPORT_SCRIPT = f"""#!/bin/bash
-# Signal, before the wait for the wizard, that the instrumentation installed: if
-# this never reaches the harness, a credential was dropped and the run fails at
-# once instead of waiting for the end marker that will not come.
+# Signal, before the wait for the wizard, that the instrumentation installed. If
+# it never reaches the harness the run fails at --ready-timeout — a credential
+# may have been dropped — instead of waiting for an end marker that will not come.
 stty -F /dev/ttyS0 115200 2>/dev/null
 echo {MARK_READY} > /dev/ttyS0
 # Wait for the first-boot wizard, then report what this guest can see.

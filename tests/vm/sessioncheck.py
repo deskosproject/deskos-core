@@ -156,12 +156,12 @@ systemctl --no-block poweroff
 """
 
 
-# systemd substitutes specifiers into a PATH_MAX-1 buffer before a tmpfiles.d
-# line is used (`specifier_printf(unescaped, PATH_MAX-1, ...)`), so a file's
-# content argument cannot be longer than this. Measured against
-# systemd-tmpfiles: 4095 B is created, 4096 B is refused with "File name too
-# long" and the file is not created. Anything larger is delivered as a
-# credential of its own instead.
+# systemd unescapes a tmpfiles.d argument and then expands specifiers into a
+# PATH_MAX-1 buffer, so the cap is on the *resolved* content, not on the bytes
+# written in the file: escaping that lengthens the text (%% or \n) does not count.
+# Measured against systemd-tmpfiles: 4095 B is created, 4096 B is refused with
+# "File name too long" and the file is not created. Anything larger is delivered
+# as a credential of its own instead.
 TMPFILES_ARG_MAX = 4095
 
 

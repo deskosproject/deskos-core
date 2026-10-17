@@ -164,19 +164,23 @@ The instrumentation reaches the guest as systemd credentials over SMBIOS type 11
 and both drop data in silence, which is why the harness checks them instead of
 waiting for a report that never comes:
 
-- **A `tmpfiles.d` line argument is capped at 4095 B.** systemd expands
-  specifiers into a `PATH_MAX-1` buffer (`specifier_printf(unescaped, PATH_MAX-1,
-  …)`); measured against `systemd-tmpfiles`, 4095 B is written and 4096 B is
-  refused with `File name too long` and **the file is not created**. The limit is
-  on the argument (the file's content), not the whole line.
-  `sessioncheck.tmpfiles_arg` refuses anything longer, loudly, instead of
-  letting the guest drop it; anything larger travels as a credential of its own.
-- **A single SMBIOS type 11 credential is capped near 64 KiB.** The OEM string
-  sits in an SMBIOS structure whose length is a 16-bit field (SMBIOS 2.x);
-  measured with QEMU, a string of 65016 B arrives intact and one of 65416 B does
-  not. This is far above what the harness passes — the largest payload is the
-  first-boot report, about 7 KiB base64. systemd also caps one credential at
-  1 MiB (`CREDENTIAL_SIZE_MAX`).
+- **A `tmpfiles.d` file argument is capped at 4095 B of resolved content.**
+  systemd unescapes the argument and then expands specifiers into a `PATH_MAX-1`
+  buffer (`cunescape()` then `specifier_printf(unescaped, PATH_MAX-1, …)`), so
+  the cap is on the result, not on the bytes in the file: measured against
+  `systemd-tmpfiles`, 4095 B is written and 4096 B is refused with `File name too
+  long` and **the file is not created**, and 4095 B of `%` (8190 B once escaped)
+  is written just the same. `sessioncheck.tmpfiles_arg` counts the unescaped
+  content and refuses anything longer, loudly, instead of letting the guest drop
+  it; anything larger travels as a credential of its own.
+- **A single SMBIOS type 11 credential is capped near 64 KiB.** The SMBIOS 2.1
+  entry point records the length of the *whole* table in a 16-bit field
+  (`SMBIOS_21_MAX_TABLES_LEN = 0xffff` in QEMU's `hw/smbios/smbios.c`), so every
+  OEM string together — not one structure — has to fit in 64 KiB. Measured with
+  QEMU: a string of 65016 B arrives intact and one of 65416 B does not. This is
+  far above what the harness passes — the largest payload is the first-boot
+  report, about 7 KiB base64. systemd also caps one credential at 1 MiB
+  (`CREDENTIAL_SIZE_MAX`).
 
 The first-boot report script is the only payload large enough to matter, so it
 travels as a credential of its own and its unit reads it from
@@ -205,9 +209,10 @@ The guest waits up to five minutes for `gnome-initial-setup` before reporting, s
 
 The guest signals `DESKOS-QA-READY` as soon as the report runs, before the wait
 for the wizard. If it never arrives, the run fails after `--ready-timeout`
-(default 420 s) naming the cause — a dropped credential — instead of waiting out
-`--boot-timeout` (900 s) for an end marker that will not come. The report itself
-is a credential of its own, read from `$CREDENTIALS_DIRECTORY` (see
+(default 420 s) saying the guest never signalled it was instrumented — a
+credential may have been dropped — instead of waiting out `--boot-timeout`
+(900 s) for an end marker that will not come. The report itself is a credential
+of its own, read from `$CREDENTIALS_DIRECTORY` (see
 [Transport limits](#transport-limits)).
 
 What it asserts:
