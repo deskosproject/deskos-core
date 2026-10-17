@@ -8,7 +8,9 @@ DeskOS compiles the same Core intent onto a platform's own bootc base
 ([ADR 0004](adr/0004-core-is-platform-independent.md)). A platform whose vendor
 publishes no bootc base may be added as an organization-owned base with a named
 owner and a declared tier ([ADR 0014](adr/0014-platform-base-ownership.md)) —
-Ubuntu is that case. DeskOS **publishes** only CentOS Stream 10.
+Ubuntu is that case. DeskOS publishes one repository per platform
+(`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …), and nothing has been
+published yet.
 
 ## Status
 
@@ -27,10 +29,12 @@ two columns. Evidence, per claim, is in
 
 ## How to get a machine today
 
-### CentOS Stream 10 — install from the published image
+### CentOS Stream 10 — build it, then install
 
-This is the only platform DeskOS publishes. Make a QCOW2 (or an Anaconda ISO)
-from the published image with `bootc-image-builder`:
+Nothing is published yet, so what exists today is the image you build locally;
+when the first `publish=true` dispatch runs, it lands in
+`quay.io/deskos/deskos-core-centos10`. Make a QCOW2 (or an Anaconda ISO)
+from the image you built with `bootc-image-builder`:
 [install.md](install.md#centos-stream-10).
 
 ### RHEL 10 — build privately, never publish

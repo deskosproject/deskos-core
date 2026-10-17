@@ -14,8 +14,8 @@ The installer runs `bootc switch` to the reference the ISO is built from, so
 **that reference is where installed machines update from**: it must be one
 they can pull.
 
-- With the published CentOS Stream 10 image — once the first `publish=true`
-  dispatch runs; nothing is published yet — pull it from
+- For the CentOS Stream 10 image: nothing is published yet, so build it locally
+  for now; once the first `publish=true` dispatch runs, pull it from
   `quay.io/deskos/deskos-core-centos10:latest` and use that reference in the build
   command below.
 - For your own image, tag it with the reference your machines will update

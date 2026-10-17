@@ -1,7 +1,7 @@
 # Installing DeskOS
 
-How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
-published CentOS Stream 10 image, a private RHEL 10 build, an AlmaLinux 10
+How to get a DeskOS **QCOW2 disk** or **installer ISO**, from a CentOS Stream 10
+image you build (or pull, once it is published), a private RHEL 10 build, an AlmaLinux 10
 build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
@@ -13,21 +13,22 @@ build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 ## CentOS Stream 10
 
-DeskOS Core for CentOS Stream 10 is published as a bootable container
-image. `:latest` is the newest published image — the one that passed the
-boot and session checks. Publishing is manual (the `supply-chain` workflow
-with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
-for production, pin the digest you verified.
+DeskOS Core for CentOS Stream 10 **is not published yet**: build it locally
+(`deskosctl render` and `podman build`, see the [README](../README.md)), or pull
+it from `quay.io/deskos/deskos-core-centos10` once the first `publish=true`
+dispatch runs. The published `:latest` will be the newest image that passed the
+boot and session checks. Publishing is manual (the `supply-chain` workflow with
+`publish=true`) and moves `:latest` and the `:<commit>` tag together; for
+production, pin the digest you verified.
 
-> **Nothing is published yet.** The per-platform repositories exist, but no
-> `publish=true` dispatch has run, so the reference below is the destination, not a
-> pullable image.
-
-**1. Pull the image and make a QCOW2 disk** for a virtual machine. Resolve
-`:latest` once and build from that digest, so a publish between the pull and
-the build cannot change what you install:
+**1. Get the image, then make a QCOW2 disk** for a virtual machine. Nothing is
+published yet, so today the image is one you build; once the first `publish=true`
+dispatch runs, pull `quay.io/deskos/deskos-core-centos10`. Either way, resolve the
+digest once and build from that digest, so nothing changes what you install in
+between:
 
 ```bash
+# locally built (`localhost/deskos-core-centos10:test`), or pulled once published
 image=quay.io/deskos/deskos-core-centos10:latest
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
@@ -75,7 +76,7 @@ reboot (see [Updates](operations.md)).
 ## RHEL 10 (private builds only)
 
 > [!IMPORTANT]
-> DeskOS publishes **only CentOS Stream 10** artifacts. RHEL-based images,
+> DeskOS publishes by platform, one repository each. RHEL-based images,
 > disks and ISOs must **never be published**: the RHEL EULA forbids public
 > redistribution. An organization with RHEL subscriptions builds its own
 > and keeps the result inside the organization.
