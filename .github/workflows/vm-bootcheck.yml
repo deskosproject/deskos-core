@@ -8,7 +8,8 @@ name: vm-bootcheck (experimental)
 # tests/vm/sessioncheck.py on an instrumented boot of the same disk, then
 # tests/vm/firstbootcheck.py, which is the one that answers whether the first-boot wizard
 # ran and whether any account could log in. Booting example-devops-centos10 is what
-# verifies a declared RpmRepository source on a built and booted image.
+# builds and boots an image with four declared RpmRepository sources enabled and
+# their packages installed, not which source each package came from.
 #
 # For Ubuntu 26.04 there is no published image to hand to bootc-image-builder, so the disk
 # is written by `bootc install to-disk` out of a compressed OCI layout, which is the
