@@ -383,9 +383,11 @@ jobs:
           import json, os
           rec = json.load(open(os.environ["EXCEPTIONS_FILE"]))
           eff = json.load(open(os.environ["EFF"]))
-          key = lambda e: (e["id"], e["package"], e["type"], e.get("version", ""), e.get("path", ""))
-          declared = {key(m) for e in rec.get("exceptions") or [] for m in e["matches"]}
-          used = {key(e) for e in eff.get("exceptions") or []}
+          # The id lives on the exception; each of its matches carries the rest.
+          declared = {(e["id"], m["package"], m["type"], m.get("version", ""), m.get("path", ""))
+                      for e in rec.get("exceptions") or [] for m in e["matches"]}
+          used = {(e["id"], e["package"], e["type"], e.get("version", ""), e.get("path", ""))
+                  for e in eff.get("exceptions") or []}
           droppable = declared - used
           print("## Accepted risk on this platform\n")
           print(f"- declared in the record: {len(declared)}")
