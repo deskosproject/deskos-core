@@ -45,6 +45,13 @@ class TmpfilesTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             sc.tmpfiles_arg("%" * (sc.TMPFILES_ARG_MAX + 1))
 
+    def test_the_cap_counts_bytes_not_characters(self):
+        # The cap is on the resolved content in bytes: "é" is two bytes in UTF-8,
+        # so 2047 of them (4094 B) pass and 2048 (4096 B) do not.
+        self.assertEqual(sc.tmpfiles_arg("é" * 2047), "é" * 2047)
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("é" * 2048)
+
     def test_session_credentials(self):
         c = sc.credentials("session")
         self.assertIn("u deskos-qa 1500", c["sysusers.extra"])

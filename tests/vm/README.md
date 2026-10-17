@@ -167,12 +167,13 @@ waiting for a report that never comes:
 - **A `tmpfiles.d` file argument is capped at 4095 B of resolved content.**
   systemd unescapes the argument and then expands specifiers into a `PATH_MAX-1`
   buffer (`cunescape()` then `specifier_printf(unescaped, PATH_MAX-1, …)`), so
-  the cap is on the result, not on the bytes in the file: measured against
-  `systemd-tmpfiles`, 4095 B is written and 4096 B is refused with `File name too
-  long` and **the file is not created**, and 4095 B of `%` (8190 B once escaped)
-  is written just the same. `sessioncheck.tmpfiles_arg` counts the unescaped
-  content and refuses anything longer, loudly, instead of letting the guest drop
-  it; anything larger travels as a credential of its own.
+  the cap is on the result, in bytes, not on the bytes in the file: measured
+  against `systemd-tmpfiles`, 4095 B is written and 4096 B is refused with `File
+  name too long` and **the file is not created**, 4095 B of `%` (8190 B once
+  escaped) is written just the same, and 2047 `é` (4094 B) pass while 2048 (4096
+  B) do not. `sessioncheck.tmpfiles_arg` counts the unescaped content in bytes
+  and refuses anything longer, loudly, instead of letting the guest drop it;
+  anything larger travels as a credential of its own.
 - **A single SMBIOS type 11 credential is capped near 64 KiB.** The SMBIOS 2.1
   entry point records the length of the *whole* table in a 16-bit field
   (`SMBIOS_21_MAX_TABLES_LEN = 0xffff` in QEMU's `hw/smbios/smbios.c`), so every
