@@ -69,6 +69,9 @@ jobs:
           # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
           # fails here rather than in a build nobody runs on a pull request.
           ./bin/deskosctl render --workstation deskos-core-fedora44 --output dist/fedora44
+          # The Ubuntu reference renders too: it is what its publish leg builds,
+          # and its context is pinned by a golden.
+          ./bin/deskosctl render --workstation deskos-core-ubuntu2604 --output dist/ubuntu-ref
           diff -r dist/a dist/b
           diff -r dist/a dist/c
           diff -r dist/a dist/d
