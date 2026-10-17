@@ -149,25 +149,25 @@ func TestAppearanceAndSoftwareRenderAndLocks(t *testing.T) {
 	}
 }
 
-func TestAPlatformThatKeepsVendorDefaultsWritesNoDconf(t *testing.T) {
-	// A platform whose base ships no system dconf profile keeps its vendor's
-	// desktop defaults: DeskOS writes none, and a default a profile asked for is
-	// recorded as not applied instead of promised to a user who never gets it
-	// (AGENTS.md invariant 9; docs/adr/0016).
+func TestNoGnomeSettingCanBeDeclaredOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
+	// A workstation that wants DeskOS's GNOME settings simply does not select the
+	// profile that carries them, so anything declared here is a requirement the
+	// platform cannot meet: it fails composition at any layer instead of turning
+	// into a green validate (AGENTS.md invariant 9; docs/adr/0016).
 	platform := strings.Replace(platformYAML,
 		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
-	dir := fixture{"platform.yaml": platform}.with(fixture{
-		"ws.yaml":   workstation("ws", "core"),
-		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
-		"g.yaml":    gnome("core", shellDefaults("      hotCorners: false\n")),
-	}).dir(t)
-	p := mustPlan(t, "ws", dir)
-	if p.Artifact.Dconf != nil {
-		t.Fatalf("dconf written for a platform that keeps its vendor's defaults: %+v", p.Artifact.Dconf)
-	}
-	want := "shell.hotCorners is not applied: Platform/test-platform declares gnome.keepsVendorDefaults"
-	if !strings.Contains(strings.Join(p.Warnings, "\n"), want) {
-		t.Errorf("warnings %q lack %q", p.Warnings, want)
+	for _, layer := range []string{"foundation", "organization"} {
+		t.Run(layer, func(t *testing.T) {
+			dir := fixture{"platform.yaml": platform}.with(fixture{
+				"ws.yaml": workstation("ws", "org"),
+				"o.yaml":  profile("org", layer, "GnomeProfile/g"),
+				"g.yaml":  gnome("g", shellDefaults("      hotCorners: false\n")),
+			}).dir(t)
+			_, err := planOf(t, "ws", dir)
+			mustFail(t, err,
+				"shell.hotCorners is set, but Platform/test-platform keeps its vendor's desktop defaults",
+				layer+" GnomeProfile/g")
+		})
 	}
 }
 
@@ -223,24 +223,6 @@ func TestWindowButtonsGoOnTheSideTheProfileAsksFor(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestAnOrganizationCannotSetGnomeOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
-	// The foundation's own GNOME opinion is recorded as not applied on such a
-	// platform, but a higher layer asking for a value or a lock is a requirement
-	// the platform cannot meet, and that fails composition instead of turning into
-	// a green validate (AGENTS.md invariant 9; docs/adr/0016).
-	platform := strings.Replace(platformYAML,
-		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
-	dir := fixture{"platform.yaml": platform}.with(fixture{
-		"ws.yaml": workstation("ws", "org"),
-		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
-		"g.yaml":  gnome("g", shellDefaults("      hotCorners: false\n")),
-	}).dir(t)
-	_, err := planOf(t, "ws", dir)
-	mustFail(t, err,
-		"shell.hotCorners is set at organization layer, but Platform/test-platform keeps its vendor's desktop defaults",
-		"organization GnomeProfile/g")
 }
 
 func TestNoLockCanBeDeclaredOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {

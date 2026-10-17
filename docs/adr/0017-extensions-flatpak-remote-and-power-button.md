@@ -60,10 +60,10 @@ session timeout the same decision covers already exists
    default**: whether GNOME Shell actually loaded the extension is a session check,
    not a composition claim.
 8. On a platform that declares `gnome.keepsVendorDefaults` (ADR 0016), this field
-   follows the same rule as every other GNOME setting: nothing is written, a decision
-   that comes from the foundation is reported in the plan's warnings as not applied,
-   and a lock or a decision a higher layer asked for **fails composition**. The new
-   field does not reopen the hole ADR 0016 closed.
+   follows the same rule as every other GNOME setting: nothing is written, and a
+   decision declared there **fails composition** with the platform's reason. A
+   workstation whose platform ships a desktop of its own does not select the profile
+   that carries the field, so the new one does not reopen the hole ADR 0016 closed.
 
 ### Configuring an extension
 

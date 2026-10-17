@@ -30,6 +30,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-gnome",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-gnome.yaml:1"
+    },
+    {
       "name": "rhel-family",
       "layer": "foundation",
       "source": "resources/profiles/rhel-family.yaml:1"
@@ -819,7 +824,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -833,7 +838,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }

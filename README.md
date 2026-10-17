@@ -90,6 +90,7 @@ PLATFORM
 
 PROFILES
   foundation:  deskos-core
+  foundation:  deskos-gnome
   foundation:  deskos-look
   foundation:  deskos-reference-apps
   foundation:  rhel-family

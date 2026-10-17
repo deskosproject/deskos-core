@@ -71,28 +71,18 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
 	if pl.Gnome.KeepsVendorDefaults {
-		// The platform's base ships no system dconf profile, so a default written for
-		// it would reach no session: it keeps its vendor's desktop defaults and DeskOS
-		// writes none. Core's own foundation opinion is recorded as not applied, with
-		// the fact named. A setting or a lock a higher layer asked for is a requirement
-		// this platform cannot meet and fails composition instead of being dropped:
-		// "best effort" would turn a lower layer's request into a green validate
-		// (AGENTS.md invariant 9, docs/adr/0016).
+		// The platform's base ships no system dconf profile, so DeskOS writes no
+		// default and no lock for it: its desktop is the vendor's (ADR 0016). A
+		// workstation that wants DeskOS's GNOME settings simply does not select the
+		// profile that carries them, so anything declared here is a requirement this
+		// platform cannot meet and fails composition rather than being dropped. A
+		// lock fails at any layer for the same reason, and Core never locks
+		// (AGENTS.md invariant 8).
 		for _, s := range settings {
-			if s.Layer > model.LayerFoundation {
-				l.errs.Add(fmt.Errorf("%s is set at %s layer, but %s keeps its vendor's desktop defaults and writes no dconf database\n  set by: %s",
-					s.Key, s.Layer, c.Platform.ID(), describe(s.Provenance)))
-				continue
-			}
-			p.Warnings = append(p.Warnings, fmt.Sprintf(
-				"%s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
-				s.Key, c.Platform.ID()))
+			l.errs.Add(fmt.Errorf("%s is set, but %s keeps its vendor's desktop defaults and writes no dconf database\n  set by: %s",
+				s.Key, c.Platform.ID(), describe(s.Provenance)))
 		}
 		for _, lk := range locks {
-			// A lock is enforcement, and Core never locks (AGENTS.md invariant 8), so a
-			// lock here can only be an owner's requirement: this platform cannot enforce
-			// it, and composition fails rather than recording a guarantee that does not
-			// exist.
 			l.errs.Add(fmt.Errorf("%s is locked, but %s keeps its vendor's desktop defaults and writes no dconf database\n  locked by: %s",
 				lk.Name, c.Platform.ID(), describe(lk.Provenance)))
 		}

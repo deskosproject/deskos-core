@@ -31,29 +31,22 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
 
 1. A platform whose base ships a desktop of its own declares
    `gnome.keepsVendorDefaults: true`. DeskOS writes **no** dconf default and **no**
-   lock for it: the platform's desktop is the vendor's. A platform with the fact must
-   not declare `gnome.dconfDatabase` or `gnome.loginScreen`; a platform without it
-   must declare a database. What happens to a declared setting depends on who asked:
-   - a **lock** always fails composition, at any layer. A lock is enforcement, and
-     Core never locks (AGENTS.md invariant 8), so a lock here can only be an owner's
-     requirement that this platform cannot enforce; recording it as a warning would
-     let a guarantee that does not exist pass `validate`;
-   - a **default** is recorded in the plan's warnings as not applied, naming the fact,
-     because Core's own foundation opinion is what an Ubuntu workstation carries and
-     the platform's nature is what scopes it. The omission stays visible rather than
-     silent.
-   - a known limit of that rule: `foundation` is a **layer**, not ownership — an owner
-     may author a foundation-layer profile, and the layer alone does not prove the
-     opinion is dispensable. Until resources carry an owner, the alternative is to
-     keep Core's GNOME settings out of the profile list an Ubuntu workstation selects,
-     which changes what `deskos-core` gives every other consumer (including an
-     external one that pins releases). That trade is named here rather than settled
-     silently.
-2. Ubuntu 26.04 declares it. A value that must reach an Ubuntu session takes a
+   lock for it, and **any** GNOME setting a profile declares there **fails
+   composition** with the reason. That holds at every layer: a lock is enforcement and
+   Core never locks (AGENTS.md invariant 8), and the setting is a requirement this
+   platform has no way to meet. There is no "best effort" case, because DeskOS does not
+   drop a declared value and call the composition good.
+2. DeskOS's own GNOME defaults move **out of the `deskos-core` foundation profile**
+   into `deskos-gnome`, which a workstation that wants them selects. This is the same
+   shape as `deskos-look`: Core ships the opinion, the workstation asks for it. Ubuntu
+   does not select it, so an Ubuntu workstation declares no GNOME settings at all and
+   composes with nothing to fail — which is what makes rule 1 workable without a
+   layer-versus-ownership guess.
+3. Ubuntu 26.04 declares the fact. A value that must reach an Ubuntu session takes a
    vendor mechanism (a compiled GSettings override, the plan's
    `gsettingsVendorDefaults`), never the dconf database, because no session reads
    that database there.
-3. `windows.buttons` writes exactly the buttons and the side a profile declares. The
+4. `windows.buttons` writes exactly the buttons and the side a profile declares. The
    plan adds no app menu token of its own. GNOME's `button-layout` is
    `<left>:<right>` — the colon separates the window's left corner from its right
    corner — so the buttons go after the colon unless the profile asks for the left.
@@ -68,10 +61,12 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
 - The session check has nothing to assert on Ubuntu instead of a value it could
   never confirm, so its coverage is honest without a weakening: nothing is promised
   there, so nothing is skipped.
-- A default declared on such a platform is a **warning that names the fact**; a lock
-  is an **error at any layer**. Neither is a silent drop, and neither weakens a check:
-  the platform is not missing a requirement Core asked of itself, and it cannot be
-  made to hold a guarantee it has no way to enforce.
+- **A workstation that wants DeskOS's GNOME defaults now asks for `deskos-gnome`.**
+  This is a deliberate break for a consumer that pinned a release and selects
+  `deskos-core` alone: a flavor like DayTwo's RHEL workstations keeps its packages and
+  its update policy, and stops inheriting the session lock, the idle timeout and the
+  software-update policy until it adds the profile. The release notes name it, and the
+  profile is additive, so the change is one line per workstation.
 - Anything that must still reach the user on Ubuntu has to be delivered the vendor's
   way, which keeps [ADR 0014](0014-platform-base-ownership.md)'s split of who owns
   what intact: the base is the platform's, and DeskOS does not maintain a desktop it
@@ -81,5 +76,5 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
   stays on the right, where it was), which was reviewed as a golden diff. The side is
   asserted by its own test, because a golden that compares only the produced string
   would not catch a swap of the two sides.
-- The plan remains the record of what was and was not applied, so a reader does not
-  have to know which platform keeps its vendor's defaults.
+- The plan remains the record of what was applied, so a reader does not have to know
+  which platform keeps its vendor's defaults.

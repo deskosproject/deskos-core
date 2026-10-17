@@ -1,0 +1,12 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-gnome
+spec:
+  layer: foundation
+  description: DeskOS's own GNOME defaults (session timeout and lock, software updates), for workstations whose platform ships a desktop DeskOS can write to.
+  resources:
+    - kind: GnomeProfile
+      name: deskos-core
+    # If a workstation also wants the DeskOS look, it adds the deskos-look
+    # profile; if it wants only the GNOME defaults, this one is enough.

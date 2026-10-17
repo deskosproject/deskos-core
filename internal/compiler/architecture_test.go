@@ -111,8 +111,12 @@ func viewOf(p *plan.Plan) coreView {
 	for _, x := range p.Artifact.SystemdUnits {
 		v.Units = append(v.Units, x.Unit)
 	}
-	for _, x := range p.Artifact.Dconf.Defaults {
-		v.Dconf = append(v.Dconf, x.Key+"="+x.Value)
+	// A platform that keeps its vendor's desktop has no dconf database at all, so
+	// this view must not assume one (docs/adr/0016).
+	if p.Artifact.Dconf != nil {
+		for _, x := range p.Artifact.Dconf.Defaults {
+			v.Dconf = append(v.Dconf, x.Key+"="+x.Value)
+		}
 	}
 	for _, x := range p.Artifact.Files {
 		v.Files = append(v.Files, x.Path+"@"+x.SHA256)
@@ -146,7 +150,7 @@ func viewOf(p *plan.Plan) coreView {
 // share a base fails here. Ubuntu is not compared: its package manager is deb.
 func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
-		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core]\n"
+		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome]\n"
 	}
 	dir := fixture{
 		"a.yaml": ws("core-centos", "centos-stream-10"),

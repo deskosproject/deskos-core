@@ -19,6 +19,7 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - deskos-gnome
     - example-baseline
     - example-developer
 ```
@@ -68,6 +69,7 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - deskos-gnome
     - example-baseline
     - example-devops
 ```
@@ -659,11 +661,13 @@ the plan adds no app menu token of its own
 
 A platform whose base ships a desktop of its own declares
 `gnome.keepsVendorDefaults: true` instead of `gnome.dconfDatabase`. DeskOS then
-writes no GNOME default or lock for it — the platform's desktop is the vendor's. A
-GNOME default that Core's foundation declares is reported in the plan's warnings as
-not applied; a **lock** fails composition at any layer, since a lock is enforcement
-Core never declares and this platform has no way to enforce it. A platform with the
-fact must also not declare `gnome.loginScreen`. Ubuntu 26.04 declares it, because no
-session there reads a system dconf database. A value that must reach such a platform
-uses the vendor's own mechanism (a compiled GSettings override), never the dconf
-database.
+writes no GNOME default or lock for it, and **any** GNOME setting a profile declares
+there fails composition with the reason, at any layer. A platform with the fact must
+also not declare `gnome.loginScreen`.
+
+That is why DeskOS's own GNOME defaults live in the `deskos-gnome` foundation profile
+rather than in `deskos-core`: a workstation whose platform DeskOS can write to selects
+it, and one whose platform ships its own desktop does not. Ubuntu 26.04 declares the
+fact and selects no GNOME profile, because no session there reads a system dconf
+database. A value that must reach such a platform uses the vendor's own mechanism (a
+compiled GSettings override), never the dconf database.

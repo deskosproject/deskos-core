@@ -200,11 +200,5 @@
     "flatpakRemotes": [],
     "flatpakApplications": []
   },
-  "enrollment": {},
-  "warnings": [
-    "session.idle.blankAfter is not applied: Platform/ubuntu-2604 declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
-    "session.lock.delay is not applied: Platform/ubuntu-2604 declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
-    "session.lock.enabled is not applied: Platform/ubuntu-2604 declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
-    "software.updates is not applied: Platform/ubuntu-2604 declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there"
-  ]
+  "enrollment": {}
 }
