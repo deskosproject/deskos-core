@@ -40,11 +40,16 @@ on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
 
 ```bash
 bootc status                        # booted and staged deployments, image ref
-rpm-ostree status                   # the same, in ostree terms (EL platforms)
 systemctl list-timers 'deskos-*'    # when the next update runs
 systemctl status deskos-image-update.service
 journalctl -u deskos-image-update.service --since today
-flatpak list --system               # system apps and runtimes (EL platforms)
+```
+
+On the EL platforms:
+
+```bash
+rpm-ostree status                   # the same, in ostree terms
+flatpak list --system               # system apps and runtimes
 ```
 
 `bootc status` shows a `Staged` entry once the next image is downloaded and
@@ -55,7 +60,6 @@ download-only mode.
 
 ```bash
 sudo systemctl start deskos-image-update.service     # stage the next image
-sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
 sudo reboot                                          # apply the staged image
 ```
 
@@ -64,6 +68,12 @@ To check and stage in one step, without waiting for the timer:
 ```bash
 sudo bootc upgrade
 sudo reboot
+```
+
+On the EL platforms only, the Flatpak half:
+
+```bash
+sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
 ```
 
 ## Roll back

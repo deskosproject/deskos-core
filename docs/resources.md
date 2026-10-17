@@ -490,17 +490,26 @@ the `user-theme` extension and its own stylesheet; see
 
 ### `BootProfile`
 
-**Boot appearance**: graphical splash, quiet boot and the splash
-watermark.
+**Boot appearance**: graphical splash, quiet boot and the splash watermark.
+
+Core ships two: `deskos-boot` (the boot behaviour, no artwork) and
+`deskos-splash` (the DeskOS lockup), which needs `deskos-boot` for a graphical
+splash to sit on.
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
 kind: BootProfile
 metadata:
-  name: deskos-core
+  name: deskos-boot
 spec:
   splash: graphical
   quiet: true
+---
+apiVersion: system.deskos.org/v1alpha1
+kind: BootProfile
+metadata:
+  name: deskos-splash
+spec:
   watermark: ../assets/deskos/deskos-splash-watermark.png
 ```
 
@@ -555,7 +564,7 @@ Each `file` is a PEM X.509 certificate inside the resource root and `name`
 is the file stem in the trust store. Anchors are **keyed** by `name`: the
 same certificate under one name deduplicates, and a different certificate
 under the same name conflicts at any layer. The Platform supplies the
-anchors directory and the update command; on both EL10 platforms that is
+anchors directory and the update command; on the EL platforms that is
 `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust`. The private key
 is neither needed nor accepted. See
 [architecture.md](architecture.md#trust-store).

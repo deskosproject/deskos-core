@@ -169,9 +169,9 @@ how-to: [supply-chain.md](supply-chain.md).
 
 - Channels (candidate, canary, pilot, stable) promoting one digest.
 - **Done:** `UpdatePolicy`
-  ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image
-  and update system Flatpaks from DeskOS timers, daily and on AC power
-  in Core, and the bootc timer that reboots is masked. Validated on a CentOS
+  ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image from a
+  DeskOS timer, daily and on AC power in Core, and the bootc timer that reboots
+  is masked; system Flatpak updates are the EL family's policy. Validated on a CentOS
   Stream 10 VM: the image service staged a new image without rebooting,
   and a manual reboot booted it with the previous one as rollback.
 - **Done:** the `GnomeProfile` shell, clock and keyboard settings

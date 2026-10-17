@@ -346,9 +346,10 @@ and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 **Compilation is deterministic; builds are not yet reproducible bit for
 bit.** External inputs that can still change between builds:
 
-- the base image tag, unless `bootc.digest` is set (CentOS Stream 10 and
-  RHEL 10 pin their x86_64 manifests);
-- RPM repository metadata and packages.
+- the base image tag, unless `bootc.digest` is set — all four Platforms pin a
+  digest;
+- repository metadata and packages: RPM repositories on the EL platforms, APT
+  sources on Ubuntu.
 
 `BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
 SHA-256 and a signing key; and **RPM repository signing keys are local
@@ -590,10 +591,11 @@ into the build context and a symlink out of the root is refused too.
 
 ## Updates
 
-Every base DeskOS compiles onto enables `bootc-fetch-apply-updates.timer` (all
-four Platforms list it as an image-update unit). Its service runs
-`bootc upgrade --apply`, which **reboots**
-whenever a new image is published.
+Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
+image-update unit, and the base image enables it; its service runs
+`bootc upgrade --apply`, which **reboots** whenever a new image is published.
+That is measured on the platforms booted here; AlmaLinux **declares** it and has
+not been booted ([platforms.md](platforms.md)).
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
 `schedule: daily|weekly` and `requireACPower`) lowers to:
@@ -621,7 +623,8 @@ the run is skipped, not failed, until the next scheduled time. Desktops
 and VMs without a known AC connector count as on AC power. Services want
 and follow `network-online.target`; the timers add no boot ordering.
 
-Core sets image and Flatpak updates daily, on AC power only. An
+Core sets the **image** updates daily, on AC power only; system Flatpak updates
+are the EL family's policy (`rhel-family`), not the foundation's. An
 organization overrides single fields at a higher layer; `automatic:
 false` for the image keeps the platform updater masked and schedules
 nothing, leaving updates to an administrator or configuration

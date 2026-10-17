@@ -50,10 +50,10 @@ shape as CentOS Stream 10, and are documented as **proposed, not measured**, in
 
 ### Ubuntu 26.04 — no published image and no DeskOS ISO; write a disk directly
 
-DeskOS publishes no Ubuntu image and does not plan an installer ISO for it.
-There is no Canonical bootc base to hand to `bootc-image-builder`, and DeskOS has
-not had one written; what **is** validated is `bootc install to-disk`. The honest
-path for a reader who wants an installed Ubuntu machine today:
+DeskOS publishes no Ubuntu image and implements no installer ISO for it: there is
+no ISO path here, built or validated. What **is** validated is
+`bootc install to-disk`. The honest path for a reader who wants an installed
+Ubuntu machine today:
 
 1. **Build the image** from a resource root (for example
    `examples/core-ubuntu-2604/`) and tag it with the reference your machines will
@@ -63,7 +63,7 @@ path for a reader who wants an installed Ubuntu machine today:
    the recipe is proven in
    [`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
 
-Two things that are easy to conflate and must not be:
+Three things that are easy to conflate and must not be:
 
 - **A lab disk is not a delivery.** The CI job writes a raw disk by installing
   from a local OCI layout with **no `--target-imgref`**
@@ -73,6 +73,9 @@ Two things that are easy to conflate and must not be:
   private registry, or one you make public), never at the local layout and never
   at the Ubuntu base — pointing it at the base would replace your derivative with
   the base at the next update.
+- **Publishing the derivative is the operator's step, untested by CI.** DeskOS
+  publishes no Ubuntu image; a green CI run says nothing about a registry you
+  publish to.
 
 See [install.md](install.md#ubuntu-2604) for the commands, and
 [operations.md](operations.md) for how the installed machine updates.

@@ -29,6 +29,6 @@ source each installed package came from. The CI job that builds and boots it is
 in `.github/workflows/vm-bootcheck.yml`. Both workstations boot to GNOME Initial
 Setup, which `tests/vm/firstbootcheck.py` asserts by asking the guest.
 
-There is no bootc base to hand to `bootc-image-builder` on this platform, so an
-Ubuntu disk is written by `bootc install to-disk`; see
+DeskOS implements no ISO path for this platform; what is validated is a disk
+written by `bootc install to-disk`; see
 [docs/install.md](../../docs/install.md#ubuntu-2604).

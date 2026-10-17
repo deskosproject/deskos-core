@@ -172,13 +172,12 @@ resource root, for example `examples/core-ubuntu-2604/`:
 sudo podman build -t localhost/deskos-ubuntu:test ./dist/ubuntu
 ```
 
-There is no Canonical bootc base to hand to `bootc-image-builder`, and DeskOS has
-not had one written; what **is** validated is `bootc install to-disk`, which
-writes the disk from a compressed OCI layout. The worked recipe — including the
-loopback install — is in
-[`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
+DeskOS implements no ISO path for Ubuntu — there is none here, built or validated
+— and what **is** validated is `bootc install to-disk`, which writes the disk from
+a compressed OCI layout. The worked recipe — including the loopback install — is
+in [`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
 
-Two things here that must not be conflated:
+Three things here that must not be conflated:
 
 - **CI makes a lab disk, not a delivery.** The workflow installs from a local OCI
   layout with **no `--target-imgref`**; that proves the image builds, installs and
@@ -187,6 +186,9 @@ Two things here that must not be conflated:
   private registry, or one you make public — never at the local layout and never
   at the base: pointing it at the base would replace your derivative with the base
   at the next update.
+- **Publishing the derivative is your step, and CI does not test it.** DeskOS
+  publishes no Ubuntu image; that the image is built, installed and booted in CI
+  says nothing about a registry you publish to.
 
 After that the disk updates with `bootc` like any other platform
 ([operations.md](operations.md)).
