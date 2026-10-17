@@ -23,7 +23,7 @@ bootable image, from which QCOW2 disks and installer ISOs are made. Ubuntu
 composes and renders, its derived image builds from the pinned base, and that
 image **boots to GNOME Initial Setup**: the wizard runs, which is what
 `tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. That
-build and boot run in CI, on every change to an image input. Ubuntu offers no
+build and boot run in CI. Ubuntu offers no
 system Flatpak channel
 ([validation status](docs/architecture.md#validation-status)).
 
@@ -80,7 +80,7 @@ is the rest of the [Quickstart](#quickstart).
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
