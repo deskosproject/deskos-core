@@ -1,15 +1,15 @@
 {
   "owner": "rarguello",
-  "review": "2026-11-10",
+  "review": "2026-11-17",
   "base": {
     "image": "quay.io/centos-bootc/centos-bootc:stream10",
-    "digest": "sha256:0c9e5e394416f68956eb3c4a9b26e3900e208588aed259abd5075d037fa3037f"
+    "digest": "sha256:98cb998076992ed9052a7a989a7e8df3d1774a02c37bce7dec05ba8e3242f726"
   },
   "exceptions": [
     {
       "id": "GO-2026-6604",
-      "kind": "platform-false-positive",
-      "reason": "Platform false positive: os.Root.Mkdir/MkdirAll junction handling is Windows-only (goos: windows); the vulnerable implementation is not compiled into the Linux binaries scanned here. Equivalent to OpenVEX not_affected / vulnerable_code_not_present; kept as a scoped ignore until a VEX statement is proven to match the scanned OCI.",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "stdlib",
@@ -51,8 +51,8 @@
     },
     {
       "id": "GO-2026-6612",
-      "kind": "accepted-risk",
-      "reason": "Temporary accepted risk: HTTP/2 server flow-control double refund (DoS). The flagged code is a server path and this desktop image exposes no Go HTTP/2 server, but that is not proven per binary, so this is an accepted risk, NOT a not_affected claim. Red Hat scores it Moderate. Revisit when the vendor or upstream Go toolchain is rebuilt with the fix (net/http go1.26.9, golang.org/x/net v0.60.0).",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "golang.org/x/net",
