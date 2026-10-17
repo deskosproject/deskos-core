@@ -30,7 +30,7 @@ base and how far DeskOS has validated the result:
 |---|---|---|
 | CentOS Stream 10 | vendor | pull the published image, or build and boot it yourself |
 | RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
-| AlmaLinux 10 | vendor (experimental) | composes and renders; not built here yet |
+| AlmaLinux 10 | vendor (experimental) | built and booted in CI; no published image |
 | Ubuntu 26.04 | the DeskOS project | built and booted in CI; no published image and no ISO — write a disk with `bootc install to-disk` |
 
 The full matrix — base owner, evidence, and how to install each — is in

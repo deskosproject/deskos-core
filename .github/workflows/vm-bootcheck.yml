@@ -11,6 +11,10 @@ name: vm-bootcheck (experimental)
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
+# For AlmaLinux 10 the same path builds the platform's example, whose platform is
+# shipped, into a QCOW2 and boots it; the example keeps AlmaLinux's own look, so
+# the boot check runs without --expect-splash.
+#
 # For Ubuntu 26.04 there is no published image to hand to bootc-image-builder, so the disk
 # is written by `bootc install to-disk` out of a compressed OCI layout, which is the
 # recipe the platform's own base documents. That disk has no DeskOS splash, so the boot
@@ -223,6 +227,117 @@ jobs:
             ${{ env.WORK }}/session
             ${{ env.WORK }}/firstboot
             ${{ env.WORK }}/journal-failed-boot
+            !${{ env.WORK }}/**/*.qcow2
+          retention-days: 14
+          if-no-files-found: warn
+
+  core-almalinux10:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      # The example, not a shipped reference: its platform is shipped, and the
+      # example is what exercises it. Its profiles keep AlmaLinux's own look, so
+      # the boot check runs without --expect-splash (there is no DeskOS splash).
+      WS: example-core-almalinux-10
+      ROOT: examples/core-almalinux-10
+      IMAGE: localhost/example-core-almalinux-10:ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the build context
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render "$ROOT" --workstation "$WS" --output ctx
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+
+      - name: Build the image
+        timeout-minutes: 40
+        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+
+      - name: Record image evidence
+        run: |
+          mkdir -p "$WORK/evidence"
+          cp ctx/plan.json ctx/generated-manifest.json "$WORK/evidence/"
+          grep '^FROM ' ctx/Containerfile > "$WORK/evidence/base.txt"
+          sudo podman image inspect "$IMAGE" --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' | tee "$WORK/evidence/image.txt"
+          sudo podman run --rm --network=none "$IMAGE" rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort > "$WORK/evidence/rpm-qa.txt"
+          cat "$WORK/evidence/base.txt"
+
+      - name: Build a QCOW2 without the builder's kernel arguments
+        timeout-minutes: 30
+        run: |
+          mkdir -p "$WORK/output"
+          sudo podman run --rm --privileged --pull=missing \
+            --security-opt label=type:unconfined_t \
+            -v "$WORK/output:/output" \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --no-default-kernel-args \
+            --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
+          sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
+
+      - name: Boot check (unmodified disk)
+        timeout-minutes: 20
+        run: |
+          # No --expect-splash: the example keeps AlmaLinux's own look. The check
+          # classifies pixels, not the splash's identity, so the assertion is the
+          # stable graphical screen; AlmaLinux's own splash is not verified here.
+          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
+
+      - name: Session check (instrumented boot)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
+
+      - name: First-boot check (is the wizard the session, can an account log in)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/firstboot" --boot-timeout 900
+
+      - name: Summary
+        if: always()
+        run: |
+          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" \
+                   "$WORK/firstboot/firstboot.md"; do
+            if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+
+      - name: Upload boot check evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vm-evidence-core-almalinux10
+          path: |
+            ${{ env.WORK }}/evidence
+            ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/session
+            ${{ env.WORK }}/firstboot
             !${{ env.WORK }}/**/*.qcow2
           retention-days: 14
           if-no-files-found: warn

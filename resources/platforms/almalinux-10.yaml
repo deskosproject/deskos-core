@@ -7,10 +7,10 @@ spec:
   # The vendor here is the AlmaLinux project, which publishes this base itself, so
   # the platform follows ADR 0004's official-base rule and declares no
   # organization owner or tier — like centos-stream-10 and rhel-10. The vendor
-  # labels the base experimental, and DeskOS has not built or booted this
-  # platform, so the facts below are EL10 conventions modeled on rhel-10 and are
-  # NOT verified against AlmaLinux. That is a bounded claim (invariant 10), not a
-  # support statement.
+  # labels the base experimental. CI builds and boots this platform's image (the
+  # example), which exercises the paths that image needs; the facts below remain
+  # EL10 conventions modeled on rhel-10, and this is not a support statement
+  # (invariant 10).
   family: almalinux
   release: "10"
   architectures: [x86_64]

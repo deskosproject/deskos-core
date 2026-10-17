@@ -17,7 +17,7 @@ deskosctl plan ./examples/core-almalinux-10 \
 The base is published by the AlmaLinux project itself, which labels its bootc
 images **experimental**. The platform follows ADR 0004's official-base rule and
 declares no organization owner or tier (see the platform resource). Its facts
-are EL10 conventions modeled on `rhel-10` and are **not verified** against
-AlmaLinux: composition and rendering are checked in CI, but this platform's
-image has not been built or booted. Rocky Linux publishes no bootc image, so
-AlmaLinux 10 (the closest EL10 bootc) stands in for it.
+are EL10 conventions modeled on `rhel-10`: CI builds and boots this platform's
+image and runs the boot, session and first-boot checks on it. Rocky Linux
+publishes no bootc image, so AlmaLinux 10 (the closest EL10 bootc) stands in for
+it.
