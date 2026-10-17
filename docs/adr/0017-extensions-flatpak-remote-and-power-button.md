@@ -31,36 +31,53 @@ session timeout the same decision covers already exists
 ### Extensions a profile turns on
 
 1. A `GnomeProfile` gains `shell.extensions`: a list of `{uuid, enabled}`.
-   `enabled` is a **decision**, not a value: absent inherits, `true` turns the
-   extension on, `false` turns it off. Between layers the highest wins; two different
-   decisions for the same UUID **in the same layer** are a conflict, never an
-   order-dependent winner (ADR 0003).
-2. The effective `enabled-extensions` list is computed **once**, from the platform's
+   `enabled` is a **decision**, not a value, and it is **required** in an entry — there
+   is no `inherit` value and no default for it. "Inherit the platform's own decision"
+   is expressed by **not naming the UUID at all**. Naming one UUID twice in the same
+   list is a validation error: the intent is ambiguous and the model does not guess.
+2. Internally each decision is one scalar keyed by its UUID, so the existing rules
+   apply unchanged (ADR 0003): the highest layer wins, and the same UUID decided two
+   different ways **in the same layer** is a conflict, never an order-dependent
+   winner. Two layers may disagree, and the higher one decides.
+3. The effective `enabled-extensions` list is computed **once**, from the platform's
    `enabledExtensions`, applying the decisions, plus Dash to Dock when `dock.enabled`
    is true, in a stable order. No writer appends to it independently.
-3. Dash to Dock's UUID is reserved for `dock.enabled`; declaring it in
-   `shell.extensions` is a validation error, so `dock.enabled: false` never competes
-   with a second writer.
-4. A UUID that is neither in the platform's catalog (`gnome.extensions`) nor in its
+4. **When the key is written:** the plan writes `enabled-extensions` only when the
+   composition changes the platform's own list — an extension turned on or off, or the
+   dock enabled or disabled. With no decision and no dock, the plan writes nothing and
+   the platform's own GNOME default stands. A UUID that the platform lists in
+   `enabledExtensions` is presumed already shipped and enabled: turning it **off**
+   needs no entry in the extension catalog, because there is no package to install.
+   `dock.enabled: false` removes the dock's UUID the same way, whether or not the
+   platform offers it as a package (ADR 0008's disable path keeps its semantics).
+5. Dash to Dock's UUID is reserved for `dock.enabled`, including when the platform
+   enables it by default; declaring it in `shell.extensions` is a validation error, so
+   `dock.enabled: false` never competes with a second writer.
+6. A UUID that is neither in the platform's catalog (`gnome.extensions`) nor in its
    `enabledExtensions` **fails composition** with the platform's reason; it is never
    dropped silently. An enabled extension's package is installed from the catalog.
-5. The plan states that membership in `enabled-extensions` is the **declared
+7. The plan states that membership in `enabled-extensions` is the **declared
    default**: whether GNOME Shell actually loaded the extension is a session check,
    not a composition claim.
+8. On a platform that declares `gnome.keepsVendorDefaults` (ADR 0016), this field
+   follows the same rule as every other GNOME setting: nothing is written, a decision
+   that comes from the foundation is reported in the plan's warnings as not applied,
+   and a lock or a decision a higher layer asked for **fails composition**. The new
+   field does not reopen the hole ADR 0016 closed.
 
 ### Configuring an extension
 
-6. Settings are **named capabilities** an extension's platform entry declares, each
+9. Settings are **named capabilities** an extension's platform entry declares, each
    with its type, allowed values, schema and dconf path. A profile names a capability
    and a value; it never names a dconf key, and the path never comes from the UUID.
    A capability whose value is a command is excluded by construction.
-7. v1 ships **no** capability: the field turns extensions on and off, and the shape
+10. v1 ships **no** capability: the field turns extensions on and off, and the shape
    above is the only way a setting may be added later. An extension whose settings are
    already modeled (Dash to Dock, through the `dock.*` keys) keeps them.
 
 ### Retiring a Flatpak remote
 
-8. A **workstation** learns one new field, list-shaped and justified by the fact it
+11. A **workstation** learns one new field, list-shaped and justified by the fact it
    states:
    ```yaml
    spec:
@@ -70,22 +87,22 @@ session timeout the same decision covers already exists
            reason: apps come from the organization's own remote
    ```
    `reason` is mandatory, in the style of `unavailablePackages`.
-9. A remote that the composition **declares** (a `FlatpakRemote`) and also retires is
+12. A remote that the composition **declares** (a `FlatpakRemote`) and also retires is
    a composition error: the two say the opposite about the same key.
-10. A remote a declared `FlatpakSet` installs from cannot be retired: the image's own
+13. A remote a declared `FlatpakSet` installs from cannot be retired: the image's own
     first-boot install would lose its source, so composition fails with that reason.
-11. The removal is an **image** operation: the plan records it and the backend removes
+14. The removal is an **image** operation: the plan records it and the backend removes
     the remote's configuration at build time. It is **not** `flatpak uninstall`:
     applications already installed from that remote stay on the machine (their data
     lives under `/var/lib/flatpak`, which an update keeps), and the plan says so.
     DeskOS never passes `--force`, and never removes an application.
-12. A fresh install has nothing from that remote. An updated machine keeps what it
+15. A fresh install has nothing from that remote. An updated machine keeps what it
     already had from it. The plan states both, so nothing is promised about removing
     what is already installed.
 
 ### The power button
 
-13. A new semantic key, `power.buttonAction`, lowers to
+16. A new semantic key, `power.buttonAction`, lowers to
     `org.gnome.settings-daemon.plugins.power power-button-action`, with GNOME's own
     values: `nothing`, `suspend`, `hibernate`, `interactive` (measured on the built
     CentOS Stream 10 image; the schema's default is `suspend`). It is a scalar like
