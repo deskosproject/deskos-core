@@ -5,5 +5,1584 @@
     "image": "quay.io/deskos/deskos-ubuntu-base:26.04",
     "digest": "sha256:ec5ce29551fdc9f311aef5c5fa82d147727416bce0fa757f5f272fd8c53303f2"
   },
-  "exceptions": []
+  "exceptions": [
+    {
+      "id": "CVE-2026-100075",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-31705",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-31718",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-43493",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-45988",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46039",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46043",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46115",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46119",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46135",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46137",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46155",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46185",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-46289",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52914",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52931",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52958",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52982",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52986",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-52999",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53010",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53043",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53045",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53046",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53049",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53055",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53086",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53088",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53131",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53151",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53186",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53215",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53216",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53221",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53224",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53225",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53228",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53246",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53247",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53260",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53309",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53355",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53363",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53384",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53398",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-53399",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-63795",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-63800",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-63992",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-63993",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-63994",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64000",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64007",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64018",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64024",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64025",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64033",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64034",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64035",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64037",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64046",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64047",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64055",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64056",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64061",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64066",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64067",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64068",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64069",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64080",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64089",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64091",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64102",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64106",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64113",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64122",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64125",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64132",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64136",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64142",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64150",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64160",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64162",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64216",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64232",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64268",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64269",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64303",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64319",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64320",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64355",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64383",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64384",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64385",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64386",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64387",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64391",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64392",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64393",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64397",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64399",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64410",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64439",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-64450",
+      "kind": "accepted-risk-upstream-kernel",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the advisory is in the kernel Ubuntu publishes and this base installs, and DeskOS neither builds nor patches it, so the fix is Ubuntu's update and rebuilding the base takes it. This record makes the acceptance explicit instead of silent. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "linux-kernel",
+          "type": "linux-kernel",
+          "version": "7.0.0-38-generic",
+          "path": "/usr/lib/modules/7.0.0-38-generic/vmlinuz"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-ffc3-869f-jxw9",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable module is compiled into a binary the Ubuntu base installs (buildah, podman, skopeo, snapd, ipp-usb, pebble) or ships as a python package (pyjwt), and DeskOS neither builds nor patches it, so the fix is Ubuntu's update. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "pyjwt",
+          "type": "python",
+          "version": "2.10.1",
+          "path": "/usr/lib/python3/dist-packages/pyjwt-2.10.1.dist-info/METADATA"
+        },
+        {
+          "package": "pyjwt",
+          "type": "python",
+          "version": "2.10.1",
+          "path": "/usr/lib/python3/dist-packages/pyjwt-2.10.1.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4337",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable module is compiled into a binary the Ubuntu base installs (buildah, podman, skopeo, snapd, ipp-usb, pebble) or ships as a python package (pyjwt), and DeskOS neither builds nor patches it, so the fix is Ubuntu's update. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/buildah"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/ubuntu-insights"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/ubuntu-report"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/lib/x86_64-linux-gnu/libinsights.so.0"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/copy"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/imgtype"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/serve"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/tutorial"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/podman/podman-testing"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6604",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable module is compiled into a binary the Ubuntu base installs (buildah, podman, skopeo, snapd, ipp-usb, pebble) or ships as a python package (pyjwt), and DeskOS neither builds nor patches it, so the fix is Ubuntu's update. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/ubuntu-insights"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/lib/x86_64-linux-gnu/libinsights.so.0"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6612",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable module is compiled into a binary the Ubuntu base installs (buildah, podman, skopeo, snapd, ipp-usb, pebble) or ships as a python package (pyjwt), and DeskOS neither builds nor patches it, so the fix is Ubuntu's update. Re-review by the date below, or earlier when the base is rebuilt.",
+      "matches": [
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/buildah"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/ubuntu-insights"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/bin/ubuntu-report"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/lib/x86_64-linux-gnu/libinsights.so.0"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/copy"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/imgtype"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/serve"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/buildah/tutorial"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.0",
+          "path": "/usr/libexec/podman/podman-testing"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/lib/snapd/snap-preseed"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/lib/snapd/snap-recovery-chooser"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/lib/snapd/snap-repair"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/lib/snapd/snapctl"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/lib/snapd/snapd"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.0",
+          "path": "/usr/sbin/ipp-usb"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.27.1",
+          "path": "/usr/bin/pebble"
+        }
+      ]
+    }
+  ]
 }
