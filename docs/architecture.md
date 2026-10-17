@@ -596,8 +596,9 @@ into the build context and a symlink out of the root is refused too.
 Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
 image-update unit, and the base image enables it; its service runs
 `bootc upgrade --apply`, which **reboots** whenever a new image is published.
-That is measured on the platforms booted here; AlmaLinux **declares** it and has
-not been booted ([platforms.md](platforms.md)).
+The reboot-on-publish path was checked end to end on CentOS Stream 10; AlmaLinux
+and Ubuntu are built and booted in CI, but that path is not rechecked there
+([platforms.md](platforms.md)).
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
 `schedule: daily|weekly` and `requireACPower`) lowers to:

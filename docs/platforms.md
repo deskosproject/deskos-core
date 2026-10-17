@@ -15,7 +15,7 @@ Ubuntu is that case. DeskOS **publishes** only CentOS Stream 10.
 | Platform | Base (owner) | Base pinned | Composes and renders | Image built | Booted and checked | Published image | System Flatpak |
 |---|---|---|---|---|---|---|---|
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | `quay.io/deskos/deskos-core` | Flatpak preinstall |
-| AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | not built here | not measured | none | declared, unverified |
+| AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | none | Flatpak preinstall (from `rhel-family`) |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
 | Ubuntu 26.04 | `quay.io/deskos/deskos-ubuntu-base` (the DeskOS project, tier `organization`) | manifest, by digest | **validated** (golden test, CI) | **CI** | **CI**: GNOME Initial Setup; first-boot check; no session check | none | **none** declared |
 
@@ -38,15 +38,15 @@ An organization with RHEL subscriptions builds its own from the entitled base
 and keeps it inside the organization; the RHEL EULA forbids redistributing it.
 [install.md](install.md#rhel-10-private-builds-only).
 
-### AlmaLinux 10 — no published image; the build path is not verified
+### AlmaLinux 10 — no published image; built and booted in CI
 
 AlmaLinux is a public, subscription-free EL10 base, so a build needs no
-entitlement. DeskOS has **not** built or booted a derived AlmaLinux image yet:
-the platform composes and renders in CI, and the facts it declares (RPM group,
-Plymouth packages, update units, trust store, icon cache) are modeled on RHEL 10
-and **not verified** against AlmaLinux. The render/build/QCOW2 steps are the same
-shape as CentOS Stream 10, and are documented as **proposed, not measured**, in
-[install.md](install.md#almalinux-10).
+entitlement. CI builds and boots a derived AlmaLinux image
+(`example-core-almalinux-10`) and runs the boot, session and first-boot checks on
+it, so the platform's declared facts are exercised by a real image; the base is
+the vendor's, and it is **experimental**. DeskOS publishes no AlmaLinux image: to
+make your own, the render, build and QCOW2 steps are the same shape as CentOS
+Stream 10 ([install.md](install.md#almalinux-10)).
 
 ### Ubuntu 26.04 — no published image and no DeskOS ISO; write a disk directly
 

@@ -141,11 +141,10 @@ are private to your organization.
 ## AlmaLinux 10
 
 AlmaLinux 10 is a public, subscription-free EL10 base — the AlmaLinux project's
-own, which that project labels experimental. DeskOS publishes no AlmaLinux image
-and has **not built or booted** one: the steps below have the same shape as the
-CentOS Stream 10 ones and are **proposed, not measured**. The platform's facts
-are EL10 conventions modeled on RHEL 10, not verified against AlmaLinux
-([platforms.md](platforms.md)).
+own, which that project labels experimental. DeskOS publishes no AlmaLinux image,
+but CI builds and boots `example-core-almalinux-10` and runs the boot, session and
+first-boot checks on it, so the steps below are exercised. The platform's facts
+are EL10 conventions modeled on RHEL 10 ([platforms.md](platforms.md)).
 
 Get `deskosctl` as in step 1 of the RHEL section above, then render the shipped
 example from a checkout of this repository and build it:
