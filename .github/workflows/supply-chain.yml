@@ -49,15 +49,34 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published; Ubuntu and Fedora join the matrix
-        # when they have the same build + boot + session gate.
+        # release. RHEL is never published. Fedora joins when it has been booted.
+        #
+        # `disk` says how that platform's disk is written and `diskfile` where it
+        # lands, because they differ: the EL platforms go through
+        # bootc-image-builder, and Ubuntu has no Anaconda path, so it writes with
+        # `bootc install to-disk`. `splash` says whether a DeskOS splash is
+        # expected. Declared per leg on purpose: a gate that assumes one
+        # platform's disk is not a gate, and a new platform must not be able to
+        # silently inherit another's disk path and skip its own boot check.
         include:
           - token: centos10
             workstation: deskos-core-centos10
             exceptions: tests/supply-chain/exceptions.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            splash: true
           - token: almalinux10
             workstation: deskos-core-almalinux10
             exceptions: tests/supply-chain/exceptions-almalinux10.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            splash: true
+          - token: ubuntu2604
+            workstation: deskos-core-ubuntu2604
+            exceptions: tests/supply-chain/exceptions-ubuntu2604.json
+            disk: bootc-install
+            diskfile: disk.raw
+            splash: false
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
     steps:
@@ -159,7 +178,8 @@ jobs:
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
 
-      - name: Build a QCOW2 without the builder's kernel arguments
+      - name: Build a QCOW2 without the builder's kernel arguments (bib)
+        if: matrix.disk == 'bib'
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
@@ -170,12 +190,33 @@ jobs:
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
+      - name: Write the disk with bootc install to-disk (bootc-install)
+        if: matrix.disk == 'bootc-install'
+        timeout-minutes: 30
+        run: |
+          # Ubuntu's image has no Anaconda path, and the composefs import refuses
+          # uncompressed layers: the disk is written from a compressed OCI layout,
+          # the same recipe the base documents and the VM check uses.
+          sudo skopeo copy "containers-storage:$IMAGE" "oci:$WORK/oci:test"
+          truncate -s 32G "$WORK/${{ matrix.diskfile }}"
+          sudo podman run --rm --privileged --pid=host \
+            --security-opt label=type:unconfined_t \
+            -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+            -v "$WORK/oci:/src-oci:ro" -v "$WORK:/output" \
+            "$IMAGE" bootc install to-disk --via-loopback "/output/${{ matrix.diskfile }}" \
+            --source-imgref oci:/src-oci:test \
+            --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+
       - name: Boot check (unmodified disk)
         id: boot
         timeout-minutes: 15
+        env:
+          # Only the EL platforms carry a DeskOS splash; Ubuntu boots with
+          # Canonical's experience, so demanding one there would fail a good disk.
+          SPLASH: ${{ matrix.splash == 'true' && '--expect-splash' || '' }}
         run: |
-          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/bootcheck" --expect-splash --hash-disk --keep-overlay --boot-timeout 420
+          python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
+            --out "$WORK/bootcheck" $SPLASH --hash-disk --keep-overlay --boot-timeout 420
 
       - name: Journal of the failed boot (diagnostic boot of the kept overlay)
         if: failure() && steps.boot.outcome == 'failure'
@@ -187,7 +228,7 @@ jobs:
       - name: Session check (instrumented boot)
         timeout-minutes: 25
         run: |
-          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/${{ matrix.diskfile }}" \
             --plan ctx/plan.json --out "$WORK/session" --boot-timeout 900
           # Record the image that passed; the same image is tagged, pushed and
           # signed below, so the published digest is the tested one.
@@ -196,7 +237,7 @@ jobs:
       - name: First-boot check (is the wizard the session, can an account log in)
         timeout-minutes: 25
         run: |
-          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
             --out "$WORK/firstboot" --boot-timeout 900
 
       - name: Install cosign
