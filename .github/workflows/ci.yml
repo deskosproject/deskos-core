@@ -76,7 +76,11 @@ jobs:
                   print(f.split('/')[-1], b['image'], b['digest'])
           PY
           while read -r platform image digest; do
-            err="$(sudo skopeo inspect "docker://$image@$digest" 2>&1 >/dev/null || true)"
+            # The platform names a tag and a digest, and skopeo refuses both at
+            # once, so the digest is asked for by repository: the tag is what a
+            # human reads in the resource, the digest is what gets pulled.
+            repo="${image%:*}"
+            err="$(sudo skopeo inspect "docker://$repo@$digest" 2>&1 >/dev/null || true)"
             case "$err" in
               "")
                 echo "ok        $platform  $image@${digest:0:19}…" ;;
