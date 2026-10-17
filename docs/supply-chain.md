@@ -179,7 +179,9 @@ The matrix runs with `fail-fast: false`, so one platform failing does not
 stop another from being published: promotions are **independent per
 platform**, and each is gated on its own build, boot, session and first-boot
 checks. A red leg means that platform did not move; it does not retract a
-platform that already did.
+platform that already did. The matrix has **not** been dispatched with
+`publish=true` yet, so the promotion it implements is gated and reviewed, not
+demonstrated: the first such dispatch is its evidence.
 
 ## Promotion gate
 

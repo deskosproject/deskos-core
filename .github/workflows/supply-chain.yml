@@ -93,10 +93,10 @@ jobs:
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
 
-      - name: Install QEMU and OVMF
+      - name: Install QEMU, OVMF and skopeo
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
 
       - name: Build the image
         timeout-minutes: 40
@@ -272,12 +272,16 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
             | tee -a cosign-verify.txt
-          # :latest moves only after the digest is signed and verified, and only
-          # when the registry returns the same digest: a different one would be a
-          # different image, and the signature would not be about it.
-          sudo podman tag "$IMAGE" "$DEST:latest"
-          sudo podman push --digestfile latest-digest.txt "$DEST:latest"
-          latest="$(tr -d '\n\r' < latest-digest.txt)"
+          # :latest moves only after the digest is signed and verified, and it
+          # moves **by digest**: skopeo copies the manifest the signature is
+          # about and preserves its digest, so the tag cannot end up on bytes
+          # the signature does not cover — unlike a second push from local
+          # storage, where a mismatch is only discovered after the tag moved.
+          # (containers/image's default policy accepts the source; the check on
+          # this path is cosign, not a registry signature.)
+          sudo skopeo copy --preserve-digests "docker://$DEST@$digest" "docker://$DEST:latest"
+          latest="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:latest")"
+          printf '%s\n' "$latest" > latest-digest.txt
           [ "$latest" = "$digest" ] || { echo "::error::$DEST:latest is $latest, not the signed $digest"; exit 1; }
           # cosign v3 has no `logout`; the credentials live in the runner's
           # docker config, and podman logout clears the registry login.
