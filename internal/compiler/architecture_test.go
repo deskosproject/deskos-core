@@ -92,6 +92,9 @@ func TestUnknownFieldsRejectedBySchemaAndTypes(t *testing.T) {
 	}
 }
 
+// coreView is the slice of a Plan this file's cross-platform test compares. Units
+// holds *enabled* units; a mask lives in the Plan's SystemdMasks and is asserted
+// where a platform differs, not compared here.
 type coreView struct {
 	Groups, Packages, Units, Dconf, Files []string
 	Target                                string
@@ -120,11 +123,28 @@ func viewOf(p *plan.Plan) coreView {
 	return v
 }
 
-// The same DeskOS Core semantics produce the same planned content on the EL10
-// platforms — CentOS Stream 10, RHEL 10 and AlmaLinux 10 — over the fields
-// viewOf compares (groups, packages, units, dconf defaults, files, target).
-// This proves composition, not that the images build or boot.
-func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
+// The same DeskOS Core semantics produce the same planned content on the RPM
+// platforms — CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora 44, plus the
+// Fedora 45 evaluation from its own example root — over exactly the fields viewOf
+// compares: package groups (name and members), packages, systemd units, dconf
+// default keys, file paths with their checksums, and the default target.
+//
+// It does not compare the rest of the Plan, and a reader should not read it as
+// if it did: viewOf reads the group mapping, the packages, the *enabled* systemd
+// units, the dconf defaults, the installed files and the default target. The
+// masked units, the scheduled update policy, the boot profile (kernel arguments,
+// initramfs and Plymouth), Flatpak remotes and applications, provisioning, and
+// per-value provenance all sit outside it, and they are asserted per platform
+// where they differ — see TestFedoraDeclaresASystemFlatpakChannel and the mask
+// and group assertions below.
+//
+// Fedora is here because it is an RPM platform whose group mapping and update
+// units are the same names as the EL10 family's (measured: Fedora's comps resolves
+// `workstation-product-environment` and its base ships
+// bootc-fetch-apply-updates.timer/.service). What keeps it honest is that the test
+// asserts the *base* differs per platform, so an accident that made two platforms
+// share a base fails here. Ubuntu is not compared: its package manager is deb.
+func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core]\n"
 	}
@@ -132,11 +152,17 @@ func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
 		"c.yaml": ws("core-alma", "almalinux-10"),
+		"d.yaml": ws("core-fedora44", "fedora-44"),
+		"e.yaml": ws("core-fedora45", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	for _, p := range []*plan.Plan{rhel, alma} {
+	fedora44 := mustPlan(t, "core-fedora44", resourcesRoot, dir)
+	// Fedora 45 is an evaluation, not a shipped platform, so its Platform resource
+	// comes from the example root that carries it.
+	fedora45 := mustPlan(t, "core-fedora45", resourcesRoot, fedora45Root, dir)
+	for _, p := range []*plan.Plan{rhel, alma, fedora44, fedora45} {
 		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
 		}
@@ -149,6 +175,62 @@ func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
 	}
 	if !strings.HasPrefix(alma.Artifact.BaseImage.Image, "quay.io/almalinuxorg/almalinux-bootc") {
 		t.Errorf("AlmaLinux base is %s, want the vendor's almalinux-bootc image", alma.Artifact.BaseImage.Image)
+	}
+	for name, p := range map[string]*plan.Plan{"fedora-44": fedora44, "fedora-45": fedora45} {
+		if !strings.HasPrefix(p.Artifact.BaseImage.Image, "quay.io/fedora/fedora-silverblue:") {
+			t.Errorf("%s base is %s, want the vendor's fedora-silverblue image", name, p.Artifact.BaseImage.Image)
+		}
+	}
+	if fedora44.Artifact.BaseImage.Digest == fedora45.Artifact.BaseImage.Digest {
+		t.Error("the two Fedora releases pin the same base digest")
+	}
+	// The Fedora facts that reach the Plan and are worth keeping: the group id
+	// DeskOS asks dnf for, which on Fedora is a comps *environment* resolved through
+	// `group install`, and the bootc units it masks so its own staging timer is the
+	// only update path. viewOf reads enabled units, so the masks are read here.
+	masked := func(p *plan.Plan) []string {
+		var out []string
+		for _, m := range p.Artifact.SystemdMasks {
+			out = append(out, m.Unit)
+		}
+		return out
+	}
+	for _, p := range []*plan.Plan{fedora44, fedora45} {
+		if got, want := viewOf(p).Groups, []string{"workstation=workstation-product-environment"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("group mapping = %v, want %v", got, want)
+		}
+		if got, want := masked(p), []string{"bootc-fetch-apply-updates.service", "bootc-fetch-apply-updates.timer"}; !reflect.DeepEqual(got, want) {
+			t.Errorf("masked units = %v, want %v", got, want)
+		}
+	}
+}
+
+// Fedora's base brings Flatpak with the preinstall mechanism, and the platform
+// says so: a FlatpakSet on Fedora compiles to the Flatpak package, the preinstall
+// unit and the application. This is the pair the Ubuntu test asserts the absence
+// of, and it is the platform fact the RPM comparison above does not cover.
+func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
+	dir := fixture{
+		"p.yaml":  profile("apps", "foundation", "FlatpakSet/deskos-reference-apps"),
+		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: fedora-ws\nspec:\n  platformRef: fedora-44\n  profiles: [apps]\n",
+	}.dir(t)
+	p := mustPlan(t, "fedora-ws", resourcesRoot, dir)
+	if got := packages(p); !slices.Contains(got, "flatpak") {
+		t.Errorf("packages = %v, want Flatpak: the Fedora platform declares the channel", got)
+	}
+	if p.Provisioning.FlatpakPreinstallUnit == "" {
+		t.Error("no Flatpak preinstall unit on a platform that declares preinstall")
+	}
+	if n := len(p.Provisioning.FlatpakApplications); n != 1 {
+		t.Errorf("compiled %d Flatpak applications, want 1 (the Flathub reference set)", n)
+	}
+	if len(p.Provisioning.FlatpakRemotes) == 0 {
+		t.Error("no Flatpak remote on a platform that declares the channel")
+	}
+	for _, a := range p.Provisioning.FlatpakRemotes {
+		if a.GPGKey == "" {
+			t.Errorf("remote %s carries no GPG key", a.Name)
+		}
 	}
 }
 

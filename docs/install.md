@@ -2,11 +2,11 @@
 
 How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
 published CentOS Stream 10 image, a private RHEL 10 build, an AlmaLinux 10
-build, or an Ubuntu 26.04 build.
+build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
 > Downloadable QCOW2 and ISO images are not published yet. Until they
-> are, create an EL disk from the container image with
+> are, create an EL or Fedora disk from the container image with
 > `bootc-image-builder`, and an Ubuntu disk with `bootc install to-disk`
 > ([Ubuntu 26.04](#ubuntu-2604) below). You need **Linux with rootful
 > Podman** and about **20 GB free**.
@@ -157,6 +157,44 @@ sudo podman build -t localhost/deskos-alma:test ./dist/alma
 
 Then write the QCOW2 with the public `bootc-image-builder`, as in the CentOS
 Stream 10 steps above.
+
+## Fedora 44
+
+Fedora is a public, subscription-free base published by the Fedora Project
+itself, so a build needs no entitlement. DeskOS publishes no Fedora image. Get
+`deskosctl` as in step 1 of the RHEL section above, then build the shipped
+**reference workstation** from a checkout of this repository:
+
+```bash
+./bin/deskosctl render \
+    --workstation deskos-core-fedora44 --output ./dist/fedora44
+sudo podman build -t localhost/deskos-core-fedora44:test ./dist/fedora44
+```
+
+`examples/core-fedora-44/` is the minimal example (Core and the family profile
+only). Then write the QCOW2 with the public `bootc-image-builder` as in the
+CentOS Stream 10 steps above, or `bootc install to-disk` from a compressed OCI
+layout as in the Ubuntu section below.
+
+If you publish it, give it its **own repository** —
+`quay.io/deskos/deskos-core-fedora44` — and point the installed machine at that
+reference. A shared `:latest` repository would let a Fedora release change under
+a machine at `bootc upgrade` ([platforms.md](platforms.md)).
+
+> [!WARNING]
+> **This path is proposed, not measured, past the build.** The platform's facts
+> are measured against the pinned base (one comment per fact in
+> `resources/platforms/fedora-44.yaml`) and the image builds, but DeskOS has
+> **not booted** a Fedora disk: there is no boot, session or first-boot evidence
+> for this platform. See [platforms.md](platforms.md).
+
+> [!NOTE]
+> **Fedora 45 is not offered.** It was a prerelease when it was measured and its
+> base enables `updates-testing`, so DeskOS offers 44 only. The 45 evaluation is
+> kept as an example-only root that carries its **own** Platform resource —
+> [`examples/core-fedora-45/`](../examples/core-fedora-45/README.md) — with no
+> reference workstation and no image; its platform is a starting point for
+> whoever evaluates the next Fedora release, not something to install.
 
 ## Ubuntu 26.04
 

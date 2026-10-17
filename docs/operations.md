@@ -18,11 +18,12 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 
 > **Platform scope.** Everything `bootc` here is on every platform. The Flatpak
 > half exists only where the image declares a system Flatpak channel — the EL
-> family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither the
-> package nor the unit without that profile; an organization can still declare
-> them itself. Ubuntu 26.04 declares no channel, so a `FlatpakSet` there fails
-> composition rather than pretending, and the AlmaLinux facts are not verified on
-> a built image ([platforms.md](platforms.md)).
+> family's `PackageSet/rhel-family` and the Fedora family's `PackageSet/fedora`
+> provide one, and DeskOS Core adds neither the package nor the unit without one
+> of those profiles; an organization can still declare them itself. Ubuntu 26.04
+> declares no channel, so a `FlatpakSet` there fails composition rather than
+> pretending, and on AlmaLinux the Flatpak preinstall path is **declared**, not
+> exercised by the CI example ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base

@@ -1,0 +1,136 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  name: fedora-44
+spec:
+  displayName: Fedora 44 (Silverblue)
+  # The Fedora Project publishes this base itself (quay.io/fedora), so the platform
+  # follows ADR 0004's official-base rule and declares no organization owner or
+  # tier — like centos-stream-10 and almalinux-10.
+  #
+  # The base is Fedora's own desktop bootc image, Silverblue, and not the minimal
+  # quay.io/fedora/fedora-bootc. Measured on that minimal base (fedora-bootc:44 and
+  # :45, 2026-10-17): no gnome-shell, no gdm, no gnome-initial-setup, no Flatpak, no
+  # Plymouth, no fedora-logos and no gtk-update-icon-cache — a DeskOS workstation on
+  # it would be a desktop DeskOS invented, not the one Fedora validates as its
+  # workstation. Silverblue carries all of them as distribution packages, and its
+  # GNOME base applications stay RPMs (measured in the image: gnome-shell 50.6, gdm
+  # 50.3, gnome-initial-setup 50.1, nautilus 50.4, gnome-software 50.4, firefox
+  # 158.0). That is the DeskOS rule: the GNOME base stays distribution packages, and
+  # only an organization's extra applications go to Flatpak (ADR 0005).
+  family: fedora
+  release: "44"
+  architectures: [x86_64]
+  packageManager: rpm
+  bootc:
+    image: quay.io/fedora/fedora-silverblue:44
+    # x86_64 manifest of the :44 index (config sha256:b48d314a...), built
+    # 2026-10-17T00:55:25Z as Fedora 44.20261017.0 (ostree commit 2b54c661...); the
+    # index itself resolves to sha256:b514a170.... Fedora 44 is the released release
+    # (measured: os-release has no "Prerelease" suffix and updates-testing is
+    # disabled). It moves deliberately.
+    digest: sha256:226ffb233b69b0ca3e8d788aa56f029826db02415a485779dab1e30b5d28a0de
+  distribution:
+    # Fedora's archive is freely redistributable and needs no subscription.
+    redistributable: true
+    requiresSubscription: false
+  packageGroups:
+    - name: workstation
+      # Measured on fedora-silverblue:44: Fedora's comps has no
+      # `workstation-product-environment` *group*; the id names a comps
+      # *environment* ("Fedora Workstation") and dnf5 resolves it through
+      # `group install` — `dnf -y group install --assumeno
+      # workstation-product-environment` resolves 347 packages / 346 MiB with 15
+      # upgrades. Silverblue's base already carries the shell, so this completes it
+      # with the workstation's own applications as RPMs: the same transaction
+      # installs gnome-text-editor, gnome-calculator, gnome-maps, gnome-weather,
+      # baobab, papers and libreoffice from the Fedora archive.
+      rpmGroups: [workstation-product-environment]
+      graphical: true
+      # No excludes: measured, Fedora's environment carries no setroubleshoot, the
+      # package the EL family excludes. Nothing is declared unavailable either —
+      # `virt-manager` (5.1.0 in this archive), which the EL10 platforms report as
+      # a gap because it sits in their disabled builder repository, installs from
+      # Fedora's own archive here.
+  displayManager: gdm.service
+  gnome:
+    # Measured: /etc/dconf/profile/user reads user, local, site and distro, and
+    # GDM's own profile (/usr/share/dconf/profile/gdm) reads user, gdm, local, site
+    # and distro plus /usr/share/gdm/greeter-dconf-defaults — the same distro slot
+    # DeskOS writes to.
+    dconfDatabase: distro
+    loginScreen: true
+    # Default of org.gnome.shell enabled-extensions on this base, measured in
+    # /usr/share/glib-2.0/schemas/org.gnome.shell.gschema.override:
+    # background-logo@fedorahosted.org (installed as
+    # gnome-shell-extension-background-logo).
+    enabledExtensions: [background-logo@fedorahosted.org]
+    extensions:
+      # Measured: gnome-shell-extension-dash-to-dock is not in the base and not part
+      # of the workstation environment; Fedora's archive publishes it (version 105
+      # on 44, 110 on 45).
+      - name: dash-to-dock
+        package: gnome-shell-extension-dash-to-dock
+        uuid: dash-to-dock@micxgx.gmail.com
+    # gnome-shell 50.6 keeps app folders from the dconf defaults.
+    appFolders: true
+    appLauncher:
+      # Measured: /usr/bin/gtk-launch resolves through the usrmerge symlink
+      # /usr/sbin -> bin and is provided by gtk3 3.24.52.
+      package: gtk3
+      command: /usr/bin/gtk-launch
+  boot:
+    # Fedora's own graphical boot uses `rhgb quiet`; the image itself carries no
+    # /etc/default/grub, so this is Fedora's documented default for the family and
+    # not a reading of this base. DeskOS writes the arguments to
+    # /usr/lib/bootc/kargs.d/50-deskos.toml, which is measured to exist on this base
+    # and is Fedora's documented path for bootc kernel arguments, so they apply at
+    # install and on day 2. Whether a booted Fedora DeskOS disk draws the splash
+    # from these arguments is not measured.
+    #
+    # Measured while building this platform: rebuilding the initramfs in a
+    # container is noisy, not broken. dracut exits 0 and the built initramfs
+    # carries plymouthd and the theme frames (asserted by the build itself), but it
+    # prints `dracut-install: ERROR: installing '/root'` — `/root` is a symlink to
+    # `var/roothome`, which an ostree image does not carry, and that target is
+    # created at deployment — plus xattr and firmware-copy errors the container
+    # filesystem refuses. It happens on the plain base as well, so it is not a
+    # consequence of the group mapping.
+    splashKernelArgument: rhgb
+    quietKernelArgument: quiet
+    # Measured: plymouth 24.004.60 with plymouth-scripts, plymouth-system-theme and
+    # plymouth-theme-spinner already in the base, and dracut's 45plymouth module.
+    # Fedora's own default Plymouth theme is bgrt, so a DeskOS splash replaces the
+    # vendor's rather than sitting on an empty one.
+    plymouthPackages: [plymouth, plymouth-scripts, plymouth-system-theme]
+    plymouthDracutModule: plymouth
+    # Measured in /usr/share/plymouth/themes/spinner: animation-0001..0036.png,
+    # throbber-0001..0030.png and watermark.png — the same two-step throbber frames
+    # DeskOS's own splash reuses on the EL family.
+    spinnerFrames:
+      package: plymouth-theme-spinner
+      imageDir: /usr/share/plymouth/themes/spinner
+  updates:
+    # Measured on :44 and :45: both units are present in this base and *neither is
+    # enabled* (unlike quay.io/fedora/fedora-bootc:45, where
+    # /etc/systemd/system/timers.target.wants/ enables the timer). The base also
+    # ships rpm-ostreed-automatic.timer/.service, also not enabled. They are listed
+    # so that DeskOS's own staging timer stays the only update path if Fedora
+    # enables one: what DeskOS masks is the platform's units, never Core's.
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+  flatpak:
+    # Measured: Flatpak 1.18.4 (which has `flatpak preinstall`, --system being its
+    # default), /usr/share/flatpak/preinstall.d present and empty. The base also
+    # enables flatpak-add-fedora-repos.service, which adds Fedora's own OCI remote
+    # at first boot; DeskOS declares its own remote and does not remove Fedora's.
+    package: flatpak
+    preinstall: true
+  # Measured: /etc/pki/ca-trust/source/anchors exists and update-ca-trust is
+  # /usr/sbin/update-ca-trust.
+  trust:
+    anchorsDir: /etc/pki/ca-trust/source/anchors
+    updateCommand: update-ca-trust
+  iconCache:
+    # Measured: gtk-update-icon-cache 3.24.52 (gtk3) at /usr/bin/gtk-update-icon-cache.
+    package: gtk-update-icon-cache
+    command: gtk-update-icon-cache --force --quiet

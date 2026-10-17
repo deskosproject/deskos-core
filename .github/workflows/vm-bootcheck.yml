@@ -437,6 +437,17 @@ jobs:
           python3 tests/vm/bootcheck.py --disk "$DISK" \
             --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
 
+      - name: Session check (instrumented boot)
+        id: session
+        timeout-minutes: 25
+        run: |
+          # The session check adds a user and an autologin, so on this platform it
+          # proves a GNOME session comes up, not the wizard: the first-boot check is
+          # what proves the shipped wizard. Ubuntu Core declares no look, favorites
+          # or Firefox, so the checks are the session itself and its failed units.
+          python3 tests/vm/sessioncheck.py --mode session --disk "$DISK" \
+            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
+
       - name: First-boot check (is the wizard the session, can an account log in)
         id: firstboot
         timeout-minutes: 25
@@ -447,7 +458,8 @@ jobs:
       - name: Summary
         if: always()
         run: |
-          for f in "$WORK/bootcheck/summary.md" "$WORK/firstboot/firstboot.md"; do
+          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" \
+                   "$WORK/firstboot/firstboot.md"; do
             if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
           done
 
@@ -459,6 +471,7 @@ jobs:
           path: |
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/session
             ${{ env.WORK }}/firstboot
             !${{ env.WORK }}/**/*.qcow2
             !${{ env.WORK }}/*.raw

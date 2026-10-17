@@ -65,6 +65,10 @@ jobs:
           # The AlmaLinux reference workstation renders too: it is what the
           # publish path builds, and its Containerfile is pinned by a golden.
           ./bin/deskosctl render --workstation deskos-core-almalinux10 --output dist/alma-ref
+          # The Fedora reference workstation renders: its platform is shipped and its
+          # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
+          # fails here rather than in a build nobody runs on a pull request.
+          ./bin/deskosctl render --workstation deskos-core-fedora44 --output dist/fedora44
           diff -r dist/a dist/b
           diff -r dist/a dist/c
           diff -r dist/a dist/d

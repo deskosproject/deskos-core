@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-core-fedora-45
+spec:
+  # The Fedora 45 *evaluation*, not an offered platform: the Platform resource it
+  # references lives in this root (examples/core-fedora-45/platforms/).
+  displayName: DeskOS Core (Fedora 45, prerelease evaluation)
+  platformRef: fedora-45
+  profiles:
+    - deskos-core
+    - fedora
+    # Fedora's own wallpaper and splash stay, only the text goes.
+    - deskos-boot
