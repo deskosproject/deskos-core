@@ -6,7 +6,7 @@ New here? Start with the [README](../README.md), then
 | Page | What it is |
 |---|---|
 | [Platforms](platforms.md) | **The canonical matrix**: base owner, what is verified, and how to install each platform |
-| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, private RHEL builds, AlmaLinux, Fedora 44/45, and the Ubuntu `bootc install to-disk` path |
+| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, private RHEL builds, AlmaLinux, Fedora 44, and the Ubuntu `bootc install to-disk` path |
 | [Architecture](architecture.md) | The pipeline and boundary, the resource model, composition, the Plan, the Containerfile backend, and the evidence behind the claims |
 | [Resources](resources.md) | Every one of the fourteen kinds, with an example |
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |

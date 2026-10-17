@@ -23,8 +23,18 @@ and only an organization's extra applications go to Flatpak — which is the
 opposite of what a cloud-native desktop image such as Bluefin does with its own
 GNOME base applications.
 
-The platform's facts are measured against the pinned base (see the comments in
-`resources/platforms/fedora-44.yaml`); the image has **not** been built, booted or
-checked here, and there is no published Fedora image. The Fedora family profile
-`fedora` is the family's own browser, firewall and Flatpak declaration; on this
-base it installs nothing, because Silverblue already carries all three.
+The platform's facts are measured against the pinned base (comments in
+`resources/platforms/fedora-44.yaml`), and the image **builds**: two local builds
+on 2026-10-17 (this example, image `c384826141cf`; and the reference workstation
+`deskos-core-fedora44`, image `5b44f2829d1e`) completed with `bootc container
+lint` reporting 12 checks passed and 2 warnings. No Fedora disk has been
+**booted**, and there is no published Fedora image; the shipped reference
+workstation is `deskos-core-fedora44`, and
+[`../core-fedora-45/`](../core-fedora-45/README.md) is the prerelease evaluation
+of the next Fedora release, which is not an offered platform.
+
+**Naming.** The example is named after the Platform resource it references, as
+`example-core-almalinux-10` references `almalinux-10` and
+`example-core-ubuntu-2604` references `ubuntu-2604`; the shipped reference
+workstation is named after the image it becomes (`deskos-core-fedora44`, like
+`deskos-core-centos10`).

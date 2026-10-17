@@ -100,9 +100,12 @@ spec:
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
-`almalinux-10`, `rhel-10`, `fedora-44`, `fedora-45` and `ubuntu-2604` in
+`almalinux-10`, `rhel-10`, `fedora-44` and `ubuntu-2604` in
 [`resources/platforms/`](../resources/platforms/); the canonical status of each,
-and how to install it, is [platforms.md](platforms.md).
+and how to install it, is [platforms.md](platforms.md). A platform that is only
+being *evaluated* is not shipped: Fedora 45's prerelease evaluation carries its
+own `Platform` resource inside its example root
+([`examples/core-fedora-45/`](../examples/core-fedora-45/README.md)).
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
@@ -600,9 +603,11 @@ project.
   directly onto the official RHEL 10 bootc base.
 - **AlmaLinux 10** composes the same Core on the AlmaLinux project's own
   bootc base, which the project labels experimental.
-- **Fedora 44 and 45** compose the same Core on the Fedora Project's own bootc
+- **Fedora 44** composes the same Core on the Fedora Project's own bootc
   desktop base, Silverblue, with the Fedora family's own software
-  (`Profile/fedora`) rather than the RHEL family's.
+  (`Profile/fedora`) rather than the RHEL family's. The Fedora 45 prerelease
+  evaluation does the same through its own example root, and is **not** an
+  offered platform.
 - **Ubuntu 26.04** composes the same Core on a base owned by the Project
   DeskOS, without the RHEL family's software
   ([ADR 0014](adr/0014-platform-base-ownership.md)).

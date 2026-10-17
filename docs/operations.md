@@ -22,8 +22,8 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 > provide one, and DeskOS Core adds neither the package nor the unit without one
 > of those profiles; an organization can still declare them itself. Ubuntu 26.04
 > declares no channel, so a `FlatpakSet` there fails composition rather than
-> pretending, and the AlmaLinux facts are not verified on a built image
-> ([platforms.md](platforms.md)).
+> pretending, and on AlmaLinux the Flatpak preinstall path is **declared**, not
+> exercised by the CI example ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base

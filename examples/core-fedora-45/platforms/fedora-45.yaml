@@ -3,27 +3,33 @@ kind: Platform
 metadata:
   name: fedora-45
 spec:
-  displayName: Fedora 45 (Silverblue)
+  displayName: Fedora 45 (Silverblue) — prerelease evaluation
+  # THIS PLATFORM IS NOT OFFERED. It lives in an example root because Fedora 45 was
+  # a prerelease when it was measured (2026-10-17) and DeskOS offers Fedora 44
+  # only; it exists to check that the next Fedora release composes with the same
+  # Fedora facts before anyone commits to it. It is not in `resources/platforms/`,
+  # not in the platform matrix of docs/platforms.md, and has no reference
+  # workstation; the example root carries it so that evaluating a release needs no
+  # change to what DeskOS ships.
+  #
   # The Fedora Project publishes this base itself (quay.io/fedora), so the platform
   # follows ADR 0004's official-base rule and declares no organization owner or
   # tier — like centos-stream-10 and almalinux-10. The base is Fedora's own desktop
-  # bootc image, Silverblue, for the reason recorded in full in fedora-44.yaml: the
-  # minimal quay.io/fedora/fedora-bootc carries no GNOME, no GDM, no Flatpak, no
-  # Plymouth and no icon-cache tool (measured on :44 and :45), while Silverblue
-  # carries them as distribution packages and keeps the GNOME base applications as
-  # RPMs (measured in the image: gnome-shell 51.0, gdm 51.0, gnome-initial-setup
-  # 51.0, nautilus 51.0.1, gnome-software 51.0, firefox 157.0).
+  # bootc image, Silverblue, for the reason recorded in full in
+  # resources/platforms/fedora-44.yaml: the minimal quay.io/fedora/fedora-bootc
+  # carries no GNOME, no GDM, no Flatpak, no Plymouth and no icon-cache tool
+  # (measured on :44 and :45), while Silverblue carries them as distribution
+  # packages and keeps the GNOME base applications as RPMs (measured in the image:
+  # gnome-shell 51.0, gdm 51.0, gnome-initial-setup 51.0, nautilus 51.0.1,
+  # gnome-software 51.0, firefox 157.0).
   #
-  # Measured on 2026-10-17: :45 is a *prerelease* — os-release reads
+  # Why the evaluation matters: :45 is a *prerelease* — measured, os-release reads
   # "45.20261016.n.0 (Silverblue Prerelease)" and the base enables Fedora's
-  # updates-testing repository, which the released :44 does not. Pinning this
-  # platform therefore pins a moving target twice over: the base digest is pinned
-  # here, but packages installed during a build can come from updates-testing (in
-  # the workstation transaction measured below: papers, gnome-calculator,
-  # gnome-maps and gnome-text-editor did). DeskOS supports the current Fedora
-  # release plus the previous one, re-pins and re-validates at every release and
-  # retires the older platform (docs/platforms.md, docs/roadmap.md); whether to
-  # carry a *prerelease* at all is the decision left to a human.
+  # updates-testing repository, which the released :44 does not, so packages
+  # installed during a build can come from testing (in the workstation transaction
+  # measured below: papers, gnome-calculator, gnome-maps and gnome-text-editor
+  # did). What DeskOS would have to decide before *offering* a release is on
+  # docs/roadmap.md; nothing here commits to it. No Fedora 45 image was built.
   family: fedora
   release: "45"
   architectures: [x86_64]
@@ -86,7 +92,9 @@ spec:
     # Measured on :44 and :45: both units are present in this base and neither is
     # enabled (over on quay.io/fedora/fedora-bootc:45 the timer *is* enabled), so
     # DeskOS's own staging timer is what stages an update here. They are listed so
-    # it stays the only path if Fedora enables one.
+    # it stays the only path if Fedora enables one. This one is declared on the
+    # evaluation too, because the masking is what DeskOS's update policy depends
+    # on.
     imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
   flatpak:
     # Measured: Flatpak 1.18.4 with `flatpak preinstall`, and
