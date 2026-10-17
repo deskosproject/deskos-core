@@ -79,6 +79,89 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  tool:
+    # The same binary as a container: scratch + deskosctl. A pipeline runs the
+    # compiler without installing it. It is a release artifact like the binary,
+    # so pushing a tag publishes it; it is scanned and signed before :latest
+    # moves.
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Keyless cosign: the workflow's OIDC identity.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the tool image
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          podman build -t quay.io/deskos/deskosctl:"$TAG" \
+            --build-arg VERSION="$TAG" --build-arg COMMIT="$GITHUB_SHA" .
+          out="$(podman run --rm quay.io/deskos/deskosctl:"$TAG" version)"
+          echo "$out"
+          [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
+
+      - name: Install Syft and Grype (pinned)
+        env:
+          SYFT_VERSION: v1.54.1
+          SYFT_INSTALL: b254e6d92f28c3868a755f62fb3ca8f26e9fee76
+          GRYPE_VERSION: v0.120.1
+          GRYPE_INSTALL: 6f8d854af29d3a3086b11a84afa51554a2a245fe
+        run: |
+          curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
+          curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Scan the tool image
+        run: |
+          podman save --format oci-archive -o tool.tar quay.io/deskos/deskosctl:"${{ github.ref_name }}"
+          syft "oci-archive:tool.tar" -o cyclonedx-json=tool.sbom.cdx.json
+          grype "oci-archive:tool.tar" -o table | tee tool-grype.txt
+          grype "oci-archive:tool.tar" --fail-on critical -o table > /dev/null
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v3.1.3'
+
+      - name: Push, sign and verify
+        env:
+          TAG: ${{ github.ref_name }}
+          DEST: quay.io/deskos/deskosctl
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+        run: |
+          printf '%s' "$QUAY_ROBOT_TOKEN" | podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          # The immutable tag first; :latest moves only after the digest is
+          # signed and verified.
+          podman push --digestfile digest.txt "$DEST:$TAG"
+          digest="$(tr -d '\n\r' < digest.txt)"
+          ref="$DEST@$digest"
+          printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          cosign sign --yes "$ref"
+          cosign verify "$ref" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+          podman tag "quay.io/deskos/deskosctl:$TAG" "$DEST:latest"
+          podman push "$DEST:latest"
+          podman logout quay.io
+          echo "Published and signed $ref" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the tool image evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tool-image-evidence
+          path: |
+            tool.sbom.cdx.json
+            tool-grype.txt
+            digest.txt
+            cosign-verify.txt
+          retention-days: 14
+          if-no-files-found: warn
+
   release:
     needs: [tag, build]
     runs-on: ubuntu-latest

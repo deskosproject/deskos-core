@@ -114,6 +114,20 @@ deskosctl version
 The declared SBOM and where a CVE scan fits are described in
 [supply-chain.md](supply-chain.md).
 
+The CLI is also published as a **container**, `quay.io/deskos/deskosctl:<tag>`
+(with `:latest`), scanned and signed like the other release artifacts, so a
+pipeline runs the compiler without installing it. The image is `scratch` and the
+compiler needs no network, so a run mounts the resource root (read-only) and the
+output directory. The two extra flags are host facts, not the image's:
+`--userns=keep-id` maps your uid so the tool can write the output, and `:z`
+relabels the writable mount on an SELinux host:
+
+```bash
+podman run --rm --userns=keep-id \
+    -v "$PWD":/src:ro -v "$PWD/out":/out:z \
+    quay.io/deskos/deskosctl:latest render /src --workstation X --output /out
+```
+
 ## Releases
 
 Pushing a tag `vX.Y.Z` (or `vX.Y.Z-<prerelease>`) runs the CI checks and
