@@ -23,7 +23,7 @@ into a bootc operating-system image:
 YAML → validate → compose → plan → Containerfile → bootc image → disk
 ```
 
-The same intent compiles onto four platforms today. They differ in who owns the
+The same intent compiles onto six platforms today. They differ in who owns the
 base and how far DeskOS has validated the result:
 
 | Platform | Base | What you can do today |
@@ -32,6 +32,8 @@ base and how far DeskOS has validated the result:
 | RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
 | AlmaLinux 10 | vendor (experimental) | built and booted in CI; no published image |
 | Ubuntu 26.04 | the DeskOS project | built and booted in CI; no published image and no ISO — write a disk with `bootc install to-disk` |
+| Fedora 44 | vendor | composes, renders and builds; not booted here yet; no published image |
+| Fedora 45 | vendor (prerelease) | composes, renders and builds; not booted here yet; no published image |
 
 The full matrix — base owner, evidence, and how to install each — is in
 [**docs/platforms.md**](docs/platforms.md).
@@ -246,7 +248,7 @@ By what you want to do:
 | | |
 |---|---|
 | **Evaluate** | the tour above; [**Platforms**](docs/platforms.md) for status and installation per platform; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
-| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds; AlmaLinux 10; the Ubuntu 26.04 `bootc install to-disk` path |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds; AlmaLinux 10; Fedora 44/45; the Ubuntu 26.04 `bootc install to-disk` path |
 | **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |

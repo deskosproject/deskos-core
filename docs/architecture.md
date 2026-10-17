@@ -114,10 +114,11 @@ Examples of every kind are in
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile. The same Core composes onto `centos-stream-10`, `almalinux-10`,
-`rhel-10` and `ubuntu-2604`; a RHEL workstation starts from
-`registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
-DeskOS image. A test asserts CentOS Stream 10, RHEL 10 and AlmaLinux 10
-produce the same Core content; Ubuntu is not compared by that test.
+`rhel-10`, `fedora-44`, `fedora-45` and `ubuntu-2604`; a RHEL workstation starts
+from `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
+DeskOS image. A test asserts the five RPM platforms — CentOS Stream 10, RHEL 10,
+AlmaLinux 10 and Fedora 44/45 — produce the same Core content; Ubuntu is not
+compared by that test, because its package manager is deb.
 
 ## Composition
 
@@ -324,6 +325,27 @@ account the upstream container image ships suppressing the wizard — is in
 - **Published CentOS Stream 10 image.** Last run `37162282876` on commit
   `8ab0cc9`, with the approved DeskOS identity; it published
   `quay.io/deskos/deskos-core:8ab0cc9...` and `:latest`.
+- **Fedora 44, composed, rendered and built (2026-10-17).** The platform's facts
+  were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:44`,
+  pinned by digest), not modeled on another family: the comps environment dnf5
+  resolves for the `workstation` group, Flatpak 1.18.4 with `flatpak preinstall`
+  and `/usr/share/flatpak/preinstall.d`, GDM's `/etc/gdm/custom.conf` and the
+  `distro` dconf database, `/etc/pki/ca-trust/source/anchors` with
+  `update-ca-trust`, `gtk-update-icon-cache`, the bootc update units (present, not
+  enabled, unlike Fedora's minimal `fedora-bootc` base), and the Plymouth spinner
+  frames. `deskosctl validate` and `go test` cover composition; `podman build` of
+  `examples/core-fedora-44` and of the reference workstation
+  `deskos-core-fedora44` completed here: the workstation group transaction
+  installed 395 packages (277 more marked as group members, 341 MiB) on 44, and
+  the same transaction on 45 resolves to 347 packages installed with 15 upgrades
+  (measured with `dnf -y group install --assumeno`), so the platform brings the
+  desktop's own GNOME applications — as RPMs, not as Flatpaks. The built image
+  selects the DeskOS Plymouth theme with the DeskOS frames inside the rebuilt
+  initramfs, and `bootc container lint` passed 12 checks with 2 warnings
+  (`nonempty-run-tmp`, `var-tmpfiles`). **Not measured: any boot.** No Fedora disk
+  has been booted, so there is **no** GNOME, session or first-boot evidence for
+  this family; there is no published Fedora image, and Fedora 45's base was a
+  prerelease when it was pinned ([platforms.md](platforms.md)).
 - **Flatpak preinstall (RHEL).** `example-devops-rhel10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
@@ -346,10 +368,10 @@ and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 **Compilation is deterministic; builds are not yet reproducible bit for
 bit.** External inputs that can still change between builds:
 
-- the base image tag, unless `bootc.digest` is set — all four Platforms pin a
+- the base image tag, unless `bootc.digest` is set — all six Platforms pin a
   digest;
-- repository metadata and packages: RPM repositories on the EL platforms, APT
-  sources on Ubuntu.
+- repository metadata and packages: RPM repositories on the EL and Fedora
+  platforms, APT sources on Ubuntu.
 
 `BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
 SHA-256 and a signing key; and **RPM repository signing keys are local
@@ -594,11 +616,18 @@ into the build context and a symlink out of the root is refused too.
 ## Updates
 
 Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
-image-update unit, and the base image enables it; its service runs
+image-update unit. Where the base **enables** it, its service runs
 `bootc upgrade --apply`, which **reboots** whenever a new image is published.
 The reboot-on-publish path was checked end to end on CentOS Stream 10; AlmaLinux
 and Ubuntu are built and booted in CI, but that path is not rechecked there
 ([platforms.md](platforms.md)).
+
+Whether the base enables that unit is the platform's own fact, and Fedora is the
+counter-example: its Silverblue base is measured to ship the unit **without
+enabling it**, while Fedora's minimal `fedora-bootc` base does enable it — one
+more reason the Fedora platform is built on Silverblue. DeskOS declares the unit
+either way, so that masking it leaves DeskOS's own staging timer the only update
+path.
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
 `schedule: daily|weekly` and `requireACPower`) lowers to:

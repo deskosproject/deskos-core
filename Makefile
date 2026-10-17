@@ -34,6 +34,8 @@ validate: build
 	$(BIN) validate ./examples/core-centos-stream-10
 	$(BIN) validate ./examples/core-almalinux-10
 	$(BIN) validate ./examples/core-rhel-10
+	$(BIN) validate ./examples/core-fedora-44
+	$(BIN) validate ./examples/core-fedora-45
 	$(BIN) validate ./examples/core-ubuntu-2604
 
 plan-centos: build

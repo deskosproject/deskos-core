@@ -61,7 +61,19 @@ each slice is reviewed on its own:
   `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
   10 only. `vm-bootcheck.yml` is a pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10, RHEL 10 and Ubuntu 26.04.
+  for CentOS Stream 10, RHEL 10, Fedora 44/45 and Ubuntu 26.04.
+- **Fedora support policy (what the family would be published under):** the
+  reference Fedora workstation is the published artifact for the **current
+  release and the previous one**, each with its own image repository
+  (`quay.io/deskos/deskos-core-fedora44`, `...-fedora45`), so a machine's
+  release cannot change under a `bootc upgrade`. At each Fedora release the
+  base digest is re-pinned and the platform re-validated, and the older
+  platform resource is retired; re-pinning and re-validation are **manual**,
+  like every other base pin ([platforms.md](platforms.md)). On 2026-10-17
+  that pair is `fedora-44` (released) and `fedora-45` (prerelease), and the
+  two reference workstations are `deskos-core-fedora44` and
+  `deskos-core-fedora45`. **Nothing is published for Fedora today**:
+  `supply-chain.yml` is unchanged and publishes CentOS Stream 10 only.
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -121,6 +133,10 @@ Details in
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
+- Build and boot the Fedora 44 platform in CI: its facts are measured against
+  the pinned base and its image builds here, but no Fedora disk has been
+  booted, so it has no boot, session or first-boot evidence
+  ([platforms.md](platforms.md)).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

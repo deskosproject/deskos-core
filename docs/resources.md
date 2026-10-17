@@ -100,7 +100,7 @@ spec:
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
-`almalinux-10`, `rhel-10` and `ubuntu-2604` in
+`almalinux-10`, `rhel-10`, `fedora-44`, `fedora-45` and `ubuntu-2604` in
 [`resources/platforms/`](../resources/platforms/); the canonical status of each,
 and how to install it, is [platforms.md](platforms.md).
 
@@ -600,6 +600,9 @@ project.
   directly onto the official RHEL 10 bootc base.
 - **AlmaLinux 10** composes the same Core on the AlmaLinux project's own
   bootc base, which the project labels experimental.
+- **Fedora 44 and 45** compose the same Core on the Fedora Project's own bootc
+  desktop base, Silverblue, with the Fedora family's own software
+  (`Profile/fedora`) rather than the RHEL family's.
 - **Ubuntu 26.04** composes the same Core on a base owned by the Project
   DeskOS, without the RHEL family's software
   ([ADR 0014](adr/0014-platform-base-ownership.md)).
