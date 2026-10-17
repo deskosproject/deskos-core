@@ -207,13 +207,26 @@ jobs:
             --source-imgref oci:/src-oci:test \
             --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
 
+      - name: Assert the leg's declared disk and splash facts
+        run: |
+          # The bug this guards against, which this PR had: `splash` is a boolean
+          # in the matrix, and comparing it to the string 'true' is never true, so
+          # the flag silently disappeared and every leg ran a weaker check. Assert
+          # the flag exists exactly when the leg declares it.
+          case "${{ matrix.splash }}" in
+            true)  [ -n "$SPLASH" ] || { echo "::error::splash is true but no flag was produced"; exit 1; } ;;
+            false) [ -z "$SPLASH" ] || { echo "::error::splash is false but a flag was produced"; exit 1; } ;;
+          esac
+          echo "disk=${{ matrix.disk }} diskfile=${{ matrix.diskfile }} splash=${{ matrix.splash }} flag='${SPLASH}'"
+
       - name: Boot check (unmodified disk)
         id: boot
         timeout-minutes: 15
         env:
-          # Only the EL platforms carry a DeskOS splash; Ubuntu boots with
-          # Canonical's experience, so demanding one there would fail a good disk.
-          SPLASH: ${{ matrix.splash == 'true' && '--expect-splash' || '' }}
+          # A boolean comparison, not a string one: the leg declares whether a
+          # DeskOS splash is expected. Ubuntu boots with Canonical's experience,
+          # so demanding one there would fail a good disk.
+          SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
         run: |
           python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
             --out "$WORK/bootcheck" $SPLASH --hash-disk --keep-overlay --boot-timeout 420
@@ -258,11 +271,22 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # Push the immutable commit tag by digest, sign and verify it, and
-          # only then move :latest to it: a failed signature must never leave
-          # :latest pointing at an unsigned image.
-          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
-          sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          # Publish the manifest that was booted, and only that one. The EL legs
+          # have their disk built by bootc-image-builder **from the storage
+          # image**, so the storage image is what was tested; Ubuntu's disk is
+          # written from the recompressed OCI layout, so that layout is. Copying it
+          # with --preserve-digests publishes those exact bytes, instead of
+          # producing a second representation of the image that nothing booted.
+          if [ "${{ matrix.disk }}" = "bootc-install" ]; then
+            tested="$(sudo skopeo inspect --format '{{.Digest}}' "oci:$WORK/oci:test")"
+            sudo skopeo copy --preserve-digests "oci:$WORK/oci:test" "docker://$DEST:$GITHUB_SHA"
+            published="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:$GITHUB_SHA")"
+            [ "$published" = "$tested" ] || { echo "::error::published $published, tested $tested"; exit 1; }
+            printf '%s\n' "$published" > digest.txt
+          else
+            sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
+            sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          fi
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
