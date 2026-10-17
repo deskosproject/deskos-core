@@ -1,0 +1,27 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: fedora
+spec:
+  # The Fedora family's own choices: the browser it ships, the firewall it manages
+  # and the application channel it supports. They sit here and not in the
+  # foundation for the reason ADR 0014 gives — composition unions sets and offers no
+  # removal (ADR 0003), so a foundation that names them forces them on every
+  # platform — and they are the Fedora family's, not the RHEL family's, so
+  # PackageSet/rhel-family is not reused here.
+  #
+  # Measured on the Silverblue bases, and deliberately different from the EL bases:
+  # all three are already in the image (firefox 158.0/157.0, firewalld
+  # 2.4.4/2.5.2, flatpak 1.18.4) and firewalld.service is already enabled. So on
+  # this family the set installs nothing: `dnf -y install firefox firewalld flatpak`
+  # on fedora-silverblue:44 reports "Changing reason: 3 packages" and 0 B to
+  # install. Naming them anyway keeps the family profile's intent reviewable in one
+  # place and keeps a workstation on a trimmer Fedora base working, since the
+  # packages are part of what this family requires rather than of what this
+  # particular base happens to carry.
+  packages:
+    - firefox
+    - firewalld
+    - flatpak
+  enableUnits:
+    - firewalld.service

@@ -1,0 +1,13 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: UpdatePolicy
+metadata:
+  name: fedora
+spec:
+  # The Fedora family ships Flatpak as its application channel
+  # (PackageSet/fedora), so it also consents to updating it. The foundation
+  # declares neither (UpdatePolicy/deskos-core), so a platform that carries no
+  # Flatpak is not asked for a Flatpak package it does not have.
+  flatpak:
+    automatic: true
+    schedule: daily
+    requireACPower: true
