@@ -9,6 +9,11 @@ name: supply-chain (experimental)
 # scanning runs on the entitled factory host, not here. See docs/supply-chain.md
 # and ADR 0010.
 on:
+  # The watch that notices when a vendor's base stops carrying the Criticals the
+  # records accept, and when a new one appears. It cannot publish: publishing
+  # needs `publish=true`, which only a dispatch can set.
+  schedule:
+    - cron: '17 6 * * 1'
   workflow_dispatch:
     inputs:
       fail-on:
@@ -353,6 +358,42 @@ jobs:
           # docker config, and podman logout clears the registry login.
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: What the record no longer needs, and what it still does
+        # The acceptance records name Criticals that belong to the vendor's base,
+        # and the vendors fix them by rebuilding. Nothing tells us when that
+        # happens: the pin check only confirms a digest still exists, and a golden
+        # only records the render. This is the watch.
+        #
+        # It reads what the gate just wrote, so it runs only on a leg whose gate
+        # passed, and it steps aside if that file is not there rather than adding a
+        # second failure on top of the real one.
+        if: success()
+        run: |
+          eff="$WORK/effective-exceptions.json"
+          if [ ! -f "$eff" ]; then
+            echo "no effective-exceptions.json for this leg; nothing to compare" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [ -z "${{ matrix.exceptions }}" ]; then
+            echo "this platform accepts nothing; nothing to compare" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          EFF="$eff" EXCEPTIONS_FILE="${{ matrix.exceptions }}" python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, os
+          rec = json.load(open(os.environ["EXCEPTIONS_FILE"]))
+          eff = json.load(open(os.environ["EFF"]))
+          key = lambda e: (e["id"], e["package"], e["type"], e.get("version", ""), e.get("path", ""))
+          declared = {key(m) for e in rec.get("exceptions") or [] for m in e["matches"]}
+          used = {key(e) for e in eff.get("exceptions") or []}
+          droppable = declared - used
+          print("## Accepted risk on this platform\n")
+          print(f"- declared in the record: {len(declared)}")
+          print(f"- still reported by the scan: {len(used)}")
+          print(f"- **no longer reported, so the record can drop them: {len(droppable)}**")
+          for row in sorted(droppable):
+              print(f"  - {row[0]} {row[1]} {row[2]} {row[3]} {row[4]}")
+          PY
 
       - name: Upload evidence
         if: always()
