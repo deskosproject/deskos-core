@@ -240,6 +240,11 @@ func TestRenderRefusesForeignDirectory(t *testing.T) {
 // Every dnf transaction keeps subscription-manager state out of its layer:
 // RHSM directories are tmpfs, and the generated redhat.repo is removed in the
 // same RUN. Declared vendor repository files stay in the build context.
+//
+// The Fedora rows are here because this is the backend's shape for *any* RPM
+// platform, not a RHEL one: a Fedora base has no subscription-manager at all, so
+// the test asserts that the same transaction carries the same hygiene rather than
+// claiming Fedora has RHSM state to keep out.
 func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 	for _, tc := range []struct {
 		ws    string
@@ -248,6 +253,8 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		{"deskos-core-centos10", []string{resourcesRoot}},
 		{"example-devops-centos10", []string{resourcesRoot, exampleRoot}},
 		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
+		{"deskos-core-fedora44", []string{resourcesRoot}},
+		{"deskos-core-fedora45", []string{resourcesRoot}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		files, err := containerfile.Render(p)

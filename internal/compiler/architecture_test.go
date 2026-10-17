@@ -120,11 +120,18 @@ func viewOf(p *plan.Plan) coreView {
 	return v
 }
 
-// The same DeskOS Core semantics produce the same planned content on the EL10
-// platforms — CentOS Stream 10, RHEL 10 and AlmaLinux 10 — over the fields
-// viewOf compares (groups, packages, units, dconf defaults, files, target).
-// This proves composition, not that the images build or boot.
-func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
+// The same DeskOS Core semantics produce the same planned content on the RPM
+// platforms — CentOS Stream 10, RHEL 10, AlmaLinux 10, Fedora 44 and Fedora 45 —
+// over the fields viewOf compares (groups, packages, units, dconf defaults, files,
+// target). This proves composition, not that the images build or boot.
+//
+// Fedora is here because it is an RPM platform whose group mapping and update
+// units are the same names as the EL10 family's (measured: Fedora's comps resolves
+// `workstation-product-environment` and its base ships
+// bootc-fetch-apply-updates.timer/.service). What keeps it honest is that the test
+// asserts the *base* differs per platform, so an accident that made two platforms
+// share a base fails here. Ubuntu is not compared: its package manager is deb.
+func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core]\n"
 	}
@@ -132,11 +139,15 @@ func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
 		"c.yaml": ws("core-alma", "almalinux-10"),
+		"d.yaml": ws("core-fedora44", "fedora-44"),
+		"e.yaml": ws("core-fedora45", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	for _, p := range []*plan.Plan{rhel, alma} {
+	fedora44 := mustPlan(t, "core-fedora44", resourcesRoot, dir)
+	fedora45 := mustPlan(t, "core-fedora45", resourcesRoot, dir)
+	for _, p := range []*plan.Plan{rhel, alma, fedora44, fedora45} {
 		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
 		}
@@ -149,6 +160,14 @@ func TestCoreComposesIdenticallyOnTheEl10Platforms(t *testing.T) {
 	}
 	if !strings.HasPrefix(alma.Artifact.BaseImage.Image, "quay.io/almalinuxorg/almalinux-bootc") {
 		t.Errorf("AlmaLinux base is %s, want the vendor's almalinux-bootc image", alma.Artifact.BaseImage.Image)
+	}
+	for name, p := range map[string]*plan.Plan{"fedora-44": fedora44, "fedora-45": fedora45} {
+		if !strings.HasPrefix(p.Artifact.BaseImage.Image, "quay.io/fedora/fedora-silverblue:") {
+			t.Errorf("%s base is %s, want the vendor's fedora-silverblue image", name, p.Artifact.BaseImage.Image)
+		}
+	}
+	if fedora44.Artifact.BaseImage.Digest == fedora45.Artifact.BaseImage.Digest {
+		t.Error("the two Fedora releases pin the same base digest")
 	}
 }
 
