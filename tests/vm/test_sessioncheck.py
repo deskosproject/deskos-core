@@ -30,6 +30,28 @@ class TmpfilesTest(unittest.TestCase):
     def test_escape(self):
         self.assertEqual(sc.tmpfiles_arg("a\\b%c\nd"), "a\\\\b%%c\\nd")
 
+    def test_oversized_argument_is_refused_loudly(self):
+        # systemd drops a tmpfiles argument over PATH_MAX-1 in silence; refusing
+        # it here turns that silence into a local failure.
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("x" * (sc.TMPFILES_ARG_MAX + 1))
+        self.assertEqual(len(sc.tmpfiles_arg("x" * sc.TMPFILES_ARG_MAX)), sc.TMPFILES_ARG_MAX)
+
+    def test_the_cap_is_on_the_resolved_content_not_the_escaped_form(self):
+        # systemd expands specifiers after unescaping, and the PATH_MAX-1 cap is
+        # on the result, so escaping that only lengthens the text does not count
+        # against it: 4095 B of "%" is 8190 B escaped and is still written.
+        self.assertEqual(len(sc.tmpfiles_arg("%" * sc.TMPFILES_ARG_MAX)), 2 * sc.TMPFILES_ARG_MAX)
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("%" * (sc.TMPFILES_ARG_MAX + 1))
+
+    def test_the_cap_counts_bytes_not_characters(self):
+        # The cap is on the resolved content in bytes: "é" is two bytes in UTF-8,
+        # so 2047 of them (4094 B) pass and 2048 (4096 B) do not.
+        self.assertEqual(sc.tmpfiles_arg("é" * 2047), "é" * 2047)
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("é" * 2048)
+
     def test_session_credentials(self):
         c = sc.credentials("session")
         self.assertIn("u deskos-qa 1500", c["sysusers.extra"])

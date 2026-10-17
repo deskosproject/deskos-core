@@ -156,6 +156,38 @@ with `bootcheck.py --keep-overlay` again and writes the journal of the
 previous (tested) boot, which is how a failed unmodified boot is
 diagnosed.
 
+## Transport limits
+
+The instrumentation reaches the guest as systemd credentials over SMBIOS type 11
+(`-smbios type=11,value=io.systemd.credential.binary:<name>=<base64>`), and
+`systemd-tmpfiles` turns a `tmpfiles.extra` line into a file. Both have a limit,
+and both drop data in silence, which is why the harness checks them instead of
+waiting for a report that never comes:
+
+- **A `tmpfiles.d` file argument is capped at 4095 B of resolved content.**
+  systemd unescapes the argument and then expands specifiers into a `PATH_MAX-1`
+  buffer (`cunescape()` then `specifier_printf(unescaped, PATH_MAX-1, …)`), so
+  the cap is on the result, in bytes, not on the bytes in the file: measured
+  against `systemd-tmpfiles`, 4095 B is written and 4096 B is refused with `File
+  name too long` and **the file is not created**, 4095 B of `%` (8190 B once
+  escaped) is written just the same, and 2047 `é` (4094 B) pass while 2048 (4096
+  B) do not. `sessioncheck.tmpfiles_arg` counts the unescaped content in bytes
+  and refuses anything longer, loudly, instead of letting the guest drop it;
+  anything larger travels as a credential of its own.
+- **A single SMBIOS type 11 credential is capped near 64 KiB.** The SMBIOS 2.1
+  entry point records the length of the *whole* table in a 16-bit field
+  (`SMBIOS_21_MAX_TABLES_LEN = 0xffff` in QEMU's `hw/smbios/smbios.c`), so every
+  OEM string together — not one structure — has to fit in 64 KiB. Measured with
+  QEMU: a string of 65016 B arrives intact and one of 65416 B does not. This is
+  far above what the harness passes — the largest payload is the first-boot
+  report, about 7 KiB base64. systemd also caps one credential at 1 MiB
+  (`CREDENTIAL_SIZE_MAX`).
+
+The first-boot report script is the only payload large enough to matter, so it
+travels as a credential of its own and its unit reads it from
+`$CREDENTIALS_DIRECTORY`; it never becomes a `tmpfiles.d` argument and needs no
+escaping.
+
 ## First-boot check (instrumented boot, no account added)
 
 `firstbootcheck.py` answers what a screenshot cannot. It boots the same unmodified
@@ -176,35 +208,49 @@ The guest waits up to five minutes for `gnome-initial-setup` before reporting, s
 `--boot-timeout` has to cover that. Results are in `firstboot.md` and
 `firstboot.json`, with the raw guest values and the frames.
 
+The guest signals `DESKOS-QA-READY` as soon as the report runs, before the wait
+for the wizard. If it never arrives, the run fails after `--ready-timeout`
+(default 420 s) saying the guest never signalled it was instrumented — a
+credential may have been dropped — instead of waiting out `--boot-timeout`
+(900 s) for an end marker that will not come. The report itself is a credential
+of its own, read from `$CREDENTIALS_DIRECTORY` (see
+[Transport limits](#transport-limits)).
+
 What it asserts:
 
 - the wizard (`gnome-initial-setup`) is running;
+- the wizard **is the session that came up**: the guest reports loginctl sessions, and
+  a session by that name must exist on a seat. A process alone is not the session, and
+  a stable GDM screen with the wizard suppressed is exactly what this has to tell
+  apart from the wizard;
 - no account with uid >= 1000, a usable shell, and a password that is neither locked
-  (`!` or `*`) nor empty.
+  (`!` or `*`) nor empty;
+- no unexpected failed system services, judged with **`sessioncheck.py`'s own rule for
+  the known guest signature** — the same function, not a second copy of it — applied
+  here to this boot's observations. The probes it needs (CPU vendor, `edac_mce_amd`,
+  `/dev/mcelog`, the unit's properties, its journal) are collected here too.
 
-What it only reports:
+A guest that does not report the failed services fails: unknown is not clean. Every
+check boots its own overlay, so what is shared is the rule, not another check's
+observations — a unit can fail in this boot and not in the session check's.
 
-- the failed system units, by name. Judging them is `sessioncheck.py`'s job with the
-  known guest rule above, and that is deliberate: the rule needs the CPU, the unit's
-  properties and its journal, the session check applies it to the same disk in the
-  same job, and a second, cruder rule for one claim — "no unit failed" — is how two
-  rules drift apart. On a VM that cruder rule also fires for the platform's own
-  diagnostics, such as `mcelog` without a Machine Check device, which the known guest
-  rule tolerates by verifying six conditions first.
+What it reports in full without judging it:
 
-The failed-unit list is reported even though it is not judged, so a run cannot hide
-what it did not judge, and a report that does not carry it says `unknown` rather than
-`none`. On the Ubuntu image the sssd responder sockets report `dependency` because
-`sssd.service` is skipped by its own condition (sssd is installed unconfigured);
-those are sockets, not services. Like the session check, this is an instrumented
-boot, and is reported as one.
+- the complete failed-unit list, including unit types the check above does not judge.
+  On the Ubuntu image the sssd responder sockets report `dependency` because
+  `sssd.service` is skipped by its own condition (sssd is installed unconfigured);
+  those are sockets, not services. Like the session check, this is an instrumented
+  boot, and is reported as one.
 
 ## CI and unit tests
 
 The GitHub workflow `.github/workflows/vm-bootcheck.yml` runs the same
-build, boot and session checks. It is manual only (`workflow_dispatch`),
-and the QCOW2 it builds is test input that is not uploaded. It is a pure
-check: the publish path is `supply-chain.yml`.
+build, boot and session checks. It runs on pull requests and on `main` for the paths
+that can change an image, and on demand (`workflow_dispatch`), per platform: CentOS
+Stream 10 from this checkout, and Ubuntu 26.04 with no published image to hand to
+`bootc-image-builder`, written by `bootc install to-disk` out of a compressed OCI
+layout. The QCOW2 and the raw disk it builds are test input that is not uploaded. It
+is a pure check: the publish path is `supply-chain.yml`.
 
 Unit tests: `python3 -m unittest discover -s tests/vm` (run by CI, not by
 `make check`).

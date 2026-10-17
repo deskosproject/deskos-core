@@ -156,8 +156,27 @@ systemctl --no-block poweroff
 """
 
 
+# systemd unescapes a tmpfiles.d argument and then expands specifiers into a
+# PATH_MAX-1 buffer, so the cap is on the *resolved* content, counted in bytes,
+# not on the bytes written in the file: escaping that only lengthens the text
+# (%% or \n) does not count, but a multi-byte character does. Measured against
+# systemd-tmpfiles: 4095 B is created and 4096 B is refused with "File name too
+# long" and the file is not created (2047 "é" pass, 2048 do not). Anything larger
+# is delivered as a credential of its own instead.
+TMPFILES_ARG_MAX = 4095
+
+
 def tmpfiles_arg(text):
-    """Escape file content for a tmpfiles.d argument field."""
+    """Escape file content for a tmpfiles.d argument field.
+
+    Refuses content the guest would drop in silence rather than waiting for a
+    report that never comes.
+    """
+    n = len(text.encode("utf-8"))
+    if n > TMPFILES_ARG_MAX:
+        raise ValueError(
+            f"tmpfiles argument is {n} B, over the {TMPFILES_ARG_MAX} B "
+            f"systemd limit; deliver it as its own credential instead")
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
