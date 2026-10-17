@@ -84,7 +84,10 @@ jobs:
     # compiler without installing it. It is a release artifact like the binary,
     # so pushing a tag publishes it; it is scanned and signed before :latest
     # moves.
-    needs: ci
+    # The `needs` context only exposes direct dependencies, so `tag` is listed
+    # beside `ci`: the job reads needs.tag.outputs.prerelease to decide whether
+    # this release may move :latest.
+    needs: [tag, ci]
     runs-on: ubuntu-latest
     permissions:
       contents: read
