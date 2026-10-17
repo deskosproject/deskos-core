@@ -28,7 +28,7 @@ base and how far DeskOS has validated the result:
 
 | Platform | Base | What you can do today |
 |---|---|---|
-| CentOS Stream 10 | vendor | pull the published image, or build and boot it yourself |
+| CentOS Stream 10 | vendor | build it and boot it yourself; nothing is published yet |
 | RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
 | AlmaLinux 10 | vendor (experimental) | built and booted in CI; no published image |
 | Ubuntu 26.04 | the DeskOS project | built and booted in CI; no published image and no ISO — write a disk with `bootc install to-disk` |
@@ -139,8 +139,11 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-The image that passed the boot and session checks is published as
-`quay.io/deskos/deskos-core:latest`. Rendering is deterministic — the same inputs
+Publishing is **per platform**, one repository each: `supply-chain.yml` with
+`publish=true` sends the image to `quay.io/deskos/deskos-core-centos10`,
+`-almalinux10`, and so on. No dispatch has run yet, so **nothing is published
+today**, and the older single repository (`quay.io/deskos/deskos-core`) has been
+withdrawn. Rendering is deterministic — the same inputs
 give byte-identical output, and `generated-manifest.json` records their SHA-256 —
 so the build context is reproducible from the same commit. The image **build is
 not** yet bit-for-bit reproducible: the base tag and repository content can move
@@ -156,7 +159,7 @@ status of each platform, and what is verified, is in
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos10, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -231,7 +234,8 @@ came from.
 ## Status
 
 Pre-1.0 and experimental: the resource APIs are `v1alpha1` and will change.
-DeskOS **publishes only CentOS Stream 10**; the platform matrix, with what is
+Publishing goes to **one repository per platform** (`deskos-core-centos10`,
+`-almalinux10`, …); nothing has been published yet. The platform matrix, with what is
 verified on each and how to install it, is [**docs/platforms.md**](docs/platforms.md).
 
 > [!IMPORTANT]
@@ -247,7 +251,7 @@ By what you want to do:
 | | |
 |---|---|
 | **Evaluate** | the tour above; [**Platforms**](docs/platforms.md) for status and installation per platform; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
-| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds; AlmaLinux 10; Fedora 44; the Ubuntu 26.04 `bootc install to-disk` path |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the image you build; private RHEL 10 builds; AlmaLinux 10; Fedora 44; the Ubuntu 26.04 `bootc install to-disk` path |
 | **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |

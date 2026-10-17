@@ -57,9 +57,13 @@ each slice is reviewed on its own:
   `main` for paths that can change an image, and on demand
   (`workflow_dispatch`).
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
-  `main`, builds, scans and boots the image and then pushes and signs it to
-  `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
-  10 only. `vm-bootcheck.yml` is a pure check.
+  `main`, builds, scans and boots each platform's image and then pushes and
+  signs it to that platform's repository
+  (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …) as `:latest` and
+  `:<commit>`. CentOS Stream 10 and AlmaLinux 10 today. **No dispatch has run
+  yet, so nothing is published**, and the older single repository
+  (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
+  pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
   for CentOS Stream 10, RHEL 10, Fedora 44 and Ubuntu 26.04.
 - **A second Fedora release — plan, not policy.** DeskOS offers **Fedora 44**

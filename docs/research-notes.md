@@ -310,7 +310,8 @@ Checked in `localhost/deskos-core-centos10:freeze`:
 ## GNOME user settings (2026-10-04)
 
 Checked in `quay.io/centos/centos:stream10` with the packages installed
-from AppStream/BaseOS, and the same versions in `quay.io/deskos/deskos-core:latest`
+from AppStream/BaseOS, and the same versions in the then-published `quay.io/deskos/deskos-core:latest`
+(withdrawn since)
 except where noted:
 
 | Package | Version |
