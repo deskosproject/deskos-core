@@ -18,11 +18,14 @@ reports the same PASS with the wizard suppressed, and suppressing it is exactly 
 defect the base cleanup fixed. The verdict here is the guest's.
 
 The instrumentation is the mechanism `sessioncheck.py` uses: systemd credentials
-through SMBIOS type 11 install a script and a unit (`tmpfiles.extra`,
-`systemd.extra-unit.*`, `systemd.unit-dropin.*`) that wait for the wizard and report
-over the serial port, then power the machine off. The disk is never written, but the
-boot is instrumented, not the artifact as shipped: report it as such. The serial
-protocol marks are the session check's, since it is the same harness.
+through SMBIOS type 11 install a script and a unit (`systemd.extra-unit.*`,
+`systemd.unit-dropin.*`) that wait for the wizard and report over the serial port,
+then power the machine off. The report script is a credential of its own, read from
+`$CREDENTIALS_DIRECTORY`, so it is never a `tmpfiles.d` argument — that argument is
+capped at `TMPFILES_ARG_MAX` bytes and this script is larger. The disk is never
+written, but the boot is instrumented, not the artifact as shipped: report it as
+such. The serial protocol marks are the session check's, since it is the same
+harness.
 """
 
 import argparse
@@ -36,13 +39,24 @@ import sessioncheck
 MARK_BEGIN = sessioncheck.MARK_BEGIN
 MARK_JOURNAL = sessioncheck.MARK_JOURNAL
 MARK_END = sessioncheck.MARK_END
+# Emitted before the wait for the wizard, so a lost credential fails the run at
+# once instead of waiting for an end marker that will never arrive.
+MARK_READY = "DESKOS-QA-READY"
 WIZARD = "gnome-initial-setup"
-REPORT = "/var/lib/deskos-qa/firstboot-report.sh"
+# The report script is a credential of its own: a tmpfiles.d argument is capped
+# at TMPFILES_ARG_MAX and this script is larger, and a credential removes the
+# escaping entirely.
+REPORT_CREDENTIAL = "firstboot-report.sh"
 # How long the guest waits for the wizard before reporting what it has. The wizard
 # follows the display manager; on the lab Ubuntu image it appears well inside this.
 WIZARD_WAIT = 300
 
 REPORT_SCRIPT = f"""#!/bin/bash
+# Signal, before the wait for the wizard, that the instrumentation installed: if
+# this never reaches the harness, a credential was dropped and the run fails at
+# once instead of waiting for the end marker that will not come.
+stty -F /dev/ttyS0 115200 2>/dev/null
+echo {MARK_READY} > /dev/ttyS0
 # Wait for the first-boot wizard, then report what this guest can see.
 #
 # Two ways to see the wizard, because which process runs it depends on the GNOME
@@ -106,18 +120,19 @@ systemctl poweroff
 
 
 def credentials():
-    """systemd credentials that install the report without touching the disk."""
+    """systemd credentials that install the report without touching the disk.
+
+    The report script is a credential of its own and the unit reads it from
+    `$CREDENTIALS_DIRECTORY`, so it is never a `tmpfiles.d` argument: that
+    argument is capped at `TMPFILES_ARG_MAX` bytes and this script is larger.
+    """
     return {
-        # Directories for the report, then the report itself. `f` truncates, as
-        # tmpfiles.d documents for a file it owns.
-        "tmpfiles.extra": "\n".join([
-            "d /var/lib/deskos-qa 0755 root root -",
-            f"f {REPORT} 0755 root root - {sessioncheck.tmpfiles_arg(REPORT_SCRIPT)}",
-        ]) + "\n",
+        REPORT_CREDENTIAL: REPORT_SCRIPT,
         "systemd.extra-unit.deskos-qa-firstboot.service":
             "[Unit]\nDescription=DeskOS QA first-boot report to the serial port\n"
             "ConditionPathExists=!/etc/initrd-release\nAfter=graphical.target\n\n"
-            "[Service]\nType=oneshot\nExecStart=/bin/bash " + REPORT + "\n",
+            f"[Service]\nType=oneshot\nLoadCredential={REPORT_CREDENTIAL}\n"
+            f"ExecStart=/bin/bash ${{CREDENTIALS_DIRECTORY}}/{REPORT_CREDENTIAL}\n",
         "systemd.unit-dropin.graphical.target": "[Unit]\nWants=deskos-qa-firstboot.service\n",
     }
 
@@ -127,8 +142,9 @@ def check(checks, name, ok, detail):
 
 
 # Units the artifact does not own that can only fail for a reason the emulator
-# causes are reported by observations(), never judged here: sessioncheck.py owns
-# that judgement, with the known guest signature documented in tests/vm/README.md.
+# causes are judged here with sessioncheck.py's own rule for the known guest
+# signature (documented in tests/vm/README.md), applied to this boot; the full
+# failed-unit list is still reported in observations().
 
 
 def evaluate(values, journal=""):
@@ -148,23 +164,37 @@ def evaluate(values, journal=""):
           f"gis_args={values.get('gis_args')!r} gdm_active={values.get('gdm_active')!r} "
           f"sessions={values.get('user_sessions')!r} sessions_raw={values.get('sessions_raw')!r}")
 
-    sessions = [s for s in values.get("user_sessions", "").split(",") if s]
-    seated = any("seat" in s for s in values.get("sessions_raw", "").split("|"))
+    # The wizard must be the session that came up: its name and a seat on the same
+    # loginctl row. Checking name and seat separately would pass a wizard process
+    # with no seat plus a *different* session that is seated.
+    rows = [row.split() for row in values.get("sessions_raw", "").split("|")]
+    wizard_seated = any(len(f) >= 4 and f[2] == WIZARD and f[3].startswith("seat") for f in rows)
     check(checks, f"the wizard is the session that came up ({WIZARD} on a seat)",
-          WIZARD in sessions and seated,
-          f"user_sessions={values.get('user_sessions')!r} seated={seated} "
+          wizard_seated,
+          f"user_sessions={values.get('user_sessions')!r} "
           f"sessions_raw={values.get('sessions_raw')!r}")
 
     loginable = values.get("loginable_accounts")
     check(checks, "no account can log in with a password",
           loginable == "", f"loginable_accounts={loginable!r} homes={values.get('homes')!r}")
 
-    raw = values.get("system_failed_services")
-    if raw is None:
+    services_raw = values.get("system_failed_services")
+    units_raw = values.get("system_failed_units")
+    if services_raw is None or units_raw is None:
         check(checks, "no unexpected failed system services", False,
-              "the guest did not report the failed services")
+              "the guest did not report the failed units "
+              f"(services={services_raw!r} units={units_raw!r})")
         return checks
-    failed = [u for u in raw.split(",") if u]
+    failed = [u for u in services_raw.split(",") if u]
+    # The two probes must agree: the failed services are exactly the .service
+    # entries of the full failed-unit list. A report whose two answers contradict
+    # each other ("no service failed" while listing a failed service) is not a pass.
+    listed = sorted(u for u in units_raw.split(",") if u.endswith(".service"))
+    if sorted(failed) != listed:
+        check(checks, "no unexpected failed system services", False,
+              f"the two probes disagree: failed_services={failed!r} "
+              f"services among failed_units={listed!r}")
+        return checks
     # The session check's rule, from the session check, applied to this boot's
     # observations: it tolerates mcelog.service only when all six conditions hold,
     # so anything else it says is here.
@@ -200,6 +230,9 @@ def main():
     p.add_argument("--cpus", type=int, default=4)
     p.add_argument("--boot-timeout", type=int, default=900,
                    help="seconds; must cover the wait for the wizard")
+    p.add_argument("--ready-timeout", type=int, default=420,
+                   help="seconds to wait for the guest to signal it was instrumented; "
+                        "must cover the boot to graphical.target")
     p.add_argument("--shutdown-timeout", type=int, default=120)
     p.add_argument("--interval", type=float, default=3.0)
     p.add_argument("--qemu")
@@ -212,7 +245,8 @@ def main():
         memory=a.memory, cpus=a.cpus, boot_timeout=a.boot_timeout, shutdown_timeout=a.shutdown_timeout,
         interval=a.interval, stable_frames=5, expect_splash=False, hash_disk=True, keep_overlay=False,
         extra_qemu=sessioncheck.smbios_args(credentials()),
-        until_serial=MARK_END, guest_powers_off=True,
+        until_serial=MARK_END, until_serial_ready=MARK_READY, ready_timeout=a.ready_timeout,
+        guest_powers_off=True,
     )
     try:
         summary = bootcheck.run(run_args)

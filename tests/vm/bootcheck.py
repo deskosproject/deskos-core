@@ -222,11 +222,14 @@ def run(args):
     ] + list(getattr(args, "extra_qemu", None) or [])
     serial_path = os.path.join(out, "serial.log")
     marker = getattr(args, "until_serial", None)
+    ready_marker = getattr(args, "until_serial_ready", None)
+    ready_timeout = getattr(args, "ready_timeout", None)
     summary = {
         "disk": disk, "disk_sha256": sha256(disk) if args.hash_disk else None,
         "qemu": qemu, "ovmf_code": code, "memory_mib": args.memory, "cpus": args.cpus,
         "boot_timeout_s": args.boot_timeout, "shutdown_timeout_s": args.shutdown_timeout,
         "expect_splash": args.expect_splash, "until_serial": marker,
+        "until_serial_ready": ready_marker, "ready_timeout_s": ready_timeout,
         "frames": [], "result": "error", "failures": [],
     }
     log = open(os.path.join(out, "qemu.log"), "wb")
@@ -236,14 +239,17 @@ def run(args):
         qmp = QMP(qmp_path, 30)
         t0 = time.monotonic()
         last_digest, stable, graphical_at, splash_at, stable_digest = None, 0, None, None, None
-        marker_at = None
+        marker_at, ready_at, ready_failed = None, None, False
 
-        def marker_seen():
+        def serial_text():
             try:
                 with open(serial_path, "rb") as f:
-                    return marker.encode() in f.read()
+                    return f.read()
             except OSError:
-                return False
+                return b""
+
+        def marker_seen():
+            return marker.encode() in serial_text()
 
         def capture(phase):
             nonlocal last_digest
@@ -281,6 +287,19 @@ def run(args):
                     stable, stable_digest = 0, None
                 if not marker and stable >= args.stable_frames:
                     break
+            if ready_marker and ready_at is None:
+                if ready_marker.encode() in serial_text():
+                    ready_at = round(time.monotonic() - t0, 1)
+                elif ready_timeout and time.monotonic() - t0 > ready_timeout:
+                    # The guest never signalled that the instrumentation installed,
+                    # so the end marker will not come: a credential was dropped. Fail
+                    # now, with the reason, instead of waiting for the end marker.
+                    summary["failures"].append(
+                        f"serial marker {ready_marker!r} not seen within {ready_timeout}s: "
+                        f"the guest never signalled it was instrumented "
+                        f"(a credential may have been dropped)")
+                    ready_failed = True
+                    break
             if marker and marker_seen():
                 marker_at = round(time.monotonic() - t0, 1)
                 capture("boot")
@@ -290,9 +309,10 @@ def run(args):
             time.sleep(args.interval)
         summary["splash_first_s"] = splash_at
         summary["graphical_first_s"] = graphical_at
+        summary["ready_serial_s"] = ready_at
         if marker:
             summary["serial_marker_s"] = marker_at
-            if marker_at is None:
+            if marker_at is None and not ready_failed:
                 summary["failures"].append(f"serial marker {marker!r} not seen within {args.boot_timeout}s")
         elif stable < args.stable_frames:
             summary["failures"].append(f"no stable graphical screen within {args.boot_timeout}s")
@@ -302,19 +322,22 @@ def run(args):
             summary["text_frames_between_splash_and_graphical"] = sum(
                 1 for f in summary["frames"] if f["phase"] == "boot" and f["class"] == "text" and splash_at < f["t"] < graphical_at)
 
-        # An instrumented guest powers itself off after reporting.
-        if not getattr(args, "guest_powers_off", False):
-            qmp.command("system_powerdown")
-        t1 = time.monotonic()
-        while proc.poll() is None and time.monotonic() - t1 < args.shutdown_timeout:
-            capture("shutdown")
-            time.sleep(min(args.interval, 0.3))
-        if proc.poll() is None:
-            how = "guest poweroff" if getattr(args, "guest_powers_off", False) else "ACPI shutdown"
-            summary["failures"].append(f"{how} did not power off within {args.shutdown_timeout}s")
-        else:
-            summary["shutdown_s"] = round(time.monotonic() - t1, 1)
-        summary["shutdown_text_frames"] = sum(1 for f in summary["frames"] if f["phase"] == "shutdown" and f["class"] == "text")
+        # An instrumented guest powers itself off after reporting. When the guest
+        # never signalled that it was instrumented, there is nothing to wait for:
+        # the run fails with that reason alone and qemu is quit in the finally block.
+        if not ready_failed:
+            if not getattr(args, "guest_powers_off", False):
+                qmp.command("system_powerdown")
+            t1 = time.monotonic()
+            while proc.poll() is None and time.monotonic() - t1 < args.shutdown_timeout:
+                capture("shutdown")
+                time.sleep(min(args.interval, 0.3))
+            if proc.poll() is None:
+                how = "guest poweroff" if getattr(args, "guest_powers_off", False) else "ACPI shutdown"
+                summary["failures"].append(f"{how} did not power off within {args.shutdown_timeout}s")
+            else:
+                summary["shutdown_s"] = round(time.monotonic() - t1, 1)
+            summary["shutdown_text_frames"] = sum(1 for f in summary["frames"] if f["phase"] == "shutdown" and f["class"] == "text")
         summary["result"] = "fail" if summary["failures"] else "pass"
     finally:
         if proc.poll() is None:

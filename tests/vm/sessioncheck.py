@@ -156,8 +156,25 @@ systemctl --no-block poweroff
 """
 
 
+# systemd substitutes specifiers into a PATH_MAX-1 buffer before a tmpfiles.d
+# line is used (`specifier_printf(unescaped, PATH_MAX-1, ...)`), so a file's
+# content argument cannot be longer than this. Measured against
+# systemd-tmpfiles: 4095 B is created, 4096 B is refused with "File name too
+# long" and the file is not created. Anything larger is delivered as a
+# credential of its own instead.
+TMPFILES_ARG_MAX = 4095
+
+
 def tmpfiles_arg(text):
-    """Escape file content for a tmpfiles.d argument field."""
+    """Escape file content for a tmpfiles.d argument field.
+
+    Refuses content the guest would drop in silence rather than waiting for a
+    report that never comes.
+    """
+    if len(text) > TMPFILES_ARG_MAX:
+        raise ValueError(
+            f"tmpfiles argument is {len(text)} B, over the {TMPFILES_ARG_MAX} B "
+            f"systemd limit; deliver it as its own credential instead")
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 

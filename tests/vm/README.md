@@ -156,6 +156,33 @@ with `bootcheck.py --keep-overlay` again and writes the journal of the
 previous (tested) boot, which is how a failed unmodified boot is
 diagnosed.
 
+## Transport limits
+
+The instrumentation reaches the guest as systemd credentials over SMBIOS type 11
+(`-smbios type=11,value=io.systemd.credential.binary:<name>=<base64>`), and
+`systemd-tmpfiles` turns a `tmpfiles.extra` line into a file. Both have a limit,
+and both drop data in silence, which is why the harness checks them instead of
+waiting for a report that never comes:
+
+- **A `tmpfiles.d` line argument is capped at 4095 B.** systemd expands
+  specifiers into a `PATH_MAX-1` buffer (`specifier_printf(unescaped, PATH_MAX-1,
+  …)`); measured against `systemd-tmpfiles`, 4095 B is written and 4096 B is
+  refused with `File name too long` and **the file is not created**. The limit is
+  on the argument (the file's content), not the whole line.
+  `sessioncheck.tmpfiles_arg` refuses anything longer, loudly, instead of
+  letting the guest drop it; anything larger travels as a credential of its own.
+- **A single SMBIOS type 11 credential is capped near 64 KiB.** The OEM string
+  sits in an SMBIOS structure whose length is a 16-bit field (SMBIOS 2.x);
+  measured with QEMU, a string of 65016 B arrives intact and one of 65416 B does
+  not. This is far above what the harness passes — the largest payload is the
+  first-boot report, about 7 KiB base64. systemd also caps one credential at
+  1 MiB (`CREDENTIAL_SIZE_MAX`).
+
+The first-boot report script is the only payload large enough to matter, so it
+travels as a credential of its own and its unit reads it from
+`$CREDENTIALS_DIRECTORY`; it never becomes a `tmpfiles.d` argument and needs no
+escaping.
+
 ## First-boot check (instrumented boot, no account added)
 
 `firstbootcheck.py` answers what a screenshot cannot. It boots the same unmodified
@@ -175,6 +202,13 @@ python3 tests/vm/firstbootcheck.py --disk disk.raw --out firstboot-1
 The guest waits up to five minutes for `gnome-initial-setup` before reporting, so
 `--boot-timeout` has to cover that. Results are in `firstboot.md` and
 `firstboot.json`, with the raw guest values and the frames.
+
+The guest signals `DESKOS-QA-READY` as soon as the report runs, before the wait
+for the wizard. If it never arrives, the run fails after `--ready-timeout`
+(default 420 s) naming the cause — a dropped credential — instead of waiting out
+`--boot-timeout` (900 s) for an end marker that will not come. The report itself
+is a credential of its own, read from `$CREDENTIALS_DIRECTORY` (see
+[Transport limits](#transport-limits)).
 
 What it asserts:
 

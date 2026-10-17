@@ -1,6 +1,7 @@
 import unittest
 
 import firstbootcheck as fb
+import sessioncheck as sc
 
 GOOD = {
     "gis_processes": "1", "gdm_active": "active", "user_sessions": "gnome-initial-setup,gdm",
@@ -39,6 +40,19 @@ class EvaluateTest(unittest.TestCase):
         # wizard, which is what this check exists to tell apart.
         got = results(dict(GOOD, user_sessions="gdm", sessions_raw=" 1 100 gdm|c1 100 gdm seat0"))
         self.assertFalse(got[f"the wizard is the session that came up ({fb.WIZARD} on a seat)"])
+
+    def test_wizard_name_and_seat_must_be_the_same_session(self):
+        # A wizard process with no seat plus a *different* seated session must not
+        # pass: the name and the seat have to be on the same loginctl row.
+        got = results(dict(GOOD, user_sessions="gnome-initial-setup,gdm",
+                           sessions_raw=" 1 972 gnome-initial-setup|c1 100 gdm seat0"))
+        self.assertFalse(got[f"the wizard is the session that came up ({fb.WIZARD} on a seat)"])
+
+    def test_contradictory_failed_unit_probes_fail(self):
+        # "no service failed" while the full list names a failed service: the two
+        # probes disagree, and an inconsistent report is not a pass.
+        got = results(dict(GOOD, system_failed_services="", system_failed_units="gdm.service"))
+        self.assertFalse(got["no unexpected failed system services"])
 
     def test_known_guest_failure_needs_the_full_signature(self):
         # The session check's rule, reused here rather than copied: mcelog.service
@@ -86,11 +100,19 @@ class CredentialsTest(unittest.TestCase):
         self.assertNotIn("sysusers.extra", creds)
         self.assertNotIn("systemd.unit-dropin.gdm.service", creds)
 
+    def test_the_report_is_a_credential_not_a_tmpfiles_argument(self):
+        # A tmpfiles.d argument is capped at TMPFILES_ARG_MAX and this script is
+        # larger; as a credential of its own it needs no escaping at all.
+        creds = fb.credentials()
+        self.assertEqual(creds[fb.REPORT_CREDENTIAL], fb.REPORT_SCRIPT)
+        self.assertNotIn("tmpfiles.extra", creds)
+        self.assertGreater(len(fb.REPORT_SCRIPT), sc.TMPFILES_ARG_MAX)
+
     def test_installs_the_report_and_runs_it_after_the_graphical_target(self):
         creds = fb.credentials()
-        self.assertIn(fb.REPORT, creds["tmpfiles.extra"])
         unit = creds["systemd.extra-unit.deskos-qa-firstboot.service"]
-        self.assertIn(f"ExecStart=/bin/bash {fb.REPORT}", unit)
+        self.assertIn(f"LoadCredential={fb.REPORT_CREDENTIAL}", unit)
+        self.assertIn(f"ExecStart=/bin/bash ${{CREDENTIALS_DIRECTORY}}/{fb.REPORT_CREDENTIAL}", unit)
         self.assertIn("After=graphical.target", unit)
         self.assertIn("Wants=deskos-qa-firstboot.service", creds["systemd.unit-dropin.graphical.target"])
 
@@ -101,6 +123,13 @@ class CredentialsTest(unittest.TestCase):
         self.assertIn('pgrep -f "$GIS_RE"', fb.REPORT_SCRIPT)
         self.assertIn("loginable_accounts=", fb.REPORT_SCRIPT)
         self.assertIn("/etc/shadow", fb.REPORT_SCRIPT)
+
+    def test_the_report_signals_readiness_before_the_wizard_wait(self):
+        # The ready marker goes out before the wait for the wizard, so a dropped
+        # credential fails the run at once instead of waiting for the end marker.
+        self.assertIn(fb.MARK_READY, fb.REPORT_SCRIPT)
+        self.assertLess(fb.REPORT_SCRIPT.index(fb.MARK_READY),
+                        fb.REPORT_SCRIPT.index("for i in $(seq 1"))
 
 
 if __name__ == "__main__":

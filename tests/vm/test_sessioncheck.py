@@ -30,6 +30,13 @@ class TmpfilesTest(unittest.TestCase):
     def test_escape(self):
         self.assertEqual(sc.tmpfiles_arg("a\\b%c\nd"), "a\\\\b%%c\\nd")
 
+    def test_oversized_argument_is_refused_loudly(self):
+        # systemd drops a tmpfiles argument over PATH_MAX-1 in silence; refusing
+        # it here turns that silence into a local failure.
+        with self.assertRaises(ValueError):
+            sc.tmpfiles_arg("x" * (sc.TMPFILES_ARG_MAX + 1))
+        self.assertEqual(len(sc.tmpfiles_arg("x" * sc.TMPFILES_ARG_MAX)), sc.TMPFILES_ARG_MAX)
+
     def test_session_credentials(self):
         c = sc.credentials("session")
         self.assertIn("u deskos-qa 1500", c["sysusers.extra"])
