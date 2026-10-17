@@ -110,6 +110,9 @@ func TestGoldenContainerfiles(t *testing.T) {
 		// context for the newest platform, so a change to the Fedora facts or to the
 		// backend shows up as a reviewable diff. ci.yml renders the same workstation.
 		{"deskos-core-fedora44", []string{resourcesRoot}},
+		// Ubuntu 26.04's shipped reference workstation: it is what its publish leg
+		// builds, and ci.yml renders the same workstation.
+		{"deskos-core-ubuntu2604", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {

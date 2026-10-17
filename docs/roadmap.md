@@ -133,8 +133,11 @@ Details in
   session and first-boot checks ([platforms.md](platforms.md)).
 - ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs
   `sessioncheck.py` on the Ubuntu disk beside the boot and first-boot checks
-  ([platforms.md](platforms.md)). Still open: the decision on **whether DeskOS
-  publishes the Ubuntu derivative**, and where.
+  ([platforms.md](platforms.md)). ~~Whether DeskOS publishes the Ubuntu
+  derivative, and where~~ decided: it does, as
+  `quay.io/deskos/deskos-core-ubuntu2604`, for a person who asked for Ubuntu
+  support. Ubuntu and Fedora get no investment beyond that and are reviewed from
+  time to time; the effort stays on the EL 10 path.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.

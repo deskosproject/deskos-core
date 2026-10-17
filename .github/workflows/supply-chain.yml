@@ -49,17 +49,41 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published; Ubuntu and Fedora join the matrix
-        # when they have the same build + boot + session gate.
+        # release. RHEL is never published. Fedora joins when it has been booted.
+        #
+        # `disk` says how that platform's disk is written and `diskfile` where it
+        # lands, because they differ: the EL platforms go through
+        # bootc-image-builder, and Ubuntu has no Anaconda path, so it writes with
+        # `bootc install to-disk`. `splash` says whether a DeskOS splash is
+        # expected. Declared per leg on purpose: a gate that assumes one
+        # platform's disk is not a gate, and a new platform must not be able to
+        # silently inherit another's disk path and skip its own boot check.
         include:
           - token: centos10
             workstation: deskos-core-centos10
             exceptions: tests/supply-chain/exceptions.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            splash: true
           - token: almalinux10
             workstation: deskos-core-almalinux10
             exceptions: tests/supply-chain/exceptions-almalinux10.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            splash: true
+          - token: ubuntu2604
+            workstation: deskos-core-ubuntu2604
+            exceptions: tests/supply-chain/exceptions-ubuntu2604.json
+            disk: bootc-install
+            diskfile: disk.raw
+            splash: false
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
+      # Declared once, at the job level, so the assertion step and the boot check
+      # read the same value: a boolean comparison, because comparing the matrix's
+      # boolean to the string 'true' is never true and would silently drop the
+      # splash expectation from every leg.
+      SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -159,7 +183,8 @@ jobs:
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
 
-      - name: Build a QCOW2 without the builder's kernel arguments
+      - name: Build a QCOW2 without the builder's kernel arguments (bib)
+        if: matrix.disk == 'bib'
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
@@ -170,12 +195,42 @@ jobs:
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
+      - name: Write the disk with bootc install to-disk (bootc-install)
+        if: matrix.disk == 'bootc-install'
+        timeout-minutes: 30
+        run: |
+          # Ubuntu's image has no Anaconda path, and the composefs import refuses
+          # uncompressed layers: the disk is written from a compressed OCI layout,
+          # the same recipe the base documents and the VM check uses.
+          sudo skopeo copy "containers-storage:$IMAGE" "oci:$WORK/oci:test"
+          truncate -s 32G "$WORK/${{ matrix.diskfile }}"
+          sudo podman run --rm --privileged --pid=host \
+            --security-opt label=type:unconfined_t \
+            -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+            -v "$WORK/oci:/src-oci:ro" -v "$WORK:/output" \
+            "$IMAGE" bootc install to-disk --via-loopback "/output/${{ matrix.diskfile }}" \
+            --source-imgref oci:/src-oci:test \
+            --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+
+      - name: Assert the leg's declared disk and splash facts
+        run: |
+          # The bug this guards against, which this PR had: `splash` is a boolean
+          # in the matrix, and comparing it to the string 'true' is never true, so
+          # the flag silently disappeared and every leg ran a weaker check. Assert
+          # the flag exists exactly when the leg declares it.
+          case "${{ matrix.splash }}" in
+            true)  [ -n "$SPLASH" ] || { echo "::error::splash is true but no flag was produced"; exit 1; } ;;
+            false) [ -z "$SPLASH" ] || { echo "::error::splash is false but a flag was produced"; exit 1; } ;;
+            *)     echo "::error::every leg must declare splash as true or false, got '${{ matrix.splash }}'"; exit 1 ;;
+          esac
+          echo "disk=${{ matrix.disk }} diskfile=${{ matrix.diskfile }} splash=${{ matrix.splash }} flag='${SPLASH}'"
+
       - name: Boot check (unmodified disk)
         id: boot
         timeout-minutes: 15
         run: |
-          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/bootcheck" --expect-splash --hash-disk --keep-overlay --boot-timeout 420
+          python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
+            --out "$WORK/bootcheck" $SPLASH --hash-disk --keep-overlay --boot-timeout 420
 
       - name: Journal of the failed boot (diagnostic boot of the kept overlay)
         if: failure() && steps.boot.outcome == 'failure'
@@ -187,7 +242,7 @@ jobs:
       - name: Session check (instrumented boot)
         timeout-minutes: 25
         run: |
-          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/${{ matrix.diskfile }}" \
             --plan ctx/plan.json --out "$WORK/session" --boot-timeout 900
           # Record the image that passed; the same image is tagged, pushed and
           # signed below, so the published digest is the tested one.
@@ -196,7 +251,7 @@ jobs:
       - name: First-boot check (is the wizard the session, can an account log in)
         timeout-minutes: 25
         run: |
-          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
             --out "$WORK/firstboot" --boot-timeout 900
 
       - name: Install cosign
@@ -217,11 +272,22 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # Push the immutable commit tag by digest, sign and verify it, and
-          # only then move :latest to it: a failed signature must never leave
-          # :latest pointing at an unsigned image.
-          sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
-          sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          # Publish the manifest that was booted, and only that one. The EL legs
+          # have their disk built by bootc-image-builder **from the storage
+          # image**, so the storage image is what was tested; Ubuntu's disk is
+          # written from the recompressed OCI layout, so that layout is. Copying it
+          # with --preserve-digests publishes those exact bytes, instead of
+          # producing a second representation of the image that nothing booted.
+          if [ "${{ matrix.disk }}" = "bootc-install" ]; then
+            tested="$(sudo skopeo inspect --format '{{.Digest}}' "oci:$WORK/oci:test")"
+            sudo skopeo copy --preserve-digests "oci:$WORK/oci:test" "docker://$DEST:$GITHUB_SHA"
+            published="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:$GITHUB_SHA")"
+            [ "$published" = "$tested" ] || { echo "::error::published $published, tested $tested"; exit 1; }
+            printf '%s\n' "$published" > digest.txt
+          else
+            sudo podman tag "$IMAGE" "$DEST:$GITHUB_SHA"
+            sudo podman push --digestfile digest.txt "$DEST:$GITHUB_SHA"
+          fi
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
