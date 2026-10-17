@@ -17,14 +17,16 @@ deskosctl plan ./examples/core-ubuntu-2604 \
 | `example-core-ubuntu-2604` | the target: `ubuntu-2604` + the `deskos-core` profile |
 | `example-ubuntu-vendor` | the same Core plus an organization profile that installs `code` from a declared, signed APT source |
 
-An Ubuntu workstation carries no `rhel-family` profile: it must not ship
-firewalld, an RPM-named browser or an RPM application channel.
+This example does not include the `rhel-family` profile: its workstation is
+Core's foundation plus the organization profile, without firewalld, an
+RPM-named browser or an RPM application channel.
 
-`example-ubuntu-vendor` is what proves a declared `AptRepository` on this
-platform: the build writes the deb822 source and its key under `/etc/apt/`,
-`apt-get update` verifies the signature, and the image installs `code`. The CI
-job that builds and boots it is in
-`.github/workflows/vm-bootcheck.yml`. Both workstations boot to GNOME Initial
+`example-ubuntu-vendor` declares a signed `AptRepository` and a `PackageSet`
+that names it. The build writes the deb822 source and its key under `/etc/apt/`,
+and `apt-get update` verifies the signature before the packages install; the
+`PackageSet` does not bind a package to one source, so this does not claim which
+source each installed package came from. The CI job that builds and boots it is
+in `.github/workflows/vm-bootcheck.yml`. Both workstations boot to GNOME Initial
 Setup, which `tests/vm/firstbootcheck.py` asserts by asking the guest.
 
 There is no bootc base to hand to `bootc-image-builder` on this platform, so an

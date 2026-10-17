@@ -6,8 +6,10 @@ build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
 > Downloadable QCOW2 and ISO images are not published yet. Until they
-> are, create them from the container image with `bootc-image-builder`.
-> You need **Linux with rootful Podman** and about **20 GB free**.
+> are, create an EL disk from the container image with
+> `bootc-image-builder`, and an Ubuntu disk with `bootc install to-disk`
+> ([Ubuntu 26.04](#ubuntu-2604) below). You need **Linux with rootful
+> Podman** and about **20 GB free**.
 
 ## CentOS Stream 10
 
@@ -160,7 +162,7 @@ Project DeskOS and pinned by digest in
 resource root, for example `examples/core-ubuntu-2604/`:
 
 ```bash
-./deskosctl render ./examples/core-ubuntu-2604 \
+./bin/deskosctl render ./examples/core-ubuntu-2604 \
     --workstation example-core-ubuntu-2604 --output ./dist/ubuntu
 sudo podman build -t localhost/deskos-ubuntu:test ./dist/ubuntu
 ```

@@ -50,10 +50,12 @@ each slice is reviewed on its own:
 ## Milestone 2: independent CentOS CI build
 
 - **CI build:** `vm-bootcheck.yml` builds the CentOS Stream 10 workstations
-  (Core and the organization example) and the Ubuntu 26.04 workstation, makes
-  test disks that are not uploaded, and runs the boot, session and first-boot
-  checks. It runs on pull requests and on `main` for paths that can change an
-  image, and on demand (`workflow_dispatch`).
+  (Core and the organization example) into QCOW2 disks and runs the boot,
+  session and first-boot checks on them, and builds the two Ubuntu 26.04
+  workstations into raw disks (`bootc install to-disk`) and runs the boot and
+  first-boot checks, not the session check. It runs on pull requests and on
+  `main` for paths that can change an image, and on demand
+  (`workflow_dispatch`).
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots the image and then pushes and signs it to
   `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
@@ -72,10 +74,12 @@ Details in
 **Existing for CentOS Stream 10 and Ubuntu**
 ([`tests/vm/`](../tests/vm/README.md)):
 
-- **Tier A, unmodified artifact:** `bootcheck.py` boots the exact QCOW2
-  through an overlay, classifies screendumps (splash, graphical) and
+- **Tier A, unmodified artifact:** `bootcheck.py` boots the exact test disk —
+  a QCOW2 on the EL platforms, a raw disk on Ubuntu — through an overlay,
+  classifies screendumps (splash, graphical) and
   checks ACPI shutdown. It does not match screens against references.
-- **Tier B subset, instrumented session:** `sessioncheck.py` adds a test
+- **Tier B subset, instrumented session (CentOS Stream 10):** `sessioncheck.py`
+  adds a test
   user and GDM autologin through systemd credentials (SMBIOS type 11); a
   report unit writes the results and journal to the serial port. No SSH
   or qecore. Checks the dock, favorites, wallpaper, headless Firefox and
