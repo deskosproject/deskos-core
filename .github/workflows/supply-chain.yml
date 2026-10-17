@@ -1,12 +1,13 @@
 name: supply-chain (experimental)
 
-# Manual only. The single publish path: builds DeskOS Core for CentOS Stream
-# 10 from this checkout, writes the declared SBOM with `deskosctl sbom`,
-# produces the installed SBOM with Syft, scans it with Grype, compares the two
-# for RPM coverage, then makes a QCOW2 from the same image and runs the boot
-# and session checks on it. Only then does it tag, push, sign and attest that
-# one digest, and upload the evidence. RHEL scanning runs on the entitled
-# factory host, not here. See docs/supply-chain.md and ADR 0010.
+# Manual only. The single publish path: builds the DeskOS Core reference
+# workstation for each platform in the matrix from this checkout, writes the
+# declared SBOM with `deskosctl sbom`, produces the installed SBOM with Syft,
+# scans it with Grype, compares the two for RPM coverage, then makes a QCOW2
+# from the same image and runs the boot and session checks on it. Only then does
+# it tag, push, sign and attest that one digest, and upload the evidence. RHEL
+# scanning runs on the entitled factory host, not here. See docs/supply-chain.md
+# and ADR 0010.
 on:
   workflow_dispatch:
     inputs:
@@ -31,7 +32,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: localhost/deskos-core-centos10:ci
   # bootc-image-builder pinned to the digest used for local test disks (same
   # as vm-bootcheck.yml).
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
@@ -40,10 +40,26 @@ env:
   WORK: /mnt/deskos-work
 
 jobs:
-  centos10:
+  publish:
     runs-on: ubuntu-24.04
     # Build (40) + QCOW2 (30) + boot (15) + session (25) can exceed 90.
     timeout-minutes: 150
+    strategy:
+      # One platform failing must not hide another.
+      fail-fast: false
+      matrix:
+        # One repository per platform, so :latest never changes distro or
+        # release. RHEL is never published; Ubuntu and Fedora join the matrix
+        # when they have the same build + boot + session gate.
+        include:
+          - token: centos10
+            workstation: deskos-core-centos10
+            exceptions: tests/supply-chain/exceptions.json
+          - token: almalinux10
+            workstation: deskos-core-almalinux10
+            exceptions: tests/supply-chain/exceptions-almalinux10.json
+    env:
+      IMAGE: localhost/${{ matrix.workstation }}:ci
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -53,8 +69,8 @@ jobs:
       - name: Render the Core build context and write the declared SBOM
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render --workstation deskos-core-centos10 --output ctx
-          ./bin/deskosctl sbom --workstation deskos-core-centos10 --output declared.sbom.cdx.json
+          ./bin/deskosctl render --workstation ${{ matrix.workstation }} --output ctx
+          ./bin/deskosctl sbom --workstation ${{ matrix.workstation }} --output declared.sbom.cdx.json
 
       - name: The publishable image has no unchecked repository
         # Publication policy (kept out of `deskosctl validate`, which stays a
@@ -125,13 +141,13 @@ jobs:
           # See docs/supply-chain.md and ADR 0012.
           out=$(python3 tests/supply-chain/check_exceptions.py \
             --cves cves.json \
-            --exceptions tests/supply-chain/exceptions.json \
+            --exceptions ${{ matrix.exceptions }} \
             --plan ctx/plan.json \
             --effective "$WORK/effective-exceptions.json")
           echo "$out"
           { echo "### Accepted vulnerability exceptions"; echo; echo "$out"; } >> "$GITHUB_STEP_SUMMARY"
           python3 tests/supply-chain/check_exceptions.py \
-            --exceptions tests/supply-chain/exceptions.json \
+            --exceptions ${{ matrix.exceptions }} \
             --emit-gate "$WORK/gate.grype.yaml"
           # The gate applies the severity policy: the generated configuration
           # and the OpenVEX statements (ADR 0012).
@@ -190,7 +206,7 @@ jobs:
         # identity, and a signed attestation references the installed SBOM.
         if: inputs.publish && github.ref == 'refs/heads/main'
         env:
-          DEST: quay.io/deskos/deskos-core
+          DEST: quay.io/deskos/deskos-core-${{ matrix.token }}
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
@@ -262,7 +278,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: supply-chain-evidence
+          name: supply-chain-evidence-${{ matrix.token }}
           path: |
             declared.sbom.cdx.json
             installed.sbom.cdx.json
@@ -270,7 +286,7 @@ jobs:
             grype.txt
             digest.txt
             cosign-verify.txt
-            tests/supply-chain/exceptions.json
+            ${{ matrix.exceptions }}
             sbom-reference.json
             ctx/plan.json
             ctx/generated-manifest.json
