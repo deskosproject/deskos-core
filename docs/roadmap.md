@@ -197,14 +197,14 @@ how-to: [supply-chain.md](supply-chain.md).
 Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
 its own.
 
-- **Documentation restructure.** `docs/resources.md` (518 lines) and
-  `docs/architecture.md` (652) mix reference with state. Split them and add
-  `compatibility.md` (one matrix: platform, base digest, GNOME versions,
-  evidence, date), `troubleshooting.md` (symptom → check → remedy) and
-  `migration.md` (v1alpha1 changes, e.g. `gpgKeys` → `gpgKeyFiles`), plus
-  `resources/{core,software,desktop,system}.md`. Keep `research-notes` a
-  dated archive, not current status. Add a short glossary and an explicit
-  `YAML → plan → Containerfile → image → disk` line.
+- **Documentation restructure (in progress).** The platform matrix now has one
+  home, [platforms.md](platforms.md), and the README states the
+  `YAML → validate → compose → plan → Containerfile → image → disk` line. Still
+  open: splitting `docs/resources.md` into
+  `resources/{core,software,desktop,system}.md`; a `troubleshooting.md`
+  (symptom → check → remedy) and a `migration.md` (v1alpha1 changes, e.g.
+  `gpgKeys` → `gpgKeyFiles`); a compatibility page; and a short glossary. Keep
+  `research-notes` a dated archive, not current status.
 - **Durable SBOM storage.** The publish attests the SBOM **by reference**
   (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The
   full SBOM is a 14-day workflow artifact; publish it to durable,

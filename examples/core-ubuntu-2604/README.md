@@ -1,7 +1,7 @@
 # Example: DeskOS Core on Ubuntu 26.04
 
-DeskOS Core on Ubuntu 26.04 LTS, the platform whose base its vendor does not
-publish: it is owned by the Project DeskOS and pinned by digest in
+DeskOS Core on Ubuntu 26.04 LTS, the platform whose vendor publishes no bootc
+base: the base is owned by the DeskOS project and pinned by digest in
 `resources/platforms/ubuntu-2604.yaml`
 ([ADR 0014](../../docs/adr/0014-platform-base-ownership.md)). It is a
 **separate resource root** that references the shipped `deskos-core` profile

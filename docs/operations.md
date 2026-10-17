@@ -16,6 +16,13 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 | `deskos-image-update.timer` → `deskos-image-update.service` | `bootc upgrade --quiet` | downloads the next image and **stages** it |
 | `deskos-flatpak-update.timer` → `deskos-flatpak-update.service` | `flatpak update --system --noninteractive --assumeyes` | updates system Flatpak apps and runtimes |
 
+> **Platform scope.** Everything `bootc` here is on every platform. The Flatpak
+> half exists only where the image declares a system Flatpak channel — the EL
+> platforms. Ubuntu 26.04 declares none, so its images carry no
+> `deskos-flatpak-update` unit and no `flatpak` package, and a workstation that
+> declares a `FlatpakSet` there fails composition rather than pretending
+> ([platforms.md](platforms.md)).
+
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base
 image's own `bootc-fetch-apply-updates.timer` and `.service` are **masked**,
@@ -33,11 +40,11 @@ on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
 
 ```bash
 bootc status                        # booted and staged deployments, image ref
-rpm-ostree status                   # the same, in ostree terms
+rpm-ostree status                   # the same, in ostree terms (EL platforms)
 systemctl list-timers 'deskos-*'    # when the next update runs
 systemctl status deskos-image-update.service
 journalctl -u deskos-image-update.service --since today
-flatpak list --system               # system apps and runtimes
+flatpak list --system               # system apps and runtimes (EL platforms)
 ```
 
 `bootc status` shows a `Staged` entry once the next image is downloaded and

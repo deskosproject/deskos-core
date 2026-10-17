@@ -43,10 +43,12 @@ against a Core tree you pass, and `deskosctl core export DIR` writes it out.
 
 - File and directory names have no meaning.
 - Asset paths are relative to the YAML file.
-- Every example below is a file from this repository
-  ([`resources/`](../resources/) and
-  [`examples/baseline-and-role/`](../examples/baseline-and-role/)), except the
-  `BinaryArtifact` desktop entry example.
+- Each example below is drawn from this repository, mostly from
+  [`resources/`](../resources/) and [`examples/`](../examples/). Some are
+  shortened for readability, and the few that are not a file of this repository —
+  the `BinaryArtifact` desktop entry, the Flatpak `katello` remote, the
+  `tokyo-night` theme, and the shell/clock/keyboard snippet — are labelled as
+  illustrative.
 
 ## Resource kinds
 
@@ -98,8 +100,9 @@ spec:
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
-`rhel-10` and `ubuntu-2604` in [`resources/platforms/`](../resources/platforms/); see
-[architecture.md](architecture.md#core-organizations-and-roles).
+`almalinux-10`, `rhel-10` and `ubuntu-2604` in
+[`resources/platforms/`](../resources/platforms/); the canonical status of each,
+and how to install it, is [platforms.md](platforms.md).
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one
@@ -517,11 +520,13 @@ spec:
     automatic: true
     schedule: daily
     requireACPower: true
-  flatpak:
-    automatic: true
-    schedule: daily
-    requireACPower: true
 ```
+
+Core sets the **image** policy only. `flatpak:` is deliberately absent from it
+([`resources/system/deskos-core-updates.yaml`](../resources/system/deskos-core-updates.yaml)):
+declaring it in the foundation would impose an application channel on every
+platform. An organization that wants unattended Flatpak updates adds `flatpak:`
+at its own layer.
 
 `schedule` is `daily` or `weekly`. Every field is a layered scalar, so an
 organization changes one field and keeps the rest of Core's policy, for

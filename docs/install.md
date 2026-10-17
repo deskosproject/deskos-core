@@ -140,24 +140,29 @@ are private to your organization.
 
 ## AlmaLinux 10
 
-AlmaLinux 10 is a vendor platform — the base is the AlmaLinux project's own,
-which the project labels experimental. DeskOS publishes no AlmaLinux image, but
-the base is public, so build one from a resource root with no subscription:
+AlmaLinux 10 is a public, subscription-free EL10 base — the AlmaLinux project's
+own, which that project labels experimental. DeskOS publishes no AlmaLinux image
+and has **not built or booted** one: the steps below have the same shape as the
+CentOS Stream 10 ones and are **proposed, not measured**. The platform's facts
+are EL10 conventions modeled on RHEL 10, not verified against AlmaLinux
+([platforms.md](platforms.md)).
+
+Get `deskosctl` as in step 1 of the RHEL section above, then render the shipped
+example from a checkout of this repository and build it:
 
 ```bash
-./deskosctl render ./examples/core-almalinux-10 \
+./bin/deskosctl render ./examples/core-almalinux-10 \
     --workstation example-core-almalinux-10 --output ./dist/alma
 sudo podman build -t localhost/deskos-alma:test ./dist/alma
 ```
 
-Then make the QCOW2 with the public `bootc-image-builder`, as in the CentOS
-Stream 10 steps above. The platform's facts are not verified against AlmaLinux
-yet; see [validation status](architecture.md#validation-status).
+Then write the QCOW2 with the public `bootc-image-builder`, as in the CentOS
+Stream 10 steps above.
 
 ## Ubuntu 26.04
 
-DeskOS publishes no Ubuntu image. The platform's base is owned by the
-Project DeskOS and pinned by digest in
+DeskOS publishes no Ubuntu image and has **no installer ISO** for it. The base is
+owned by the DeskOS project and pinned by digest in
 `resources/platforms/ubuntu-2604.yaml`; every Ubuntu image is built from a
 resource root, for example `examples/core-ubuntu-2604/`:
 
@@ -167,10 +172,21 @@ resource root, for example `examples/core-ubuntu-2604/`:
 sudo podman build -t localhost/deskos-ubuntu:test ./dist/ubuntu
 ```
 
-Canonical publishes no bootc base to hand to **bootc-image-builder**, so the
-disk is written by `bootc install to-disk` from a compressed OCI layout, the
-recipe the platform's base documents. The worked recipe, including the
-loopback install, is in
-[`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk); the
-install's `--target-imgref` is the reference the machine will update from, so
-point it at your own published reference and not at the base.
+There is no Canonical bootc base to hand to `bootc-image-builder`, and DeskOS has
+not had one written; what **is** validated is `bootc install to-disk`, which
+writes the disk from a compressed OCI layout. The worked recipe — including the
+loopback install — is in
+[`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
+
+Two things here that must not be conflated:
+
+- **CI makes a lab disk, not a delivery.** The workflow installs from a local OCI
+  layout with **no `--target-imgref`**; that proves the image builds, installs and
+  boots, and says nothing about where the machine updates from afterwards.
+- **A real install points `--target-imgref` at a derivative you publish** — a
+  private registry, or one you make public — never at the local layout and never
+  at the base: pointing it at the base would replace your derivative with the base
+  at the next update.
+
+After that the disk updates with `bootc` like any other platform
+([operations.md](operations.md)).

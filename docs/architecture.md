@@ -21,6 +21,7 @@ backend, and what has been validated on each platform.
 [System Flatpaks](#system-flatpaks) ·
 [GNOME](#gnome) ·
 [Boot](#boot) ·
+[Trust store](#trust-store) ·
 [Updates](#updates) ·
 [Drift and mutable `/etc`](#drift-and-mutable-etc) ·
 [Provisioning and enrollment](#provisioning-and-enrollment) ·
@@ -296,62 +297,42 @@ Firefox RPM on both EL platforms.
 
 ## Validation status
 
-| Claim | CentOS Stream 10 | AlmaLinux 10 | RHEL 10 | Ubuntu 26.04 |
-|---|---|---|---|---|
-| Core and the example organization compose and render | **validated** | **validated** (CI, `validate`) | **validated** | **validated** (CI, `validate`) |
-| Same Core content on every platform | **validated** (test) | **validated** (test) | **validated** (test) | not asserted: the identity test compares the EL10 platforms with each other, not with Ubuntu |
-| Image builds, `bootc container lint` passes | **validated** (CI) | not built or booted here | **validated** on the factory host [^rhel-build] | **validated** in CI, on the digest the platform pins |
-| Packages install from the declared sources | **validated** | not measured | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version"). `example-ubuntu-vendor` does declare sources: it installs `code` from a declared APT source, **validated by hand** against the vendor's archive (apt verified the signature and offered the package), and the CI job builds and boots that image |
-| Build layers free of build-host identity | not rechecked since the fix | not measured | **validated**: 0 findings in all layers [^layers] | not measured |
-| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | not measured | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (CI): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
-| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | `ci.yml` (CI): composes and plans; nothing builds the image | not in this repository; the RHEL build runs in a downstream organization's repository | `vm-bootcheck.yml` (CI): builds the image, boots it and runs the first-boot check; `supply-chain.yml` does not cover it |
-| Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | not measured | same as CentOS Stream 10 | not measured by a session check. The lab install's first-boot journal has no failed *services*: `sssd.service` is skipped by its own condition (sssd is installed unconfigured) and its responder sockets report `dependency`, and the recipe's own tmpfiles line logs `Invalid age '-d'` |
-| Flatpak preinstall materializes apps | remote and ref resolution checked | declared, not verified (no build) | system preinstall installs Flathub apps [^flatpak] | **not offered**: 26.04 publishes no `flatpak preinstall` and the base carries no third-party apt source, so a `FlatpakSet` fails composition with that reason (measured, invariant 9) |
-| OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as the Flatpak row | same as CentOS Stream 10 | same as the Flatpak row: not offered |
+The canonical matrix — base owner, what is verified on each platform, and how to
+install it today — is [**platforms.md**](platforms.md). The evidence behind those
+claims is below.
 
-Ubuntu 26.04 is built, booted and first-boot-checked in CI, up to where its base
-allows. Its derived image boots to GNOME **Initial Setup**: the wizard runs, and no
-account can log in — both asserted by asking the guest with
-`tests/vm/firstbootcheck.py`. That check is also what found the wizard's absence and
-its cause: GDM counts users through AccountsService, and the uid-1000 account the
-upstream container image ships was suppressing it. That is precisely what a
-screenshot cannot see, because GDM's greeter draws a `Username` field too. What
-Ubuntu does not have is a system Flatpak channel, and the platform says so rather
-than pretending (invariant 9). The first lab run measured all of this; CI now
-repeats the build, the boot and the first-boot check, and runs no session check for
-Ubuntu.
+The RHEL column there is historical: the RHEL factory host was retired, and this
+repository no longer builds or boots RHEL or publishes a `deskos/rhel10` status.
+Composition and rendering for RHEL stay covered by the tests. The Ubuntu
+root-cause story — GDM counting users through AccountsService, and the uid-1000
+account the upstream container image ships suppressing the wizard — is in
+[research notes](research-notes.md).
 
-The RHEL column is historical: the RHEL factory host was retired and this
-repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
-status. Composition and rendering for RHEL stay covered by the tests.
+### Evidence
 
-The AlmaLinux column is a vendor platform on the base the AlmaLinux project
-publishes itself, which the project labels **experimental**. Composition and
-rendering are validated in CI; the platform facts are EL10 conventions modeled
-on `rhel-10` and are **not verified** against AlmaLinux, so this table makes no
-build, boot or package claim for it.
-
-[^rhel-build]: Image `0e65bf4b` on RHEL 10.2, base `d13af792...`; lint
-passed with the three known warnings.
-[^layers]: All 75 layers of `0e65bf4b` scanned for RHSM paths and the
-build host's entitlement serial, consumer UUID and hostname.
-[^cs10-boot]: `bootcheck.py` on Core disks (pixel classes; frames show the
-DeskOS splash and GNOME Initial Setup over the DeskOS wallpaper);
-`sessioncheck.py` confirms Dash to Dock active, favorites and wallpaper
-as planned and Firefox running headless; the GDM login logo was seen in a
-Core VM. No full E2E.
-[^rhel-boot]: Same checks on the `0e65bf4b` disk, under nested KVM on the
-entitled factory VM (example wallpaper); not in CI; no full E2E.
-[^cs10-run]: Last run `37162282876` on commit `8ab0cc9`, with the approved
-DeskOS identity; it published `quay.io/deskos/deskos-core:8ab0cc9...` and
-`:latest`.
-[^mcelog]: In AMD QEMU guests without `edac_mce_amd`; reported as a known,
-non-blocking diagnostic with its raw failed state (see
-`tests/vm/README.md` and [research-notes.md](research-notes.md)).
-[^flatpak]: `example-devops-rhel10` declares no Flatpaks. A private RHEL
-10.2 workstation with four Flathub apps: `flatpak preinstall --system`
-without a session bus installed all four from `/usr/share/flatpak/preinstall.d`
-in the built image, and its booted disk had no failed preinstall unit.
+- **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
+  classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
+  wallpaper); `sessioncheck.py` confirms Dash to Dock active, favorites and
+  wallpaper as planned and Firefox running headless; the GDM login logo was seen
+  in a Core VM. No full E2E.
+- **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on RHEL 10.2,
+  base `d13af792...`; lint passed with the three known warnings; all 75 layers of
+  `0e65bf4b` scanned free of RHSM paths and the build host's entitlement serial,
+  consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
+  disk under nested KVM on the entitled factory VM (example wallpaper). Not in
+  CI; no full E2E.
+- **Published CentOS Stream 10 image.** Last run `37162282876` on commit
+  `8ab0cc9`, with the approved DeskOS identity; it published
+  `quay.io/deskos/deskos-core:8ab0cc9...` and `:latest`.
+- **Flatpak preinstall (RHEL).** `example-devops-rhel10` declares no Flatpaks; a
+  private RHEL 10.2 workstation with four Flathub apps installed all four from
+  `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
+  session bus), and its booted disk had no failed preinstall unit.
+- **Failed system units.** In AMD QEMU guests without `edac_mce_amd`,
+  `mcelog.service` is the only tolerated failed unit, reported as a known,
+  non-blocking diagnostic with its raw failed state (see
+  [`tests/vm/README.md`](../tests/vm/README.md) and
+  [research-notes.md](research-notes.md)).
 
 Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
 `gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
@@ -609,9 +590,9 @@ into the build context and a symlink out of the root is refused too.
 
 ## Updates
 
-Both base images enable `bootc-fetch-apply-updates.timer` (a
-`default.target.wants` link in `/usr/lib` that `systemctl disable` does
-not remove). Its service runs `bootc upgrade --apply`, which **reboots**
+Every base DeskOS compiles onto enables `bootc-fetch-apply-updates.timer` (all
+four Platforms list it as an image-update unit). Its service runs
+`bootc upgrade --apply`, which **reboots**
 whenever a new image is published.
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,

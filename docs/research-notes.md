@@ -1,5 +1,10 @@
 # Research notes
 
+> **Dated archive.** These are findings as they were checked, not current
+> status. Current status lives in [platforms.md](platforms.md); the pipeline is
+> in [architecture.md](architecture.md). Some numbers here — a Go version, a
+> package version, a base image — are deliberately the values of the day.
+
 Sections are dated where they were checked; undated sections were
 retrieved on 2026-09-27. **"Verified"** means checked against a primary
 source (vendor docs, upstream source, or the actual package or image);
