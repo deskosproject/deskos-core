@@ -109,6 +109,46 @@ system units (see [the mcelog exception](#known-amd-guest-exception-mcelog)
 below). Results are in `session.md`, `session.json` and `journal.txt`,
 with frames as for the boot check.
 
+### Every default the plan declares
+
+Beyond those named checks, the harness asserts **every dconf default the
+plan declares** and takes the list from the plan itself, so a default
+declared later is asserted without editing `sessioncheck.py`. The guest
+reads each key back with `dconf read` — the effective value the session
+sees, in the same GVariant text the plan stores — and the host compares it
+with the plan's value. `session.json` carries `plan_defaults`
+(`declared`, `asserted`, and the ones set aside with the reason), and
+`session.md` ends with a line naming each asserted default and, separately,
+each one set aside.
+
+An array is compared as a multiset, because the plan does not say whether
+an array's order is significant and GNOME's own lists
+(`enabled-extensions`, `custom-keybindings`) are sets; a reorder is
+reported in the detail, not failed. The order-sensitive assertions stay
+with the checks that own them (the favorites order). Two cases are
+reported without a strict assertion rather than failed, and the report
+says which key and why:
+
+- **A value the session changed.** The guest also reads each key through a
+  profile naming only the image's own dconf database, so the value the
+  image ships is known. When that value matches the plan but the session's
+  effective value does not, the difference is a user, or a local or site
+  value winning over a default — defaults are not locks — and it is
+  reported, not failed. When the image's database does not carry the
+  plan's default either, the check fails: the image never shipped it.
+- **A value the session cannot see.** The image carries the default, but
+  the session's own dconf profile does not reach the database that holds
+  it (or the effective read fails). The key is reported as skipped with
+  the reason, not asserted. This is the check that tells whether a
+  platform's profile reads the database DeskOS writes to.
+
+The plan also carries GSettings vendor defaults — the wallpaper keys,
+which exist for sessions outside the DeskOS dconf profile (GNOME Initial
+Setup). Those are the same keys the plan declares in dconf, and this check
+asserts them there; the compiled override file itself is not read, because
+which override wins against a vendor's own is not a question this harness
+settles.
+
 `platform_diagnostics` in `session.json` (and its section in
 `session.md`) records the guest CPU vendor, family and model,
 `edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at

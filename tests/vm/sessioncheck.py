@@ -9,7 +9,10 @@ GNOME state, and a unit that writes the results and the kernel and Plymouth
 journal to the serial port. Kernel arguments and Plymouth are unchanged, but
 this is an instrumented boot, not the artifact as shipped: report it as such.
 
-Expected values come from the typed Plan (plan.json) of the tested image.
+Expected values come from the typed Plan (plan.json) of the tested image. Every
+dconf default the plan declares is read back from the session and compared, and
+the list of defaults comes from the plan, not from a constant here: a default
+declared later is asserted without editing the harness.
 
 With --mode journal, no user or session is added: the unit writes the
 journal of the previous boot of the same disk, for diagnosing a failed
@@ -39,8 +42,51 @@ MCELOG_FAILED_PROPS = {"LoadState": "loaded", "ActiveState": "failed", "SubState
                        "Result": "exit-code", "ExecMainStatus": "1"}
 MCELOG_JOURNAL_SIGNATURE = ("does not support this processor", "edac_mce_amd")
 DOCK_UUID = "dash-to-dock@micxgx.gmail.com"
+# The plan's dconf defaults are read back inside the session. `dconf read` reports
+# the effective value in the same GVariant text the plan stores (measured: uint32 0,
+# true, ['a', 'b'], @as [], 'a b'), so the plan's value is compared with what the
+# session sees. The key list travels as a file of its own so the script that reads
+# it stays inside the tmpfiles.d argument cap (tests/vm/README.md) as plans grow.
+DCONF_KEYS_PATH = "/var/lib/deskos-qa/dconf-defaults.keys"
+# A profile that names only the image's own dconf database, so the value the
+# image ships is read apart from the value the session ends up with. A default is
+# not a lock: a user, or a local or site value, wins over it (AGENTS.md
+# invariant 8; docs/research-notes.md, "GNOME administration").
+DCONF_PROFILE_PATH = "/etc/dconf/profile/deskos-qa-defaults"
+DEFAULT_CHECK_PREFIX = "plan default "
+# Sentinels for what the guest read; neither can be a GVariant text value, so they
+# are told apart from a value the key really has.
+UNSET, ERROR = "<unset>", "<error>"
 
-def session_script(seed_skel, app, skel_rels):
+
+def dconf_reads(image_database):
+    """The script fragment that reads every dconf default the plan declares.
+
+    The effective value comes first: what the session sees. Then, when the plan
+    names its dconf database, the value in that database alone, read through a
+    profile that names only it, so a default a user or the session changed is told
+    apart from a default the image never carried. The keys are read from a file the
+    harness writes from the plan, so the list is the plan's and not this script's.
+    """
+    image_read = ""
+    if image_database:
+        image_read = (
+            f'  d=$(DCONF_PROFILE={DCONF_PROFILE_PATH} dconf read "$k" 2>/dev/null) || d="{ERROR}"\n'
+            '  if [ -z "$d" ]; then d="' + UNSET + '"; fi\n'
+            '  echo "dconfdb_$i=$d"\n'
+        )
+    return (
+        "# Every dconf default the plan declares, read back from the session.\n"
+        f"mapfile -t dconf_keys < {DCONF_KEYS_PATH}\n"
+        'for i in "${!dconf_keys[@]}"; do\n'
+        '  k="${dconf_keys[$i]}"\n'
+        f'  v=$(dconf read "$k" 2>/dev/null) || v="{ERROR}"\n'
+        '  if [ -z "$v" ]; then v="' + UNSET + '"; fi\n'
+        '  echo "dconf_$i=$v"\n' + image_read + "done\n"
+    )
+
+
+def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -48,7 +94,8 @@ def session_script(seed_skel, app, skel_rels):
     skel, so without this the image's per-user seeds never apply). With app it
     opens a window before the report, so a captured frame shows the themed
     widgets. skel_rels are the seed paths (relative to /etc/skel) whose content
-    the run must confirm reached the user.
+    the run must confirm reached the user. dconf_keys are the plan's dconf
+    defaults to read back, and dconf_db names the image's own dconf database.
     """
     seed = ""
     if seed_skel:
@@ -80,6 +127,7 @@ def session_script(seed_skel, app, skel_rels):
     if app:
         name = os.path.basename(app.split()[0])
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
+    reads = dconf_reads(dconf_db) if dconf_keys else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
@@ -93,7 +141,7 @@ echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 gnome-extensions info {DOCK_UUID} | awk -F': ' '/Enabled:/{{print "dock_enabled="$2}} /State:/{{print "dock_state="$2}}'
 echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
-{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
+{reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
 }} > "$out.tmp"
@@ -180,7 +228,7 @@ def tmpfiles_arg(text):
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
-def credentials(mode, seed_skel=False, app=None, skel_rels=()):
+def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -189,7 +237,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=()):
     ]
     creds = {}
     if mode == "session":
-        script = session_script(seed_skel, app, skel_rels)
+        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -208,6 +256,20 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=()):
             "d /etc/gdm3 0755 root root -",
             f"f+ /etc/gdm3/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
         ]
+        if dconf_keys:
+            # The plan's defaults, one key per line, so the session script reads the
+            # plan's list rather than carrying it. The file is world-readable in a
+            # 0755 directory; the session user is not root and must read it.
+            tmpfiles.append(
+                f"f {DCONF_KEYS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(dconf_keys) + chr(10))}")
+        if dconf_db:
+            # A second profile naming the image's database alone. `dconf read` with
+            # it reports the value the image ships, apart from the value the session
+            # ends up with; this is a new file, never the guest's own profile.
+            tmpfiles += [
+                "d /etc/dconf/profile 0755 root root -",
+                f"f {DCONF_PROFILE_PATH} 0644 root root - {tmpfiles_arg(f'system-db:{dconf_db}' + chr(10))}",
+            ]
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
@@ -347,18 +409,133 @@ def diagnostics_md(diag):
     return lines
 
 
+def plan_defaults(plan):
+    """The dconf defaults the plan declares, in the order the plan lists them."""
+    return list((plan.get("artifact", {}).get("dconf") or {}).get("defaults") or [])
+
+
 def dconf_value(plan, key):
-    for d in (plan.get("artifact", {}).get("dconf") or {}).get("defaults", []):
+    for d in plan_defaults(plan):
         if d["key"] == key:
             return d["value"]
     return None
 
 
+def canonical(text):
+    """GVariant text with the whitespace that carries no meaning removed.
+
+    Only whitespace outside a quoted string is dropped, so `['a','b']`,
+    `['a', 'b']` and `[ 'a' , 'b' ]` are the same value while `'a b'` keeps its
+    space. `dconf read` prints a value the way the plan stores it, so this is a
+    guard against formatting, not a different reading of the value.
+    """
+    out, quote, i = [], False, 0
+    if text.startswith("@"):
+        # An explicit type annotation carries no value: `@as []` is `[]`.
+        text = text.partition(" ")[2]
+    while i < len(text):
+        c = text[i]
+        if quote:
+            out.append(c)
+            if c == "\\" and i + 1 < len(text):
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == "'":
+                quote = False
+        elif c == "'":
+            quote = True
+            out.append(c)
+        elif c.isspace():
+            nxt = text[i + 1] if i + 1 < len(text) else ""
+            if out and out[-1] not in "[({," and nxt not in "])}, ":
+                out.append(" ")
+        else:
+            out.append(c)
+        i += 1
+    return "".join(out)
+
+
+def array_elements(text):
+    """The elements of a GVariant text array, or None when the text is not one."""
+    t = canonical(text).strip()
+    if not (t.startswith("[") and t.endswith("]")):
+        return None
+    body, out, cur, depth, quote, i = t[1:-1], [], "", 0, False, 0
+    while i < len(body):
+        c = body[i]
+        if quote:
+            cur += c
+            if c == "\\" and i + 1 < len(body):
+                cur += body[i + 1]
+                i += 2
+                continue
+            if c == "'":
+                quote = False
+        elif c == "'":
+            quote = True
+            cur += c
+        elif c in "[({":
+            depth += 1
+            cur += c
+        elif c in "])}":
+            depth -= 1
+            cur += c
+        elif c == "," and depth == 0:
+            out.append(cur.strip())
+            cur = ""
+        else:
+            cur += c
+        i += 1
+    if cur.strip():
+        out.append(cur.strip())
+    return out
+
+
+def same_default(want, got):
+    """How a value read from the guest compares with the plan: "exact", "order" or None.
+
+    An array compares as a multiset: the plan does not say whether an array's order
+    is significant, and GNOME's own lists (enabled-extensions, custom-keybindings)
+    are sets, so a reorder is reported rather than failed. The order-sensitive
+    assertions stay with the checks that own them (the favorites order).
+    """
+    if canonical(want) == canonical(got):
+        return "exact"
+    w, g = array_elements(want), array_elements(got)
+    if w is not None and g is not None and sorted(w) == sorted(g):
+        return "order"
+    return None
+
+
+def matches(want, got):
+    return got is not None and got not in (UNSET, ERROR) and same_default(want, got) is not None
+
+
+def plan_default_summary(checks):
+    """The plan's defaults as the checks reported them: asserted, and set aside.
+
+    A default set aside is one the run could not assert strictly -- an unreadable
+    value, or one a user or the session legitimately changed. Each is listed with
+    its reason, so the report never hides one behind a green line.
+    """
+    defaults = [c for c in checks if c["check"].startswith(DEFAULT_CHECK_PREFIX)]
+    skipped = [c for c in defaults if c["skipped"]]
+    return {"declared": len(defaults), "asserted": len(defaults) - len(skipped),
+            "skipped": [{"check": c["check"], "detail": c["detail"]} for c in skipped]}
+
+
+def check_status(c):
+    if c.get("skipped"):
+        return "SKIP"
+    return "PASS" if c["pass"] else "FAIL"
+
+
 def evaluate(values, plan, journal="", skel_rels=()):
     checks = []
 
-    def check(name, ok, detail):
-        checks.append({"check": name, "pass": bool(ok), "detail": detail})
+    def check(name, ok, detail, skipped=False):
+        checks.append({"check": name, "pass": bool(ok), "skipped": bool(skipped), "detail": detail})
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
           f"session_type={values.get('session_type')}")
@@ -377,6 +554,49 @@ def evaluate(values, plan, journal="", skel_rels=()):
     if any(p["name"] == "firefox" for p in plan.get("artifact", {}).get("rpmPackages", [])):
         check("Firefox runs headless", values.get("firefox_headless_exit") == "0" and values.get("firefox_screenshot") == "yes",
               f"exit={values.get('firefox_headless_exit')} screenshot={values.get('firefox_screenshot')}")
+    # Every default the plan declares is read back from the session. The list is
+    # the plan's, so a default declared later is asserted without editing the
+    # harness. The value the session sees is compared first; the value the image's
+    # own database carries is the evidence that separates a default something
+    # overrode (defaults are not locks) from one the image never shipped.
+    db = (plan.get("artifact", {}).get("dconf") or {}).get("name") or "image"
+    for i, d in enumerate(plan_defaults(plan)):
+        key, want = d["key"], d["value"]
+        name = DEFAULT_CHECK_PREFIX + key
+        got, installed = values.get(f"dconf_{i}"), values.get(f"dconfdb_{i}")
+        if got is None:
+            check(name, False, "the guest did not report this default")
+        elif got == ERROR:
+            if matches(want, installed):
+                check(name, True, f"the effective value could not be read from the guest; "
+                                  f"the image's {db} database carries {want}", skipped=True)
+            else:
+                check(name, False, f"the effective value could not be read from the guest and "
+                                   f"the image's {db} database has {installed}, want {want}")
+        elif got == UNSET:
+            if matches(want, installed):
+                check(name, True, f"the image's {db} database carries {want}, but the session "
+                                  f"sees no value for this key (its dconf profile does not reach "
+                                  f"the database that holds it)", skipped=True)
+            else:
+                check(name, False, f"no value for this key in the session's dconf databases or "
+                                   f"the image's {db} database, want {want}")
+        else:
+            match = same_default(want, got)
+            if match:
+                detail = f"got {got} want {want}"
+                if match == "order":
+                    detail += "; same elements in a different order"
+                check(name, True, detail)
+            elif matches(want, installed):
+                # A user, or a local or site database, wins over a default by design.
+                # The declared default is what the plan asserts; the effective value is
+                # reported, not failed, because the session may legitimately have set it.
+                check(name, True, f"the image's {db} default is {want} and matches the plan, but the "
+                                  f"session sees {got}; a user or session value wins over a default, "
+                                  f"so the effective value is reported and not asserted", skipped=True)
+            else:
+                check(name, False, f"got {got} want {want}; the image's {db} database has {installed}")
     failed = failed_units(values)
     known = known_failures(values, journal)
     unexpected = None if failed is None else [u for u in failed if u not in known]
@@ -426,12 +646,18 @@ def main():
             path = f.get("path", "")
             if path.startswith("/etc/skel/"):
                 skel_rels.append(path[len("/etc/skel/"):])
+    # The plan's dconf defaults drive the assertion list: their keys go to the
+    # guest, and the same plan is compared with what the guest reads back.
+    defaults = plan_defaults(plan)
+    dconf_db = (plan.get("artifact", {}).get("dconf") or {}).get("name")
 
     run_args = argparse.Namespace(
         disk=a.disk, out=a.out, qemu=a.qemu, ovmf_code=a.ovmf_code, ovmf_vars=a.ovmf_vars,
         memory=a.memory, cpus=a.cpus, boot_timeout=a.boot_timeout, shutdown_timeout=a.shutdown_timeout,
         interval=a.interval, stable_frames=5, expect_splash=False, hash_disk=True, keep_overlay=False,
-        extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels)), until_serial=MARK_END, guest_powers_off=True,
+        extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels,
+                                           [d["key"] for d in defaults], dconf_db)),
+        until_serial=MARK_END, guest_powers_off=True,
     )
     try:
         summary = bootcheck.run(run_args)
@@ -446,6 +672,7 @@ def main():
               "values": values, "plan_workstation": plan.get("workstation", {}).get("name")}
     if a.mode == "session":
         result["checks"] = evaluate(values, plan, journal, skel_rels)
+        result["plan_defaults"] = plan_default_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
         ok = summary["result"] == "pass" and all(c["pass"] for c in result["checks"])
     else:
@@ -457,7 +684,13 @@ def main():
     lines = [f"# Session check ({a.mode}, instrumented boot): {result['result'].upper()}", ""]
     lines += [f"- Boot: {summary['result']} {summary['failures']}"]
     for c in result.get("checks", []):
-        lines.append(f"- {'PASS' if c['pass'] else 'FAIL'}: {c['check']} ({c['detail']})")
+        lines.append(f"- {check_status(c)}: {c['check']} ({c['detail']})")
+    if "plan_defaults" in result:
+        s = result["plan_defaults"]
+        lines.append(f"- Plan defaults: {s['asserted']} of {s['declared']} asserted from the plan, "
+                     f"{len(s['skipped'])} reported without a strict assertion")
+        for c in s["skipped"]:
+            lines.append(f"  - {c['check']} ({c['detail']})")
     if "platform_diagnostics" in result:
         lines += diagnostics_md(result["platform_diagnostics"])
     lines += ["", "Journal excerpt: journal.txt. Frames: frames/ and summary.md."]

@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import tempfile
 import unittest
@@ -9,13 +10,31 @@ PLAN = {
     "workstation": {"name": "ws"},
     "artifact": {
         "rpmPackages": [{"name": "firefox"}],
-        "dconf": {"defaults": [
-            {"key": "/org/gnome/shell/enabled-extensions", "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']"},
-            {"key": "/org/gnome/shell/favorite-apps", "value": "['firefox.desktop']"},
-            {"key": "/org/gnome/desktop/background/picture-uri", "value": "'file:///usr/share/deskos/backgrounds/a.svg'"},
+        "dconf": {"name": "distro", "defaults": [
+            {"key": "/org/gnome/shell/enabled-extensions", "type": "as",
+             "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']"},
+            {"key": "/org/gnome/shell/favorite-apps", "type": "as", "value": "['firefox.desktop']"},
+            {"key": "/org/gnome/desktop/background/picture-uri", "type": "s",
+             "value": "'file:///usr/share/deskos/backgrounds/a.svg'"},
+            {"key": "/org/gnome/desktop/session/idle-delay", "type": "u", "value": "uint32 600"},
+            {"key": "/org/gnome/desktop/screensaver/lock-enabled", "type": "b", "value": "true"},
+            {"key": "/org/gnome/software/download-updates", "type": "b", "value": "false"},
         ]},
     },
 }
+
+
+def reported(defaults):
+    """What the guest reports when every default matches the plan, by index.
+
+    The guest reads the effective value (`dconf_<i>`) and the value in the image's
+    own database (`dconfdb_<i>`) for each key; both are the plan's here.
+    """
+    out = {}
+    for i, d in enumerate(defaults):
+        out[f"dconf_{i}"] = out[f"dconfdb_{i}"] = d["value"]
+    return out
+
 
 GOOD = {
     "session_type": "wayland", "disable_user_extensions": "false",
@@ -23,7 +42,13 @@ GOOD = {
     "favorite_apps": "['firefox.desktop']", "picture_uri": "'file:///usr/share/deskos/backgrounds/a.svg'",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
     "system_failed_units": "", "user_failed_units": "",
+    **reported(sc.plan_defaults(PLAN)),
 }
+
+
+def default_check(values, key, plan=PLAN):
+    name = sc.DEFAULT_CHECK_PREFIX + key
+    return next(c for c in sc.evaluate(values, plan) if c["check"] == name)
 
 
 class TmpfilesTest(unittest.TestCase):
@@ -69,6 +94,34 @@ class TmpfilesTest(unittest.TestCase):
         self.assertIn("systemd.unit-dropin.multi-user.target", c)
         self.assertNotIn("custom.conf", c["tmpfiles.extra"])
 
+    def test_session_credentials_install_the_plan_defaults(self):
+        # The plan's keys travel as a file of their own (the tmpfiles argument cap
+        # is on one file's content), and a second profile names only the image's
+        # own database so its value is read apart from the session's.
+        keys = [d["key"] for d in sc.plan_defaults(PLAN)]
+        c = sc.credentials("session", dconf_keys=keys, dconf_db="distro")
+        lines = c["tmpfiles.extra"].splitlines()
+        keyfile = next(l for l in lines if l.startswith(f"f {sc.DCONF_KEYS_PATH} "))
+        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "".join(k + "\n" for k in keys))
+        profile = next(l for l in lines if l.startswith(f"f {sc.DCONF_PROFILE_PATH} "))
+        self.assertTrue(profile.endswith("system-db:distro\\n"))
+        # The script reads the keys from the file, and so carries none of them.
+        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh "))
+        for k in keys:
+            self.assertNotIn(k, script)
+        self.assertIn(f"mapfile -t dconf_keys < {sc.DCONF_KEYS_PATH}", script.replace("\\n", "\n"))
+
+    def test_journal_credentials_ignore_the_plan_defaults(self):
+        c = sc.credentials("journal", dconf_keys=[d["key"] for d in sc.plan_defaults(PLAN)], dconf_db="distro")
+        self.assertNotIn(sc.DCONF_KEYS_PATH, c["tmpfiles.extra"])
+        self.assertNotIn(sc.DCONF_PROFILE_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("dconf read", c["tmpfiles.extra"])
+
+    def test_a_session_without_defaults_reads_none(self):
+        c = sc.credentials("session")
+        self.assertNotIn(sc.DCONF_KEYS_PATH, c["tmpfiles.extra"])
+        self.assertNotIn(sc.DCONF_PROFILE_PATH, c["tmpfiles.extra"])
+
     def test_smbios_round_trip(self):
         args = sc.smbios_args({"tmpfiles.extra": "x y\n"})
         self.assertEqual(args[0], "-smbios")
@@ -97,6 +150,97 @@ class ParseEvaluateTest(unittest.TestCase):
 
     def test_missing_results_fail(self):
         self.assertFalse(all(c["pass"] for c in sc.evaluate({"session_results": "missing"}, PLAN)))
+
+
+class PlanDefaultsTest(unittest.TestCase):
+    def test_the_plan_is_the_list_of_defaults(self):
+        # What is asserted comes from the plan, not from a constant in the checker.
+        checks = [c for c in sc.evaluate(GOOD, PLAN) if c["check"].startswith(sc.DEFAULT_CHECK_PREFIX)]
+        self.assertEqual([c["check"] for c in checks],
+                         [sc.DEFAULT_CHECK_PREFIX + d["key"] for d in sc.plan_defaults(PLAN)])
+        self.assertTrue(all(c["pass"] for c in checks))
+
+    def test_a_default_declared_later_is_asserted_without_touching_the_checker(self):
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/desktop/interface/clock-format", "type": "s", "value": "'24h'"})
+        # The guest reported the plan without the new default, so it has no value.
+        values = dict(GOOD)
+        self.assertFalse(default_check(values, "/org/gnome/desktop/interface/clock-format", plan)["pass"])
+
+    def test_a_value_that_matches_neither_the_session_nor_the_image_fails(self):
+        values = dict(GOOD, dconf_3="uint32 900", dconfdb_3="uint32 900")
+        self.assertFalse(default_check(values, "/org/gnome/desktop/session/idle-delay")["pass"])
+
+    def test_a_default_the_guest_never_reported_fails(self):
+        values = {k: v for k, v in GOOD.items() if k != "dconf_4"}
+        c = default_check(values, "/org/gnome/desktop/screensaver/lock-enabled")
+        self.assertFalse(c["pass"])
+        self.assertIn("did not report", c["detail"])
+
+    def test_an_array_whose_order_differs_passes_and_says_so(self):
+        # The plan does not say whether an array's order matters, so it is compared
+        # as a multiset; the order-sensitive checks (favorites) stay their own.
+        values = dict(GOOD, dconf_0="['dash-to-dock@micxgx.gmail.com', 'background-logo@fedorahosted.org']")
+        c = default_check(values, "/org/gnome/shell/enabled-extensions")
+        self.assertTrue(c["pass"])
+        self.assertFalse(c["skipped"])
+        self.assertIn("different order", c["detail"])
+
+    def test_an_array_with_other_members_fails(self):
+        wrong = "['background-logo@fedorahosted.org', 'other@example.com']"
+        values = dict(GOOD, dconf_0=wrong, dconfdb_0=wrong)
+        self.assertFalse(default_check(values, "/org/gnome/shell/enabled-extensions")["pass"])
+
+    def test_an_empty_array_matches_its_typed_form(self):
+        # dconf prints an empty array as `@as []` where the plan stores `[]`: the
+        # comparison is by value, not by text.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["dconf"]["defaults"][1] = {"key": "/org/gnome/shell/favorite-apps", "value": "[]"}
+        values = dict(GOOD, dconf_1="@as []")
+        self.assertTrue(default_check(values, "/org/gnome/shell/favorite-apps", plan)["pass"])
+
+    def test_a_value_the_session_changed_is_reported_not_failed(self):
+        # The image still carries the plan's default; a user, or a local or site
+        # database, wins over one by design, so the effective value is reported.
+        values = dict(GOOD, dconf_1="['other.desktop']")
+        c = default_check(values, "/org/gnome/shell/favorite-apps")
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("session sees", c["detail"])
+        self.assertEqual(sc.check_status(c), "SKIP")
+        summary = sc.plan_default_summary(sc.evaluate(values, PLAN))
+        self.assertEqual(summary["asserted"], len(sc.plan_defaults(PLAN)) - 1)
+        self.assertEqual([s["check"] for s in summary["skipped"]], [c["check"]])
+
+    def test_a_default_missing_from_the_image_database_fails(self):
+        # The session value and the image's own database both differ: the image
+        # does not carry the declared default, so this is not a session override.
+        values = dict(GOOD, dconf_1="['other.desktop']", dconfdb_1=sc.UNSET)
+        c = default_check(values, "/org/gnome/shell/favorite-apps")
+        self.assertFalse(c["pass"])
+        self.assertFalse(c["skipped"])
+
+    def test_a_key_the_session_cannot_see_is_reported(self):
+        # The image carries the default, but the session's own profile does not
+        # reach the database that holds it: reported, not asserted.
+        values = dict(GOOD, dconf_4=sc.UNSET)
+        c = default_check(values, "/org/gnome/desktop/screensaver/lock-enabled")
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("profile", c["detail"])
+
+    def test_an_unreadable_effective_value_is_reported(self):
+        values = dict(GOOD, dconf_4=sc.ERROR)
+        c = default_check(values, "/org/gnome/desktop/screensaver/lock-enabled")
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("could not be read", c["detail"])
+
+    def test_a_plan_without_defaults_asserts_none(self):
+        checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})
+        self.assertEqual(sc.plan_default_summary(checks)["declared"], 0)
+        self.assertTrue(all(c["pass"] for c in checks))
 
 
 MCELOG_FAILED = dict(
