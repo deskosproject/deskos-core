@@ -103,6 +103,20 @@ jobs:
           echo "$out"
           [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
 
+      - name: Smoke the image a pipeline would run
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          # `version` alone does not exercise the compiler, and this image is the
+          # release artifact a pipeline runs, so validate the embedded Core and
+          # render a workstation that ships with it.
+          podman run --rm quay.io/deskos/deskosctl:"$TAG" validate
+          mkdir -p smoke-out
+          podman run --rm -v "$PWD/smoke-out:/out:z" \
+            quay.io/deskos/deskosctl:"$TAG" render \
+            --workstation deskos-core-centos10 --output /out
+          test -f smoke-out/Containerfile
+
       - name: Install Syft and Grype (pinned)
         env:
           SYFT_VERSION: v1.54.1
@@ -129,6 +143,7 @@ jobs:
       - name: Push, sign and verify
         env:
           TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ needs.tag.outputs.prerelease }}
           DEST: quay.io/deskos/deskosctl
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
@@ -144,10 +159,21 @@ jobs:
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
-          podman tag "quay.io/deskos/deskosctl:$TAG" "$DEST:latest"
-          podman push "$DEST:latest"
+          if [ "$PRERELEASE" = "false" ]; then
+            # :latest is the newest stable release; a prerelease must not move
+            # it, the same way GitHub's own "latest release" excludes them.
+            podman tag "quay.io/deskos/deskosctl:$TAG" "$DEST:latest"
+            # And it must be the digest that was signed, not merely a tag that
+            # points somewhere: a registry returning another digest would mean
+            # the signature is about a different image.
+            podman push --digestfile latest-digest.txt "$DEST:latest"
+            latest="$(tr -d '\n\r' < latest-digest.txt)"
+            [ "$latest" = "$digest" ] || { echo "::error::$DEST:latest is $latest, not the signed $digest"; exit 1; }
+            echo "Published and signed $ref, and moved :latest to it" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Prerelease $TAG: published and signed $ref; :latest unchanged" >> "$GITHUB_STEP_SUMMARY"
+          fi
           podman logout quay.io
-          echo "Published and signed $ref" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the tool image evidence
         if: always()
@@ -163,7 +189,7 @@ jobs:
           if-no-files-found: warn
 
   release:
-    needs: [tag, build]
+    needs: [tag, build, tool]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -185,5 +211,5 @@ jobs:
             release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz \
             release/deskosctl-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} for linux/amd64 and the DeskOS resources, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
+            --notes "deskosctl ${TAG} for linux/amd64, the DeskOS resources, and the same tool as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
             "${flags[@]}"
