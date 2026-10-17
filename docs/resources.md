@@ -652,3 +652,15 @@ An administrator describes things such as:
 *without knowing* which GNOME schema or dconf key implements them. DeskOS
 Core ships reasonable defaults, and organizations override them
 declaratively.
+
+Window controls write exactly the buttons and the side a profile declares:
+the plan adds no app menu token of its own
+([ADR 0016](adr/0016-vendor-desktop-and-app-menu.md)).
+
+A platform whose base ships a desktop of its own declares
+`gnome.keepsVendorDefaults: true` instead of `gnome.dconfDatabase`. DeskOS then
+writes no GNOME default or lock for it — the platform's desktop is the vendor's — and
+every GNOME setting a profile declared is reported in the plan's warnings as not
+applied, so the omission is visible. Ubuntu 26.04 declares it, because no session
+there reads a system dconf database. A value that must reach such a platform uses the
+vendor's own mechanism (a compiled GSettings override), never the dconf database.

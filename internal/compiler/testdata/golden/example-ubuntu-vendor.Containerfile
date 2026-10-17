@@ -26,8 +26,7 @@ RUN \
 COPY rootfs/ /
 
 # System configuration
-RUN dconf update \
-    && systemctl enable 'deskos-image-update.timer' 'gdm.service' \
+RUN systemctl enable 'deskos-image-update.timer' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'
 

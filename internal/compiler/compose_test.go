@@ -293,7 +293,9 @@ func TestHigherLayerOverride(t *testing.T) {
 		"g2.yaml":   gnome("bank-default", buttons("close")),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
-	if v, _ := dconf(p, "/org/gnome/desktop/wm/preferences/button-layout"); v != "'appmenu:close'" {
+	// The higher layer's buttons win, and the plan carries only what the profile
+	// declared: no app menu token is added (docs/adr/0016).
+	if v, _ := dconf(p, "/org/gnome/desktop/wm/preferences/button-layout"); v != "'close:'" {
 		t.Fatalf("button-layout = %s", v)
 	}
 }

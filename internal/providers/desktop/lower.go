@@ -69,18 +69,40 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if pl.Gnome == nil {
 		return fmt.Errorf("%s declares no GNOME integration, but the composition contains GNOME settings", c.Platform.ID())
 	}
+	if pl.Gnome.KeepsVendorDefaults {
+		// The platform's base ships no system dconf profile, so a default written
+		// for it would never reach a session. The platform keeps its vendor's
+		// desktop defaults and DeskOS writes none: what a profile asked for is
+		// recorded as not applied, so the plan does not promise a value the user
+		// does not get (AGENTS.md invariant 9, ADR 0016).
+		for _, s := range settings {
+			p.Warnings = append(p.Warnings, fmt.Sprintf(
+				"%s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
+				s.Key, c.Platform.ID()))
+		}
+		for _, lk := range locks {
+			p.Warnings = append(p.Warnings, fmt.Sprintf(
+				"a lock on %s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
+				lk.Name, c.Platform.ID()))
+		}
+		return nil
+	}
 	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
 	get := func(key string) (compose.Scalar, bool) { return c.Result.Scalar(DomainSettings, key) }
 
-	// Window controls: two semantic keys produce one GNOME key.
+	// Window controls: two semantic keys produce one GNOME key. The plan writes
+	// exactly the buttons the profile declares: DeskOS does not add the app menu
+	// token GNOME ships by default, which no profile asked for and which decides
+	// the shell's look on its own (docs/adr/0016). A flavor that wants it declares
+	// it, once a field exists.
 	if b, ok := get(KeyButtons); ok {
 		buttons := strings.Join(b.Value.([]string), ",")
-		layout := "appmenu:" + buttons
+		layout := buttons + ":"
 		prov := b.Provenance
 		const key = "/org/gnome/desktop/wm/preferences/button-layout"
 		if pos, ok := get(KeyButtonPlacement); ok {
 			if pos.Value.(string) == "left" {
-				layout = buttons + ":appmenu"
+				layout = ":" + buttons
 			}
 			prov = append(append([]model.Provenance(nil), prov...), pos.Provenance...)
 			l.bySett[KeyButtonPlacement] = []string{key}

@@ -25,3 +25,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0013: Theme as the thirteenth public kind](0013-theme.md) | accepted |
 | [0014: Platform base ownership and support tiers](0014-platform-base-ownership.md) | accepted |
 | [0015: A second package manager, and where the package database lives](0015-package-manager-and-database.md) | accepted |
+| [0016: A platform that keeps its vendor's desktop, and no assumed app menu](0016-vendor-desktop-and-app-menu.md) | accepted |

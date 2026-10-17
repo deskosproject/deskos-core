@@ -148,3 +148,55 @@ func TestAppearanceAndSoftwareRenderAndLocks(t *testing.T) {
 		t.Errorf("dconf locks =\n%s\nwant\n%s", got, locks)
 	}
 }
+
+func TestAPlatformThatKeepsVendorDefaultsWritesNoDconf(t *testing.T) {
+	// A platform whose base ships no system dconf profile keeps its vendor's
+	// desktop defaults: DeskOS writes none, and a default a profile asked for is
+	// recorded as not applied instead of promised to a user who never gets it
+	// (AGENTS.md invariant 9; docs/adr/0016).
+	platform := strings.Replace(platformYAML,
+		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", shellDefaults("      hotCorners: false\n")),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	if p.Artifact.Dconf != nil {
+		t.Fatalf("dconf written for a platform that keeps its vendor's defaults: %+v", p.Artifact.Dconf)
+	}
+	want := "shell.hotCorners is not applied: Platform/test-platform declares gnome.keepsVendorDefaults"
+	if !strings.Contains(strings.Join(p.Warnings, "\n"), want) {
+		t.Errorf("warnings %q lack %q", p.Warnings, want)
+	}
+}
+
+func TestKeepsVendorDefaultsAndADconfDatabaseConflict(t *testing.T) {
+	// The two facts contradict each other: one says DeskOS writes a database, the
+	// other says it writes none.
+	platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
+		"    dconfDatabase: distro\n    keepsVendorDefaults: true\n", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", shellDefaults("      hotCorners: false\n")),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err,
+		`gnome.dconfDatabase "distro" is declared although the platform keeps its vendor's desktop defaults`)
+}
+
+func TestGNOMEDefaultsNeedADconfDatabase(t *testing.T) {
+	// The database name is optional in the schema only for a platform that keeps
+	// its vendor's defaults; every other platform must name where it writes.
+	platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n", "", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", shellDefaults("      hotCorners: false\n")),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	if err == nil || !strings.Contains(err.Error(), "dconfDatabase") {
+		t.Fatalf("a platform with neither dconfDatabase nor keepsVendorDefaults must be rejected, got %v", err)
+	}
+}

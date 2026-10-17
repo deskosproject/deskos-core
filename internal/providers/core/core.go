@@ -114,6 +114,11 @@ type UnavailablePackage struct {
 // GnomePlatform holds GNOME integration facts of the platform.
 type GnomePlatform struct {
 	DconfDatabase string `json:"dconfDatabase"`
+	// KeepsVendorDefaults reports that this platform's desktop is the vendor's
+	// own: its base ships no system dconf profile, so a default DeskOS wrote
+	// would not reach a session. DeskOS writes none here, and composition
+	// records each GNOME default a profile asked for and did not get.
+	KeepsVendorDefaults bool `json:"keepsVendorDefaults,omitempty"`
 	// LoginScreen reports that GDM's dconf profile reads DconfDatabase, so
 	// org.gnome.login-screen defaults written there reach the login screen.
 	LoginScreen       bool             `json:"loginScreen,omitempty"`
@@ -305,7 +310,12 @@ func (platformProvider) Decode(res *model.Resource) error {
 		errs.Add(model.Errorf(res, "displayManager %q must be a .service unit", s.DisplayManager))
 	}
 	if g := s.Gnome; g != nil {
-		if !model.ValidName(g.DconfDatabase) {
+		switch {
+		case g.KeepsVendorDefaults:
+			if g.DconfDatabase != "" {
+				errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is declared although the platform keeps its vendor's desktop defaults and writes no database", g.DconfDatabase))
+			}
+		case !model.ValidName(g.DconfDatabase):
 			errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is not a valid database name", g.DconfDatabase))
 		}
 		for _, e := range g.Extensions {
