@@ -302,8 +302,9 @@ jobs:
       - name: Boot check (unmodified disk)
         timeout-minutes: 20
         run: |
-          # No --expect-splash: the example keeps AlmaLinux's own look, so the
-          # assertion is the stable graphical screen, not a DeskOS splash.
+          # No --expect-splash: the example keeps AlmaLinux's own look. The check
+          # classifies pixels, not the splash's identity, so the assertion is the
+          # stable graphical screen; AlmaLinux's own splash is not verified here.
           python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
             --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
 
