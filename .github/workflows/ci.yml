@@ -63,7 +63,7 @@ jobs:
           # The AlmaLinux example renders too: its platform is shipped.
           ./bin/deskosctl render ./examples/core-almalinux-10 --workstation example-core-almalinux-10 --output dist/alma
           # The AlmaLinux reference workstation renders too: it is what the
-          # publish path builds, and its context is pinned by a golden.
+          # publish path builds, and its Containerfile is pinned by a golden.
           ./bin/deskosctl render --workstation deskos-core-almalinux10 --output dist/alma-ref
           diff -r dist/a dist/b
           diff -r dist/a dist/c
