@@ -2,11 +2,14 @@ name: vm-bootcheck (experimental)
 
 # Boots the artifact and asks the guest what it did, per platform.
 #
-# For CentOS Stream 10: builds the image from this checkout, makes a QCOW2 without the
-# builder's kernel arguments, runs tests/vm/bootcheck.py on the unmodified disk, then
+# For CentOS Stream 10: builds the image from this checkout and from the
+# organization example, makes a QCOW2 without the builder's kernel arguments for
+# each, runs tests/vm/bootcheck.py on the unmodified disk, then
 # tests/vm/sessioncheck.py on an instrumented boot of the same disk, then
 # tests/vm/firstbootcheck.py, which is the one that answers whether the first-boot wizard
-# ran and whether any account could log in.
+# ran and whether any account could log in. Booting example-devops-centos10 is what
+# builds and boots an image with four declared RpmRepository sources enabled and
+# the requested packages installed, not which source each package came from.
 #
 # For Ubuntu 26.04 there is no published image to hand to bootc-image-builder, so the disk
 # is written by `bootc install to-disk` out of a compressed OCI layout, which is the
@@ -58,18 +61,41 @@ jobs:
   core-centos10:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
+    strategy:
+      # The two are independent checks: one failing should not hide the other.
+      fail-fast: false
+      matrix:
+        # The Core workstation, whose root is the embedded Core, and the
+        # organization example, which declares four RpmRepository sources. Booting
+        # the second is what builds and boots an image with those sources enabled:
+        # dnf resolves them and installs the packages with GPG checking. It proves
+        # the transaction succeeds, not which source each package came from, and it
+        # does not claim the example's virt-manager requirement is met
+        # (see examples/baseline-and-role/README.md).
+        include:
+          - workstation: deskos-core-centos10
+            root: ""
+            artifact: vm-evidence-core-centos10
+            image: localhost/deskos-core-centos10:ci
+          - workstation: example-devops-centos10
+            root: examples/baseline-and-role
+            artifact: vm-evidence-example-devops-centos10
+            image: localhost/example-devops-centos10:ci
     env:
-      IMAGE: localhost/deskos-core-centos10:ci
+      WS: ${{ matrix.workstation }}
+      ROOT: ${{ matrix.root }}
+      IMAGE: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
-      - name: Render the Core build context
+      - name: Render the build context
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render --workstation deskos-core-centos10 --output ctx
+          # ROOT is empty for the Core workstation, whose root is the embedded Core.
+          ./bin/deskosctl render $ROOT --workstation "$WS" --output ctx
           sha256sum ctx/plan.json ctx/generated-manifest.json
 
       - name: Put container storage and outputs on /mnt
@@ -185,7 +211,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: vm-evidence-core-centos10
+          name: ${{ matrix.artifact }}
           path: |
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck
