@@ -79,6 +79,11 @@ jobs:
             splash: false
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
+      # Declared once, at the job level, so the assertion step and the boot check
+      # read the same value: a boolean comparison, because comparing the matrix's
+      # boolean to the string 'true' is never true and would silently drop the
+      # splash expectation from every leg.
+      SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -222,11 +227,6 @@ jobs:
       - name: Boot check (unmodified disk)
         id: boot
         timeout-minutes: 15
-        env:
-          # A boolean comparison, not a string one: the leg declares whether a
-          # DeskOS splash is expected. Ubuntu boots with Canonical's experience,
-          # so demanding one there would fail a good disk.
-          SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
         run: |
           python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
             --out "$WORK/bootcheck" $SPLASH --hash-disk --keep-overlay --boot-timeout 420
