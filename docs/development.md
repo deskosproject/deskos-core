@@ -114,6 +114,37 @@ deskosctl version
 The declared SBOM and where a CVE scan fits are described in
 [supply-chain.md](supply-chain.md).
 
+The CLI is also published as a **container**, `quay.io/deskos/deskosctl:<tag>`,
+from a release tag (the first tag publishes it) and signed like the other
+release artifacts; a pipeline runs the compiler without installing it. The
+embedded Core travels inside the image, so a workstation that ships with DeskOS
+Core needs no mount but the output directory:
+
+```bash
+mkdir -p out
+podman run --rm --userns=keep-id -v "$PWD/out":/out:z \
+    quay.io/deskos/deskosctl:latest render \
+    --workstation deskos-core-centos10 --output /out
+```
+
+Your own resources are an **extra** root — one that adds resources, not one that
+repeats the Core, or the load fails with "defined again". The two extra flags
+are host facts, not the image's: `--userns=keep-id` maps your uid so the tool
+can write the output, and `:z` relabels the mount. The read-only mount needs it
+too: on an SELinux-enforcing host, reading an unrelabeled root fails with
+`permission denied`, and relabeling a whole checkout can fail on root-owned
+artifacts, so mount the resource tree rather than the repository:
+
+```bash
+podman run --rm --userns=keep-id \
+    -v "$PWD/org-resources":/org:ro,z -v "$PWD/out":/out:z \
+    quay.io/deskos/deskosctl:latest render \
+    /org --workstation my-workstation --output /out
+```
+
+`:latest` is the newest **stable** release: a `vX.Y.Z-<prerelease>` tag publishes
+and signs its own tag and leaves `:latest` alone.
+
 ## Releases
 
 Pushing a tag `vX.Y.Z` (or `vX.Y.Z-<prerelease>`) runs the CI checks and

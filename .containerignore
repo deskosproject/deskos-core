@@ -1,0 +1,11 @@
+# Build context for the deskosctl tool image (Containerfile at the root).
+.git
+dist
+bin
+output
+tmp-ctx
+*.qcow2
+*.raw
+*.iso
+*.img
+*.tar
