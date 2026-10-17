@@ -17,7 +17,8 @@ organization.
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
   now runs in a downstream organization's repository on GitHub-hosted
-  runners, and this repository is CentOS Stream 10 only.
+  runners, and this repository builds CentOS Stream 10 and Ubuntu 26.04, not
+  RHEL.
 - RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
   with a private workstation that declares Flathub apps.
 
@@ -48,18 +49,17 @@ each slice is reviewed on its own:
 
 ## Milestone 2: independent CentOS CI build
 
-- **CI build:** a manual GitHub workflow (`vm-bootcheck.yml`,
-  `workflow_dispatch` only) builds the CS10 Core image, a test QCOW2 that
-  is not uploaded, and runs the boot and session checks; last passed in
-  run `37162282876` on commit `8ab0cc9`.
-  Triggering it automatically on changes to image inputs is *not
-  decided*.
+- **CI build:** `vm-bootcheck.yml` builds the CentOS Stream 10 workstations
+  (Core and the organization example) and the Ubuntu 26.04 workstation, makes
+  test disks that are not uploaded, and runs the boot, session and first-boot
+  checks. It runs on pull requests and on `main` for paths that can change an
+  image, and on demand (`workflow_dispatch`).
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots the image and then pushes and signs it to
   `quay.io/deskos/deskos-core` as `:latest` and `:<commit>`. CentOS Stream
   10 only. `vm-bootcheck.yml` is a pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10 and RHEL 10.
+  for CentOS Stream 10, RHEL 10 and Ubuntu 26.04.
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -69,7 +69,8 @@ Details in
 [`docs/design/visual-identity-and-boot.md`](design/visual-identity-and-boot.md)
 ("VM QA").
 
-**Existing, CS10 only** ([`tests/vm/`](../tests/vm/README.md)):
+**Existing for CentOS Stream 10 and Ubuntu**
+([`tests/vm/`](../tests/vm/README.md)):
 
 - **Tier A, unmodified artifact:** `bootcheck.py` boots the exact QCOW2
   through an overlay, classifies screendumps (splash, graphical) and
@@ -79,6 +80,10 @@ Details in
   report unit writes the results and journal to the serial port. No SSH
   or qecore. Checks the dock, favorites, wallpaper, headless Firefox and
   failed units against the Plan; required checks *fail closed*.
+- **First boot, instrumented, no account:** `firstbootcheck.py` adds no
+  account and no session, and asks the guest whether the first-boot wizard is
+  the session that came up, whether an account could log in, and whether a
+  service failed.
 
 **Remaining:**
 

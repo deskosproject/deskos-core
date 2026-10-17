@@ -20,10 +20,11 @@ desktop settings, branding, boot appearance) and DeskOS **compiles** them
 into a deterministic build context for **CentOS Stream 10**, **RHEL 10** or
 **Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context builds a
 bootable image, from which QCOW2 disks and installer ISOs are made. Ubuntu
-composes and renders in CI, its derived image builds from the pinned base, and
-that image **boots to GNOME Initial Setup**: the wizard runs, which is what
-`tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. None of
-the Ubuntu measurements run in CI, and Ubuntu offers no system Flatpak channel
+composes and renders, its derived image builds from the pinned base, and that
+image **boots to GNOME Initial Setup**: the wizard runs, which is what
+`tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. That
+build and boot run in CI, on every change to an image input. Ubuntu offers no
+system Flatpak channel
 ([validation status](docs/architecture.md#validation-status)).
 
 > **A workstation is compiled from organizational intent.**
@@ -135,7 +136,7 @@ sudo podman run --rm --privileged --pull=missing \
 
 The published image that passed the boot and session checks is
 `quay.io/deskos/deskos-core:latest`; [docs/install.md](docs/install.md)
-covers QCOW2, ISO and RHEL. Rendering is deterministic — the same inputs
+covers QCOW2, ISO, RHEL and Ubuntu. Rendering is deterministic — the same inputs
 give byte-identical output, and `generated-manifest.json` records their
 SHA-256 — so the context is reproducible from the same commit; the *build*
 is reproducible but not yet bit-for-bit.
@@ -208,15 +209,15 @@ in [**docs/install.md**](docs/install.md).
 | | CentOS Stream 10 | RHEL 10 | Ubuntu 26.04 |
 |---|---|---|---|
 | Compose and render | deterministic | deterministic | deterministic |
-| Image build, `bootc container lint` | CI | downstream organization | built in a lab from the pinned base |
-| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | **boots to GNOME Initial Setup** (lab): the wizard runs and no account can log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
+| Image build, `bootc container lint` | CI | downstream organization | CI (`vm-bootcheck`), on the digest the platform pins |
+| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | CI (`vm-bootcheck`): **boots to GNOME Initial Setup**, the wizard running and no account able to log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
 | System Flatpak channel | Flatpak preinstall | Flatpak preinstall | **none declared**; a `FlatpakSet` fails with that reason |
 | Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | no derived image published yet |
 | Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
 | GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
 
-Ubuntu composes and renders in CI, and everything beyond that is one manual lab run
-on the digest the platform pins: the derived image builds, and it boots to GNOME
+Ubuntu composes and renders, and its image is built and booted in CI
+(`vm-bootcheck.yml`) on the digest the platform pins. It boots to GNOME
 **Initial Setup** — the wizard runs, and no account can log in, both asserted by
 `tests/vm/firstbootcheck.py` asking the guest rather than reading a screen. That
 check is also how the wizard's absence was found and its cause fixed: GDM counts
@@ -224,7 +225,9 @@ users through AccountsService, and the uid-1000 account the upstream container i
 ships was suppressing it. Its organization-owned base carries no third-party apt
 source. What Ubuntu has not been given is a system Flatpak channel — 26.04 publishes
 no `flatpak preinstall` — so a workstation that declares a `FlatpakSet` fails
-composition with that reason instead of pretending.
+composition with that reason instead of pretending. The lab run is what first
+measured all of this; CI now repeats the build, the boot and the first-boot check,
+and adds no session check.
 
 Details: [validation status](docs/architecture.md#validation-status).
 
@@ -235,7 +238,7 @@ By what you want to do:
 | | |
 |---|---|
 | **Evaluate** | the tour above; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
-| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the published image; private RHEL 10 builds; the Ubuntu 26.04 install |
 | **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |

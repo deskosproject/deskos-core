@@ -38,7 +38,7 @@ jobs:
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples
         run: |
-          for ex in baseline-and-role core-centos-stream-10 core-almalinux-10 core-rhel-10; do
+          for ex in baseline-and-role core-centos-stream-10 core-almalinux-10 core-rhel-10 core-ubuntu-2604; do
             ./bin/deskosctl validate "./examples/$ex"
           done
       - name: plan CentOS reference workstation

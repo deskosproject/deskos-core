@@ -190,7 +190,7 @@ warning (see
 
 ## VM QA
 
-Implemented in `tests/vm/` (CS10 in CI; RHEL on the retired factory host):
+Implemented in `tests/vm/` (CS10 and Ubuntu in CI; RHEL on the retired factory host):
 Tier A without reference matching
 (`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
 systemd credentials over SMBIOS and a serial report, no SSH or qecore);

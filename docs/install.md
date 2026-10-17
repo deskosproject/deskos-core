@@ -1,7 +1,8 @@
 # Installing DeskOS
 
 How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
-published CentOS Stream 10 image or from a private RHEL 10 build.
+published CentOS Stream 10 image, a private RHEL 10 build, or an Ubuntu
+26.04 build.
 
 > [!NOTE]
 > Downloadable QCOW2 and ISO images are not published yet. Until they
@@ -134,3 +135,24 @@ host's subscription state (see [validation status](architecture.md#validation-st
 a build you make is your own to check. The image, disks and ISOs are
 **still RHEL derivatives**: push them only to registries and storage that
 are private to your organization.
+
+## Ubuntu 26.04
+
+DeskOS publishes no Ubuntu image. The platform's base is owned by the
+Project DeskOS and pinned by digest in
+`resources/platforms/ubuntu-2604.yaml`; every Ubuntu image is built from a
+resource root, for example `examples/core-ubuntu-2604/`:
+
+```bash
+./deskosctl render ./examples/core-ubuntu-2604 \
+    --workstation example-core-ubuntu-2604 --output ./dist/ubuntu
+sudo podman build -t localhost/deskos-ubuntu:test ./dist/ubuntu
+```
+
+Canonical publishes no bootc base to hand to **bootc-image-builder**, so the
+disk is written by `bootc install to-disk` from a compressed OCI layout, the
+recipe the platform's base documents. The worked recipe, including the
+loopback install, is in
+[`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk); the
+install's `--target-imgref` is the reference the machine will update from, so
+point it at your own published reference and not at the base.
