@@ -109,7 +109,7 @@ manual, human-gated step ([supply-chain.md](supply-chain.md)).
 
 Composition and rendering for this platform are covered by CI: the reference
 workstation lives in the embedded Core, so every `deskosctl validate` run in
-`ci.yml` composes it, the Fedora golden pins its rendered build context, and
+`ci.yml` composes it, the Fedora golden pins its Containerfile, and
 `ci.yml` renders it. What CI does **not** do for Fedora is build or boot an image
 ([vm-bootcheck.yml](../.github/workflows/vm-bootcheck.yml) covers CentOS Stream
 10, AlmaLinux 10 and Ubuntu 26.04).

@@ -224,6 +224,9 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 	if n := len(p.Provisioning.FlatpakApplications); n != 1 {
 		t.Errorf("compiled %d Flatpak applications, want 1 (the Flathub reference set)", n)
 	}
+	if len(p.Provisioning.FlatpakRemotes) == 0 {
+		t.Error("no Flatpak remote on a platform that declares the channel")
+	}
 	for _, a := range p.Provisioning.FlatpakRemotes {
 		if a.GPGKey == "" {
 			t.Errorf("remote %s carries no GPG key", a.Name)
