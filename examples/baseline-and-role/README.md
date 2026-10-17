@@ -36,10 +36,11 @@ installed as an additional tool and *is not an equivalent*. See
 Composition and rendering are **validated for both targets**. The RHEL
 10.2 workstation is built on an entitled factory VM, passes
 `bootc container lint` with no build-host subscription state, and its
-QCOW2 passes the boot and session checks there (retired factory host). An
-earlier revision of the CentOS Stream 10
-workstation was built with Podman; the current one is not built. Neither
-target has an E2E test.
+QCOW2 passes the boot and session checks there (retired factory host); this
+repository no longer builds RHEL. The CentOS Stream 10 workstation is built
+and booted in CI (`.github/workflows/vm-bootcheck.yml`): its boot, session
+and first-boot checks pass on the image that installs its tooling from the
+declared RPM sources. The virt-manager gap above is unchanged by that run.
 
 `assets/` holds placeholder artwork; see
 [`assets/PROVENANCE.md`](assets/PROVENANCE.md).
