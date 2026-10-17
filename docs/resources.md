@@ -137,8 +137,9 @@ spec:
 ```
 
 The foundation names its own metapackage group and no individual packages: the
-vendor's base already carries what a desktop needs (measured: `NetworkManager` is in
-both bases, so naming it installed nothing, and naming it forced Core to know one
+vendor's base already carries what a desktop needs (measured: naming
+`NetworkManager` installed nothing because the base already ships it, and naming it
+forced Core to know one
 family's spelling of it). A browser, a firewall and an application channel are
 platform or organization choices: the RHEL family keeps its browser, its firewall
 and its application channel in `PackageSet/rhel-family`, which workstations on those
