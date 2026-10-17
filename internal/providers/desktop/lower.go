@@ -69,40 +69,54 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if pl.Gnome == nil {
 		return fmt.Errorf("%s declares no GNOME integration, but the composition contains GNOME settings", c.Platform.ID())
 	}
+	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
 	if pl.Gnome.KeepsVendorDefaults {
-		// The platform's base ships no system dconf profile, so a default written
-		// for it would never reach a session. The platform keeps its vendor's
-		// desktop defaults and DeskOS writes none: what a profile asked for is
-		// recorded as not applied, so the plan does not promise a value the user
-		// does not get (AGENTS.md invariant 9, ADR 0016).
+		// The platform's base ships no system dconf profile, so a default written for
+		// it would reach no session: it keeps its vendor's desktop defaults and DeskOS
+		// writes none. Core's own foundation opinion is recorded as not applied, with
+		// the fact named. A setting or a lock a higher layer asked for is a requirement
+		// this platform cannot meet and fails composition instead of being dropped:
+		// "best effort" would turn a lower layer's request into a green validate
+		// (AGENTS.md invariant 9, docs/adr/0016).
 		for _, s := range settings {
+			if s.Layer > model.LayerFoundation {
+				l.errs.Add(fmt.Errorf("%s is set at %s layer, but %s keeps its vendor's desktop defaults and writes no dconf database\n  set by: %s",
+					s.Key, s.Layer, c.Platform.ID(), describe(s.Provenance)))
+				continue
+			}
 			p.Warnings = append(p.Warnings, fmt.Sprintf(
 				"%s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
 				s.Key, c.Platform.ID()))
 		}
 		for _, lk := range locks {
+			if layer := lockLayer(lk.Provenance); layer > model.LayerFoundation {
+				l.errs.Add(fmt.Errorf("%s is locked at %s layer, but %s keeps its vendor's desktop defaults and writes no dconf database\n  locked by: %s",
+					lk.Name, layer, c.Platform.ID(), describe(lk.Provenance)))
+				continue
+			}
 			p.Warnings = append(p.Warnings, fmt.Sprintf(
 				"a lock on %s is not applied: %s declares gnome.keepsVendorDefaults, so DeskOS writes no dconf default there",
 				lk.Name, c.Platform.ID()))
 		}
-		return nil
+		return l.errs.Err()
 	}
-	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
 	get := func(key string) (compose.Scalar, bool) { return c.Result.Scalar(DomainSettings, key) }
 
 	// Window controls: two semantic keys produce one GNOME key. The plan writes
 	// exactly the buttons the profile declares: DeskOS does not add the app menu
 	// token GNOME ships by default, which no profile asked for and which decides
 	// the shell's look on its own (docs/adr/0016). A flavor that wants it declares
-	// it, once a field exists.
+	// it, once a field exists. GNOME's button-layout is "<left>:<right>": the colon
+	// separates the window's left corner from its right corner, so the buttons go
+	// after it unless the profile asks for the left side.
 	if b, ok := get(KeyButtons); ok {
 		buttons := strings.Join(b.Value.([]string), ",")
-		layout := buttons + ":"
+		layout := ":" + buttons
 		prov := b.Provenance
 		const key = "/org/gnome/desktop/wm/preferences/button-layout"
 		if pos, ok := get(KeyButtonPlacement); ok {
 			if pos.Value.(string) == "left" {
-				layout = ":" + buttons
+				layout = buttons + ":"
 			}
 			prov = append(append([]model.Provenance(nil), prov...), pos.Provenance...)
 			l.bySett[KeyButtonPlacement] = []string{key}
@@ -389,6 +403,18 @@ func (l *lowering) disableDock(en compose.Scalar) {
 		}
 	}
 	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
+}
+
+// lockLayer is the highest semantic layer that asked for a lock. A lock is a set
+// member and carries provenance rather than a layer of its own.
+func lockLayer(ps []model.Provenance) model.Layer {
+	top := model.Layer(0)
+	for _, p := range ps {
+		if l, err := model.ParseLayer(p.Layer); err == nil && l > top {
+			top = l
+		}
+	}
+	return top
 }
 
 func describeShort(ps []model.Provenance) string {

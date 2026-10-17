@@ -315,6 +315,9 @@ func (platformProvider) Decode(res *model.Resource) error {
 			if g.DconfDatabase != "" {
 				errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is declared although the platform keeps its vendor's desktop defaults and writes no database", g.DconfDatabase))
 			}
+			if g.LoginScreen {
+				errs.Add(model.Errorf(res, "gnome.loginScreen is declared although the platform keeps its vendor's desktop defaults and writes no database for GDM to read"))
+			}
 		case !model.ValidName(g.DconfDatabase):
 			errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is not a valid database name", g.DconfDatabase))
 		}

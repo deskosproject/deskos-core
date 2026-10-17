@@ -659,8 +659,11 @@ the plan adds no app menu token of its own
 
 A platform whose base ships a desktop of its own declares
 `gnome.keepsVendorDefaults: true` instead of `gnome.dconfDatabase`. DeskOS then
-writes no GNOME default or lock for it — the platform's desktop is the vendor's — and
-every GNOME setting a profile declared is reported in the plan's warnings as not
-applied, so the omission is visible. Ubuntu 26.04 declares it, because no session
-there reads a system dconf database. A value that must reach such a platform uses the
-vendor's own mechanism (a compiled GSettings override), never the dconf database.
+writes no GNOME default or lock for it — the platform's desktop is the vendor's.
+A GNOME setting or lock that Core's foundation declares is reported in the plan's
+warnings as not applied; one an organization, role or workstation layer declares
+**fails composition**, because that is a requirement the platform cannot meet. A
+platform with the fact must also not declare `gnome.loginScreen`. Ubuntu 26.04
+declares it, because no session there reads a system dconf database. A value that
+must reach such a platform uses the vendor's own mechanism (a compiled GSettings
+override), never the dconf database.

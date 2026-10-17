@@ -30,18 +30,28 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
 ## Decision
 
 1. A platform whose base ships a desktop of its own declares
-   `gnome.keepsVendorDefaults: true`. DeskOS then writes **no** dconf default and
-   **no** lock for it: the platform's desktop is the vendor's. Every GNOME setting a
-   profile declared is recorded in the plan's warnings as not applied, naming the
-   fact, so the omission is visible rather than silent. A platform with the fact must
-   not declare `gnome.dconfDatabase`; a platform without it must.
+   `gnome.keepsVendorDefaults: true`. DeskOS writes **no** dconf default and **no**
+   lock for it: the platform's desktop is the vendor's. A platform with the fact must
+   not declare `gnome.dconfDatabase` or `gnome.loginScreen`; a platform without it
+   must declare a database. What happens to a declared setting depends on who asked:
+   - a setting or lock that comes from the **foundation** is Core's own opinion, so it
+     is recorded in the plan's warnings as not applied, naming the fact. The omission
+     is visible rather than silent;
+   - a setting or lock a **higher layer** (organization, role, workstation) asked for
+     is a requirement this platform cannot meet: composition **fails** with the reason
+     and the provenance. "Best effort" would turn a lower layer's request into a green
+     `validate`, which is the failure [ADR 0005](0005-managed-baseline-boundary.md) and
+     the platform-gap invariant exist to prevent.
 2. Ubuntu 26.04 declares it. A value that must reach an Ubuntu session takes a
    vendor mechanism (a compiled GSettings override, the plan's
    `gsettingsVendorDefaults`), never the dconf database, because no session reads
    that database there.
 3. `windows.buttons` writes exactly the buttons and the side a profile declares. The
-   plan adds no app menu token of its own. A flavor that wants GNOME's app menu needs
-   a declared field, which this ADR does not add.
+   plan adds no app menu token of its own. GNOME's `button-layout` is
+   `<left>:<right>` — the colon separates the window's left corner from its right
+   corner — so the buttons go after the colon unless the profile asks for the left.
+   A flavor that wants GNOME's app menu needs a declared field, which this ADR does
+   not add.
 
 ## Consequences
 
@@ -51,16 +61,19 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
 - The session check has nothing to assert on Ubuntu instead of a value it could
   never confirm, so its coverage is honest without a weakening: nothing is promised
   there, so nothing is skipped.
-- A GNOME default declared on such a platform is a **warning that names the fact**,
-  not a silent drop and not a composition failure. Failing would be wrong: the
-  platform is not missing a requirement it was asked to meet, it is a desktop we did
-  not touch.
+- A foundation setting declared on such a platform is a **warning that names the
+  fact**; a higher layer's is an **error that names the layer and the provenance**.
+  Neither is a silent drop, and neither weakens a check: the platform is not missing
+  a requirement Core asked of itself, and it is not allowed to ignore one its owner
+  asked for.
 - Anything that must still reach the user on Ubuntu has to be delivered the vendor's
   way, which keeps [ADR 0014](0014-platform-base-ownership.md)'s split of who owns
   what intact: the base is the platform's, and DeskOS does not maintain a desktop it
   cannot deliver.
 - Removing the app menu token changes an existing plan
-  (`example-devops-rhel10`: `'appmenu:close'` becomes `'close:'`), which was reviewed
-  as a golden diff.
+  (`example-devops-rhel10`: `'appmenu:close'` becomes `':close'` — the close button
+  stays on the right, where it was), which was reviewed as a golden diff. The side is
+  asserted by its own test, because a golden that compares only the produced string
+  would not catch a swap of the two sides.
 - The plan remains the record of what was and was not applied, so a reader does not
   have to know which platform keeps its vendor's defaults.

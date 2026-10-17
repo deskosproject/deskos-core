@@ -200,3 +200,71 @@ func TestGNOMEDefaultsNeedADconfDatabase(t *testing.T) {
 		t.Fatalf("a platform with neither dconfDatabase nor keepsVendorDefaults must be rejected, got %v", err)
 	}
 }
+
+func TestWindowButtonsGoOnTheSideTheProfileAsksFor(t *testing.T) {
+	// GNOME's button-layout is "<left>:<right>": the colon separates the window's
+	// left corner from its right corner. A golden that only compares the produced
+	// string does not catch a swap of the two sides, so the side is asserted here.
+	const key = "/org/gnome/desktop/wm/preferences/button-layout"
+	for _, tc := range []struct{ name, defaults, want string }{
+		{"no placement declared puts the buttons on the right", "    windows:\n      buttons: [close]\n", "':close'"},
+		{"left when the profile asks for it", "    windows:\n      buttons: [close]\n      buttonPlacement: left\n", "'close:'"},
+		{"right when the profile asks for it", "    windows:\n      buttons: [close, minimize]\n      buttonPlacement: right\n", "':close,minimize'"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := base.with(fixture{
+				"ws.yaml":   workstation("ws", "core"),
+				"core.yaml": profile("core", "foundation", "GnomeProfile/g"),
+				"g.yaml":    gnome("g", tc.defaults),
+			}).dir(t)
+			p := mustPlan(t, "ws", dir)
+			if v, ok := dconf(p, key); !ok || v != tc.want {
+				t.Errorf("button-layout = %s, want %s", v, tc.want)
+			}
+		})
+	}
+}
+
+func TestAnOrganizationCannotSetGnomeOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
+	// The foundation's own GNOME opinion is recorded as not applied on such a
+	// platform, but a higher layer asking for a value or a lock is a requirement
+	// the platform cannot meet, and that fails composition instead of turning into
+	// a green validate (AGENTS.md invariant 9; docs/adr/0016).
+	platform := strings.Replace(platformYAML,
+		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", shellDefaults("      hotCorners: false\n")),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err,
+		"shell.hotCorners is set at organization layer, but Platform/test-platform keeps its vendor's desktop defaults",
+		"organization GnomeProfile/g")
+}
+
+func TestAnOrganizationCannotLockGnomeOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
+	platform := strings.Replace(platformYAML,
+		"    dconfDatabase: distro\n", "    keepsVendorDefaults: true\n", 1)
+	gnomeWithLock := gnome("g", shellDefaults("      hotCorners: false\n"))
+	gnomeWithLock = strings.Replace(gnomeWithLock, "spec:\n", "spec:\n  locks: [shell.hotCorners]\n", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnomeWithLock,
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "shell.hotCorners is locked at organization layer")
+}
+
+func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {
+	platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
+		"    keepsVendorDefaults: true\n    loginScreen: true\n", 1)
+	dir := fixture{"platform.yaml": platform}.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", shellDefaults("      hotCorners: false\n")),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "gnome.loginScreen is declared although the platform keeps its vendor's desktop defaults")
+}

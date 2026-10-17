@@ -294,8 +294,9 @@ func TestHigherLayerOverride(t *testing.T) {
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	// The higher layer's buttons win, and the plan carries only what the profile
-	// declared: no app menu token is added (docs/adr/0016).
-	if v, _ := dconf(p, "/org/gnome/desktop/wm/preferences/button-layout"); v != "'close:'" {
+	// declared: no app menu token is added, and the colon puts the buttons on the
+	// right, where the profile did not ask to move them (docs/adr/0016).
+	if v, _ := dconf(p, "/org/gnome/desktop/wm/preferences/button-layout"); v != "':close'" {
 		t.Fatalf("button-layout = %s", v)
 	}
 }

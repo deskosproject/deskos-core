@@ -674,7 +674,7 @@
         {
           "key": "/org/gnome/desktop/wm/preferences/button-layout",
           "type": "s",
-          "value": "'close:'",
+          "value": "':close'",
           "setting": "windows.buttons",
           "provenance": [
             {
