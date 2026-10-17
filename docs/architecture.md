@@ -35,7 +35,7 @@ reconcile deployed endpoint state.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10, whose image goes to quay.io/deskos/deskos-core-centos10, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -270,7 +270,7 @@ not alter package behavior to silence them.
 ## Public CentOS, private RHEL
 
 The public reference workstation `deskos-core-centos10` is
-redistributable and is the source of `quay.io/deskos/deskos-core`.
+redistributable and is the source of `quay.io/deskos/deskos-core-centos10`.
 
 > [!IMPORTANT]
 > RHEL-derived images are covered by the RHEL EULA and are **never
@@ -324,9 +324,11 @@ account the upstream container image ships suppressing the wizard — is in
   consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
   disk under nested KVM on the entitled factory VM (example wallpaper). Not in
   CI; no full E2E.
-- **Published CentOS Stream 10 image.** Last run `37162282876` on commit
-  `8ab0cc9`, with the approved DeskOS identity; it published
-  `quay.io/deskos/deskos-core:8ab0cc9...` and `:latest`.
+- **Published images: none.** The single repository that held the published
+  CentOS Stream 10 image — `quay.io/deskos/deskos-core`, last run `37162282876` on
+  commit `8ab0cc9` — has been **withdrawn**, and the per-platform matrix that
+  replaces it has not been dispatched with `publish=true`. The first such dispatch
+  is what will make this line say otherwise.
 - **Fedora 44, composed, rendered and built (2026-10-17).** The platform's facts
   were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:44`,
   pinned by digest), not modeled on another family: the comps environment dnf5
@@ -703,11 +705,11 @@ reserved in the Plan and not implemented.
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **Published today:** the CentOS Stream 10 image on
-  `quay.io/deskos/deskos-core`. Publishing is manual: the `supply-chain`
-  workflow (with `publish=true`) builds, scans, boots, then pushes and
-  signs `:latest` and `:<commit>` together. It is not published on every
-  green `main`; pin a digest in production.
+- **Published today: nothing.** The image goes to one repository per platform
+  (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …). Publishing is manual:
+  the `supply-chain` workflow (with `publish=true`) builds, scans, boots, then
+  pushes and signs `:<commit>` and promotes `:latest` by digest. No dispatch has run
+  yet. It is not published on every green `main`; pin a digest in production.
 - **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
   storage, not on GitHub; until then they are built locally (see
   [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) or writes

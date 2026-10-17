@@ -139,8 +139,10 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
 ```
 
-The image that passed the boot and session checks is published as
-`quay.io/deskos/deskos-core:latest`. Rendering is deterministic — the same inputs
+The image is published **per platform**, one repository each, by `supply-chain.yml`
+with `publish=true`: `quay.io/deskos/deskos-core-centos10`, `-almalinux10`, and so on.
+No dispatch has run yet, so **nothing is published today**, and the older single
+repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
 give byte-identical output, and `generated-manifest.json` records their SHA-256 —
 so the build context is reproducible from the same commit. The image **build is
 not** yet bit-for-bit reproducible: the base tag and repository content can move
@@ -156,7 +158,7 @@ status of each platform, and what is verified, is in
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10 published at quay.io/deskos/deskos-core, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, whose image goes to quay.io/deskos/deskos-core-centos10, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 

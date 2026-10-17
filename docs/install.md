@@ -19,12 +19,16 @@ boot and session checks. Publishing is manual (the `supply-chain` workflow
 with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
 for production, pin the digest you verified.
 
+> **Nothing is published yet.** The per-platform repositories exist, but no
+> `publish=true` dispatch has run, so the reference below is the destination, not a
+> pullable image.
+
 **1. Pull the image and make a QCOW2 disk** for a virtual machine. Resolve
 `:latest` once and build from that digest, so a publish between the pull and
 the build cannot change what you install:
 
 ```bash
-image=quay.io/deskos/deskos-core:latest
+image=quay.io/deskos/deskos-core-centos10:latest
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
 
@@ -36,7 +40,7 @@ sudo podman run --rm -it --privileged --pull=missing \
     quay.io/centos-bootc/bootc-image-builder:latest \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
-    "quay.io/deskos/deskos-core@$digest"
+    "quay.io/deskos/deskos-core-centos10@$digest"
 ```
 
 > The CI pins this builder by digest for reproducibility; `:latest` is the
@@ -64,7 +68,7 @@ The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 in `config.toml`. The kickstart DeskOS needs is in
 [installer-iso.md](installer-iso.md), together with the warning that it
 **erases every disk**. Machines installed from it update from the image
-reference it was built from (`quay.io/deskos/deskos-core:latest`): Core
+reference it was built from (`quay.io/deskos/deskos-core-centos10:latest`): Core
 stages the new image daily, on AC power, and it applies at the next
 reboot (see [Updates](operations.md)).
 
