@@ -58,6 +58,8 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         self.assertTrue(all("\n" not in l for l in lines))
         self.assertTrue(any(l.startswith("f+ /etc/gdm/custom.conf ") and "AutomaticLogin=deskos-qa" in l for l in lines))
+        # GDM's config path is the distribution's: /etc/gdm3 on Debian and Ubuntu.
+        self.assertTrue(any(l.startswith("f+ /etc/gdm3/custom.conf ") and "AutomaticLogin=deskos-qa" in l for l in lines))
         self.assertIn("ConditionPathExists=!/etc/initrd-release", c["systemd.extra-unit.deskos-qa-report.service"])
         self.assertIn("Wants=deskos-qa-report.service", c["systemd.unit-dropin.graphical.target"])
 

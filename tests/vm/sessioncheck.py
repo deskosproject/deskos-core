@@ -199,7 +199,14 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=()):
             f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
             f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
             f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
+            # GDM's configuration path is the distribution's: /etc/gdm on the EL
+            # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
+            # the autologin to both and creates each directory, so the check does
+            # not hardcode one distribution's layout; the guest's GDM reads its own.
+            "d /etc/gdm 0755 root root -",
             f"f+ /etc/gdm/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
+            "d /etc/gdm3 0755 root root -",
+            f"f+ /etc/gdm3/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
         ]
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
