@@ -1,7 +1,7 @@
 # Installing DeskOS
 
-How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
-published CentOS Stream 10 image, a private RHEL 10 build, an AlmaLinux 10
+How to get a DeskOS **QCOW2 disk** or **installer ISO**, from a CentOS Stream 10
+image you build (or pull, once it is published), a private RHEL 10 build, an AlmaLinux 10
 build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
@@ -13,18 +13,38 @@ build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 ## CentOS Stream 10
 
-DeskOS Core for CentOS Stream 10 is published as a bootable container
-image. `:latest` is the newest published image — the one that passed the
-boot and session checks. Publishing is manual (the `supply-chain` workflow
-with `publish=true`) and moves `:latest` and the `:<commit>` tag together;
-for production, pin the digest you verified.
+DeskOS Core for CentOS Stream 10 **is not published yet**: build it locally
+(`deskosctl render` and `podman build`, see the [README](../README.md)), or pull
+it from `quay.io/deskos/deskos-core-centos10` once the first `publish=true`
+dispatch runs. The published `:latest` will be the newest image that passed the
+boot and session checks. Publishing is manual (the `supply-chain` workflow with
+`publish=true`) and moves `:latest` and the `:<commit>` tag together; for
+production, pin the digest you verified.
 
-**1. Pull the image and make a QCOW2 disk** for a virtual machine. Resolve
-`:latest` once and build from that digest, so a publish between the pull and
-the build cannot change what you install:
+**1. Get the image, then make a QCOW2 disk** for a virtual machine. Nothing is
+published yet, so today the image is the one you built locally — a `localhost/`
+reference, which is what the builder takes here:
 
 ```bash
-image=quay.io/deskos/deskos-core:latest
+# The path available today: the image you built, local to this host.
+image=localhost/deskos-core-centos10:test
+
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" "$image"
+```
+
+Once the first `publish=true` dispatch runs, take the published image instead,
+and resolve `:latest` to a digest first so a publish between the pull and the
+build cannot change what you install:
+
+```bash
+image=quay.io/deskos/deskos-core-centos10:latest
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
 
@@ -36,9 +56,12 @@ sudo podman run --rm -it --privileged --pull=missing \
     quay.io/centos-bootc/bootc-image-builder:latest \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
-    "quay.io/deskos/deskos-core@$digest"
+    "quay.io/deskos/deskos-core-centos10@$digest"
 ```
 
+> A `localhost/` image is **not an update source**: an installed machine updates
+> from the reference it was built from, so anything beyond a lab disk needs a
+> published reference those machines can reach.
 > The CI pins this builder by digest for reproducibility; `:latest` is the
 > same image today.
 
@@ -64,14 +87,17 @@ The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 in `config.toml`. The kickstart DeskOS needs is in
 [installer-iso.md](installer-iso.md), together with the warning that it
 **erases every disk**. Machines installed from it update from the image
-reference it was built from (`quay.io/deskos/deskos-core:latest`): Core
+reference it was built from, so an ISO built from a `localhost/` image leaves them
+**without an update source**: publish your own reachable reference before handing
+out the ISO ([installer-iso.md](installer-iso.md)). Once DeskOS publishes, that
+reference is `quay.io/deskos/deskos-core-centos10:latest`: Core
 stages the new image daily, on AC power, and it applies at the next
 reboot (see [Updates](operations.md)).
 
 ## RHEL 10 (private builds only)
 
 > [!IMPORTANT]
-> DeskOS publishes **only CentOS Stream 10** artifacts. RHEL-based images,
+> DeskOS publishes by platform, one repository each. RHEL-based images,
 > disks and ISOs must **never be published**: the RHEL EULA forbids public
 > redistribution. An organization with RHEL subscriptions builds its own
 > and keeps the result inside the organization.
