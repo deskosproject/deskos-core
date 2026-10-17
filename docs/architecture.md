@@ -396,8 +396,10 @@ unless the RPM is signed by that key.
 
 ## System Flatpaks
 
-DeskOS is **image-first and Flatpak-enabled**. Core installs Flatpak; it
-does not add a remote. Remotes go to `/usr/share/flatpak/remotes.d` and
+DeskOS is **image-first and Flatpak-enabled**. The image that declares a system
+Flatpak channel installs Flatpak — the EL family's `PackageSet/rhel-family` does,
+the foundation does not — and adds no remote. Remotes go to
+`/usr/share/flatpak/remotes.d` and
 applications to `/usr/share/flatpak/preinstall.d`, both image-owned. A
 generated unit runs `flatpak preinstall` once per boot, as the upstream
 man page expects the OS to do. This is *artifact materialization*, not a

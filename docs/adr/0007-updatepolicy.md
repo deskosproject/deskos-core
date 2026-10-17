@@ -104,6 +104,9 @@ within `v1alpha1`:
 - DeskOS Core ships `UpdatePolicy/deskos-core`: image and Flatpak
   updates daily, only on AC power. Core images no longer reboot on their
   own; a staged image applies at the user's next reboot.
+  - **Later (2026-10-17):** the foundation no longer sets a `flatpak` policy —
+    naming an application channel there imposed it on every platform. System
+    Flatpak updates are the EL family's `rhel-family` policy now.
 - This is artifact content (units in `/usr`, masks in `/etc`), not a
   controller: DeskOS does not observe or enforce the result. The masks
   live in mutable `/etc`; an administrator or configuration management

@@ -161,21 +161,46 @@ Stream 10 steps above.
 
 ## Ubuntu 26.04
 
-DeskOS publishes no Ubuntu image and has **no installer ISO** for it. The base is
-owned by the DeskOS project and pinned by digest in
-`resources/platforms/ubuntu-2604.yaml`; every Ubuntu image is built from a
-resource root, for example `examples/core-ubuntu-2604/`:
+DeskOS publishes no Ubuntu image and implements no installer ISO for it — there is
+no ISO path here, built or validated. The base is owned by the DeskOS project and
+pinned by digest in `resources/platforms/ubuntu-2604.yaml`. Get `deskosctl` (step
+1 of the RHEL section above), then build the image and write a disk with
+`bootc install to-disk`:
+
+**1. Render and build the image**, tagged with the reference your machines will
+update from:
 
 ```bash
 ./bin/deskosctl render ./examples/core-ubuntu-2604 \
     --workstation example-core-ubuntu-2604 --output ./dist/ubuntu
-sudo podman build -t localhost/deskos-ubuntu:test ./dist/ubuntu
+sudo podman build -t registry.example.com/deskos/ubuntu:latest ./dist/ubuntu
 ```
 
-DeskOS implements no ISO path for Ubuntu — there is none here, built or validated
-— and what **is** validated is `bootc install to-disk`, which writes the disk from
-a compressed OCI layout. The worked recipe — including the loopback install — is
-in [`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
+**2. Recompress it into an OCI layout**, which the install mounts as its source
+(the composefs import rejects uncompressed layers):
+
+```bash
+sudo skopeo copy \
+    containers-storage:registry.example.com/deskos/ubuntu:latest \
+    oci:/tmp/oci:test
+```
+
+**3. Write a disk with `bootc install to-disk`**, pointing `--target-imgref` at
+the reference from step 1:
+
+```bash
+truncate -s 32G disk.raw
+sudo podman run --rm --privileged --pid=host --security-opt label=type:unconfined_t \
+    -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
+    -v /tmp/oci:/src-oci:ro -v "$PWD":/output \
+    registry.example.com/deskos/ubuntu:latest \
+    bootc install to-disk --via-loopback /output/disk.raw \
+    --source-imgref oci:/src-oci:test \
+    --target-imgref registry.example.com/deskos/ubuntu:latest \
+    --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+```
+
+The disk is `disk.raw`.
 
 Three things here that must not be conflated:
 
