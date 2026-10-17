@@ -1,8 +1,8 @@
 # Installing DeskOS
 
 How to get a DeskOS **QCOW2 disk** or **installer ISO**, from the
-published CentOS Stream 10 image, a private RHEL 10 build, or an Ubuntu
-26.04 build.
+published CentOS Stream 10 image, a private RHEL 10 build, an AlmaLinux 10
+build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
 > Downloadable QCOW2 and ISO images are not published yet. Until they
@@ -135,6 +135,22 @@ host's subscription state (see [validation status](architecture.md#validation-st
 a build you make is your own to check. The image, disks and ISOs are
 **still RHEL derivatives**: push them only to registries and storage that
 are private to your organization.
+
+## AlmaLinux 10
+
+AlmaLinux 10 is a vendor platform — the base is the AlmaLinux project's own,
+which the project labels experimental. DeskOS publishes no AlmaLinux image, but
+the base is public, so build one from a resource root with no subscription:
+
+```bash
+./deskosctl render ./examples/core-almalinux-10 \
+    --workstation example-core-almalinux-10 --output ./dist/alma
+sudo podman build -t localhost/deskos-alma:test ./dist/alma
+```
+
+Then make the QCOW2 with the public `bootc-image-builder`, as in the CentOS
+Stream 10 steps above. The platform's facts are not verified against AlmaLinux
+yet; see [validation status](architecture.md#validation-status).
 
 ## Ubuntu 26.04
 

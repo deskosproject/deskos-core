@@ -121,23 +121,33 @@ func viewOf(p *plan.Plan) coreView {
 }
 
 // The same DeskOS Core semantics compose to the same planned artifact content
-// on CentOS Stream 10 and RHEL 10; only the base image differs. This proves
-// composition, not that the RHEL image builds or boots.
-func TestCoreComposesIdenticallyOnBothPlatforms(t *testing.T) {
+// on CentOS Stream 10, RHEL 10 and AlmaLinux 10; only the base image differs.
+// This proves composition, not that the images build or boot.
+func TestCoreComposesIdenticallyOnEveryPlatform(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core]\n"
 	}
-	dir := fixture{"a.yaml": ws("core-centos", "centos-stream-10"), "b.yaml": ws("core-rhel", "rhel-10")}.dir(t)
+	dir := fixture{
+		"a.yaml": ws("core-centos", "centos-stream-10"),
+		"b.yaml": ws("core-rhel", "rhel-10"),
+		"c.yaml": ws("core-alma", "almalinux-10"),
+	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
-	if !reflect.DeepEqual(viewOf(centos), viewOf(rhel)) {
-		t.Fatalf("DeskOS Core differs between platforms:\ncentos %+v\nrhel   %+v", viewOf(centos), viewOf(rhel))
+	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
+	for _, p := range []*plan.Plan{rhel, alma} {
+		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
+			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
+		}
 	}
 	if centos.Artifact.BaseImage.Image == rhel.Artifact.BaseImage.Image {
 		t.Fatal("platforms share a base image")
 	}
 	if !strings.HasPrefix(rhel.Artifact.BaseImage.Image, "registry.redhat.io/rhel10/rhel-bootc") {
 		t.Errorf("RHEL base is %s, want the official rhel-bootc image", rhel.Artifact.BaseImage.Image)
+	}
+	if !strings.HasPrefix(alma.Artifact.BaseImage.Image, "quay.io/almalinuxorg/almalinux-bootc") {
+		t.Errorf("AlmaLinux base is %s, want the vendor's almalinux-bootc image", alma.Artifact.BaseImage.Image)
 	}
 }
 

@@ -108,6 +108,9 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
+- Build and boot the AlmaLinux 10 platform in CI, to lift its facts from
+  "modeled on `rhel-10`" to measured (see
+  [validation status](architecture.md#validation-status)).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

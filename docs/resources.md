@@ -583,6 +583,11 @@ project.
 - The public reference workstation uses **CentOS Stream 10**.
 - Organizations that require **RHEL** compile the same Core semantics
   directly onto the official RHEL 10 bootc base.
+- **AlmaLinux 10** composes the same Core on the AlmaLinux project's own
+  bootc base, which the project labels experimental.
+- **Ubuntu 26.04** composes the same Core on a base owned by the Project
+  DeskOS, without the RHEL family's software
+  ([ADR 0014](adr/0014-platform-base-ownership.md)).
 - The RHEL artifact is **not derived** from the CentOS image.
 
 ## Software model

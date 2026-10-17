@@ -112,11 +112,11 @@ Examples of every kind are in
   compose.
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
-profile. The same Core composes onto `centos-stream-10`, `rhel-10` and
-`ubuntu-2604`; a RHEL workstation starts from
+profile. The same Core composes onto `centos-stream-10`, `almalinux-10`,
+`rhel-10` and `ubuntu-2604`; a RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
-DeskOS image. A test asserts CentOS Stream 10 and RHEL 10 produce the same
-Core content; Ubuntu is not compared by that test.
+DeskOS image. A test asserts CentOS Stream 10, RHEL 10 and AlmaLinux 10
+produce the same Core content; Ubuntu is not compared by that test.
 
 ## Composition
 
@@ -296,18 +296,18 @@ Firefox RPM on both EL platforms.
 
 ## Validation status
 
-| Claim | CentOS Stream 10 | RHEL 10 | Ubuntu 26.04 |
-|---|---|---|---|
-| Core and the example organization compose and render | **validated** | **validated** | **validated** (CI, `validate`) |
-| Same Core content on every platform | **validated** (test) | **validated** (test) | not asserted: the identity test compares CentOS Stream 10 with RHEL 10 |
-| Image builds, `bootc container lint` passes | **validated** (CI) | **validated** on the factory host [^rhel-build] | **validated** in CI, on the digest the platform pins |
-| Packages install from the declared sources | **validated** | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version"). `example-ubuntu-vendor` does declare sources: it installs `code` from a declared APT source, **validated by hand** against the vendor's archive (apt verified the signature and offered the package), and the CI job builds and boots that image |
-| Build layers free of build-host identity | not rechecked since the fix | **validated**: 0 findings in all layers [^layers] | not measured |
-| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (CI): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
-| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | not in this repository; the RHEL build runs in a downstream organization's repository | `vm-bootcheck.yml` (CI): builds the image, boots it and runs the first-boot check; `supply-chain.yml` does not cover it |
-| Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | same as CentOS Stream 10 | not measured by a session check. The lab install's first-boot journal has no failed *services*: `sssd.service` is skipped by its own condition (sssd is installed unconfigured) and its responder sockets report `dependency`, and the recipe's own tmpfiles line logs `Invalid age '-d'` |
-| Flatpak preinstall materializes apps | remote and ref resolution checked | system preinstall installs Flathub apps [^flatpak] | **not offered**: 26.04 publishes no `flatpak preinstall` and the base carries no third-party apt source, so a `FlatpakSet` fails composition with that reason (measured, invariant 9) |
-| OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as CentOS Stream 10 | same as the Flatpak row: not offered |
+| Claim | CentOS Stream 10 | AlmaLinux 10 | RHEL 10 | Ubuntu 26.04 |
+|---|---|---|---|---|
+| Core and the example organization compose and render | **validated** | **validated** (CI, `validate`) | **validated** | **validated** (CI, `validate`) |
+| Same Core content on every platform | **validated** (test) | **validated** (test) | **validated** (test) | not asserted: the identity test compares the EL10 platforms with each other, not with Ubuntu |
+| Image builds, `bootc container lint` passes | **validated** (CI) | not built or booted here | **validated** on the factory host [^rhel-build] | **validated** in CI, on the digest the platform pins |
+| Packages install from the declared sources | **validated** | not measured | **validated** (package presence; only Firefox launched) | **validated**: the workstation group maps to a metapackage the base already ships and the foundation declares no packages, so the derived transaction installs nothing (measured: apt reports "already the newest version"). `example-ubuntu-vendor` does declare sources: it installs `code` from a declared APT source, **validated by hand** against the vendor's archive (apt verified the signature and offered the package), and the CI job builds and boots that image |
+| Build layers free of build-host identity | not rechecked since the fix | not measured | **validated**: 0 findings in all layers [^layers] | not measured |
+| Boots to GNOME with DeskOS defaults | **validated** [^cs10-boot] | not measured | **validated** on the factory host [^rhel-boot] | **boots to GNOME Initial Setup** (CI): `tests/vm/firstbootcheck.py` asks the guest and reports the wizard running and no loginable account; no logged-in session measured |
+| Automated runs | `supply-chain.yml` (manual): builds, scans, boots, then publishes and signs | `ci.yml` (CI): composes and plans; nothing builds the image | not in this repository; the RHEL build runs in a downstream organization's repository | `vm-bootcheck.yml` (CI): builds the image, boots it and runs the first-boot check; `supply-chain.yml` does not cover it |
+| Failed system units in the session check | none except `mcelog.service` in AMD QEMU guests [^mcelog] | not measured | same as CentOS Stream 10 | not measured by a session check. The lab install's first-boot journal has no failed *services*: `sssd.service` is skipped by its own condition (sssd is installed unconfigured) and its responder sockets report `dependency`, and the recipe's own tmpfiles line logs `Invalid age '-d'` |
+| Flatpak preinstall materializes apps | remote and ref resolution checked | declared, not verified (no build) | system preinstall installs Flathub apps [^flatpak] | **not offered**: 26.04 publishes no `flatpak preinstall` and the base carries no third-party apt source, so a `FlatpakSet` fails composition with that reason (measured, invariant 9) |
+| OCI Flatpak remote: `oci+https` URL, no signing key, authenticator unit | **rendering and unit validated** (tests); never booted | same as the Flatpak row | same as CentOS Stream 10 | same as the Flatpak row: not offered |
 
 Ubuntu 26.04 is built, booted and first-boot-checked in CI, up to where its base
 allows. Its derived image boots to GNOME **Initial Setup**: the wizard runs, and no
@@ -324,6 +324,12 @@ Ubuntu.
 The RHEL column is historical: the RHEL factory host was retired and this
 repository no longer builds or boots RHEL or publishes a `deskos/rhel10`
 status. Composition and rendering for RHEL stay covered by the tests.
+
+The AlmaLinux column is a vendor platform on the base the AlmaLinux project
+publishes itself, which the project labels **experimental**. Composition and
+rendering are validated in CI; the platform facts are EL10 conventions modeled
+on `rhel-10` and are **not verified** against AlmaLinux, so this table makes no
+build, boot or package claim for it.
 
 [^rhel-build]: Image `0e65bf4b` on RHEL 10.2, base `d13af792...`; lint
 passed with the three known warnings.

@@ -1,34 +1,41 @@
-# Example: an organization target on AlmaLinux 10 (EL10, RHEL-compatible).
-# Modeled on the rhel-10 Platform; the platform facts (RPM group, Plymouth
-# packages, update units, trust store) are EL10 conventions and are NOT
-# verified against AlmaLinux. Rocky Linux publishes no bootc image today, so
-# AlmaLinux 10 (the closest EL10 bootc) stands in for it.
 apiVersion: core.deskos.org/v1alpha1
 kind: Platform
 metadata:
   name: almalinux-10
 spec:
   displayName: AlmaLinux 10
+  # The vendor here is the AlmaLinux project, which publishes this base itself, so
+  # the platform follows ADR 0004's official-base rule and declares no
+  # organization owner or tier — like centos-stream-10 and rhel-10. The vendor
+  # labels the base experimental, and DeskOS has not built or booted this
+  # platform, so the facts below are EL10 conventions modeled on rhel-10 and are
+  # NOT verified against AlmaLinux. That is a bounded claim (invariant 10), not a
+  # support statement.
   family: almalinux
   release: "10"
   architectures: [x86_64]
   packageManager: rpm
   bootc:
     image: quay.io/almalinuxorg/almalinux-bootc:10
-    # quay.io/almalinuxorg/almalinux-bootc:10, 2026-10-07.
-    digest: sha256:affae7bde1c852c5350d54c3e9dd0c82908b3d079b5cfcbe4c389330c4166aa8
+    # x86_64 manifest of the :10 index, 2026-10-14 (AlmaLinux 10.2.20261014.0).
+    # The vendor's bootc images are experimental; move this deliberately.
+    digest: sha256:214be10090671348e79a70b86ec42f0db5000bdb6acb2c43a947dafa9225b3bf
   distribution:
+    # AlmaLinux's archive is freely redistributable and needs no subscription.
     redistributable: true
     requiresSubscription: false
   packageGroups:
     - name: workstation
       rpmGroups: [workstation-product-environment]
       graphical: true
+      # As on the rest of the family: mandatory in workstation-product, and its
+      # first-login AVC notification is not wanted on a workstation.
       excludePackages: [setroubleshoot, setroubleshoot-plugins, setroubleshoot-server]
   displayManager: gdm.service
   gnome:
     dconfDatabase: distro
     loginScreen: true
+    # Default of org.gnome.shell enabled-extensions on this family.
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - name: dash-to-dock
@@ -47,6 +54,8 @@ spec:
       package: plymouth-theme-spinner
       imageDir: /usr/share/plymouth/themes/spinner
   updates:
+    # Enabled by the base image (default.target.wants); runs bootc upgrade --apply,
+    # which reboots.
     imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
   flatpak:
     package: flatpak

@@ -17,9 +17,11 @@
 **DeskOS is an open workstation artifact factory.** An organization
 describes its workstation as *declarative resources* (applications,
 desktop settings, branding, boot appearance) and DeskOS **compiles** them
-into a deterministic build context for **CentOS Stream 10**, **RHEL 10** or
-**Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context builds a
-bootable image, from which QCOW2 disks and installer ISOs are made. Ubuntu
+into a deterministic build context for **CentOS Stream 10**, **AlmaLinux 10**,
+**RHEL 10** or **Ubuntu 26.04**. On CentOS Stream 10 and RHEL 10 that context
+builds a bootable image, from which QCOW2 disks and installer ISOs are made.
+AlmaLinux 10 composes and renders on the vendor's own base, which the vendor
+labels experimental; its image is not built here yet. Ubuntu
 composes and renders, its derived image builds from the pinned base, and that
 image **boots to GNOME Initial Setup**: the wizard runs, which is what
 `tests/vm/firstbootcheck.py` asks the guest instead of reading a screenshot. That
@@ -48,8 +50,8 @@ artifact in your pipeline.
 - **Profile** — a named group of resources at a **layer**:
   `foundation` < `organization` < `role` < `workstation`. A higher layer
   overrides a lower one *on purpose*, never by file order.
-- **Workstation** — the machine: a platform (CentOS Stream 10, RHEL 10 or
-  Ubuntu 26.04) plus the profiles it is made of. This is the file you author.
+- **Workstation** — the machine: a platform (CentOS Stream 10, AlmaLinux 10,
+  RHEL 10 or Ubuntu 26.04) plus the profiles it is made of. This is the file you author.
 - **Plan, then render** — the compiler reads every resource, composes them
   into a typed **plan** (each value keeps the resource and layer it came
   from), and `render` writes a **deterministic** build context: the same
@@ -206,15 +208,20 @@ in [**docs/install.md**](docs/install.md).
 > [!NOTE]
 > **Experimental.** The resource APIs are `v1alpha1` and will change.
 
-| | CentOS Stream 10 | RHEL 10 | Ubuntu 26.04 |
-|---|---|---|---|
-| Compose and render | deterministic | deterministic | deterministic |
-| Image build, `bootc container lint` | CI | downstream organization | CI (`vm-bootcheck`), on the digest the platform pins |
-| Boot to GNOME, session checks | CI (`vm-bootcheck`) | downstream organization (GitHub-hosted) | CI (`vm-bootcheck`): **boots to GNOME Initial Setup**, the wizard running and no account able to log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
-| System Flatpak channel | Flatpak preinstall | Flatpak preinstall | **none declared**; a `FlatpakSet` fails with that reason |
-| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | **never** | no derived image published yet |
-| Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
-| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
+| | CentOS Stream 10 | AlmaLinux 10 | RHEL 10 | Ubuntu 26.04 |
+|---|---|---|---|---|
+| Compose and render | deterministic | deterministic | deterministic | deterministic |
+| Image build, `bootc container lint` | CI | **not built or booted** | downstream organization | CI (`vm-bootcheck`), on the digest the platform pins |
+| Boot to GNOME, session checks | CI (`vm-bootcheck`) | **not measured** | downstream organization (GitHub-hosted) | CI (`vm-bootcheck`): **boots to GNOME Initial Setup**, the wizard running and no account able to log in, asserted by `tests/vm/firstbootcheck.py`; no logged-in session measured |
+| System Flatpak channel | Flatpak preinstall | Flatpak preinstall (declared, **not verified**) | Flatpak preinstall | **none declared**; a `FlatpakSet` fails with that reason |
+| Published image | `quay.io/deskos/deskos-core` (`:latest` + `:<commit>`) | no derived image published | **never** | no derived image published yet |
+| Base | `quay.io/centos-bootc/centos-bootc:stream10` (vendor) | `quay.io/almalinuxorg/almalinux-bootc:10` (vendor, experimental) | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | organization-owned ([ADR 0014](docs/adr/0014-platform-base-ownership.md)) |
+| GNOME (pinned base) | Shell 49.5, mutter 49.4, schemas 47.1 | not measured | Shell 49.4, mutter 49.4, schemas 47.1 (RHEL 10.2) | digest pinned; GNOME versions not measured |
+
+AlmaLinux 10 composes and renders on the base the AlmaLinux project publishes
+itself, which it labels experimental; the platform facts are EL10 conventions
+modeled on RHEL 10 and are **not verified** against AlmaLinux, and its image is
+not built here.
 
 Ubuntu composes and renders, and its image is built and booted in CI
 (`vm-bootcheck.yml`) on the digest the platform pins. It boots to GNOME
