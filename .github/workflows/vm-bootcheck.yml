@@ -81,14 +81,14 @@ jobs:
         # dnf resolves them and installs the packages with GPG checking. It proves
         # the transaction succeeds, not which source each package came from, and it
         # does not claim the example's virt-manager requirement is met
-        # (see examples/baseline-and-role/README.md).
+        # (see examples/organization-and-role/README.md).
         include:
           - workstation: deskos-core-centos-stream-10
             root: ""
             artifact: vm-evidence-core-centos-stream-10
             image: localhost/deskos-core-centos-stream-10:ci
           - workstation: example-devops-centos-stream-10
-            root: examples/baseline-and-role
+            root: examples/organization-and-role
             artifact: vm-evidence-example-devops-centos-stream-10
             image: localhost/example-devops-centos-stream-10:ci
     env:

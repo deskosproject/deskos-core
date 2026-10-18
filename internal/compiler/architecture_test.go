@@ -243,8 +243,8 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 func TestExampleVirtManagerGapIsReported(t *testing.T) {
 	dir := fixture{
 		"p.yaml": profile("needs-virt-manager", "role", "PackageSet/example-virt-manager"),
-		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-baseline, example-devops, needs-virt-manager]\n",
-		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-baseline, example-devops, needs-virt-manager]\n",
+		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
+		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
 	}.dir(t)
 	for ws, want := range map[string]string{"gap-centos": "Platform/centos-stream-10: only in the CentOS Stream CRB", "gap-rhel": "Platform/rhel-10: RHEL 10 moved it to the CodeReady Linux Builder"} {
 		_, err := planOf(t, ws, resourcesRoot, exampleRoot, dir)

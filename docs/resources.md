@@ -20,7 +20,7 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
-    - example-baseline
+    - example-organization
     - example-developer
 ```
 
@@ -70,11 +70,11 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
-    - example-baseline
+    - example-organization
     - example-devops
 ```
 
-`deskosctl plan ./examples/baseline-and-role --workstation
+`deskosctl plan ./examples/organization-and-role --workstation
 example-devops-centos-stream-10` shows the composed result, including **which
 layer won each setting**.
 
@@ -103,13 +103,13 @@ Places resources at **one semantic layer**:
 apiVersion: core.deskos.org/v1alpha1
 kind: Profile
 metadata:
-  name: example-baseline
+  name: example-organization
 spec:
   layer: organization
   description: Example organization baseline for every workstation.
   resources:
     - kind: PackageSet
-      name: example-baseline
+      name: example-organization
     - kind: GnomeProfile
       name: example-desktop
 ```

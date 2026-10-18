@@ -35,7 +35,7 @@ bytes. It is an **ingredient list with provenance** — the compiler knows
 intent, not installed content.
 
 ```bash
-deskosctl sbom ./examples/baseline-and-role \
+deskosctl sbom ./examples/organization-and-role \
   --workstation example-devops-rhel-10 \
   --output dist/example-devops-rhel-10.sbom.cdx.json
 ```

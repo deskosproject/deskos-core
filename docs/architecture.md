@@ -288,7 +288,7 @@ reason, and **composition fails with that reason** instead of dropping or
 substituting the package. The example organization shows this with
 `virt-manager`, which EL10 ships only in the CodeReady Linux Builder
 repository (unsupported on RHEL 10); see
-[`examples/baseline-and-role/README.md`](../examples/baseline-and-role/README.md).
+[`examples/organization-and-role/README.md`](../examples/organization-and-role/README.md).
 
 A Platform package group may list `excludePackages`: group members the
 platform does not install with the group. They become `--exclude` options

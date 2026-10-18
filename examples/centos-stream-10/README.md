@@ -15,4 +15,4 @@ deskosctl plan ./examples/centos-stream-10 \
 | `example-centos-stream-10` | the target: `centos-stream-10` + the `deskos-core` and `deskos-gnome` profiles |
 
 This is the per-platform example. The composition example (an
-organization baseline and a role) lives in `../baseline-and-role/`.
+organization baseline and a role) lives in `../organization-and-role/`.

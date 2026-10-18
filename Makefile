@@ -9,7 +9,7 @@ BIN      := bin/deskosctl
 BIN_RUNTIME := bin/deskos
 # DeskOS Core is embedded in the binary; only an organization's resources are
 # passed on the command line.
-EXAMPLE   := ./examples/baseline-and-role
+EXAMPLE   := ./examples/organization-and-role
 
 .PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
 

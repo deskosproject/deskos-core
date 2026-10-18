@@ -17,7 +17,7 @@ func runCLI(args ...string) (int, string, string) {
 
 func TestValidate(t *testing.T) {
 	// The embedded Core is loaded by default.
-	code, out, errOut := runCLI("validate", "../../examples/baseline-and-role")
+	code, out, errOut := runCLI("validate", "../../examples/organization-and-role")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -25,12 +25,12 @@ func TestValidate(t *testing.T) {
 		t.Errorf("unexpected output: %s", out)
 	}
 	// --no-core drops it, so an organization overlay alone cannot resolve Core.
-	code, _, errOut = runCLI("validate", "--no-core", "../../examples/baseline-and-role")
+	code, _, errOut = runCLI("validate", "--no-core", "../../examples/organization-and-role")
 	if code != exitInvalid || !strings.Contains(errOut, "Profile/deskos-core, which is not defined") {
 		t.Errorf("exit %d: %s", code, errOut)
 	}
 	// With --no-core, the same tree works when it is passed explicitly.
-	if code, _, errOut := runCLI("validate", "--no-core", "../../resources", "../../examples/baseline-and-role"); code != exitOK {
+	if code, _, errOut := runCLI("validate", "--no-core", "../../resources", "../../examples/organization-and-role"); code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
 }
@@ -52,7 +52,7 @@ func TestCoreExport(t *testing.T) {
 }
 
 func TestPlanFlagsAfterRoots(t *testing.T) {
-	code, out, errOut := runCLI("plan", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel-10")
+	code, out, errOut := runCLI("plan", "../../examples/organization-and-role", "--workstation", "example-devops-rhel-10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -97,7 +97,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestSBOM(t *testing.T) {
-	code, out, errOut := runCLI("sbom", "../../examples/baseline-and-role", "--workstation", "example-devops-rhel-10")
+	code, out, errOut := runCLI("sbom", "../../examples/organization-and-role", "--workstation", "example-devops-rhel-10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -161,7 +161,7 @@ spec:
 		t.Errorf("stdout = %q", out)
 	}
 
-	_, _, errOut = runCLI("validate", "../../examples/baseline-and-role")
+	_, _, errOut = runCLI("validate", "../../examples/organization-and-role")
 	if strings.Contains(errOut, "masked") {
 		t.Errorf("current resources report masked dock options:\n%s", errOut)
 	}

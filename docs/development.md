@@ -31,7 +31,7 @@ python3 -m unittest discover -s tests/supply-chain # SBOM comparison harness, sa
 Validate the included resources:
 
 ```bash
-./bin/deskosctl validate ./examples/baseline-and-role
+./bin/deskosctl validate ./examples/organization-and-role
 ```
 
 Inspect the public CentOS reference workstation:
@@ -73,13 +73,13 @@ An example that composes an organization baseline and a developer role on
 RHEL 10 is included separately to prove organization- and role-specific
 composition. It lives in its own resource root and reuses
 DeskOS resources *without copying them*; see
-[examples/baseline-and-role/README.md](../examples/baseline-and-role/README.md):
+[examples/organization-and-role/README.md](../examples/organization-and-role/README.md):
 
 ```bash
-./bin/deskosctl plan ./examples/baseline-and-role \
+./bin/deskosctl plan ./examples/organization-and-role \
   --workstation example-devops-rhel-10
 
-./bin/deskosctl render ./examples/baseline-and-role \
+./bin/deskosctl render ./examples/organization-and-role \
   --workstation example-devops-rhel-10 \
   --output ./dist/example-devops-rhel-10
 ```
