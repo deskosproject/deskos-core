@@ -491,14 +491,14 @@ vendor database (`distro` on EL10). Wallpaper files are repository assets
 resolved relative to the declaring file and installed under
 `/usr/share/deskos/backgrounds/`.
 
-**Dock.** Dock settings apply only while the effective `dock.enabled` is
-true. A higher-layer `dock.enabled: false` masks lower-layer dock options
-and is reported as a warning by `plan` and `validate`; dock options
-without an enabled dock, or at or above the disabling layer, are errors.
-A disable writes `enabled-extensions` without the dock only when the
-platform enables it by default or `dock.enabled` is locked. Core sets
-only `dock.enabled: true` (the extension's defaults); an organization's
-`dock.enabled: false` removes the package and the extension entry.
+**Dock.** The dock is a GNOME Shell extension, so it is enabled by deciding about
+its extension, like any other: `shell.extensions` names its UUID and says whether
+it runs. The settings DeskOS models for it (`dock.position`, `dock.behavior`,
+`dock.iconSize`, `dock.showTrash`) apply only while that decision is true. A
+higher-layer `enabled: false` masks lower-layer dock settings and is reported as a
+warning by `plan` and `validate`; dock settings without an enabled dock, or at or
+above the disabling layer, are errors. An organization that enables the dock
+installs the extension the platform declares for it.
 Favorites are native and work without the dock.
 
 **Appearance.** `appearance.colorScheme` and `appearance.accentColor` set

@@ -613,8 +613,10 @@ spec:
 }
 
 func TestGnomeLocksAndDock(t *testing.T) {
-	defaults := `    dock:
-      enabled: true
+	defaults := `    shell:
+      extensions:
+        - {uuid: dash-to-dock@micxgx.gmail.com, enabled: true}
+    dock:
       position: left
       behavior: fixed
     session:
@@ -720,7 +722,22 @@ func TestLoginLogo(t *testing.T) {
 }
 
 func TestDockSemantics(t *testing.T) {
-	dock := func(name, body string) string { return gnome(name, "    dock:\n"+body) }
+	// The dock is enabled by deciding about its extension, like any other, and the
+	// settings DeskOS models for it hang off that decision (docs/adr/0017).
+	dock := func(name string, enabled bool, settings string) string {
+		state := "true"
+		if !enabled {
+			state = "false"
+		}
+		spec := "    shell:\n      extensions:\n        - {uuid: " + dashToDockUUID + ", enabled: " + state + "}\n"
+		if settings != "" {
+			spec += "    dock:\n" + settings
+		}
+		return gnome(name, spec)
+	}
+	// settingsOnly declares dock settings and no decision about the extension: the
+	// mistake the gating rule exists to catch.
+	settingsOnly := func(name, settings string) string { return gnome(name, "    dock:\n"+settings) }
 	hasKey := func(p *plan.Plan, prefix string) bool {
 		if p.Artifact.Dconf == nil {
 			return false
@@ -740,7 +757,7 @@ func TestDockSemantics(t *testing.T) {
 	t.Run("enabled with showTrash false", func(t *testing.T) {
 		p, err := build(fixture{
 			"o.yaml": profile("org", "organization", "GnomeProfile/d"),
-			"d.yaml": dock("d", "      enabled: true\n      showTrash: false\n"),
+			"d.yaml": dock("d", true, "      showTrash: false\n"),
 		}, "org")
 		if err != nil {
 			t.Fatal(err)
@@ -755,16 +772,16 @@ func TestDockSemantics(t *testing.T) {
 	t.Run("options without enabled fail", func(t *testing.T) {
 		_, err := build(fixture{
 			"o.yaml": profile("org", "organization", "GnomeProfile/d"),
-			"d.yaml": dock("d", "      showTrash: false\n"),
+			"d.yaml": settingsOnly("d", "      showTrash: false\n"),
 		}, "org")
-		mustFail(t, err, "dock.showTrash requires dock.enabled: true", "GnomeProfile/d")
+		mustFail(t, err, "dock.showTrash requires enabling \""+dashToDockUUID+"\"", "GnomeProfile/d")
 	})
 	t.Run("higher-layer disable masks lower-layer options", func(t *testing.T) {
 		p, err := build(fixture{
 			"c.yaml":  profile("core", "foundation", "GnomeProfile/lower"),
 			"o.yaml":  profile("org", "organization", "GnomeProfile/off"),
-			"l.yaml":  dock("lower", "      enabled: true\n      position: left\n      showTrash: true\n"),
-			"of.yaml": dock("off", "      enabled: false\n"),
+			"l.yaml":  dock("lower", true, "      position: left\n      showTrash: true\n"),
+			"of.yaml": dock("off", false, ""),
 		}, "core", "org")
 		if err != nil {
 			t.Fatal(err)
@@ -772,8 +789,9 @@ func TestDockSemantics(t *testing.T) {
 		if hasKey(p, ddKeys) {
 			t.Error("masked dock options still produce extension keys")
 		}
-		if _, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok {
-			t.Error("a disabled dock must not write enabled-extensions")
+		// The list is written, and the dock is not in it.
+		if v, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); !ok || strings.Contains(v, dashToDockUUID) {
+			t.Errorf("a disabled dock is still in enabled-extensions: %q", v)
 		}
 		if strings.Contains(strings.Join(packages(p), " "), "dash-to-dock") {
 			t.Error("a disabled dock must not install the extension")
@@ -789,13 +807,13 @@ func TestDockSemantics(t *testing.T) {
 		for name, files := range map[string]fixture{
 			"same layer": {
 				"o.yaml": profile("org", "organization", "GnomeProfile/d"),
-				"d.yaml": dock("d", "      enabled: false\n      showTrash: false\n"),
+				"d.yaml": dock("d", false, "      showTrash: false\n"),
 			},
 			"higher layer": {
 				"o.yaml": profile("org", "organization", "GnomeProfile/off"),
 				"r.yaml": profile("role", "role", "GnomeProfile/pos"),
-				"f.yaml": dock("off", "      enabled: false\n"),
-				"p.yaml": dock("pos", "      position: left\n"),
+				"f.yaml": dock("off", false, ""),
+				"p.yaml": settingsOnly("pos", "      position: left\n"),
 			},
 		} {
 			t.Run(name, func(t *testing.T) {
@@ -804,20 +822,20 @@ func TestDockSemantics(t *testing.T) {
 					profiles = append(profiles, "role")
 				}
 				_, err := build(files, profiles...)
-				mustFail(t, err, "but dock.enabled is false", "disabled by:")
+				mustFail(t, err, "is disabled at", "disabled by:")
 			})
 		}
 	})
-	t.Run("platform without the extension", func(t *testing.T) {
+	t.Run("the platform does not offer the extension whose settings these are", func(t *testing.T) {
 		noExt := strings.Replace(platformYAML, "    extensions:\n      - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}\n", "", 1)
 		dir := fixture{
 			"platform.yaml": noExt,
 			"ws.yaml":       workstation("ws", "org"),
 			"o.yaml":        profile("org", "organization", "GnomeProfile/d"),
-			"d.yaml":        dock("d", "      enabled: true\n"),
+			"d.yaml":        settingsOnly("d", "      showTrash: false\n"),
 		}.dir(t)
 		_, err := planOf(t, "ws", dir)
-		mustFail(t, err, `does not provide the GNOME extension "dash-to-dock"`)
+		mustFail(t, err, `requires the GNOME extension "dash-to-dock", which Platform/test-platform does not provide`)
 	})
 }
 
@@ -843,8 +861,14 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 		if v, ok := dconf(p, "/org/gnome/shell/favorite-apps"); ok {
 			t.Errorf("Core writes favorite-apps = %s", v)
 		}
-		if v, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok {
-			t.Errorf("Core writes enabled-extensions = %s", v)
+		// The plan states the extensions it enables, and that list is the platform's
+		// own: no dock.
+		v, ok := dconf(p, "/org/gnome/shell/enabled-extensions")
+		if !ok || strings.Contains(v, dashToDockUUID) {
+			t.Errorf("Core enables the dock: %q", v)
+		}
+		if v != "['background-logo@fedorahosted.org']" {
+			t.Errorf("Core writes enabled-extensions = %s, want the platform's own list", v)
 		}
 		if hasDockPackage(p) {
 			t.Error("Core installs Dash to Dock")
@@ -856,8 +880,10 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 	t.Run("organization enables the dock itself", func(t *testing.T) {
 		org := fixture{
 			"org.yaml": profile("org", "organization", "GnomeProfile/org-desktop"),
-			"g.yaml":   gnome("org-desktop", "    dock:\n      enabled: true\n      position: bottom\n"),
-			"ws.yaml":  orgWorkstation,
+			"g.yaml": gnome("org-desktop",
+				"    shell:\n      extensions:\n        - {uuid: "+dashToDockUUID+", enabled: true}\n"+
+					"    dock:\n      position: bottom\n"),
+			"ws.yaml": orgWorkstation,
 		}.dir(t)
 		p := mustPlan(t, "org-ws", resourcesRoot, org)
 		if !hasDockPackage(p) {
@@ -877,7 +903,7 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 			"ws.yaml":  orgWorkstation,
 		}.dir(t)
 		_, err := planOf(t, "org-ws", resourcesRoot, org)
-		mustFail(t, err, "dock.position requires dock.enabled: true")
+		mustFail(t, err, "dock.position requires enabling \""+dashToDockUUID+"\"")
 	})
 }
 
@@ -970,7 +996,7 @@ func TestDockDisableOverridesPlatformDefault(t *testing.T) {
 	off := fixture{
 		"ws.yaml": workstation("ws", "org"),
 		"o.yaml":  profile("org", "organization", "GnomeProfile/off"),
-		"d.yaml":  gnome("off", "    dock:\n      enabled: false\n"),
+		"d.yaml":  gnome("off", "    shell:\n      extensions:\n        - {uuid: "+uuid+", enabled: false}\n"),
 	}
 	t.Run("platform enables the dock by default", func(t *testing.T) {
 		pre := strings.Replace(platformYAML, "enabledExtensions: [background-logo@fedorahosted.org]", "enabledExtensions: [background-logo@fedorahosted.org, "+uuid+"]", 1)
@@ -987,14 +1013,16 @@ func TestDockDisableOverridesPlatformDefault(t *testing.T) {
 			t.Error("disabling the dock installed it")
 		}
 	})
-	t.Run("platform default without the dock writes nothing", func(t *testing.T) {
+	t.Run("a platform default without the dock keeps it out anyway", func(t *testing.T) {
+		// Deciding false about an extension the platform never enabled changes nothing,
+		// and the plan still states the list it enables.
 		p := mustPlan(t, "ws", base.with(off).dir(t))
-		if _, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok {
-			t.Error("enabled-extensions written although the platform default lacks the dock")
+		if v, _ := dconf(p, "/org/gnome/shell/enabled-extensions"); v != "['background-logo@fedorahosted.org']" {
+			t.Errorf("enabled-extensions = %q", v)
 		}
 	})
-	t.Run("locked disable pins the list", func(t *testing.T) {
-		locked := off.with(fixture{"d.yaml": gnome("off", "    dock:\n      enabled: false\n  locks:\n    - dock.enabled\n")})
+	t.Run("locked list pins it", func(t *testing.T) {
+		locked := off.with(fixture{"d.yaml": gnome("off", "    shell:\n      extensions:\n        - {uuid: "+uuid+", enabled: false}\n  locks:\n    - shell.extensions\n")})
 		p := mustPlan(t, "ws", base.with(locked).dir(t))
 		if v, _ := dconf(p, "/org/gnome/shell/enabled-extensions"); v != "['background-logo@fedorahosted.org']" {
 			t.Errorf("enabled-extensions = %q", v)

@@ -21,6 +21,7 @@ PLAN = {
             {"key": "/org/gnome/desktop/screensaver/lock-enabled", "type": "b", "value": "true"},
             {"key": "/org/gnome/software/download-updates", "type": "b", "value": "false"},
         ]},
+        "enabledExtensions": ["dash-to-dock@micxgx.gmail.com"],
         "gsettingsVendorDefaults": [
             {"schema": "org.gnome.desktop.background", "key": "picture-uri", "type": "s",
              "value": "'file:///usr/share/deskos/backgrounds/a.svg'", "setting": "appearance.wallpaper"},
@@ -45,12 +46,13 @@ def reported(plan):
         out[f"dconf_{i}"] = out[f"dconfdb_{i}"] = d["value"]
     for i, d in enumerate(sc.plan_vendor_defaults(plan)):
         out[f"vendor_{i}"] = out[f"vendordb_{i}"] = d["value"]
+    for i, _ in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
+        out[f"extension_{i}"] = "Yes/ACTIVE"
     return out
 
 
 GOOD = {
     "session_type": "wayland", "disable_user_extensions": "false",
-    "dock_enabled": "Yes", "dock_state": "ACTIVE",
     "favorite_apps": "['firefox.desktop', 'org.gnome.Calculator.desktop']",
     "picture_uri": "'file:///usr/share/deskos/backgrounds/a.svg'",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
@@ -145,6 +147,22 @@ class TmpfilesTest(unittest.TestCase):
         self.assertNotIn(sc.DCONF_PROFILE_PATH, c["tmpfiles.extra"])
         self.assertNotIn("dconf read", c["tmpfiles.extra"])
 
+    def test_session_credentials_install_the_enabled_extensions(self):
+        # The extensions the plan enabled travel as a file of their own, and the guest
+        # asks GNOME about each one.
+        exts = ["a@b", "c@d"]
+        c = sc.credentials("session", enabled_extensions=exts)
+        lines = c["tmpfiles.extra"].splitlines()
+        keyfile = next(l for l in lines if l.startswith(f"f {sc.ENABLED_EXTENSIONS_PATH} "))
+        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "a@b\nc@d\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t enabled_extensions < {sc.ENABLED_EXTENSIONS_PATH}", script)
+        self.assertIn('gnome-extensions info "$u"', script)
+
+    def test_journal_credentials_ignore_the_enabled_extensions(self):
+        c = sc.credentials("journal", enabled_extensions=["a@b"])
+        self.assertNotIn(sc.ENABLED_EXTENSIONS_PATH, c["tmpfiles.extra"])
+
     def test_a_session_without_defaults_reads_none(self):
         c = sc.credentials("session")
         self.assertNotIn(sc.DCONF_KEYS_PATH, c["tmpfiles.extra"])
@@ -172,10 +190,18 @@ class ParseEvaluateTest(unittest.TestCase):
     def test_all_pass(self):
         self.assertTrue(all(c["pass"] for c in sc.evaluate(GOOD, PLAN)))
 
-    def test_dock_disabled_fails(self):
-        bad = dict(GOOD, disable_user_extensions="true", dock_enabled="No", dock_state="INITIALIZED")
+    def test_an_enabled_extension_that_does_not_load_fails(self):
+        # Membership in enabled-extensions is the declared default; the session decides
+        # whether the extension really loads, and a decision that loads nothing is a
+        # defect, not a silent no-op (docs/adr/0017).
+        bad = dict(GOOD, disable_user_extensions="true", extension_0="No/INITIALIZED")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
-        self.assertEqual(failed, {"user extensions allowed", "Dash to Dock active"})
+        self.assertEqual(failed, {"user extensions allowed", "extension loads (dash-to-dock@micxgx.gmail.com)"})
+
+    def test_an_extension_that_is_not_installed_fails(self):
+        bad = dict(GOOD, extension_0="missing")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"extension loads (dash-to-dock@micxgx.gmail.com)"})
 
     def test_missing_results_fail(self):
         self.assertFalse(all(c["pass"] for c in sc.evaluate({"session_results": "missing"}, PLAN)))

@@ -351,6 +351,18 @@
           ]
         },
         {
+          "key": "/org/gnome/shell/enabled-extensions",
+          "type": "as",
+          "value": "['background-logo@fedorahosted.org']",
+          "setting": "shell.extensions",
+          "provenance": [
+            {
+              "resource": "Platform/centos-stream-10",
+              "source": "resources/platforms/centos-stream-10.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/software/allow-updates",
           "type": "b",
           "value": "true",

@@ -49,7 +49,6 @@ const (
 	KeyBlankAfter      = "session.idle.blankAfter"
 	KeyLockEnabled     = "session.lock.enabled"
 	KeyLockDelay       = "session.lock.delay"
-	KeyDockEnabled     = "dock.enabled"
 	KeyDockPosition    = "dock.position"
 	KeyDockBehavior    = "dock.behavior"
 	KeyDockIconSize    = "dock.iconSize"
@@ -75,9 +74,10 @@ const extensionKeyPrefix = "shell.extension."
 // ExtensionSetting is the semantic setting key of one extension decision.
 func ExtensionSetting(uuid string) string { return extensionKeyPrefix + uuid }
 
-// keyExtensions names the profile field in messages. Each decision composes under
-// its own key (ExtensionSetting), so this one is not a scalar.
-const keyExtensions = "shell.extensions"
+// KeyExtensions names the list of extension decisions. Each decision composes under
+// its own key (ExtensionSetting); this is the name a lock uses, because the plan
+// writes one dconf key for the whole list (docs/adr/0017).
+const KeyExtensions = "shell.extensions"
 
 // powerButtonActions are the values GNOME's power plugin accepts.
 var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactive"}
@@ -86,10 +86,10 @@ var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
-	KeyLockDelay: true, KeyDockEnabled: true, KeyDockPosition: true, KeyDockBehavior: true,
+	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
-	KeyPowerButton: true,
+	KeyPowerButton: true, KeyExtensions: true,
 }
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
@@ -211,8 +211,10 @@ type Lock struct {
 	Delay   string `json:"delay,omitempty"`
 }
 
+// Dock holds the settings DeskOS models for Dash to Dock. Whether the dock runs is
+// not here: the dock is enabled by deciding about its extension, like any other
+// (docs/adr/0017).
 type Dock struct {
-	Enabled   *bool  `json:"enabled,omitempty"`
 	Position  string `json:"position,omitempty"`
 	Behavior  string `json:"behavior,omitempty"`
 	IconSize  *int   `json:"iconSize,omitempty"`
@@ -464,10 +466,10 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			seenUUID := map[string]bool{}
 			for _, e := range sh.Extensions {
 				if !extensionUUIDRE.MatchString(e.UUID) {
-					bad("%s: %q is not an extension uuid (name@domain)", keyExtensions, e.UUID)
+					bad("%s: %q is not an extension uuid (name@domain)", KeyExtensions, e.UUID)
 				}
 				if seenUUID[e.UUID] {
-					bad("%s: %q is decided twice; leave the UUID out to inherit the platform's decision", keyExtensions, e.UUID)
+					bad("%s: %q is decided twice; leave the UUID out to inherit the platform's decision", KeyExtensions, e.UUID)
 				}
 				seenUUID[e.UUID] = true
 				state := "enabled"
@@ -526,9 +528,6 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 	}
 
 	if dk := s.Dock; dk != nil {
-		if dk.Enabled != nil {
-			set(KeyDockEnabled, *dk.Enabled, strconv.FormatBool(*dk.Enabled))
-		}
 		if dk.Position != "" {
 			switch dk.Position {
 			case "bottom", "left", "right", "top":

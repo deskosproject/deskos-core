@@ -708,7 +708,7 @@
           "key": "/org/gnome/shell/enabled-extensions",
           "type": "as",
           "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']",
-          "setting": "dock.enabled",
+          "setting": "shell.extensions",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
@@ -878,6 +878,9 @@
           }
         ]
       }
+    ],
+    "enabledExtensions": [
+      "dash-to-dock@micxgx.gmail.com"
     ],
     "kernelArguments": [
       {

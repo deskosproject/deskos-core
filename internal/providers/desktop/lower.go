@@ -223,7 +223,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	l.lowerShell(get)
-	l.lowerExtensions(get, locks)
+	l.lowerExtensions(locks)
 	l.lowerDock(get)
 
 	for _, lk := range locks {
@@ -317,19 +317,14 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 // dconf does not merge arrays and sorts after `50-deskos`. Whoever opts into it has to
 // pass the effective list, or it overrides this one (docs/roadmap.md).
 //
-// The list is the platform's own, in its order, with the decisions applied and the
-// dock added or removed as `dock.enabled` says. Nothing is written when the
-// composition does not change what the platform ships, so a platform default nobody
-// touched keeps standing.
-func (l *lowering) lowerExtensions(get func(string) (compose.Scalar, bool), locks []compose.Member) {
+// The list is the platform's own, in its order, with the decisions applied. Any
+// UUID may be decided: the platform's catalog installs the package when it declares
+// the extension, and an extension the composition brings itself is installed by the
+// packages the composition declares and verified in the session (docs/adr/0017).
+func (l *lowering) lowerExtensions(locks []compose.Member) {
 	const key = "/org/gnome/shell/enabled-extensions"
 	pl := l.c.PlatformSpec
 	list := append([]string(nil), pl.Gnome.EnabledExtensions...)
-
-	dockUUID := ""
-	if ext, ok := pl.GnomeExtension(DockExtension); ok {
-		dockUUID = ext.UUID
-	}
 
 	var decisions []compose.Scalar
 	for _, s := range l.c.Result.Scalars(DomainSettings) {
@@ -341,25 +336,21 @@ func (l *lowering) lowerExtensions(get func(string) (compose.Scalar, bool), lock
 	// how the composition happened to enumerate them.
 	sort.Slice(decisions, func(i, j int) bool { return decisions[i].Key < decisions[j].Key })
 
+	// The whole list is one dconf key, so it is written once, under one name a lock
+	// can attach to. It is written even when it equals the platform's own list: the
+	// artifact then states the extensions it enables, which is what the session check
+	// verifies, instead of leaning on whichever default the vendor shipped.
 	var prov []model.Provenance
 	for _, s := range decisions {
 		uuid := strings.TrimPrefix(s.Key, extensionKeyPrefix)
-		if dockUUID != "" && uuid == dockUUID {
-			l.errs.Add(fmt.Errorf("%s: %s is decided by %s, not by %s\n  set by: %s",
-				keyExtensions, uuid, KeyDockEnabled, keyExtensions, describe(s.Provenance)))
-			continue
-		}
-		ext, inCatalog := pl.GnomeCatalogExtension(uuid)
-		if !inCatalog && !contains(pl.Gnome.EnabledExtensions, uuid) {
-			l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q, so %s cannot decide about it\n  set by: %s",
-				l.c.Platform.ID(), uuid, keyExtensions, describe(s.Provenance)))
-			continue
-		}
 		if s.Value.(bool) {
 			if !contains(list, uuid) {
 				list = append(list, uuid)
 			}
-			if inCatalog {
+			// What the composition turned on is what the session check asks GNOME
+			// about: a UUID that does not really load must be visible.
+			l.p.Artifact.EnabledExtensions = append(l.p.Artifact.EnabledExtensions, uuid)
+			if ext, ok := pl.GnomeCatalogExtension(uuid); ok {
 				l.p.AddPackage(ext.Package, s.Provenance...)
 			}
 		} else {
@@ -367,35 +358,12 @@ func (l *lowering) lowerExtensions(get func(string) (compose.Scalar, bool), lock
 		}
 		prov = append(prov, s.Provenance...)
 	}
-
-	// The dock is a decision like any other. A false removes it from the platform's
-	// own list, which is ADR 0008's disable path; a true adds it, and lowerDock
-	// installs its package and its options.
-	setting := ""
-	if en, ok := get(KeyDockEnabled); ok {
-		setting = KeyDockEnabled
-		prov = append(append([]model.Provenance(nil), en.Provenance...), prov...)
-		if en.Value.(bool) {
-			if dockUUID != "" && !contains(list, dockUUID) {
-				list = append(list, dockUUID)
-			}
-		} else {
-			list = without(list, dockUUID)
-		}
-	} else if len(decisions) > 0 {
-		setting = decisions[0].Key
-		prov = decisions[0].Provenance
+	if len(prov) == 0 {
+		// Nothing decided: the list is the platform's own, and the platform is where it
+		// comes from.
+		prov = []model.Provenance{{Resource: l.c.Platform.ID(), Source: l.c.Platform.Source.String()}}
 	}
-	if setting == "" {
-		return
-	}
-	// The key is written when the list differs from the platform's, or when a lock
-	// asks for it: a lock needs a key to attach to, and dock.enabled false alone would
-	// otherwise leave the lock with nothing to lock.
-	if sameStrings(list, pl.Gnome.EnabledExtensions) && !locksNamed(locks, setting) {
-		return
-	}
-	l.set(setting, key, "as", gvStrings(list), prov)
+	l.set(KeyExtensions, key, "as", gvStrings(list), prov)
 }
 
 // locksNamed reports whether a lock names one of the settings given.
@@ -435,48 +403,49 @@ func sameStrings(a, b []string) bool {
 // dockOptions are settings that only exist while the dock extension runs.
 var dockOptions = []string{KeyDockPosition, KeyDockBehavior, KeyDockIconSize, KeyDockShowTrash}
 
-// lowerDock applies the dock semantics: options need an effective
-// dock.enabled true; dock.enabled false at a layer masks options from lower
-// layers (reported as a warning) and rejects options from its own or higher
-// layers; an unset dock.enabled with options is an error.
+// lowerDock applies the dock settings DeskOS models: they need an effective
+// decision enabling the dock's extension; a decision of false at a layer masks
+// settings from lower layers (reported as a warning) and rejects settings from its
+// own or higher layers; no decision at all with settings present is an error.
+// Whether the dock runs is not decided here (docs/adr/0017).
 func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 	const schema = "/org/gnome/shell/extensions/dash-to-dock/"
-	en, hasEn := get(KeyDockEnabled)
-	enabled := hasEn && en.Value.(bool)
 	pl := l.c.PlatformSpec
 	ext, dockInCatalog := pl.GnomeExtension(DockExtension)
-	// The dock's UUID is the one the platform's catalog declares, so deciding about
-	// it at all needs that entry: without it neither a true (no package to install)
-	// nor a false (no UUID to remove from the platform's own list) can be honored
-	// (docs/adr/0017).
-	if hasEn && !dockInCatalog {
-		l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q required by %s, so the dock cannot be decided\n  set by: %s",
-			l.c.Platform.ID(), DockExtension, KeyDockEnabled, describe(en.Provenance)))
-		return
+	// The dock's options are the settings DeskOS models for Dash to Dock, and whether
+	// the dock runs is the decision about its extension, taken with every other
+	// extension (docs/adr/0017). The platform's catalog entry is what names the
+	// extension whose decision gates them.
+	en, hasEn := get(ExtensionSetting(ext.UUID))
+	if !dockInCatalog {
+		en, hasEn = compose.Scalar{}, false
 	}
+	enabled := hasEn && en.Value.(bool)
 	var active []compose.Scalar
 	for _, key := range dockOptions {
 		v, ok := get(key)
 		switch {
 		case !ok:
+		case !dockInCatalog:
+			l.errs.Add(fmt.Errorf("%s requires the GNOME extension %q, which %s does not provide\n  set by: %s",
+				key, DockExtension, l.c.Platform.ID(), describe(v.Provenance)))
 		case !hasEn:
-			l.errs.Add(fmt.Errorf("%s requires %s: true, which no profile sets\n  set by: %s", key, KeyDockEnabled, describe(v.Provenance)))
+			l.errs.Add(fmt.Errorf("%s requires enabling %q, which no profile decides\n  set by: %s",
+				key, ext.UUID, describe(v.Provenance)))
 		case enabled:
 			active = append(active, v)
 		case v.Layer < en.Layer:
 			l.p.Warnings = append(l.p.Warnings, fmt.Sprintf("%s from %s layer is masked: %s is false at %s layer (%s)",
-				key, v.Layer, KeyDockEnabled, en.Layer, describeShort(en.Provenance)))
+				key, v.Layer, ext.UUID, en.Layer, describeShort(en.Provenance)))
 		default:
-			l.errs.Add(fmt.Errorf("%s is set at %s layer but %s is false at %s layer; a disabled dock cannot apply it\n  set by: %s\n  disabled by: %s",
-				key, v.Layer, KeyDockEnabled, en.Layer, describe(v.Provenance), describe(en.Provenance)))
+			l.errs.Add(fmt.Errorf("%s is set at %s layer but %s is disabled at %s layer; a disabled dock cannot apply it\n  set by: %s\n  disabled by: %s",
+				key, v.Layer, ext.UUID, en.Layer, describe(v.Provenance), describe(en.Provenance)))
 		}
 	}
 	if !enabled {
-		// The list itself is lowerExtensions' job; here a false dock.enabled only has
-		// to reject options that cannot run.
+		// The list itself is lowerExtensions' job.
 		return
 	}
-	l.p.AddPackage(ext.Package, en.Provenance...)
 	for _, v := range active {
 		switch v.Key {
 		case KeyDockPosition:

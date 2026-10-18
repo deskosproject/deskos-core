@@ -41,7 +41,9 @@ MCELOG_UNIT = "mcelog.service"
 MCELOG_FAILED_PROPS = {"LoadState": "loaded", "ActiveState": "failed", "SubState": "failed",
                        "Result": "exit-code", "ExecMainStatus": "1"}
 MCELOG_JOURNAL_SIGNATURE = ("does not support this processor", "edac_mce_amd")
-DOCK_UUID = "dash-to-dock@micxgx.gmail.com"
+# Every extension the composition turned on is asked about inside the session: a
+# decision that does not really load is a defect, not a silent no-op (docs/adr/0017).
+ENABLED_EXTENSIONS_PATH = "/var/lib/deskos-qa/enabled-extensions.keys"
 # The plan's dconf defaults are read back inside the session. `dconf read` reports
 # the effective value in the same GVariant text the plan stores (measured: uint32 0,
 # true, ['a', 'b'], @as [], 'a b'), so the plan's value is compared with what the
@@ -86,6 +88,30 @@ EXPLAINED_SESSION_DIFFERENCES = {}
 def difference_id(source, key):
     """The report's identity for one declared default: delivery path and key."""
     return f"{source}:{key}"
+
+
+def extension_reads():
+    """The script fragment that asks GNOME about every extension the plan enabled.
+
+    Membership in `enabled-extensions` is only the declared default: whether the
+    extension really loads is a session fact, and this is where it is read
+    (docs/adr/0017).
+    """
+    return (
+        "# Every extension the composition enabled, asked about in the session.\n"
+        f"mapfile -t enabled_extensions < {ENABLED_EXTENSIONS_PATH}\n"
+        'for i in "${!enabled_extensions[@]}"; do\n'
+        '  u="${enabled_extensions[$i]}"\n'
+        '  info=$(gnome-extensions info "$u" 2>/dev/null) || info=""\n'
+        '  if [ -z "$info" ]; then\n'
+        '    echo "extension_$i=missing"\n'
+        '  else\n'
+        '    e=$(printf %s "$info" | grep -o "Enabled: [A-Za-z]*" | cut -d" " -f2)\n'
+        '    s=$(printf %s "$info" | grep -o "State: [A-Z]*" | cut -d" " -f2)\n'
+        '    echo "extension_$i=$e/$s"\n'
+        '  fi\n'
+        "done\n"
+    )
 
 
 def default_reads(image_database, vendor):
@@ -138,7 +164,7 @@ def default_reads(image_database, vendor):
     )
 
 
-def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=()):
+def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -181,6 +207,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         name = os.path.basename(app.split()[0])
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
+    extensions = extension_reads() if enabled_extensions else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
@@ -192,8 +219,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-gnome-extensions info {DOCK_UUID} | awk -F': ' '/Enabled:/{{print "dock_enabled="$2}} /State:/{{print "dock_state="$2}}'
-echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -281,7 +307,7 @@ def tmpfiles_arg(text):
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
-def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=()):
+def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -290,7 +316,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     ]
     creds = {}
     if mode == "session":
-        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys)
+        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -315,6 +341,11 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # 0755 directory; the session user is not root and must read it.
             tmpfiles.append(
                 f"f {DCONF_KEYS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(dconf_keys) + chr(10))}")
+        if enabled_extensions:
+            # The extensions the plan enabled, one uuid per line.
+            tmpfiles.append(
+                f"f {ENABLED_EXTENSIONS_PATH} 0644 root root - "
+                f"{tmpfiles_arg(chr(10).join(enabled_extensions) + chr(10))}")
         if vendor_keys:
             # The plan's GSettings vendor defaults, schema and key per line.
             tmpfiles.append(
@@ -668,10 +699,12 @@ def evaluate(values, plan, journal="", skel_rels=()):
           f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
-    exts = dconf_value(plan, "/org/gnome/shell/enabled-extensions") or ""
-    if DOCK_UUID in exts:
-        check("Dash to Dock active", values.get("dock_enabled") == "Yes" and values.get("dock_state") in ("ACTIVE", "ENABLED"),
-              f"Enabled={values.get('dock_enabled')} State={values.get('dock_state')}")
+    # Every extension the composition turned on must really load. Membership in
+    # enabled-extensions is the declared default; this is the session fact.
+    for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
+        got = values.get(f"extension_{i}", "missing")
+        check(f"extension loads ({uuid})", got.split("/")[0] == "Yes" and got.split("/")[-1] in ("ACTIVE", "ENABLED"),
+              f"Enabled/State={got}")
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")
@@ -765,7 +798,8 @@ def main():
         interval=a.interval, stable_frames=5, expect_splash=False, hash_disk=True, keep_overlay=False,
         extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels,
                                            [d["key"] for d in defaults], dconf_db,
-                                           [[d["schema"], d["key"]] for d in vendor])),
+                                           [[d["schema"], d["key"]] for d in vendor],
+                                           plan.get("artifact", {}).get("enabledExtensions") or [])),
         until_serial=MARK_END, guest_powers_off=True,
     )
     try:

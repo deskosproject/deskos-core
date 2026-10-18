@@ -422,8 +422,10 @@ spec:
       lock:
         enabled: true
         delay: 0s
+    shell:
+      extensions:
+        - {uuid: dash-to-dock@micxgx.gmail.com, enabled: true}
     dock:
-      enabled: true
       position: bottom
       behavior: intellihide
       iconSize: 40
@@ -461,14 +463,20 @@ spec:
   *Utilities*); declare every folder the app grid should have. A higher
   layer replaces the whole list. Not available on RHEL 10.2, whose GNOME
   Shell 49.4 overwrites them at first login.
-- **`extensions`** decides, one UUID at a time, whether a GNOME Shell extension
-  the **platform declares** is enabled. A profile never names a package, a schema
-  or a dconf key: the UUID must be in the platform's own catalog, or in the list it
-  enables by default (which can be turned off without installing anything), and an
-  extension DeskOS does not know fails composition with the platform's reason.
-  Dash to Dock is decided by `dock.enabled`, not here. The plan writes
-  `enabled-extensions` only when the composition changes the platform's own list
+- **`extensions`** decides, one UUID at a time, whether a GNOME Shell extension is
+  enabled. A profile never names a package, a schema or a dconf key: it says which
+  extension and whether it runs, and the rest is not its business. Any UUID may be
+  decided, the dock included: when the platform's own catalog declares the
+  extension, DeskOS installs the package it names; an extension the composition
+  brings itself is installed by the packages the composition declares, and a UUID
+  nobody provides shows up as a failed session check rather than as silence. The
+  plan always states the list it enables
   ([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
+- **`dock.*`** is the settings DeskOS models for Dash to Dock, and they apply only
+  while its extension is enabled through `shell.extensions`. Configuring an
+  extension DeskOS does not model is deliberately not possible from the artifact:
+  the desktop keeps its own defaults and the user changes them in the session
+  ([ADR 0005](adr/0005-managed-baseline-boundary.md)).
 - **`power.buttonAction`** is the hardware power button's action, from GNOME's own
   values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file

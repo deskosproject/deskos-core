@@ -29,7 +29,8 @@
             "appearance.colorScheme", "appearance.accentColor",
             "shell.favorites",
             "session.idle.blankAfter", "session.lock.enabled", "session.lock.delay",
-            "dock.enabled", "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
+            "shell.extensions",
+            "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
             "software.updates",
             "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
             "clock.showWeekday", "clock.format",
@@ -179,7 +180,6 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": { "type": "boolean" },
             "position": { "enum": ["bottom", "left", "right", "top"] },
             "behavior": { "enum": ["fixed", "autohide", "intellihide"] },
             "iconSize": { "type": "integer", "minimum": 16, "maximum": 64 },

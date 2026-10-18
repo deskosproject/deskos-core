@@ -21,8 +21,12 @@ spec:
         enabled: true
         delay: 0s
     dock:
-      enabled: true
       position: bottom
       behavior: intellihide
       iconSize: 40
       showTrash: false
+    shell:
+      # The dock is enabled like any other extension; the dock settings above are the
+      # ones DeskOS models for it.
+      extensions:
+        - {uuid: dash-to-dock@micxgx.gmail.com, enabled: true}

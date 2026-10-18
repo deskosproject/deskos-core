@@ -42,7 +42,7 @@ the distribution's logo packages are never replaced or falsified.
 | Graphical vs text splash | Plymouth shows the graphical splash only with `rhgb`, `splash`, `splash=silent` or `plymouth.graphical`; `single`, `splash=verbose` force details; ESC toggles details (`src/main.c`) | verified in source |
 | Quiet boot | `/usr/lib/bootc/kargs.d/*.toml` (`kargs = [...]`); base image ships none; bootc applies kargs.d at install and applies the kargs.d diff on each update, keeping machine-local args (`bootc_kargs.rs`, `install.rs`, docs) | verified in source/docs; `quiet` makes systemd `show_status` default to `error` (systemd(1)) |
 | Rollback | initramfs and kargs.d are image content; each deployment has its own boot entry | inferred, not tested |
-| Dock | `gnome-shell-extension-dash-to-dock` is an optional package of the `gnome-desktop` comps group (not installed by it); DeskOS installs and enables it only when the effective `dock.enabled` is true | verified in the CS10 group and images; active in the CS10 instrumented session check |
+| Dock | `gnome-shell-extension-dash-to-dock` is an optional package of the `gnome-desktop` comps group (not installed by it); DeskOS installs and enables it only when a profile decides to enable its extension | verified in the CS10 group and images; active in the CS10 instrumented session check |
 
 ## Decisions
 
@@ -66,14 +66,15 @@ the distribution's logo packages are never replaced or falsified.
    distribution's compiled artwork and os-release stays as the base image
    ships it on every platform, so GIS says "Welcome to CentOS Stream 10"
    and GRUB lists the distribution's name.
-4. **Dock stays semantic; Core enables it.** Keep `dock.*` in GnomeProfile
-   as intent; Platform maps it to an extension. Unset or `false` means the
-   extension is neither installed nor enabled (the package is optional in
-   the EL10 GNOME group). Core sets only `dock.enabled: true`, keeping the
-   extension's own defaults; an organization profile can set options or
-   `dock.enabled: false`. *Implemented* (with `dock.showTrash`):
-   - dock options (`position`, `behavior`, `iconSize`, `showTrash`) need
-     an effective `dock.enabled: true`; with `enabled` unset they fail;
+4. **Dock stays semantic; the workstation enables it.** Keep `dock.*` in GnomeProfile
+   as the settings DeskOS models for Dash to Dock, and enable the dock by deciding
+   about its extension in `shell.extensions` (the decision replaced `dock.enabled`,
+   ADR 0017). A decision of `false`, or no decision at all, means the extension is
+   neither installed nor enabled (the package is optional in the EL10 GNOME group);
+   an organization profile can set options or disable the extension. *Implemented*
+   (with `dock.showTrash`):
+   - dock options (`position`, `behavior`, `iconSize`, `showTrash`) need an
+     effective decision enabling the dock's extension; with no decision they fail;
    - `enabled: false` at a layer masks options that won at lower layers
      (no extension keys, no package, a plan warning per masked option);
    - options at the same or a higher layer than an effective

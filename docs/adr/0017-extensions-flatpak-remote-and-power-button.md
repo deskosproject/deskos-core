@@ -8,8 +8,9 @@ Three gaps the desktop-defaults line of work found, and the boundary each one ha
 respect.
 
 **Extensions.** GNOME extensions are a `Platform` fact (`gnome.extensions`,
-`gnome.enabledExtensions`) and a profile can only turn on Dash to Dock, through
-`dock.enabled`. AppIndicator, the most requested item, has nowhere to be declared.
+`gnome.enabledExtensions`) and a profile could only turn on Dash to Dock, through a
+switch of its own. AppIndicator, the most requested item, had nowhere to be declared,
+and a workstation could not bring an extension DeskOS had not modeled.
 Enabling one by its platform-declared UUID does not cross the managed-baseline
 boundary, but *configuring* one with a free key/value map would: an extension's
 settings can execute commands, and GNOME keeps an extension's schema id and its
@@ -40,32 +41,29 @@ session timeout the same decision covers already exists
    different ways **in the same layer** is a conflict, never an order-dependent
    winner. Two layers may disagree, and the higher one decides.
 3. The effective `enabled-extensions` list is computed **once**, from the platform's
-   `enabledExtensions`, applying the decisions, plus Dash to Dock when `dock.enabled`
-   is true, in a stable order. No writer appends to it independently.
-4. **When the key is written:** the plan writes `enabled-extensions` only when the
-   composition changes the platform's own list — an extension turned on or off, or the
-   dock enabled or disabled. With no decision and no dock, the plan writes nothing and
-   the platform's own GNOME default stands. A UUID that the platform lists in
-   `enabledExtensions` is presumed already shipped and enabled: turning it **off**
-   needs no entry in the extension catalog, because there is no package to install.
-   `dock.enabled: false` removes the dock's UUID the same way, and it needs the
-   platform's catalog entry like the `true` does (see below); ADR 0008's disable path
-   keeps its semantics.
-5. Dash to Dock's UUID is reserved for `dock.enabled`, and that UUID is the one the
-   platform's catalog declares: deciding about the dock at all — a `true` that installs
-   its package, or a `false` that removes it from the platform's own list — needs that
-   entry, so `dock.enabled` on a platform that does not offer the extension fails.
-   Naming the dock's UUID in `shell.extensions` is a validation error, so there is no
-   second writer. A UUID the platform enables by default without offering it as a
-   package has no identity to reserve; it is decided like any other default-enabled
-   extension.
-6. A UUID that is neither in the platform's catalog (`gnome.extensions`) nor in its
-   `enabledExtensions` **fails composition** with the platform's reason; it is never
-   dropped silently. An enabled extension's package is installed from the catalog.
-7. The plan states that membership in `enabled-extensions` is the **declared
-   default**: whether GNOME Shell actually loaded the extension is a session check,
-   not a composition claim.
-8. On a platform that declares `gnome.keepsVendorDefaults` (ADR 0016), this field
+   `enabledExtensions` with the decisions applied, in a stable order. No writer
+   appends to it independently.
+4. The plan **always states the list it enables**, so the artifact carries what it
+   decided instead of leaning on whichever default the vendor shipped. A UUID the
+   platform lists in `enabledExtensions` is presumed already shipped and enabled:
+   turning it **off** needs no catalog entry, because there is no package to turn
+   away. A UUID the platform's catalog declares gets its package installed.
+5. **Enabling is open.** Any UUID may be decided, including one the platform's catalog
+   does not know: the extension the composition brings itself is installed by the
+   packages the composition declares, so a workstation is not limited to the
+   extensions DeskOS has modeled. The verification moves to where it belongs: the
+   plan carries the extensions the composition turned on, and the **session check
+   asks GNOME about each one**. A decision that does not really load is a red check,
+   not a silent no-op. This is the same shape as the rest of the model: the
+   composition declares, and the session check measures.
+6. **The dock is an extension like any other.** There is no separate switch: the dock
+   is enabled by deciding about its UUID, and the settings DeskOS models for it
+   (`dock.position`, `dock.behavior`, `dock.iconSize`, `dock.showTrash`) apply only
+   while that decision is true. The platform's catalog entry for `dash-to-dock` is
+   what names the UUID whose decision gates those settings, and what installs the
+   package. A higher-layer `false` masks lower-layer dock settings (a warning); dock
+   settings with no enabling decision, or at or above the disabling layer, are errors.
+7. On a platform that declares `gnome.keepsVendorDefaults` (ADR 0016), this field
    follows the same rule as every other GNOME setting: nothing is written, and a
    decision declared there **fails composition** with the platform's reason. A
    workstation whose platform ships a desktop of its own does not select the profile
@@ -73,13 +71,22 @@ session timeout the same decision covers already exists
 
 ### Configuring an extension
 
-9. Settings are **named capabilities** an extension's platform entry declares, each
-   with its type, allowed values, schema and dconf path. A profile names a capability
-   and a value; it never names a dconf key, and the path never comes from the UUID.
-   A capability whose value is a command is excluded by construction.
-10. v1 ships **no** capability: the field turns extensions on and off, and the shape
-   above is the only way a setting may be added later. An extension whose settings are
-   already modeled (Dash to Dock, through the `dock.*` keys) keeps them.
+8. **Only what DeskOS models can be configured from the artifact.** An extension's
+   settings are written by a typed adapter in the lowerer — the dock's is the one that
+   exists — because an extension's setting can be a value the shell **executes**, and
+   no type system can prove otherwise for an extension nobody modeled. A declaration
+   that let a resource name dconf keys and values would be that escape hatch wearing a
+   schema, so it is not added: a profile names a semantic setting, never a key, a
+   path or a command.
+9. An extension DeskOS does not model is **not left without a configuration**: it keeps
+   its own defaults, and the user changes them in their session, which is where
+   [ADR 0005](0005-managed-baseline-boundary.md) draws the line. What the artifact
+   promises is what it declares; the rest belongs to the person at the machine.
+10. When an option of an unmodeled extension must be part of the artifact, the way to
+   add it is an adapter in the lowerer plus its test — a reviewed, typed change — not
+   a new place for a resource to name dconf keys.
+
+### Configuring an extension
 
 ### Retiring a Flatpak remote
 
@@ -124,8 +131,10 @@ session timeout the same decision covers already exists
 
 - Enabling an extension is a **field on an existing kind**, so the public kind count
   stays at fourteen (invariant 4).
-- `enabled-extensions` has **one writer in the plan**. `dock.enabled` and
-  `shell.extensions` cannot disagree, and a manifest ordering cannot change the output.
+- `enabled-extensions` has **one writer in the plan**, and one switch: the dock and
+  every other extension go through the same decision, so two writers cannot disagree
+  and a manifest ordering cannot change the output. The plan states the effective
+  list, and it names the extensions the composition turned on.
   One writer exists outside the plan: the experimental Shell stylesheet path writes
   `61-deskos-shell`, which repeats the whole list because dconf does not merge arrays
   and sorts after the plan's file, so whoever opts into it has to pass the effective

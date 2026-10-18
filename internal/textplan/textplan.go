@@ -108,6 +108,10 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, d := range a.GSettings {
 		pf("    %s\t%s %s = %s\t%s\n", d.Setting, d.Schema, d.Key, d.Value, origins(d.Provenance))
 	}
+	section(w, "GNOME Shell extensions this composition enables (the session check asks GNOME about each)", len(a.EnabledExtensions))
+	for _, e := range a.EnabledExtensions {
+		pf("    %s\n", e)
+	}
 	section(w, "Kernel arguments (bootc kargs.d)", len(a.KernelArguments))
 	for _, k := range a.KernelArguments {
 		pf("    %s\t%s\t%s\n", k.Arg, k.Setting, origins(k.Provenance))

@@ -75,6 +75,11 @@ type Artifact struct {
 	IconCaches       []IconCacheUpdate        `json:"iconCaches"`
 	Dconf            *DconfDatabase           `json:"dconf,omitempty"`
 	GSettings        []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
+	// EnabledExtensions are the GNOME Shell extensions the composition decided to
+	// turn on, beyond whatever the platform already enables. The list is what the
+	// session check asks GNOME about: a decision that does not really load must be
+	// visible, not silent (docs/adr/0017).
+	EnabledExtensions []string `json:"enabledExtensions,omitempty"`
 	KernelArguments  []KernelArgument         `json:"kernelArguments"`
 	Initramfs        *InitramfsRegeneration   `json:"initramfs,omitempty"`
 	PlymouthTheme    *PlymouthTheme           `json:"plymouthTheme,omitempty"`
@@ -557,6 +562,7 @@ func (p *Plan) Normalize() error {
 		sort.Slice(a.Dconf.Defaults, func(i, j int) bool { return a.Dconf.Defaults[i].Key < a.Dconf.Defaults[j].Key })
 		sort.Slice(a.Dconf.Locks, func(i, j int) bool { return a.Dconf.Locks[i].Key < a.Dconf.Locks[j].Key })
 	}
+	sort.Strings(a.EnabledExtensions)
 	pr := &p.Provisioning
 	sort.Slice(pr.FlatpakRemotes, func(i, j int) bool { return pr.FlatpakRemotes[i].Name < pr.FlatpakRemotes[j].Name })
 	sort.Slice(pr.FlatpakApplications, func(i, j int) bool { return pr.FlatpakApplications[i].ID < pr.FlatpakApplications[j].ID })

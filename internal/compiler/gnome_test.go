@@ -263,6 +263,7 @@ func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {
 const (
 	enabledExtensionsKey = "/org/gnome/shell/enabled-extensions"
 	appIndicatorUUID     = "appindicatorsupport@rgcjonas.gmail.com"
+	dashToDockUUID       = "dash-to-dock@micxgx.gmail.com"
 	backgroundLogoUUID   = "background-logo@fedorahosted.org"
 )
 
@@ -330,35 +331,26 @@ func TestAnExtensionDecidedTheSameWayTwiceInOneLayerFails(t *testing.T) {
 	mustFail(t, err, "shell.extensions: \""+appIndicatorUUID+"\" is decided twice")
 }
 
-func TestAnExtensionThePlatformDoesNotDeclareFails(t *testing.T) {
-	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
-		"ws.yaml": workstation("ws", "org"),
-		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
-		"g.yaml":  gnome("g", shellDefaults(extensionDecision("elsewhere@example.com", true))),
-	}).dir(t)
-	_, err := planOf(t, "ws", dir)
-	mustFail(t, err,
-		"Platform/test-platform does not provide the GNOME extension \"elsewhere@example.com\"",
-		"organization GnomeProfile/g")
+func TestAnyExtensionCanBeEnabledEvenIfThePlatformDoesNotDeclareIt(t *testing.T) {
+	// Enabling is open: the platform's catalog installs the package when it knows the
+	// extension, and an extension the composition brings itself is installed by the
+	// packages the composition declares and verified in the session (docs/adr/0017).
+	p := extensionPlan(t, "organization", extensionDecision("elsewhere@example.com", true))
+	if v, _ := dconf(p, enabledExtensionsKey); !strings.Contains(v, "elsewhere@example.com") {
+		t.Errorf("enabled-extensions = %s, want the extension the profile brought", v)
+	}
+	if strings.Contains(strings.Join(packages(p), " "), "elsewhere") {
+		t.Errorf("no package may be invented for an unknown extension: %v", packages(p))
+	}
 }
 
-func TestTheDocksExtensionIsDecidedByDockEnabled(t *testing.T) {
-	// Dash to Dock has its own key, so nothing decides it twice (docs/adr/0017).
-	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
-		"ws.yaml": workstation("ws", "org"),
-		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
-		"g.yaml":  gnome("g", shellDefaults(extensionDecision("dash-to-dock@micxgx.gmail.com", true))),
-	}).dir(t)
-	_, err := planOf(t, "ws", dir)
-	mustFail(t, err, "dash-to-dock@micxgx.gmail.com is decided by dock.enabled, not by shell.extensions")
-}
-
-func TestNothingIsWrittenWhenNoDecisionChangesThePlatformList(t *testing.T) {
-	// The platform already enables it: turning it on changes nothing, so the plan
-	// writes no key and the platform's own GNOME default stands.
+func TestThePlatformsOwnListIsAlwaysStated(t *testing.T) {
+	// The artifact says which extensions it enables, rather than leaning on whichever
+	// default the vendor shipped: the session check verifies that list, so a decision
+	// that changes nothing still lands in the plan.
 	p := extensionPlan(t, "organization", extensionDecision(backgroundLogoUUID, true))
-	if v, ok := dconf(p, enabledExtensionsKey); ok {
-		t.Errorf("enabled-extensions written although the platform list did not change: %s", v)
+	if v, ok := dconf(p, enabledExtensionsKey); !ok || v != "['"+backgroundLogoUUID+"']" {
+		t.Errorf("enabled-extensions = %q, want the platform's own list", v)
 	}
 }
 
@@ -382,25 +374,4 @@ func TestAnUnknownPowerButtonActionIsRejected(t *testing.T) {
 	}).dir(t)
 	_, err := planOf(t, "ws", dir)
 	mustFail(t, err, "at /spec/defaults/power/buttonAction: value must be one of 'nothing', 'suspend', 'hibernate', 'interactive'")
-}
-
-func TestTheDockNeedsThePlatformsCatalogEntryEvenToBeTurnedOff(t *testing.T) {
-	// The dock's UUID is the one the catalog declares, so without that entry neither
-	// a true (no package to install) nor a false (no UUID to remove from the
-	// platform's own list) can be honored (docs/adr/0017).
-	platform := strings.Replace(platformYAML,
-		"    extensions:\n      - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}\n", "", 1)
-	for _, enabled := range []string{"true", "false"} {
-		t.Run("enabled="+enabled, func(t *testing.T) {
-			dir := fixture{"platform.yaml": platform}.with(fixture{
-				"ws.yaml": workstation("ws", "org"),
-				"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
-				"g.yaml":  gnome("g", "    dock:\n      enabled: "+enabled+"\n"),
-			}).dir(t)
-			_, err := planOf(t, "ws", dir)
-			mustFail(t, err,
-				`does not provide the GNOME extension "dash-to-dock" required by dock.enabled`,
-				"organization GnomeProfile/g")
-		})
-	}
 }
