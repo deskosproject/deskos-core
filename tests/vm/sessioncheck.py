@@ -44,6 +44,11 @@ MCELOG_JOURNAL_SIGNATURE = ("does not support this processor", "edac_mce_amd")
 # Every extension the composition turned on is asked about inside the session: a
 # decision that does not really load is a defect, not a silent no-op (docs/adr/0017).
 ENABLED_EXTENSIONS_PATH = "/var/lib/deskos-qa/enabled-extensions.keys"
+# The binaries the plan installs, one destination per line. What is asserted about them
+# is not that they exist but that their bytes are the ones the plan pinned: a
+# checksum-verified download is the whole claim, and the chain should be closed on a
+# booted machine and not only in the build (docs/adr/0018).
+BINARY_PATHS_PATH = "/var/lib/deskos-qa/binaries.keys"
 # The plan's dconf defaults are read back inside the session. `dconf read` reports
 # the effective value in the same GVariant text the plan stores (measured: uint32 0,
 # true, ['a', 'b'], @as [], 'a b'), so the plan's value is compared with what the
@@ -59,6 +64,7 @@ VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
 # invariant 8; docs/research-notes.md, "GNOME administration").
 DCONF_PROFILE_PATH = "/etc/dconf/profile/deskos-qa-defaults"
 DEFAULT_CHECK_PREFIX = "plan default "
+BINARY_CHECK_PREFIX = "plan binary "
 VENDOR_CHECK_PREFIX = "plan vendor default "
 # Sentinels for what the guest read; neither can be a GVariant text value, so they
 # are told apart from a value the key really has.
@@ -117,6 +123,27 @@ def extension_reads():
     )
 
 
+def binary_reads():
+    """The script fragment that hashes every binary the plan installs.
+
+    The declared checksum is what the image downloaded and verified at build time; this
+    reads the bytes that are really on the machine, so a binary the build never wrote,
+    or one replaced afterwards, is a difference rather than an assumption.
+    """
+    return (
+        "# Every binary the plan installs, hashed where it landed.\n"
+        f"mapfile -t plan_binaries < {BINARY_PATHS_PATH}\n"
+        'for i in "${!plan_binaries[@]}"; do\n'
+        '  b="${plan_binaries[$i]}"\n'
+        '  if [ -x "$b" ]; then\n'
+        '    echo "binary_$i=$(sha256sum "$b" | cut -d" " -f1)"\n'
+        '  else\n'
+        '    echo "binary_$i=missing"\n'
+        '  fi\n'
+        "done\n"
+    )
+
+
 def default_reads(image_database, vendor):
     """The script fragment that reads every default the plan declares.
 
@@ -167,7 +194,8 @@ def default_reads(image_database, vendor):
     )
 
 
-def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
+def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
+                   binaries=()):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -211,6 +239,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     extensions = extension_reads() if enabled_extensions else ""
+    binary_reads_fragment = binary_reads() if binaries else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
@@ -222,7 +251,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{extensions}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -310,7 +339,8 @@ def tmpfiles_arg(text):
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
-def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
+def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
+                enabled_extensions=(), binaries=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -319,7 +349,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     ]
     creds = {}
     if mode == "session":
-        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions)
+        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
+                                binaries)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -344,6 +375,11 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # 0755 directory; the session user is not root and must read it.
             tmpfiles.append(
                 f"f {DCONF_KEYS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(dconf_keys) + chr(10))}")
+        if binaries:
+            # The destinations of the binaries the plan installs, one per line.
+            tmpfiles.append(
+                f"f {BINARY_PATHS_PATH} 0644 root root - "
+                f"{tmpfiles_arg(chr(10).join(binaries) + chr(10))}")
         if enabled_extensions:
             # The extensions the plan enabled, one uuid per line.
             tmpfiles.append(
@@ -511,6 +547,25 @@ def dconf_value(plan, key):
         if d["key"] == key:
             return d["value"]
     return None
+
+
+def plan_binaries(plan):
+    """The binaries the plan installs, in the order the plan lists them."""
+    return list(plan.get("artifact", {}).get("binaries") or [])
+
+
+def binary_summary(checks):
+    """The plan's binaries and how the run found them.
+
+    A binary the plan installs is a declaration like any other, so it gets its
+    assertion: the bytes on the machine must be the ones the plan pinned. There is one
+    claim here and not two -- a binary has no "value the session sees" -- so a binary
+    that differs fails, and one that cannot be read is reported with its reason.
+    """
+    bins = [c for c in checks if c["check"].startswith(BINARY_CHECK_PREFIX)]
+    ok = sum(1 for c in bins if c["pass"])
+    return {"declared": len(bins), "verified": ok,
+            "unverified": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
 
 
 def plan_vendor_defaults(plan):
@@ -702,6 +757,17 @@ def evaluate(values, plan, journal="", skel_rels=()):
           f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
+    # Every binary the plan installs must be the one it pinned: the build verified the
+    # checksum of a download, and this verifies the bytes that reached the machine.
+    for i, b in enumerate(plan_binaries(plan)):
+        name = BINARY_CHECK_PREFIX + b["destination"]
+        got = values.get(f"binary_{i}", "missing")
+        if got == "missing":
+            check(name, False, f"{b['destination']} is not there or is not executable")
+        elif got != b["sha256"]:
+            check(name, False, f"sha256 {got}, the plan pins {b['sha256']}")
+        else:
+            check(name, True, f"sha256 {got}, as the plan pins it")
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -802,7 +868,8 @@ def main():
         extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels,
                                            [d["key"] for d in defaults], dconf_db,
                                            [[d["schema"], d["key"]] for d in vendor],
-                                           plan.get("artifact", {}).get("enabledExtensions") or [])),
+                                           plan.get("artifact", {}).get("enabledExtensions") or [],
+                                           [b["destination"] for b in plan_binaries(plan)])),
         until_serial=MARK_END, guest_powers_off=True,
     )
     try:
@@ -819,6 +886,7 @@ def main():
     if a.mode == "session":
         result["checks"] = evaluate(values, plan, journal, skel_rels)
         result["plan_defaults"] = default_coverage(result["checks"])
+        result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
         ok = summary["result"] == "pass" and all(c["pass"] for c in result["checks"])
     else:
@@ -837,6 +905,11 @@ def main():
                      f"{s['in_session']} verified in the session, {len(s['unverified'])} unverified reads")
         for c in s["unverified"]:
             lines.append(f"  - {c['check']} [{c['axis']}: {c['state']}] ({c['detail']})")
+    if "plan_binaries" in result:
+        b = result["plan_binaries"]
+        lines.append(f"- Plan binaries: {b['verified']} of {b['declared']} verified against the checksum the plan pins")
+        for c in b["unverified"]:
+            lines.append(f"  - {c['check']} ({c['detail']})")
     if "platform_diagnostics" in result:
         lines += diagnostics_md(result["platform_diagnostics"])
     lines += ["", "Journal excerpt: journal.txt. Frames: frames/ and summary.md."]

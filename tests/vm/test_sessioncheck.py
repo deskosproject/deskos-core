@@ -22,6 +22,10 @@ PLAN = {
             {"key": "/org/gnome/software/download-updates", "type": "b", "value": "false"},
         ]},
         "enabledExtensions": ["dash-to-dock@micxgx.gmail.com"],
+        "binaries": [
+            {"artifact": "deskos", "version": "0.12.0", "destination": "/usr/local/bin/deskos",
+             "sha256": "aa" * 32, "archive": "none", "mode": "0755"},
+        ],
         "gsettingsVendorDefaults": [
             {"schema": "org.gnome.desktop.background", "key": "picture-uri", "type": "s",
              "value": "'file:///usr/share/deskos/backgrounds/a.svg'", "setting": "appearance.wallpaper"},
@@ -48,6 +52,8 @@ def reported(plan):
         out[f"vendor_{i}"] = out[f"vendordb_{i}"] = d["value"]
     for i, _ in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
         out[f"extension_{i}"] = "Yes/ACTIVE"
+    for i, b in enumerate(sc.plan_binaries(plan)):
+        out[f"binary_{i}"] = b["sha256"]
     return out
 
 
@@ -163,6 +169,21 @@ class TmpfilesTest(unittest.TestCase):
         c = sc.credentials("journal", enabled_extensions=["a@b"])
         self.assertNotIn(sc.ENABLED_EXTENSIONS_PATH, c["tmpfiles.extra"])
 
+    def test_session_credentials_install_the_binary_destinations(self):
+        # The destinations the plan installs travel as a file of their own; the guest
+        # hashes what it finds, and the host compares with the plan's checksum.
+        c = sc.credentials("session", binaries=["/usr/local/bin/deskos"])
+        lines = c["tmpfiles.extra"].splitlines()
+        keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
+        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/local/bin/deskos\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
+        self.assertIn("sha256sum", script)
+
+    def test_journal_credentials_ignore_the_binaries(self):
+        c = sc.credentials("journal", binaries=["/usr/local/bin/deskos"])
+        self.assertNotIn(sc.BINARY_PATHS_PATH, c["tmpfiles.extra"])
+
     def test_a_session_without_defaults_reads_none(self):
         c = sc.credentials("session")
         self.assertNotIn(sc.DCONF_KEYS_PATH, c["tmpfiles.extra"])
@@ -205,6 +226,45 @@ class ParseEvaluateTest(unittest.TestCase):
 
     def test_missing_results_fail(self):
         self.assertFalse(all(c["pass"] for c in sc.evaluate({"session_results": "missing"}, PLAN)))
+
+
+class PlanBinariesTest(unittest.TestCase):
+    def binary_check(self, values, destination="/usr/local/bin/deskos", plan=PLAN):
+        name = sc.BINARY_CHECK_PREFIX + destination
+        return next(c for c in sc.evaluate(values, plan) if c["check"] == name)
+
+    def test_the_binaries_the_plan_installs_are_asserted(self):
+        # A binary the plan installs is a declaration, so it gets an assertion: the
+        # bytes on the machine must be the ones the plan pinned, which is the whole
+        # claim of a checksum-verified download.
+        c = self.binary_check(GOOD)
+        self.assertTrue(c["pass"])
+        self.assertIn("as the plan pins it", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(GOOD, PLAN))
+        self.assertEqual(summary["declared"], 1)
+        self.assertEqual(summary["verified"], 1)
+        self.assertEqual(summary["unverified"], [])
+
+    def test_a_binary_whose_bytes_differ_fails(self):
+        values = dict(GOOD, binary_0="bb" * 32)
+        c = self.binary_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("the plan pins", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        self.assertEqual(summary["verified"], 0)
+        self.assertEqual([u["check"] for u in summary["unverified"]], [c["check"]])
+
+    def test_a_binary_that_is_not_there_fails(self):
+        values = dict(GOOD, binary_0="missing")
+        c = self.binary_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("is not there or is not executable", c["detail"])
+
+    def test_a_plan_without_binaries_asserts_none(self):
+        checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})
+        summary = sc.binary_summary(checks)
+        self.assertEqual(summary["declared"], 0)
+        self.assertTrue(all(c["pass"] for c in checks))
 
 
 class PlanDefaultsTest(unittest.TestCase):

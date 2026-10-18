@@ -183,6 +183,21 @@ reads them stays inside the tmpfiles.d argument cap as plans grow
 `edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at
 most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
 
+### Every binary the plan installs
+
+A binary the plan installs is a declaration like any other, so it gets an
+assertion. The plan carries each one's destination and the checksum its download
+was verified against at build time; the guest hashes the file where it landed and
+the host compares. **The claim is the bytes, not the presence**: a binary the build
+never wrote, one replaced afterwards, and one that lost its executable bit are all
+differences, and each is named. There is one claim here rather than the two a
+default has — a binary has no "value the session sees" — so nothing about it is
+reported as merely unverified except a file that cannot be read at all, which is
+reported with the reason.
+
+`session.json` carries `plan_binaries` (`declared`, `verified`, and the ones that
+failed with their detail), and `session.md` prints the count.
+
 ### Seeding the skeleton and showing the widgets
 
 Two optional flags reach the per-user state a desktop theme lives in:
