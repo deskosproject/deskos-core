@@ -11,6 +11,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -20,8 +21,14 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/deskosproject/deskos-core/internal/evidence"
+	"github.com/deskosproject/deskos-core/internal/plan"
 	"github.com/deskosproject/deskos-core/internal/theme"
 )
+
+// planPath is where the compiler installs the plan inside the image; the command reads
+// it instead of carrying a list of its own.
+const planPath = evidence.PlanPath
 
 // ptyxisProfileUUID is the fixed UUID of the profile the tool provisions so a
 // terminal uses the palette by default.
@@ -46,14 +53,45 @@ func main() {
 	}
 }
 
+// shellExtensions is the list the shell drop in must repeat: what the caller says
+// explicitly, or the effective list the image's own plan declares. It refuses rather
+// than inventing one, because the drop in overrides the plan's keyfile.
+func shellExtensions(root, explicit string) ([]string, error) {
+	if explicit != "" {
+		return strings.Split(explicit, ","), nil
+	}
+	data, err := os.ReadFile(filepath.Join(root, planPath))
+	if err != nil {
+		return nil, fmt.Errorf("this image carries no plan (%s), so the enabled extensions it declares cannot be read; pass --extensions explicitly if this image is not a DeskOS one: %w", planPath, err)
+	}
+	var p plan.Plan
+	if err := json.Unmarshal(data, &p); err != nil {
+		return nil, fmt.Errorf("%s is not a readable plan: %w", planPath, err)
+	}
+	if p.Artifact.Dconf != nil {
+		for _, d := range p.Artifact.Dconf.Defaults {
+			if d.Key == "/org/gnome/shell/enabled-extensions" {
+				items, ok := gvariantStrings(d.Value)
+				if !ok {
+					return nil, fmt.Errorf("the plan's %s default is %q, which is not a list of extension UUIDs",
+						"/org/gnome/shell/enabled-extensions", d.Value)
+				}
+				return items, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("the plan does not declare %s, so there is no list to repeat; pass --extensions explicitly",
+		"/org/gnome/shell/enabled-extensions")
+}
+
 func apply(args []string) {
 	fs := flag.NewFlagSet("apply", flag.ExitOnError)
 	paletteDir := fs.String("palette", "", "a palette directory (colors.toml + backgrounds)")
 	user := fs.Bool("user", false, "write to $HOME and apply the GNOME settings of the session")
 	root := fs.String("root", "/", "system root to write under")
 	shellCSS := fs.String("shell-css", "", "EXPERIMENTAL: the distro's compiled gnome-shell.css to recolor")
-	extensions := fs.String("extensions", "background-logo@fedorahosted.org,dash-to-dock@micxgx.gmail.com",
-		"the enabled-extensions the image already writes, to repeat in the shell drop in")
+	extensions := fs.String("extensions", "",
+		"the enabled-extensions to repeat in the shell drop in; default: what the image's own plan declares")
 	_ = fs.Parse(args)
 
 	if *paletteDir == "" {
@@ -94,7 +132,17 @@ func apply(args []string) {
 			files[filepath.Join(shellDir, theme.ShellTheme(pack), "gnome-shell/gnome-shell.css")] = patched
 		}
 		if dconfPath != "" {
-			files[dconfPath] = theme.ShellDconf(strings.Split(*extensions, ","), theme.ShellTheme("a"))
+			// The drop in sorts after the plan's own keyfile in the same dconf database,
+			// so it must repeat the list the image really enables: dconf does not merge
+			// arrays, and a list invented here would silently override the plan
+			// (docs/adr/0018, "How it gets onto a machine" is about the other binary;
+			// the rule is the same one the compiler follows).
+			list, err := shellExtensions(base, *extensions)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "deskos-theme: %v\n", err)
+				os.Exit(1)
+			}
+			files[dconfPath] = theme.ShellDconf(list, theme.ShellTheme("a"))
 		}
 	}
 

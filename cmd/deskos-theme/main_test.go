@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -67,5 +70,51 @@ func TestPtyxisPlan(t *testing.T) {
 	list, def = ptyxisPlan([]string{ptyxisProfileUUID}, ptyxisProfileUUID)
 	if !reflect.DeepEqual(list, []string{ptyxisProfileUUID}) || def != ptyxisProfileUUID {
 		t.Errorf("ptyxisPlan(ours | ours) = %v, %q; want [ours], ours", list, def)
+	}
+}
+
+func TestShellExtensionsComesFromThePlan(t *testing.T) {
+	// The shell drop in sorts after the plan's own dconf keyfile, so it has to repeat
+	// the list the image really enables: inventing one here would silently override the
+	// plan (and a hardcoded pair is a lie on a platform that ships neither extension).
+	root := t.TempDir()
+	writePlanForTheme(t, root, `{"artifact":{"dconf":{"name":"distro","defaults":[
+	  {"key":"/org/gnome/shell/enabled-extensions","type":"as","value":"['a@b', 'c@d']"}]}}}`)
+	got, err := shellExtensions(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, []string{"a@b", "c@d"}) {
+		t.Errorf("shellExtensions from the plan = %v", got)
+	}
+
+	// An explicit list wins, so the flag stays usable on an image that is not ours.
+	got, err = shellExtensions(root, "x@y")
+	if err != nil || !reflect.DeepEqual(got, []string{"x@y"}) {
+		t.Errorf("explicit = %v, %v", got, err)
+	}
+}
+
+func TestShellExtensionsRefusesRatherThanInventingOne(t *testing.T) {
+	// No plan, and no explicit list: refuse, with the way out named.
+	if _, err := shellExtensions(t.TempDir(), ""); err == nil || !strings.Contains(err.Error(), "pass --extensions explicitly") {
+		t.Errorf("err = %v", err)
+	}
+	// A plan that declares no such default is the same answer, not an empty list.
+	root := t.TempDir()
+	writePlanForTheme(t, root, `{"artifact":{"dconf":{"name":"distro","defaults":[]}}}`)
+	if _, err := shellExtensions(root, ""); err == nil || !strings.Contains(err.Error(), "does not declare") {
+		t.Errorf("err = %v", err)
+	}
+}
+
+func writePlanForTheme(t *testing.T, root, body string) {
+	t.Helper()
+	dir := filepath.Join(root, "usr/share/deskos")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "plan.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
