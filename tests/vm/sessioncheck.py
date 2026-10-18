@@ -412,7 +412,13 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
         f"ConditionPathExists=!/etc/initrd-release\nAfter={target}\n\n"
-        "[Service]\nType=oneshot\nExecStart=/bin/bash /var/lib/deskos-qa/report.sh\n"
+        # The unit's own output goes to the console as well as the journal. The harness
+        # reads the serial port, so a report script that does not run -- a syntax error, a
+        # file that is not there -- says so on the channel being watched, instead of
+        # leaving a marker that never arrives and a log that explains nothing. A bash
+        # error and a truncated credential are otherwise indistinguishable from here.
+        "[Service]\nType=oneshot\nStandardOutput=journal+console\nStandardError=journal+console\n"
+        "ExecStart=/bin/bash /var/lib/deskos-qa/report.sh\n"
     )
     creds[f"systemd.unit-dropin.{target}"] = "[Unit]\nWants=deskos-qa-report.service\n"
     return creds

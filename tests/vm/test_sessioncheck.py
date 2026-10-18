@@ -112,7 +112,13 @@ class TmpfilesTest(unittest.TestCase):
         self.assertTrue(any(l.startswith("f+ /etc/gdm/custom.conf ") and "AutomaticLogin=deskos-qa" in l for l in lines))
         # GDM's config path is the distribution's: /etc/gdm3 on Debian and Ubuntu.
         self.assertTrue(any(l.startswith("f+ /etc/gdm3/custom.conf ") and "AutomaticLogin=deskos-qa" in l for l in lines))
-        self.assertIn("ConditionPathExists=!/etc/initrd-release", c["systemd.extra-unit.deskos-qa-report.service"])
+        unit = c["systemd.extra-unit.deskos-qa-report.service"]
+        self.assertIn("ConditionPathExists=!/etc/initrd-release", unit)
+        # The harness reads the serial port. A report script that does not run -- a syntax
+        # error, a file that is not there -- has to say so there, or the run waits out the
+        # boot timeout and reports a marker that never arrived (#36).
+        self.assertIn("StandardOutput=journal+console", unit)
+        self.assertIn("StandardError=journal+console", unit)
         self.assertIn("Wants=deskos-qa-report.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_journal_credentials_add_no_user(self):
