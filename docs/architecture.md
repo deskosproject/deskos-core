@@ -35,7 +35,7 @@ reconcile deployed endpoint state.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos-stream-10, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published; and AlmaLinux 10, published at quay.io/deskos/deskos-core-almalinux-10 on the base its vendor labels experimental. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
