@@ -141,8 +141,8 @@ spec:
 		"ws.yaml":    "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata: {name: ws}\nspec: {platformRef: p, profiles: [core, org]}\n",
 		"core.yaml":  "apiVersion: core.deskos.org/v1alpha1\nkind: Profile\nmetadata: {name: core}\nspec:\n  layer: foundation\n  resources: [{kind: GnomeProfile, name: lower}]\n",
 		"org.yaml":   "apiVersion: core.deskos.org/v1alpha1\nkind: Profile\nmetadata: {name: org}\nspec:\n  layer: organization\n  resources: [{kind: GnomeProfile, name: off}]\n",
-		"lower.yaml": "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata: {name: lower}\nspec:\n  defaults:\n    dock: {enabled: true, position: left}\n",
-		"off.yaml":   "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata: {name: off}\nspec:\n  defaults:\n    dock: {enabled: false}\n",
+		"lower.yaml": "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata: {name: lower}\nspec:\n  defaults:\n    shell: {extensions: [{uuid: dash-to-dock@micxgx.gmail.com, enabled: true}]}\n    dock: {position: left}\n",
+		"off.yaml":   "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata: {name: off}\nspec:\n  defaults:\n    shell: {extensions: [{uuid: dash-to-dock@micxgx.gmail.com, enabled: false}]}\n",
 	}
 	for name, content := range files {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
@@ -153,7 +153,7 @@ spec:
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
-	want := "warning: Workstation/ws: dock.position from foundation layer is masked: dock.enabled is false at organization layer (GnomeProfile/off)\n"
+	want := "warning: Workstation/ws: dock.position from foundation layer is masked: dash-to-dock@micxgx.gmail.com is false at organization layer (GnomeProfile/off)\n"
 	if errOut != want {
 		t.Errorf("stderr = %q, want %q", errOut, want)
 	}

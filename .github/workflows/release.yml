@@ -57,6 +57,13 @@ jobs:
           out=$("release/$asset" version)
           echo "$out"
           [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
+          # The runtime companion, same commit, same checks: it reads the plan an
+          # image carries instead of building one (docs/adr/0018).
+          runtime="deskos-${TAG}-linux-amd64"
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "release/$runtime" ./cmd/deskos
+          out=$("release/$runtime" version)
+          echo "$out"
+          [ "$out" = "deskos ${TAG} (commit ${GITHUB_SHA})" ]
           # Resources of the same commit; reproducible archive (sorted, commit time, no owner, no gzip name or time).
           resources="deskos-resources-${TAG}.tar.gz"
           tar --sort=name --mtime="@$(git log -1 --format=%ct)" --owner=0 --group=0 --numeric-owner \
@@ -70,8 +77,9 @@ jobs:
           # Version-less aliases, so releases/latest/download/<name> works
           # without knowing the tag.
           cp "release/$asset" release/deskosctl-linux-amd64
+          cp "release/$runtime" release/deskos-linux-amd64
           cp "release/$resources" release/deskos-resources.tar.gz
-          (cd release && sha256sum "$asset" "$resources" deskosctl-linux-amd64 deskos-resources.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS)
+          (cd release && sha256sum "$asset" "$runtime" "$resources" deskosctl-linux-amd64 deskos-linux-amd64 deskos-resources.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
@@ -211,8 +219,9 @@ jobs:
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
           gh release create "$TAG" \
-            release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz \
-            release/deskosctl-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
+            release/deskosctl-"$TAG"-linux-amd64 release/deskos-"$TAG"-linux-amd64 \
+            release/deskos-resources-"$TAG".tar.gz \
+            release/deskosctl-linux-amd64 release/deskos-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} for linux/amd64, the DeskOS resources, and the same tool as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
+            --notes "deskosctl ${TAG} (builds an image) and deskos ${TAG} (runs on the machine) for linux/amd64, the DeskOS resources, and deskosctl as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
             "${flags[@]}"

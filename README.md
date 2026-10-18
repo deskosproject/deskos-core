@@ -90,6 +90,7 @@ PLATFORM
 
 PROFILES
   foundation:  deskos-core
+  foundation:  deskos-gnome
   foundation:  deskos-look
   foundation:  deskos-reference-apps
   foundation:  rhel-family
@@ -176,7 +177,8 @@ metadata:
 spec:
   platformRef: centos-stream-10
   profiles:
-    - deskos-core        # foundation, shipped by DeskOS
+    - deskos-core        # foundation: packages and the update policy
+    - deskos-gnome       # foundation: DeskOS's GNOME defaults
     - example-baseline   # organization
     - example-devops     # role
 ```

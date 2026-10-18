@@ -51,8 +51,13 @@ spec:
   updates:
     imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
   gnome:
-    dconfDatabase: distro
-    loginScreen: true
+    # Measured 2026-10-18: this base ships no /etc/dconf/profile/user — no package
+    # provides it (dconf-cli, dconf-gsettings-backend and libdconf1 do not; only
+    # ibus owns the directory) — so a session reads no system dconf database, and
+    # GDM's own profile is user plus file-db only. A default DeskOS wrote here
+    # would reach nobody, so the platform keeps its vendor's desktop defaults and
+    # DeskOS declares none (docs/adr/0016).
+    keepsVendorDefaults: true
   flatpak:
     # The base carries no Flatpak, and this platform does not pretend otherwise.
     # `preinstall` is the mechanism DeskOS's FlatpakSet needs, and `flatpak preinstall`

@@ -30,6 +30,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-gnome",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-gnome.yaml:1"
+    },
+    {
       "name": "rhel-family",
       "layer": "foundation",
       "source": "resources/profiles/rhel-family.yaml:1"
@@ -674,7 +679,7 @@
         {
           "key": "/org/gnome/desktop/wm/preferences/button-layout",
           "type": "s",
-          "value": "'appmenu:close'",
+          "value": "':close'",
           "setting": "windows.buttons",
           "provenance": [
             {
@@ -703,7 +708,7 @@
           "key": "/org/gnome/shell/enabled-extensions",
           "type": "as",
           "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']",
-          "setting": "dock.enabled",
+          "setting": "shell.extensions",
           "provenance": [
             {
               "resource": "GnomeProfile/example-desktop",
@@ -819,7 +824,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -833,7 +838,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -873,6 +878,9 @@
           }
         ]
       }
+    ],
+    "enabledExtensions": [
+      "dash-to-dock@micxgx.gmail.com"
     ],
     "kernelArguments": [
       {

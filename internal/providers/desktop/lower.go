@@ -3,6 +3,7 @@ package desktop
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -43,6 +44,11 @@ const ptyxisProfileUUID = "9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30"
 // At or after it the shell does not show its first-run welcome dialog.
 const welcomeDialogShownVersion = "40.beta"
 
+// dockSettingsAdapter names the adapter in messages: the settings DeskOS writes for
+// the dock need the platform to declare the extension they belong to, because that
+// entry is what names the UUID whose decision gates them (docs/adr/0017).
+const dockSettingsAdapter = "the dock settings adapter"
+
 // DockExtension is the platform extension name that implements the dock.
 const DockExtension = "dash-to-dock"
 
@@ -70,17 +76,41 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		return fmt.Errorf("%s declares no GNOME integration, but the composition contains GNOME settings", c.Platform.ID())
 	}
 	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
+	if pl.Gnome.KeepsVendorDefaults {
+		// The platform's base ships no system dconf profile, so DeskOS writes no
+		// default and no lock for it: its desktop is the vendor's (ADR 0016). A
+		// workstation that wants DeskOS's GNOME settings simply does not select the
+		// profile that carries them, so anything declared here is a requirement this
+		// platform cannot meet and fails composition rather than being dropped. A
+		// lock fails at any layer for the same reason, and Core never locks
+		// (AGENTS.md invariant 8).
+		for _, s := range settings {
+			l.errs.Add(fmt.Errorf("%s is set, but %s keeps its vendor's desktop defaults and writes no dconf database\n  set by: %s",
+				s.Key, c.Platform.ID(), describe(s.Provenance)))
+		}
+		for _, lk := range locks {
+			l.errs.Add(fmt.Errorf("%s is locked, but %s keeps its vendor's desktop defaults and writes no dconf database\n  locked by: %s",
+				lk.Name, c.Platform.ID(), describe(lk.Provenance)))
+		}
+		return l.errs.Err()
+	}
 	get := func(key string) (compose.Scalar, bool) { return c.Result.Scalar(DomainSettings, key) }
 
-	// Window controls: two semantic keys produce one GNOME key.
+	// Window controls: two semantic keys produce one GNOME key. The plan writes
+	// exactly the buttons the profile declares: DeskOS does not add the app menu
+	// token GNOME ships by default, which no profile asked for and which decides
+	// the shell's look on its own (docs/adr/0016). A flavor that wants it declares
+	// it, once a field exists. GNOME's button-layout is "<left>:<right>": the colon
+	// separates the window's left corner from its right corner, so the buttons go
+	// after it unless the profile asks for the left side.
 	if b, ok := get(KeyButtons); ok {
 		buttons := strings.Join(b.Value.([]string), ",")
-		layout := "appmenu:" + buttons
+		layout := ":" + buttons
 		prov := b.Provenance
 		const key = "/org/gnome/desktop/wm/preferences/button-layout"
 		if pos, ok := get(KeyButtonPlacement); ok {
 			if pos.Value.(string) == "left" {
-				layout = buttons + ":appmenu"
+				layout = buttons + ":"
 			}
 			prov = append(append([]model.Provenance(nil), prov...), pos.Provenance...)
 			l.bySett[KeyButtonPlacement] = []string{key}
@@ -193,8 +223,12 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeySoftwareUpdates, "/org/gnome/software/allow-updates", "b", strconv.FormatBool(mode != "disabled"), v.Provenance)
 		l.set(KeySoftwareUpdates, "/org/gnome/software/download-updates", "b", strconv.FormatBool(mode == "automatic"), v.Provenance)
 	}
+	if v, ok := get(KeyPowerButton); ok {
+		l.set(KeyPowerButton, "/org/gnome/settings-daemon/plugins/power/power-button-action", "s", gvString(v.Value.(string)), v.Provenance)
+	}
 
 	l.lowerShell(get)
+	l.lowerExtensions(locks)
 	l.lowerDock(get)
 
 	for _, lk := range locks {
@@ -278,53 +312,145 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 	}
 }
 
+// lowerExtensions writes the effective `enabled-extensions` list. It is the only
+// writer **of the plan**: the platform's own list, every profile decision and the dock
+// all pass through here, so two writers cannot disagree and neither the order of the
+// profiles nor of the files can change the result (docs/adr/0017).
+//
+// One other writer exists outside the plan: the experimental GNOME Shell stylesheet
+// path writes its own drop-in, `61-deskos-shell`, which repeats the whole list because
+// dconf does not merge arrays and sorts after `50-deskos`. Whoever opts into it has to
+// pass the effective list, or it overrides this one (docs/roadmap.md).
+//
+// The list is the platform's own, in its order, with the decisions applied. Any
+// UUID may be decided: the platform's catalog installs the package when it declares
+// the extension, and an extension the composition brings itself is installed by the
+// packages the composition declares and verified in the session (docs/adr/0017).
+func (l *lowering) lowerExtensions(locks []compose.Member) {
+	const key = "/org/gnome/shell/enabled-extensions"
+	pl := l.c.PlatformSpec
+	list := append([]string(nil), pl.Gnome.EnabledExtensions...)
+
+	var decisions []compose.Scalar
+	for _, s := range l.c.Result.Scalars(DomainSettings) {
+		if strings.HasPrefix(s.Key, extensionKeyPrefix) {
+			decisions = append(decisions, s)
+		}
+	}
+	// Sorted by the UUID they decide about, so the appended order does not depend on
+	// how the composition happened to enumerate them.
+	sort.Slice(decisions, func(i, j int) bool { return decisions[i].Key < decisions[j].Key })
+
+	// The whole list is one dconf key, so it is written once, under one name a lock
+	// can attach to. It is written even when it equals the platform's own list: the
+	// artifact then states the extensions it enables, which is what the session check
+	// verifies, instead of leaning on whichever default the vendor shipped.
+	var prov []model.Provenance
+	for _, s := range decisions {
+		uuid := strings.TrimPrefix(s.Key, extensionKeyPrefix)
+		if s.Value.(bool) {
+			if !contains(list, uuid) {
+				list = append(list, uuid)
+			}
+			// What the composition turned on is what the session check asks GNOME
+			// about: a UUID that does not really load must be visible.
+			l.p.Artifact.EnabledExtensions = append(l.p.Artifact.EnabledExtensions, uuid)
+			if ext, ok := pl.GnomeCatalogExtension(uuid); ok {
+				l.p.AddPackage(ext.Package, s.Provenance...)
+			}
+		} else {
+			list = without(list, uuid)
+		}
+		prov = append(prov, s.Provenance...)
+	}
+	if len(prov) == 0 {
+		// Nothing decided: the list is the platform's own, and the platform is where it
+		// comes from.
+		prov = []model.Provenance{{Resource: l.c.Platform.ID(), Source: l.c.Platform.Source.String()}}
+	}
+	l.set(KeyExtensions, key, "as", gvStrings(list), prov)
+}
+
+// locksNamed reports whether a lock names one of the settings given.
+func locksNamed(locks []compose.Member, settings ...string) bool {
+	for _, lk := range locks {
+		for _, s := range settings {
+			if lk.Name == s {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func without(list []string, s string) []string {
+	out := make([]string, 0, len(list))
+	for _, x := range list {
+		if x != s {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func sameStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // dockOptions are settings that only exist while the dock extension runs.
 var dockOptions = []string{KeyDockPosition, KeyDockBehavior, KeyDockIconSize, KeyDockShowTrash}
 
-// lowerDock applies the dock semantics: options need an effective
-// dock.enabled true; dock.enabled false at a layer masks options from lower
-// layers (reported as a warning) and rejects options from its own or higher
-// layers; an unset dock.enabled with options is an error.
+// lowerDock applies the dock settings DeskOS models: they need an effective
+// decision enabling the dock's extension; a decision of false at a layer masks
+// settings from lower layers (reported as a warning) and rejects settings from its
+// own or higher layers; no decision at all with settings present is an error.
+// Whether the dock runs is not decided here (docs/adr/0017).
 func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 	const schema = "/org/gnome/shell/extensions/dash-to-dock/"
-	en, hasEn := get(KeyDockEnabled)
+	pl := l.c.PlatformSpec
+	ext, dockInCatalog := pl.GnomeExtension(DockExtension)
+	// The dock's options are the settings DeskOS models for Dash to Dock, and whether
+	// the dock runs is the decision about its extension, taken with every other
+	// extension (docs/adr/0017). The platform's catalog entry is what names the
+	// extension whose decision gates them.
+	en, hasEn := get(ExtensionSetting(ext.UUID))
+	if !dockInCatalog {
+		en, hasEn = compose.Scalar{}, false
+	}
 	enabled := hasEn && en.Value.(bool)
 	var active []compose.Scalar
 	for _, key := range dockOptions {
 		v, ok := get(key)
 		switch {
 		case !ok:
+		case !dockInCatalog:
+			l.errs.Add(fmt.Errorf("%s needs the GNOME extension DeskOS models as %q (%s) so the settings have an extension to gate them, and %s does not declare it\n  set by: %s",
+				key, DockExtension, dockSettingsAdapter, l.c.Platform.ID(), describe(v.Provenance)))
 		case !hasEn:
-			l.errs.Add(fmt.Errorf("%s requires %s: true, which no profile sets\n  set by: %s", key, KeyDockEnabled, describe(v.Provenance)))
+			l.errs.Add(fmt.Errorf("%s requires enabling %q, which no profile decides\n  set by: %s",
+				key, ext.UUID, describe(v.Provenance)))
 		case enabled:
 			active = append(active, v)
 		case v.Layer < en.Layer:
 			l.p.Warnings = append(l.p.Warnings, fmt.Sprintf("%s from %s layer is masked: %s is false at %s layer (%s)",
-				key, v.Layer, KeyDockEnabled, en.Layer, describeShort(en.Provenance)))
+				key, v.Layer, ext.UUID, en.Layer, describeShort(en.Provenance)))
 		default:
-			l.errs.Add(fmt.Errorf("%s is set at %s layer but %s is false at %s layer; a disabled dock cannot apply it\n  set by: %s\n  disabled by: %s",
-				key, v.Layer, KeyDockEnabled, en.Layer, describe(v.Provenance), describe(en.Provenance)))
+			l.errs.Add(fmt.Errorf("%s is set at %s layer but %s is disabled at %s layer; a disabled dock cannot apply it\n  set by: %s\n  disabled by: %s",
+				key, v.Layer, ext.UUID, en.Layer, describe(v.Provenance), describe(en.Provenance)))
 		}
 	}
-	pl := l.c.PlatformSpec
 	if !enabled {
-		if hasEn {
-			l.disableDock(en)
-		}
+		// The list itself is lowerExtensions' job.
 		return
 	}
-	ext, ok := pl.GnomeExtension(DockExtension)
-	if !ok {
-		l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q required by %s\n  set by: %s",
-			l.c.Platform.ID(), DockExtension, KeyDockEnabled, describe(en.Provenance)))
-		return
-	}
-	l.p.AddPackage(ext.Package, en.Provenance...)
-	exts := append([]string(nil), pl.Gnome.EnabledExtensions...)
-	if !contains(exts, ext.UUID) {
-		exts = append(exts, ext.UUID)
-	}
-	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
 	for _, v := range active {
 		switch v.Key {
 		case KeyDockPosition:
@@ -340,33 +466,6 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 			l.set(v.Key, schema+"show-trash", "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
 		}
 	}
-}
-
-// disableDock handles an effective dock.enabled false. Nothing is written
-// unless the platform enables the dock by default or the setting is locked;
-// then enabled-extensions is set to the platform list without the dock.
-func (l *lowering) disableDock(en compose.Scalar) {
-	pl := l.c.PlatformSpec
-	ext, ok := pl.GnomeExtension(DockExtension)
-	if !ok {
-		return
-	}
-	locked := false
-	for _, m := range l.c.Result.Set(DomainLocks) {
-		if m.Name == KeyDockEnabled {
-			locked = true
-		}
-	}
-	if !contains(pl.Gnome.EnabledExtensions, ext.UUID) && !locked {
-		return
-	}
-	var exts []string
-	for _, e := range pl.Gnome.EnabledExtensions {
-		if e != ext.UUID {
-			exts = append(exts, e)
-		}
-	}
-	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
 }
 
 func describeShort(ps []model.Provenance) string {

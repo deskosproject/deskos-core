@@ -86,9 +86,11 @@
         "gnome": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["dconfDatabase"],
+          "if": { "properties": { "keepsVendorDefaults": { "const": true } }, "required": ["keepsVendorDefaults"] },
+          "else": { "required": ["dconfDatabase"] },
           "properties": {
             "dconfDatabase": { "$ref": "../../common/definitions.json#/$defs/name" },
+            "keepsVendorDefaults": { "type": "boolean" },
             "loginScreen": { "type": "boolean" },
             "enabledExtensions": { "type": "array", "items": { "type": "string" } },
             "extensions": {

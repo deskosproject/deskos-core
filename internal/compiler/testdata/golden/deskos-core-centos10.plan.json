@@ -25,6 +25,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-gnome",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-gnome.yaml:1"
+    },
+    {
       "name": "deskos-look",
       "layer": "foundation",
       "source": "resources/profiles/deskos-look.yaml:1"
@@ -283,7 +288,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -297,7 +302,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -325,7 +330,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -346,6 +351,18 @@
           ]
         },
         {
+          "key": "/org/gnome/shell/enabled-extensions",
+          "type": "as",
+          "value": "['background-logo@fedorahosted.org']",
+          "setting": "shell.extensions",
+          "provenance": [
+            {
+              "resource": "Platform/centos-stream-10",
+              "source": "resources/platforms/centos-stream-10.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/software/allow-updates",
           "type": "b",
           "value": "true",
@@ -353,7 +370,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }
@@ -367,7 +384,7 @@
           "provenance": [
             {
               "resource": "GnomeProfile/deskos-core",
-              "profile": "deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-core.yaml:1"
             }

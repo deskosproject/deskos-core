@@ -19,6 +19,7 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - deskos-gnome
     - example-baseline
     - example-developer
 ```
@@ -68,6 +69,7 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - deskos-gnome
     - example-baseline
     - example-devops
 ```
@@ -75,6 +77,23 @@ spec:
 `deskosctl plan ./examples/baseline-and-role --workstation
 example-devops-centos10` shows the composed result, including **which
 layer won each setting**.
+
+A workstation can also **retire a Flatpak remote the base ships**, so a machine
+whose owner does not want that application source configured does not have it:
+
+```yaml
+spec:
+  flatpak:
+    removeRemotes:
+      - name: flathub
+        reason: apps come from the organization's own remote
+```
+
+The reason is mandatory. A remote the composition also declares is a contradiction
+and fails; a `FlatpakSet` names its remote as a declared resource, so it is covered.
+The removal is image-level: it is **not** `flatpak uninstall`, applications already
+installed from that remote stay on an updated machine, and DeskOS never forces
+([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
 
 ### `Profile`
 
@@ -403,8 +422,10 @@ spec:
       lock:
         enabled: true
         delay: 0s
+    shell:
+      extensions:
+        - {uuid: dash-to-dock@micxgx.gmail.com, enabled: true}
     dock:
-      enabled: true
       position: bottom
       behavior: intellihide
       iconSize: 40
@@ -425,21 +446,41 @@ spec:
           name: Development
           apps: [code.desktop]
           categories: [Development]
+      extensions:
+        - uuid: appindicatorsupport@rgcjonas.gmail.com
+          enabled: true            # or false; leaving the uuid out inherits the platform
     clock:
       showWeekday: true
       format: 24h                  # 24h | 12h
     keyboard:
       numLock: true
       terminal: com.mitchellh.ghostty.desktop   # Ctrl+Alt+T
+    power:
+      buttonAction: hibernate      # nothing | suspend | hibernate | interactive
 ```
 
 - **`appFolders`** replaces GNOME's built-in folders (such as
   *Utilities*); declare every folder the app grid should have. A higher
   layer replaces the whole list. Not available on RHEL 10.2, whose GNOME
   Shell 49.4 overwrites them at first login.
+- **`extensions`** decides, one UUID at a time, whether a GNOME Shell extension is
+  enabled. A profile never names a package, a schema or a dconf key: it says which
+  extension and whether it runs, and the rest is not its business. Any UUID may be
+  decided, the dock included: when the platform's own catalog declares the
+  extension, DeskOS installs the package it names; an extension the composition
+  brings itself is installed by the packages the composition declares, and a UUID
+  nobody provides shows up as a failed session check rather than as silence. The
+  plan always states the list it enables
+  ([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
+- **`dock.*`** is the settings DeskOS models for Dash to Dock, and they apply only
+  while its extension is enabled through `shell.extensions`. Configuring an
+  extension DeskOS does not model is deliberately not possible from the artifact:
+  the desktop keeps its own defaults and the user changes them in the session
+  ([ADR 0005](adr/0005-managed-baseline-boundary.md)).
+- **`power.buttonAction`** is the hardware power button's action, from GNOME's own
+  values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
-  through the Platform's application launcher (`gtk-launch` on EL10).
-- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
+  through the Platform's application launcher (`gtk-launch` on EL10).- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
 ### `Theme`
@@ -652,3 +693,20 @@ An administrator describes things such as:
 *without knowing* which GNOME schema or dconf key implements them. DeskOS
 Core ships reasonable defaults, and organizations override them
 declaratively.
+
+Window controls write exactly the buttons and the side a profile declares:
+the plan adds no app menu token of its own
+([ADR 0016](adr/0016-vendor-desktop-and-app-menu.md)).
+
+A platform whose base ships a desktop of its own declares
+`gnome.keepsVendorDefaults: true` instead of `gnome.dconfDatabase`. DeskOS then
+writes no GNOME default or lock for it, and **any** GNOME setting a profile declares
+there fails composition with the reason, at any layer. A platform with the fact must
+also not declare `gnome.loginScreen`.
+
+That is why DeskOS's own GNOME defaults live in the `deskos-gnome` foundation profile
+rather than in `deskos-core`: a workstation whose platform DeskOS can write to selects
+it, and one whose platform ships its own desktop does not. Ubuntu 26.04 declares the
+fact and selects no GNOME profile, because no session there reads a system dconf
+database. A value that must reach such a platform uses the vendor's own mechanism (a
+compiled GSettings override), never the dconf database.

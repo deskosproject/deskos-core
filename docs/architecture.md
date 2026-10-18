@@ -113,7 +113,9 @@ Examples of every kind are in
   compose.
 
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
-profile. The same Core composes onto `centos-stream-10`, `almalinux-10`,
+profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
+which a workstation selects only when its platform's base lets DeskOS write
+them (ADR 0016). The same Core composes onto `centos-stream-10`, `almalinux-10`,
 `rhel-10`, `fedora-44` and `ubuntu-2604`; a RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
 DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
@@ -489,14 +491,14 @@ vendor database (`distro` on EL10). Wallpaper files are repository assets
 resolved relative to the declaring file and installed under
 `/usr/share/deskos/backgrounds/`.
 
-**Dock.** Dock settings apply only while the effective `dock.enabled` is
-true. A higher-layer `dock.enabled: false` masks lower-layer dock options
-and is reported as a warning by `plan` and `validate`; dock options
-without an enabled dock, or at or above the disabling layer, are errors.
-A disable writes `enabled-extensions` without the dock only when the
-platform enables it by default or `dock.enabled` is locked. Core sets
-only `dock.enabled: true` (the extension's defaults); an organization's
-`dock.enabled: false` removes the package and the extension entry.
+**Dock.** The dock is a GNOME Shell extension, so it is enabled by deciding about
+its extension, like any other: `shell.extensions` names its UUID and says whether
+it runs. The settings DeskOS models for it (`dock.position`, `dock.behavior`,
+`dock.iconSize`, `dock.showTrash`) apply only while that decision is true. A
+higher-layer `enabled: false` masks lower-layer dock settings and is reported as a
+warning by `plan` and `validate`; dock settings without an enabled dock, or at or
+above the disabling layer, are errors. An organization that enables the dock
+installs the extension the platform declares for it.
 Favorites are native and work without the dock.
 
 **Appearance.** `appearance.colorScheme` and `appearance.accentColor` set
@@ -512,7 +514,7 @@ handles, Flatpak applications included:
 | `manual` | true | false | offers updates; the user applies them |
 | `disabled` | false | false | no Updates page; another updater owns every update |
 
-Core sets `manual` (a default, no lock), so GNOME Software never updates
+`deskos-gnome` sets `manual` (a default, no lock), so GNOME Software never updates
 behind the image while users can still update Flatpak applications.
 
 **Terminal shortcut.** `GnomeProfile.defaults.keyboard.terminal` names a
@@ -686,8 +688,9 @@ three ways**. Files DeskOS writes under `/etc` (dconf keyfiles, repository
 files) follow image updates only while they are locally unmodified. A new
 release changes the image; it does not force a machine that was edited
 locally back into line. Organizations that need guaranteed enforcement use
-configuration management on top of the image. A future `deskos status` or
-`deskos diff` may *report* drift; DeskOS will not enforce.
+configuration management on top of the image. `deskos check` **reports** the drift it
+can measure and publishes what it leaves out; DeskOS will not enforce, and `deskos`
+does not reconcile the machine against its plan (ADR 0018).
 
 ## Provisioning and enrollment
 

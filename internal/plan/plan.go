@@ -59,29 +59,34 @@ type Profile struct {
 
 // Artifact is image-owned content.
 type Artifact struct {
-	BaseImage        BaseImage                `json:"baseImage"`
-	Labels           []Label                  `json:"labels"`
-	RpmRepositories  []RpmRepository          `json:"rpmRepositories"`
-	AptRepositories  []AptRepository          `json:"aptRepositories"`
-	PackageGroups    []PackageGroupInstall    `json:"packageGroups"`
-	Packages         []PackageInstall         `json:"packages"`
-	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
-	Binaries         []VerifiedBinaryInstall  `json:"binaries"`
-	Files            []FileInstall            `json:"files"`
-	GeneratedFiles   []GeneratedFile          `json:"generatedFiles,omitempty"`
-	TrustAnchors     []TrustAnchorInstall     `json:"trustAnchors"`
-	TrustStore       *TrustStoreUpdate        `json:"trustStore,omitempty"`
-	DesktopEntries   []DesktopEntry           `json:"desktopEntries"`
-	IconCaches       []IconCacheUpdate        `json:"iconCaches"`
-	Dconf            *DconfDatabase           `json:"dconf,omitempty"`
-	GSettings        []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
-	KernelArguments  []KernelArgument         `json:"kernelArguments"`
-	Initramfs        *InitramfsRegeneration   `json:"initramfs,omitempty"`
-	PlymouthTheme    *PlymouthTheme           `json:"plymouthTheme,omitempty"`
-	SystemdUnits     []SystemdEnable          `json:"systemdUnits"`
-	SystemdMasks     []SystemdMask            `json:"systemdMasks"`
-	ScheduledUpdates []ScheduledUpdate        `json:"scheduledUpdates"`
-	DefaultTarget    *DefaultTarget           `json:"defaultTarget,omitempty"`
+	BaseImage       BaseImage                `json:"baseImage"`
+	Labels          []Label                  `json:"labels"`
+	RpmRepositories []RpmRepository          `json:"rpmRepositories"`
+	AptRepositories []AptRepository          `json:"aptRepositories"`
+	PackageGroups   []PackageGroupInstall    `json:"packageGroups"`
+	Packages        []PackageInstall         `json:"packages"`
+	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
+	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
+	Files           []FileInstall            `json:"files"`
+	GeneratedFiles  []GeneratedFile          `json:"generatedFiles,omitempty"`
+	TrustAnchors    []TrustAnchorInstall     `json:"trustAnchors"`
+	TrustStore      *TrustStoreUpdate        `json:"trustStore,omitempty"`
+	DesktopEntries  []DesktopEntry           `json:"desktopEntries"`
+	IconCaches      []IconCacheUpdate        `json:"iconCaches"`
+	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
+	GSettings       []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
+	// EnabledExtensions are the GNOME Shell extensions the composition decided to
+	// turn on, beyond whatever the platform already enables. The list is what the
+	// session check asks GNOME about: a decision that does not really load must be
+	// visible, not silent (docs/adr/0017).
+	EnabledExtensions []string               `json:"enabledExtensions,omitempty"`
+	KernelArguments   []KernelArgument       `json:"kernelArguments"`
+	Initramfs         *InitramfsRegeneration `json:"initramfs,omitempty"`
+	PlymouthTheme     *PlymouthTheme         `json:"plymouthTheme,omitempty"`
+	SystemdUnits      []SystemdEnable        `json:"systemdUnits"`
+	SystemdMasks      []SystemdMask          `json:"systemdMasks"`
+	ScheduledUpdates  []ScheduledUpdate      `json:"scheduledUpdates"`
+	DefaultTarget     *DefaultTarget         `json:"defaultTarget,omitempty"`
 }
 
 type BaseImage struct {
@@ -345,12 +350,24 @@ const (
 type Provisioning struct {
 	FlatpakRemotes      []FlatpakRemote     `json:"flatpakRemotes"`
 	FlatpakApplications []FlatpakPreinstall `json:"flatpakApplications"`
+	// FlatpakRemovedRemotes are remotes the base carries and the workstation
+	// retires. The removal is image-level: it is not `flatpak uninstall`, so
+	// applications already installed from that remote stay on an updated machine
+	// (docs/adr/0017).
+	FlatpakRemovedRemotes []FlatpakRemoval `json:"flatpakRemovedRemotes,omitempty"`
 	// FlatpakPreinstallUnit is the systemd unit that runs the upstream
 	// `flatpak preinstall` at startup; empty when nothing is preinstalled.
 	FlatpakPreinstallUnit string `json:"flatpakPreinstallUnit,omitempty"`
 	// FlatpakAuthenticatorUnit is the systemd unit that points OCI remotes at
 	// their authenticator at startup; empty when no remote declares one.
 	FlatpakAuthenticatorUnit string `json:"flatpakAuthenticatorUnit,omitempty"`
+}
+
+// FlatpakRemoval is one retired remote with the reason the workstation gave.
+type FlatpakRemoval struct {
+	Name       string             `json:"name"`
+	Reason     string             `json:"reason"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 type FlatpakRemote struct {
@@ -545,9 +562,11 @@ func (p *Plan) Normalize() error {
 		sort.Slice(a.Dconf.Defaults, func(i, j int) bool { return a.Dconf.Defaults[i].Key < a.Dconf.Defaults[j].Key })
 		sort.Slice(a.Dconf.Locks, func(i, j int) bool { return a.Dconf.Locks[i].Key < a.Dconf.Locks[j].Key })
 	}
+	sort.Strings(a.EnabledExtensions)
 	pr := &p.Provisioning
 	sort.Slice(pr.FlatpakRemotes, func(i, j int) bool { return pr.FlatpakRemotes[i].Name < pr.FlatpakRemotes[j].Name })
 	sort.Slice(pr.FlatpakApplications, func(i, j int) bool { return pr.FlatpakApplications[i].ID < pr.FlatpakApplications[j].ID })
+	sort.Slice(pr.FlatpakRemovedRemotes, func(i, j int) bool { return pr.FlatpakRemovedRemotes[i].Name < pr.FlatpakRemovedRemotes[j].Name })
 	sort.Strings(p.Warnings)
 	nonNil(p)
 	return nil

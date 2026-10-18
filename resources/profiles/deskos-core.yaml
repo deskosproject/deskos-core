@@ -8,11 +8,13 @@ spec:
   resources:
     - kind: PackageSet
       name: deskos-core
-    - kind: GnomeProfile
-      name: deskos-core
     - kind: UpdatePolicy
       name: deskos-core
-    # The look is deliberately absent here: wallpaper, login logo and boot splash
+    # The GNOME defaults are deliberately absent here: they are DeskOS's own
+    # opinion about the desktop, and a workstation whose platform ships a desktop
+    # of its own must be able to leave them out. A workstation that wants them
+    # adds the deskos-gnome profile (ADR 0016).
+    # The look is deliberately absent too: wallpaper, login logo and boot splash
     # are the platform's look and feel, or an organization's choice, not the
     # foundation's. A workstation that wants them adds the deskos-look profile,
     # and one that wants only a quiet graphical boot adds deskos-boot.

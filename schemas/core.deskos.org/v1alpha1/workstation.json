@@ -22,6 +22,24 @@
         "profiles": {
           "type": "array", "minItems": 1, "uniqueItems": true,
           "items": { "$ref": "../../common/definitions.json#/$defs/name" }
+        },
+        "flatpak": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "removeRemotes": {
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "reason"],
+                "properties": {
+                  "name": { "$ref": "../../common/definitions.json#/$defs/name" },
+                  "reason": { "$ref": "../../common/definitions.json#/$defs/singleLine", "minLength": 1 }
+                }
+              }
+            }
+          }
         }
       }
     }

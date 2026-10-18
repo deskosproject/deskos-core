@@ -108,6 +108,10 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, d := range a.GSettings {
 		pf("    %s\t%s %s = %s\t%s\n", d.Setting, d.Schema, d.Key, d.Value, origins(d.Provenance))
 	}
+	section(w, "GNOME Shell extensions this composition enables (the session check asks GNOME about each)", len(a.EnabledExtensions))
+	for _, e := range a.EnabledExtensions {
+		pf("    %s\n", e)
+	}
 	section(w, "Kernel arguments (bootc kargs.d)", len(a.KernelArguments))
 	for _, k := range a.KernelArguments {
 		pf("    %s\t%s\t%s\n", k.Arg, k.Setting, origins(k.Provenance))
@@ -140,7 +144,7 @@ func Write(out io.Writer, p *plan.Plan) error {
 
 	pr := p.Provisioning
 	pf("\nPROVISIONING\n")
-	if len(pr.FlatpakRemotes) == 0 && len(pr.FlatpakApplications) == 0 {
+	if len(pr.FlatpakRemotes) == 0 && len(pr.FlatpakApplications) == 0 && len(pr.FlatpakRemovedRemotes) == 0 {
 		pf("  none\n")
 	} else {
 		section(w, "Flatpak remotes (system)", len(pr.FlatpakRemotes))
@@ -150,6 +154,12 @@ func Write(out io.Writer, p *plan.Plan) error {
 		section(w, "Flatpak applications (preinstalled at startup)", len(pr.FlatpakApplications))
 		for _, app := range pr.FlatpakApplications {
 			pf("    %s//%s\tfrom %s\t%s\n", app.ID, app.Branch, app.Remote, origins(app.Provenance))
+		}
+		if len(pr.FlatpakRemovedRemotes) > 0 {
+			section(w, "Flatpak remotes retired (image only; applications already installed stay)", len(pr.FlatpakRemovedRemotes))
+			for _, r := range pr.FlatpakRemovedRemotes {
+				pf("    %s\t%s\t%s\n", r.Name, r.Reason, origins(r.Provenance))
+			}
 		}
 	}
 

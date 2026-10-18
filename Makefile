@@ -4,6 +4,9 @@
 GO       ?= go
 GOFMT    ?= gofmt
 BIN      := bin/deskosctl
+# The runtime companion: it reads the plan an image carries, so it is built here too
+# and cannot rot unnoticed (docs/adr/0018).
+BIN_RUNTIME := bin/deskos
 # DeskOS Core is embedded in the binary; only an organization's resources are
 # passed on the command line.
 EXAMPLE   := ./examples/baseline-and-role
@@ -12,6 +15,7 @@ EXAMPLE   := ./examples/baseline-and-role
 
 build:
 	$(GO) build -o $(BIN) ./cmd/deskosctl
+	$(GO) build -o $(BIN_RUNTIME) ./cmd/deskos
 
 test:
 	$(GO) test ./...

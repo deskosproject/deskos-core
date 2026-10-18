@@ -114,6 +114,11 @@ type UnavailablePackage struct {
 // GnomePlatform holds GNOME integration facts of the platform.
 type GnomePlatform struct {
 	DconfDatabase string `json:"dconfDatabase"`
+	// KeepsVendorDefaults reports that this platform's desktop is the vendor's
+	// own: its base ships no system dconf profile, so a default DeskOS wrote
+	// would not reach a session. DeskOS writes none here, and composition
+	// records each GNOME default a profile asked for and did not get.
+	KeepsVendorDefaults bool `json:"keepsVendorDefaults,omitempty"`
 	// LoginScreen reports that GDM's dconf profile reads DconfDatabase, so
 	// org.gnome.login-screen defaults written there reach the login screen.
 	LoginScreen       bool             `json:"loginScreen,omitempty"`
@@ -193,6 +198,21 @@ func (p *PlatformSpec) GnomeExtension(name string) (GnomeExtension, bool) {
 	return GnomeExtension{}, false
 }
 
+// GnomeCatalogExtension returns the platform-declared extension with this UUID. The
+// catalog, together with the platform's own enabled extensions, is what a profile may
+// decide about (docs/adr/0017).
+func (p *PlatformSpec) GnomeCatalogExtension(uuid string) (GnomeExtension, bool) {
+	if p.Gnome == nil {
+		return GnomeExtension{}, false
+	}
+	for _, e := range p.Gnome.Extensions {
+		if e.UUID == uuid {
+			return e, true
+		}
+	}
+	return GnomeExtension{}, false
+}
+
 // BaseImageRef returns the FROM reference, digest-pinned when a digest is set.
 func (p *PlatformSpec) BaseImageRef() string {
 	if p.Bootc.Digest != "" {
@@ -213,6 +233,24 @@ type WorkstationSpec struct {
 	DisplayName string   `json:"displayName,omitempty"`
 	PlatformRef string   `json:"platformRef"`
 	Profiles    []string `json:"profiles"`
+	// Flatpak is what this machine does with the Flatpak remotes the base
+	// carries besides the ones the composition declares.
+	Flatpak *WorkstationFlatpak `json:"flatpak,omitempty"`
+}
+
+// WorkstationFlatpak is the workstation's Flatpak intent.
+type WorkstationFlatpak struct {
+	// RemoveRemotes retires remotes the base ships. Retiring a source is a
+	// decision, so each one carries the reason it was taken (docs/adr/0017).
+	RemoveRemotes []RemoteRemoval `json:"removeRemotes,omitempty"`
+}
+
+// RemoteRemoval retires a Flatpak remote in the image. It is not `flatpak
+// uninstall`: applications already installed from that remote stay on an updated
+// machine, and DeskOS never forces (docs/adr/0017).
+type RemoteRemoval struct {
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
 }
 
 var (
@@ -305,7 +343,15 @@ func (platformProvider) Decode(res *model.Resource) error {
 		errs.Add(model.Errorf(res, "displayManager %q must be a .service unit", s.DisplayManager))
 	}
 	if g := s.Gnome; g != nil {
-		if !model.ValidName(g.DconfDatabase) {
+		switch {
+		case g.KeepsVendorDefaults:
+			if g.DconfDatabase != "" {
+				errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is declared although the platform keeps its vendor's desktop defaults and writes no database", g.DconfDatabase))
+			}
+			if g.LoginScreen {
+				errs.Add(model.Errorf(res, "gnome.loginScreen is declared although the platform keeps its vendor's desktop defaults and writes no database for GDM to read"))
+			}
+		case !model.ValidName(g.DconfDatabase):
 			errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is not a valid database name", g.DconfDatabase))
 		}
 		for _, e := range g.Extensions {
@@ -408,6 +454,21 @@ func (workstationProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "profile %q is listed twice", p))
 		}
 		seen[p] = true
+	}
+	if f := s.Flatpak; f != nil {
+		seenRemote := map[string]bool{}
+		for _, r := range f.RemoveRemotes {
+			if !model.ValidName(r.Name) {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q is not a valid remote name", r.Name))
+			}
+			if strings.TrimSpace(r.Reason) == "" {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q needs the reason it is retired", r.Name))
+			}
+			if seenRemote[r.Name] {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q is listed twice", r.Name))
+			}
+			seenRemote[r.Name] = true
+		}
 	}
 	res.Object = &s
 	return errs.Err()
