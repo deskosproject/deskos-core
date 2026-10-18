@@ -134,6 +134,15 @@ spec:
     - deskos-gnome       # DeskOS's GNOME defaults
 ```
 
+> [!IMPORTANT]
+> `deskos-core` carries the packages and the update policy, and `deskos-gnome` carries
+> DeskOS's GNOME defaults (ADR 0016). A workstation that wants them selects both; one
+> whose platform ships its own desktop, like Ubuntu, selects only `deskos-core` and
+> keeps its vendor's desktop. If you pin a release and select `deskos-core` alone, you
+> stop inheriting the session lock, the idle timeout and the software-update policy
+> until you add the profile — that is the one breaking change of v0.12.0, and the
+> release notes repeat it.
+
 **3. Render and build it.** Tag it with the reference your machines
 should update from, in a registry that is **private to your
 organization**:
