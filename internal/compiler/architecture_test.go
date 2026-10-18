@@ -375,12 +375,18 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Error("DeskOS Core adds third-party repositories")
 	}
 	// Core carries exactly one binary, and it is Core's own: the runtime tool every
-	// image ships so a machine can say what it was built from (ADR 0018). Anything
-	// else here would be a customer's software, which is what this test refuses.
-	for _, b := range p.Artifact.Binaries {
-		if b.Artifact != "deskos" {
-			t.Errorf("DeskOS Core installs the third-party binary %s", b.Artifact)
-		}
+	// image ships so a machine can say what it was built from (ADR 0018). The name
+	// alone proves nothing, so this audits where it lands and where it comes from;
+	// anything else here would be a customer's software, which is what this test
+	// refuses.
+	if len(p.Artifact.Binaries) != 1 {
+		t.Fatalf("DeskOS Core declares %d binary artifact(s); it carries exactly its own runtime tool",
+			len(p.Artifact.Binaries))
+	}
+	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/local/bin/deskos" ||
+		!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
+		t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
+			b.Artifact, b.Destination, b.URL)
 	}
 	if p.Artifact.Dconf != nil && len(p.Artifact.Dconf.Locks) != 0 {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")

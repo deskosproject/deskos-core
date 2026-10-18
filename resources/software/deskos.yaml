@@ -3,18 +3,25 @@ kind: BinaryArtifact
 metadata:
   name: deskos
 spec:
-  # DeskOS's runtime companion, from the same release a flavor pins to build with
-  # (ADR 0018): it reads the plan the image carries, so a machine can be asked what
-  # it was built from, have its drift measured against that plan, and update behind a
-  # guard. The pin names a published release asset and its checksum, the same way a
-  # platform's base names a digest, so it is watched and bumped deliberately.
+  # DeskOS's runtime companion (ADR 0018): it reads the plan the image carries, so a
+  # machine can be asked what it was built from, have its drift measured against that
+  # plan, and update behind a guard. The pin names a published release asset and its
+  # checksum, the same way a platform's base names a digest, so it moves deliberately.
   #
-  # Measured, and the reason the destination is /usr/local/bin: the model lets a
-  # BinaryArtifact write only there. /usr/bin belongs to the image and to the
-  # packages the platform installs.
+  # This pin and the deskosctl pin a flavor uses to build are independent: they name
+  # different assets of possibly different releases, which is why this commit is not
+  # the tag. What has to hold deliberately is that the runtime a release publishes can
+  # read the plans that release renders.
   #
-  # v0.12.0 is the first release that publishes this asset; until a release exists,
-  # no image can point at it.
+  # The destination is /usr/local/bin because the model lets a downloaded binary write
+  # only there: /usr/bin belongs to the image and to its packages (ADR 0009). Measured:
+  # on the EL bases that directory is part of the image, not a symlink into /var, so
+  # this is still deployment content, and `bootc rollback` restores it.
+  #
+  # Limit, named rather than implied: the checksum pins the bytes and nothing else. It
+  # does not attest that the asset was built from this source tree, and the release
+  # signs the deskosctl tool image, not this binary.
+  #
   version: 0.12.0
   source:
     url: https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64

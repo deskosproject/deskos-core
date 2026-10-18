@@ -99,6 +99,11 @@ because it is an input of the image like any other.
   gap, and this admits it in writing.
 - The guard refuses only on conditions that make an update unsafe, so a machine whose
   owner changed files under `/etc` is never held back and never silently reverted.
+- The pin pins bytes and nothing more: the checksum says the asset is the one that was
+  published and reviewed, not that it was built from this source tree. The release
+  signs the `deskosctl` tool image; it does not sign this binary. Closing that would
+  mean signing and attesting the asset itself, which is a separate decision (and one a
+  human has to take).
 - ADR 0010 stage 4 is half done: the command that reports evidence exists; the SBOM
   still does not travel with the artifact, and until it does, a report repeats that
   rather than implying otherwise.
