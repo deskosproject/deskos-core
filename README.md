@@ -30,8 +30,11 @@ base and how far DeskOS has validated the result:
 | CentOS Stream 10 | vendor | pull the published image, or build it and boot it yourself |
 | RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
 | AlmaLinux 10 | vendor (experimental) | published image, built and booted in CI; the vendor base is experimental |
-| Ubuntu 26.04 | the DeskOS project | published image, built and booted in CI; no installer ISO — write a disk with `bootc install to-disk` |
 | Fedora 44 | vendor | composes, renders and builds; not booted here yet; no published image |
+
+Ubuntu 26.04 is not in this table: it is built and published in
+[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu), on a base of
+its own, and this repository no longer builds, boots or publishes it (ADR 0020).
 
 The full matrix — base owner, evidence, and how to install each — is in
 [**docs/platforms.md**](docs/platforms.md).
@@ -141,7 +144,7 @@ sudo podman run --rm --privileged --pull=missing \
 
 Publishing is **per platform**, one repository each: `supply-chain.yml` with
 `publish=true` sends the image to `quay.io/deskos/deskos-core-centos-stream-10`,
-`-almalinux-10`, `-ubuntu-2604`, and so on, after the gate has built, scanned and
+`-almalinux-10`, and so on, after the gate has built, scanned and
 booted it. The digests published with their run are in
 [docs/architecture.md](docs/architecture.md#validation-status); the older single
 repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
@@ -150,8 +153,9 @@ so the build context is reproducible from the same commit. The image **build is
 not** yet bit-for-bit reproducible: the base tag and repository content can move
 between builds (see [supply-chain inputs](docs/architecture.md#supply-chain-inputs)).
 
-Disks: [docs/install.md](docs/install.md) covers QCOW2, the Anaconda ISO, the
-private RHEL build, and the Ubuntu `bootc install to-disk` path. The canonical
+Disks: [docs/install.md](docs/install.md) covers QCOW2, the Anaconda ISO and the
+private RHEL build; an Ubuntu disk is written with `bootc install to-disk`, and the
+repository that owns that platform documents it. The canonical
 status of each platform, and what is verified, is in
 [docs/platforms.md](docs/platforms.md).
 
@@ -160,7 +164,7 @@ status of each platform, and what is verified, is in
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos-stream-10, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately; and AlmaLinux 10, published at quay.io/deskos/deskos-core-almalinux-10 — and bootc-image-builder makes a QCOW2 disk and an installer ISO from those images" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -254,7 +258,7 @@ By what you want to do:
 | | |
 |---|---|
 | **Evaluate** | the tour above; [**Platforms**](docs/platforms.md) for status and installation per platform; [**Architecture**](docs/architecture.md) for the pipeline and design principles |
-| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the image you build; private RHEL 10 builds; AlmaLinux 10; Fedora 44; the Ubuntu 26.04 `bootc install to-disk` path |
+| **Create and install** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from the image you build; private RHEL 10 builds; AlmaLinux 10; Fedora 44. An Ubuntu disk is written with `bootc install to-disk`, in that platform's own repository |
 | **Operate an installed machine** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Define resources** | [**Resources**](docs/resources.md): every kind with an example; composition; software and GNOME model |
 | **Develop** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |

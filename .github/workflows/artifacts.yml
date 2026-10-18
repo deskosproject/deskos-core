@@ -48,8 +48,6 @@ jobs:
           # plan that declares nothing must not be reported as a failure.
           - example: examples/centos-stream-10
             workstation: example-centos-stream-10
-          - example: examples/ubuntu-2604
-            workstation: example-ubuntu-2604
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7

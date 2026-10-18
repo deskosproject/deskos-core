@@ -35,7 +35,7 @@ workstation is `deskos-core-fedora-44`, and
 of the next Fedora release, which is not an offered platform.
 
 **Naming.** The example is named after the Platform resource it references, as
-`example-almalinux-10` references `almalinux-10` and
-`example-ubuntu-2604` references `ubuntu-2604`; the shipped reference
+`example-almalinux-10` references `almalinux-10`; the shipped reference
 workstation is named after the image it becomes (`deskos-core-fedora-44`, like
-`deskos-core-centos-stream-10`).
+`deskos-core-centos-stream-10`). The Ubuntu platform follows the same rule in its own
+repository (`deskos-ubuntu` on `ubuntu-2604`).

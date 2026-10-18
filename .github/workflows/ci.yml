@@ -38,7 +38,7 @@ jobs:
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples
         run: |
-          for ex in organization-and-role centos-stream-10 almalinux-10 rhel-10 ubuntu-2604; do
+          for ex in organization-and-role centos-stream-10 almalinux-10 rhel-10; do
             ./bin/deskosctl validate "./examples/$ex"
           done
       - name: plan CentOS reference workstation
@@ -116,9 +116,5 @@ jobs:
           # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
           # fails here rather than in a build nobody runs on a pull request.
           ./bin/deskosctl render --workstation deskos-core-fedora-44 --output dist/fedora-44
-          # The Ubuntu reference renders too: it is what its publish leg builds,
-          # and its context is pinned by a golden.
-          ./bin/deskosctl render --workstation deskos-core-ubuntu-2604 --output dist/ubuntu-ref
           diff -r dist/a dist/b
           diff -r dist/a dist/c
-          diff -r dist/a dist/d

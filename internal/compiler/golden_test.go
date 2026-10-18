@@ -20,9 +20,6 @@ var update = flag.Bool("update", false, "rewrite golden files")
 const (
 	resourcesRoot = "../../resources"
 	exampleRoot   = "../../examples/organization-and-role"
-	// ubuntuRoot is the Ubuntu example, which carries the second package
-	// manager's vendor source.
-	ubuntuRoot = "../../examples/ubuntu-2604"
 	// fedora45Root is the Fedora 45 evaluation. It carries its own Platform
 	// resource, because DeskOS ships Fedora 44 only: the next Fedora release is
 	// evaluated as an example before anyone commits to it.
@@ -85,16 +82,41 @@ func TestGoldenExampleRHELSBOM(t *testing.T) {
 	golden(t, "example-devops-rhel-10.sbom.cdx.json", b)
 }
 
-// The Ubuntu example is the one plan whose source comes from an APT repository:
-// its key, its deb822 fields and the order of the file's rendering belong in the
-// evidence like any other artifact.
-func TestGoldenExampleUbuntuVendorPlan(t *testing.T) {
-	p := mustPlan(t, "example-ubuntu-2604-org-packages", resourcesRoot, ubuntuRoot)
+// The Debian half of the golden coverage, and it is synthetic on purpose: no platform
+// this repository ships is Debian-family any more, because the Ubuntu one lives in its own
+// repository (ADR 0020). Core still *expresses* a Debian-family platform -- deb, apt,
+// deb822 sources, AptRepository -- so what pins that render is a root built here, and a
+// change in how Core renders apt is still a diff a reviewer reads.
+func TestGoldenDebianSynthetic(t *testing.T) {
+	p := mustPlan(t, "debian-synthetic", debFixture(t).dir(t))
 	b, err := p.JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-ubuntu-2604-org-packages.plan.json", b)
+	golden(t, "debian-synthetic.plan.json", b)
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if f.Path == containerfile.ContainerfilePath {
+			golden(t, "debian-synthetic.Containerfile", f.Data)
+		}
+	}
+}
+
+// debFixture is a Debian-family root: a deb platform, a workstation on it, and one signed
+// apt source, which is the whole shape Core has to keep rendering.
+func debFixture(t *testing.T) fixture {
+	t.Helper()
+	return fixture{
+		"platform.yaml":      debPlatform(t),
+		"ws.yaml":            workstation("debian-synthetic", "core"),
+		"p.yaml":             profile("core", "foundation", "PackageSet/org-packages"),
+		"set.yaml":           packageSet("org-packages", "code") + "  aptRepositories: [vscode]\n",
+		"apt.yaml":           aptRepo("vscode", aptVSCodeSpec),
+		"assets/apt-key.asc": testArmoredKey(),
+	}
 }
 
 func TestGoldenContainerfiles(t *testing.T) {
@@ -105,14 +127,10 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"deskos-core-almalinux-10", []string{resourcesRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		{"example-ubuntu-2604-org-packages", []string{resourcesRoot, ubuntuRoot}},
 		// Fedora 44's shipped reference workstation: it pins the rendered build
 		// context for the newest platform, so a change to the Fedora facts or to the
 		// backend shows up as a reviewable diff. ci.yml renders the same workstation.
 		{"deskos-core-fedora-44", []string{resourcesRoot}},
-		// Ubuntu 26.04's shipped reference workstation: it is what its publish leg
-		// builds, and ci.yml renders the same workstation.
-		{"deskos-core-ubuntu-2604", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {

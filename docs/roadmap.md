@@ -17,8 +17,9 @@ organization.
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
   now runs in a downstream organization's repository on GitHub-hosted
-  runners, and this repository builds CentOS Stream 10 and Ubuntu 26.04, not
-  RHEL.
+  runners, and this repository builds CentOS Stream 10 and AlmaLinux 10, not
+  RHEL. Ubuntu 26.04 is built in a repository of its own
+  ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 - RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
   with a private workstation that declares Flathub apps.
 
@@ -51,22 +52,25 @@ each slice is reviewed on its own:
 
 - **CI build:** `vm-bootcheck.yml` builds the CentOS Stream 10 workstations
   (Core and the organization example) into QCOW2 disks and runs the boot,
-  session and first-boot checks on them, and builds the two Ubuntu 26.04
-  workstations into raw disks (`bootc install to-disk`) and runs the boot and
-  first-boot checks, not the session check. It runs on pull requests and on
+  session and first-boot checks on them. It also builds and boots the AlmaLinux 10
+  example. Until the platform moved ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md))
+  it built the two Ubuntu 26.04 workstations into raw disks (`bootc install to-disk`) and ran
+  the boot and first-boot checks, not the session check; its own repository does all three
+  now. It runs on pull requests and on
   `main` for paths that can change an image, and on demand
   (`workflow_dispatch`).
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots each platform's image and then pushes and
   signs it to that platform's repository
   (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, …) as `:latest` and
-  `:<commit>`. CentOS Stream 10, AlmaLinux 10 and Ubuntu 26.04 today, with the
+  `:<commit>`. CentOS Stream 10 and AlmaLinux 10 today, with the
   digests and the run in [architecture.md](architecture.md#validation-status), and
   the older single repository
   (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
   pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10, RHEL 10, Fedora 44 and Ubuntu 26.04.
+  for CentOS Stream 10, RHEL 10 and Fedora 44; the Ubuntu base is pinned in its own
+  repository.
 - **A second Fedora release — plan, not policy.** DeskOS offers **Fedora 44**
   only: `:45` was a prerelease when it was measured and its base enables
   `updates-testing`, so it stays an example-only evaluation
@@ -88,11 +92,11 @@ Details in
 [`docs/design/visual-identity-and-boot.md`](design/visual-identity-and-boot.md)
 ("VM QA").
 
-**Existing for CentOS Stream 10 and Ubuntu**
+**Existing for CentOS Stream 10 and AlmaLinux 10**
 ([`tests/vm/`](../tests/vm/README.md)):
 
 - **Tier A, unmodified artifact:** `bootcheck.py` boots the exact test disk —
-  a QCOW2 on the EL platforms, a raw disk on Ubuntu — through an overlay,
+  a QCOW2 on the EL platforms, a raw disk where a platform has no Anaconda path — through an overlay,
   classifies screendumps (splash, graphical) and
   checks ACPI shutdown. It does not match screens against references.
 - **Tier B subset, instrumented session (CentOS Stream 10):** `sessioncheck.py`
@@ -137,8 +141,9 @@ Details in
   ([platforms.md](platforms.md)). ~~Whether DeskOS publishes the Ubuntu
   derivative, and where~~ decided: it does, as
   `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
-  support. Ubuntu and Fedora get no investment beyond that and are reviewed from
-  time to time; the effort stays on the EL 10 path.
+  support -- and it moved to a repository of its own afterwards, which publishes and checks
+  it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora gets no investment
+  beyond an evaluation and is reviewed from time to time; the effort stays on the EL 10 path.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.

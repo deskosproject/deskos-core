@@ -120,7 +120,7 @@ Facts about an OS target: its bootc base image, **its package manager** (`rpm` o
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, **whether its base can fetch a verified artifact**, and its
 redistribution constraints. DeskOS ships `centos-stream-10`,
-`almalinux-10`, `rhel-10`, `fedora-44` and `ubuntu-2604` in
+`almalinux-10`, `rhel-10` and `fedora-44` in
 [`resources/platforms/`](../resources/platforms/); the canonical status of each,
 and how to install it, is [platforms.md](platforms.md). A platform that is only
 being *evaluated* is not shipped: Fedora 45's prerelease evaluation carries its
@@ -660,9 +660,9 @@ project.
   (`Profile/fedora`) rather than the RHEL family's. The Fedora 45 prerelease
   evaluation does the same through its own example root, and is **not** an
   offered platform.
-- **Ubuntu 26.04** composes the same Core on a base owned by the Project
-  DeskOS, without the RHEL family's software
-  ([ADR 0014](adr/0014-platform-base-ownership.md)).
+- **Ubuntu 26.04** composes the same Core in a repository of its own, on a base
+  owned by the Project DeskOS and without the RHEL family's software
+  ([ADR 0014](adr/0014-platform-base-ownership.md), [ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 - The RHEL artifact is **not derived** from the CentOS image.
 
 ## Software model
@@ -717,7 +717,8 @@ also not declare `gnome.loginScreen`.
 
 That is why DeskOS's own GNOME defaults live in the `deskos-gnome` foundation profile
 rather than in `deskos-core`: a workstation whose platform DeskOS can write to selects
-it, and one whose platform ships its own desktop does not. Ubuntu 26.04 declares the
-fact and selects no GNOME profile, because no session there reads a system dconf
-database. A value that must reach such a platform uses the vendor's own mechanism (a
+it, and one whose platform ships its own desktop does not. A platform that declares the
+fact selects no GNOME profile, because no session there reads a system dconf database: the
+Ubuntu platform is the case that found it, and it lives in its own repository now
+([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). A value that must reach such a platform uses the vendor's own mechanism (a
 compiled GSettings override), never the dconf database.

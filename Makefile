@@ -42,7 +42,6 @@ validate: build
 # example-only prerelease evaluation, not an offered platform.
 	$(BIN) validate ./examples/fedora-44
 	$(BIN) validate ./examples/fedora-45
-	$(BIN) validate ./examples/ubuntu-2604
 
 plan-centos: build
 	$(BIN) plan --workstation deskos-core-centos-stream-10
