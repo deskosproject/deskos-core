@@ -28,10 +28,10 @@ base and how far DeskOS has validated the result:
 
 | Platform | Base | What you can do today |
 |---|---|---|
-| CentOS Stream 10 | vendor | build it and boot it yourself; nothing is published yet |
+| CentOS Stream 10 | vendor | pull the published image, or build it and boot it yourself |
 | RHEL 10 | vendor (entitled) | build it privately, with a subscription; never published |
-| AlmaLinux 10 | vendor (experimental) | built and booted in CI; no published image |
-| Ubuntu 26.04 | the DeskOS project | built and booted in CI; no published image and no ISO — write a disk with `bootc install to-disk` |
+| AlmaLinux 10 | vendor (experimental) | published image, built and booted in CI; the vendor base is experimental |
+| Ubuntu 26.04 | the DeskOS project | published image, built and booted in CI; no installer ISO — write a disk with `bootc install to-disk` |
 | Fedora 44 | vendor | composes, renders and builds; not booted here yet; no published image |
 
 The full matrix — base owner, evidence, and how to install each — is in
@@ -142,9 +142,10 @@ sudo podman run --rm --privileged --pull=missing \
 
 Publishing is **per platform**, one repository each: `supply-chain.yml` with
 `publish=true` sends the image to `quay.io/deskos/deskos-core-centos10`,
-`-almalinux10`, and so on. No dispatch has run yet, so **nothing is published
-today**, and the older single repository (`quay.io/deskos/deskos-core`) has been
-withdrawn. Rendering is deterministic — the same inputs
+`-almalinux10`, `-ubuntu2604`, and so on, after the gate has built, scanned and
+booted it. The digests published with their run are in
+[docs/architecture.md](docs/architecture.md#validation-status); the older single
+repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
 give byte-identical output, and `generated-manifest.json` records their SHA-256 —
 so the build context is reproducible from the same commit. The image **build is
 not** yet bit-for-bit reproducible: the base tag and repository content can move
