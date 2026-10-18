@@ -26,7 +26,7 @@ RUN \
 # Binary artifact deskos 0.12.0 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
-    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
         -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64'; \
     echo '715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/deskos')")"; \
