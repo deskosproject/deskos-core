@@ -1,0 +1,96 @@
+name: tool image
+
+# The release publishes two things built from this repository's source: the `deskosctl`
+# asset and the scratch image the root Containerfile builds. The asset is built by
+# release.yml with the toolchain `go.mod` pins, and every pull request compiles that
+# tree through `go test`. The image is built with the toolchain the Containerfile pins
+# by digest, and until this workflow existed nothing ran it until a tag did.
+#
+# That gap has a shape: Renovate bumps the image's `golang` pin on its own schedule, the
+# pin is resolved for the first time at release time, and a toolchain that does not
+# compile this tree would be discovered while tagging a release. Measured 2026-10-18 on
+# that pull request (leaving this run out of it): the tree builds, vets and tests with
+# the bumped toolchain, which was a measurement nobody had.
+#
+# What it proves is the image a pipeline installs, not only that it compiles: the
+# toolchain resolves, the build context is complete, the compiler runs inside it, and
+# the embedded Core validates and renders. That is why it builds the image instead of
+# running `go build` with the version from the Containerfile.
+#
+# It is scoped to the files the image depends on, so a documentation change does not pay
+# for it, and it is not the required check: `validate` is.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "Containerfile"
+      - "go.mod"
+      - "go.sum"
+      - "cmd/**"
+      - "internal/**"
+      - "resources/**"
+      - "schemas/**"
+      - ".github/workflows/tool-image.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Containerfile"
+      - "go.mod"
+      - "go.sum"
+      - "cmd/**"
+      - "internal/**"
+      - "resources/**"
+      - "schemas/**"
+      - ".github/workflows/tool-image.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tool-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    # Pulling the toolchain image is the largest part of it; the build and the three
+    # runs are minutes on a hosted runner.
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the tool image from its Containerfile
+        env:
+          TAG: pr-${{ github.sha }}
+        run: |
+          podman build -t "quay.io/deskos/deskosctl:$TAG" \
+            --build-arg VERSION="$TAG" --build-arg COMMIT="$GITHUB_SHA" .
+          out="$(podman run --rm "quay.io/deskos/deskosctl:$TAG" version)"
+          echo "$out"
+          [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
+
+      - name: Run what a pipeline runs
+        env:
+          TAG: pr-${{ github.sha }}
+        run: |
+          # `version` alone does not exercise the compiler, and this image is the
+          # artifact a pipeline runs: validate the embedded Core, and render a
+          # workstation that ships with it. The same two commands the release runs.
+          podman run --rm "quay.io/deskos/deskosctl:$TAG" validate
+          mkdir -p smoke-out
+          podman run --rm -v "$PWD/smoke-out:/out:z" \
+            "quay.io/deskos/deskosctl:$TAG" render \
+            --workstation deskos-core-centos10 --output /out
+          test -f smoke-out/Containerfile
+
+      - name: The image renders what the repository pins
+        # The image carries the embedded Core, so its output is a claim about this
+        # repository: what it renders must be the artifact the tests pin, not merely
+        # something that rendered. A resource that only exists in the working tree, or a
+        # golden that moved without the render moving with it, is a difference here.
+        # Measured before this workflow existed: both files come out byte-identical.
+        run: |
+          diff smoke-out/Containerfile \
+            internal/compiler/testdata/golden/deskos-core-centos10.Containerfile
+          diff smoke-out/plan.json \
+            internal/compiler/testdata/golden/deskos-core-centos10.plan.json
