@@ -190,13 +190,22 @@ assertion. The plan carries each one's destination and the checksum its download
 was verified against at build time; the guest hashes the file where it landed and
 the host compares. **The claim is the bytes, not the presence**: a binary the build
 never wrote, one replaced afterwards, and one that lost its executable bit are all
-differences, and each is named. There is one claim here rather than the two a
-default has — a binary has no "value the session sees" — so nothing about it is
-reported as merely unverified except a file that cannot be read at all, which is
-reported with the reason.
+differences, and each is named.
 
-`session.json` carries `plan_binaries` (`declared`, `verified`, and the ones that
-failed with their detail), and `session.md` prints the count.
+What that claim can be depends on **what the plan pins**, and there are two cases:
+
+- a **single-file artifact** (`archive: none`): the plan's checksum *is* the
+  installed file's, so the bytes are compared and a mismatch fails;
+- an **archive** (`archive: tar.gz`): the plan pins the archive's checksum, and the
+  file inside it cannot be compared with it here — the build verified that download,
+  and the archive is gone by the time a session runs. The file is verified as
+  installed and executable, and the report says which claim it could make. Comparing
+  the two anyway reported a difference that was not one, on the example workstation's
+  own `openshift-client`; the VM check found that itself, on a real boot.
+
+`session.json` carries `plan_binaries` (`declared`, `checksum_verified`,
+`install_verified`, and the ones that failed with their detail), and `session.md`
+prints the counts.
 
 ### Seeding the skeleton and showing the widgets
 

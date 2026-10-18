@@ -558,14 +558,18 @@ def binary_summary(checks):
     """The plan's binaries and how the run found them.
 
     A binary the plan installs is a declaration like any other, so it gets its
-    assertion: the bytes on the machine must be the ones the plan pinned. There is one
-    claim here and not two -- a binary has no "value the session sees" -- so a binary
-    that differs fails, and one that cannot be read is reported with its reason.
+    assertion. What that assertion can be depends on what the plan pins: for a
+    single-file artifact the plan's checksum *is* the installed file's, while for an
+    archive it is the archive's, and the file inside it cannot be compared with it
+    here (the build verified that download; the archive is gone by the time a session
+    runs). Both are verified as far as they can be, and the report says which is
+    which instead of pretending they are the same claim.
     """
     bins = [c for c in checks if c["check"].startswith(BINARY_CHECK_PREFIX)]
-    ok = sum(1 for c in bins if c["pass"])
-    return {"declared": len(bins), "verified": ok,
-            "unverified": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
+    strict = sum(1 for c in bins if c["coverage"]["image"] == "checked-bytes" and c["pass"])
+    install = sum(1 for c in bins if c["coverage"]["image"] == "install-only" and c["pass"])
+    return {"declared": len(bins), "checksum_verified": strict, "install_verified": install,
+            "failed": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
 
 
 def plan_vendor_defaults(plan):
@@ -728,7 +732,10 @@ def default_coverage(checks):
     A default is counted as verified on an axis only when the value read there
     matched the plan: "tried to assert" is not the same as "verified".
     """
-    declared = [c for c in checks if "coverage" in c]
+    # Only the declared defaults: a binary carries a coverage of its own kind, and
+    # counting it here would report it as a default with an axis it does not have.
+    declared = [c for c in checks
+                if c.get("coverage", {}).get("source") in ("dconf", "gsettings override")]
     unverified = [{"check": c["check"], "axis": axis, "state": c["coverage"][axis], "detail": c["detail"]}
                   for c in declared for axis in ("image", "session")
                   if c["coverage"][axis] != "verified"]
@@ -757,17 +764,30 @@ def evaluate(values, plan, journal="", skel_rels=()):
           f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
-    # Every binary the plan installs must be the one it pinned: the build verified the
-    # checksum of a download, and this verifies the bytes that reached the machine.
+    # Every binary the plan installs must be there, executable, and -- when the plan
+    # pins the file itself -- the same bytes. For an archive the plan pins the
+    # archive's checksum, so the file inside it is verified as installed and the limit
+    # is stated rather than compared, which would report a difference that is not one.
     for i, b in enumerate(plan_binaries(plan)):
         name = BINARY_CHECK_PREFIX + b["destination"]
         got = values.get(f"binary_{i}", "missing")
-        if got == "missing":
-            check(name, False, f"{b['destination']} is not there or is not executable")
-        elif got != b["sha256"]:
-            check(name, False, f"sha256 {got}, the plan pins {b['sha256']}")
+        if b.get("archive", "none") == "none":
+            if got == "missing":
+                check(name, False, f"{b['destination']} is not there or is not executable",
+                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
+            elif got != b["sha256"]:
+                check(name, False, f"sha256 {got}, the plan pins {b['sha256']}",
+                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
+            else:
+                check(name, True, f"sha256 {got}, as the plan pins it",
+                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
         else:
-            check(name, True, f"sha256 {got}, as the plan pins it")
+            if got == "missing":
+                check(name, False, f"{b['destination']} is not there or is not executable",
+                      coverage={"source": "binary", "key": b["destination"], "image": "install-only", "session": "install-only"})
+            else:
+                check(name, True, f"installed and executable (sha256 {got[:12]}…); the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
+                      coverage={"source": "binary", "key": b["destination"], "image": "install-only", "session": "install-only"})
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -907,8 +927,9 @@ def main():
             lines.append(f"  - {c['check']} [{c['axis']}: {c['state']}] ({c['detail']})")
     if "plan_binaries" in result:
         b = result["plan_binaries"]
-        lines.append(f"- Plan binaries: {b['verified']} of {b['declared']} verified against the checksum the plan pins")
-        for c in b["unverified"]:
+        lines.append(f"- Plan binaries: {b['declared']} declared; {b['checksum_verified']} verified against the checksum the plan pins, "
+                     f"{b['install_verified']} verified as installed (the plan pins an archive)")
+        for c in b["failed"]:
             lines.append(f"  - {c['check']} ({c['detail']})")
     if "platform_diagnostics" in result:
         lines += diagnostics_md(result["platform_diagnostics"])

@@ -229,7 +229,9 @@ class ParseEvaluateTest(unittest.TestCase):
 
 
 class PlanBinariesTest(unittest.TestCase):
-    def binary_check(self, values, destination="/usr/local/bin/deskos", plan=PLAN):
+    def binary_check(self, values, destination="/usr/local/bin/deskos", plan=None):
+        if plan is None:
+            plan = PLAN
         name = sc.BINARY_CHECK_PREFIX + destination
         return next(c for c in sc.evaluate(values, plan) if c["check"] == name)
 
@@ -242,8 +244,9 @@ class PlanBinariesTest(unittest.TestCase):
         self.assertIn("as the plan pins it", c["detail"])
         summary = sc.binary_summary(sc.evaluate(GOOD, PLAN))
         self.assertEqual(summary["declared"], 1)
-        self.assertEqual(summary["verified"], 1)
-        self.assertEqual(summary["unverified"], [])
+        self.assertEqual(summary["checksum_verified"], 1)
+        self.assertEqual(summary["install_verified"], 0)
+        self.assertEqual(summary["failed"], [])
 
     def test_a_binary_whose_bytes_differ_fails(self):
         values = dict(GOOD, binary_0="bb" * 32)
@@ -251,8 +254,30 @@ class PlanBinariesTest(unittest.TestCase):
         self.assertFalse(c["pass"])
         self.assertIn("the plan pins", c["detail"])
         summary = sc.binary_summary(sc.evaluate(values, PLAN))
-        self.assertEqual(summary["verified"], 0)
-        self.assertEqual([u["check"] for u in summary["unverified"]], [c["check"]])
+        self.assertEqual(summary["checksum_verified"], 0)
+        self.assertEqual([u["check"] for u in summary["failed"]], [c["check"]])
+
+    def test_a_binary_from_an_archive_is_verified_as_installed(self):
+        # The plan pins the *archive's* checksum, not the file inside it, so the
+        # installed bytes cannot be compared with it. Comparing them anyway reported a
+        # difference that was not one, on the example workstation's own openshift-client
+        # (a tar.gz): found by the VM check on a real boot, not here.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["binaries"][0]["archive"] = "tar.gz"
+        c = self.binary_check(GOOD, plan=plan)
+        self.assertTrue(c["pass"])
+        self.assertIn("the plan pins the tar.gz archive's checksum", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(GOOD, plan))
+        self.assertEqual((summary["checksum_verified"], summary["install_verified"]), (0, 1))
+        # It is still asserted as installed: a file that is not there fails.
+        missing = dict(GOOD, binary_0="missing")
+        self.assertFalse(self.binary_check(missing, plan=plan)["pass"])
+
+    def test_the_binaries_are_not_counted_as_defaults(self):
+        # A binary has no image/session axis, so it must not appear in the defaults
+        # coverage: mixing them would report a default that does not exist.
+        cov = sc.default_coverage(sc.evaluate(GOOD, PLAN))
+        self.assertEqual(cov["declared"], len(sc.plan_defaults(PLAN)) + len(sc.plan_vendor_defaults(PLAN)))
 
     def test_a_binary_that_is_not_there_fails(self):
         values = dict(GOOD, binary_0="missing")
