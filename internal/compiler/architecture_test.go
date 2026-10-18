@@ -156,16 +156,16 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
 		"c.yaml": ws("core-alma", "almalinux-10"),
-		"d.yaml": ws("core-fedora44", "fedora-44"),
-		"e.yaml": ws("core-fedora45", "fedora-45"),
+		"d.yaml": ws("core-fedora-44", "fedora-44"),
+		"e.yaml": ws("core-fedora-45", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	fedora44 := mustPlan(t, "core-fedora44", resourcesRoot, dir)
+	fedora44 := mustPlan(t, "core-fedora-44", resourcesRoot, dir)
 	// Fedora 45 is an evaluation, not a shipped platform, so its Platform resource
 	// comes from the example root that carries it.
-	fedora45 := mustPlan(t, "core-fedora45", resourcesRoot, fedora45Root, dir)
+	fedora45 := mustPlan(t, "core-fedora-45", resourcesRoot, fedora45Root, dir)
 	for _, p := range []*plan.Plan{rhel, alma, fedora44, fedora45} {
 		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
@@ -243,14 +243,14 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 func TestExampleVirtManagerGapIsReported(t *testing.T) {
 	dir := fixture{
 		"p.yaml": profile("needs-virt-manager", "role", "PackageSet/example-virt-manager"),
-		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-baseline, example-devops, needs-virt-manager]\n",
-		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-baseline, example-devops, needs-virt-manager]\n",
+		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
+		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
 	}.dir(t)
 	for ws, want := range map[string]string{"gap-centos": "Platform/centos-stream-10: only in the CentOS Stream CRB", "gap-rhel": "Platform/rhel-10: RHEL 10 moved it to the CodeReady Linux Builder"} {
 		_, err := planOf(t, ws, resourcesRoot, exampleRoot, dir)
 		mustFail(t, err, `package "virt-manager" is not available on `+strings.SplitN(want, ":", 2)[0], strings.SplitN(want, ": ", 2)[1], "PackageSet/example-virt-manager")
 	}
-	if slices.Contains(packages(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)), "virt-manager") {
+	if slices.Contains(packages(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)), "virt-manager") {
 		t.Error("virt-manager must not be installed silently")
 	}
 }
@@ -423,7 +423,7 @@ func TestDesktopEntryNeedsThePlatformIconCache(t *testing.T) {
 
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
-	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
+	p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 	forbidden := []string{"libvirt", "qemu-kvm", "virt-install", "virt-manager", "gnome-boxes", "terraform",
 		"kubectl", "code", "google-chrome-stable", "zerotier-one", "tailscale", "ipa-client", "cockpit-machines"}
 	for _, pkg := range packages(p) {
@@ -452,7 +452,7 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")
 	}
 
-	example := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)
+	example := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
 	for _, want := range []string{"libvirt", "virt-install", "terraform", "kubectl", "code", "google-chrome-stable"} {
 		if !slices.Contains(packages(example), want) {
 			t.Errorf("the example DevOps workstation is missing %s", want)
@@ -521,7 +521,7 @@ func TestMakeFmtCheckFailsWithoutGofmt(t *testing.T) {
 // CS10 Core leaves out setroubleshoot only through the group exclusion, and no
 // rendered file weakens SELinux enforcement or audit logging.
 func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
-	cs10, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	cs10, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -532,7 +532,7 @@ func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
 			t.Errorf("the CS10 group transaction does not exclude %s", x)
 		}
 	}
-	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
 	if err != nil {
 		t.Fatal(err)
 	}

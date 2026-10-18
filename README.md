@@ -76,11 +76,11 @@ workstation Core already ships — no files to write yet:
 
 ```console
 $ ./deskosctl validate
-ok: 1 workstation(s) compose cleanly: deskos-core-centos10
+ok: 1 workstation(s) compose cleanly: deskos-core-centos-stream-10
 
-$ ./deskosctl plan --workstation deskos-core-centos10
+$ ./deskosctl plan --workstation deskos-core-centos-stream-10
 WORKSTATION
-  deskos-core-centos10 (DeskOS Core (CentOS Stream 10))
+  deskos-core-centos-stream-10 (DeskOS Core (CentOS Stream 10))
 
 PLATFORM
   CentOS Stream 10 (centos-stream-10)
@@ -107,7 +107,7 @@ ARTIFACT
 
 `plan` prints what the image will contain and **where each value came from**. To
 author your own machine, copy the
-[example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/baseline-and-role)
+[example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/organization-and-role)
 — a `Workstation` plus the profiles it is made of — and point `deskosctl` at that
 directory. Building the image and a disk needs `podman` and root; that is the
 rest of the [Quickstart](#quickstart).
@@ -125,23 +125,23 @@ mv deskosctl-linux-amd64 deskosctl && chmod +x deskosctl
 
 # 2. Look at the workstation Core ships — no files to write yet.
 ./deskosctl validate
-./deskosctl plan --workstation deskos-core-centos10
+./deskosctl plan --workstation deskos-core-centos-stream-10
 
 # 3. Render the build context and build the image (needs podman and root).
-./deskosctl render --workstation deskos-core-centos10 --output ctx
-sudo podman build -t localhost/deskos-core-centos10:test ctx
+./deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
+sudo podman build -t localhost/deskos-core-centos-stream-10:test ctx
 
 # 4. Optional: a QCOW2 disk from that image.
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
-    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
+    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos-stream-10:test
 ```
 
 Publishing is **per platform**, one repository each: `supply-chain.yml` with
-`publish=true` sends the image to `quay.io/deskos/deskos-core-centos10`,
-`-almalinux10`, `-ubuntu2604`, and so on, after the gate has built, scanned and
+`publish=true` sends the image to `quay.io/deskos/deskos-core-centos-stream-10`,
+`-almalinux-10`, `-ubuntu-2604`, and so on, after the gate has built, scanned and
 booted it. The digests published with their run are in
 [docs/architecture.md](docs/architecture.md#validation-status); the older single
 repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
@@ -160,7 +160,7 @@ status of each platform, and what is verified, is in
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos10, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers; deskosctl validates, composes, plans and renders a deterministic build context; podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos-stream-10, RHEL 10 built privately, and Ubuntu 26.04 on a base the DeskOS project owns — then a disk is written for each: bootc-image-builder for the EL platforms, bootc install to-disk for Ubuntu" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -173,13 +173,13 @@ A `Workstation` names a **platform** and the **profiles** it is made of:
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: example-devops-centos10
+  name: example-devops-centos-stream-10
 spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core        # foundation: packages and the update policy
     - deskos-gnome       # foundation: DeskOS's GNOME defaults
-    - example-baseline   # organization
+    - example-organization   # organization
     - example-devops     # role
 ```
 
@@ -206,7 +206,7 @@ file order. Here the organization shortens Core's screen blank from `10m` to `5m
 apiVersion: desktop.deskos.org/v1alpha1
 kind: GnomeProfile
 metadata:
-  name: example-desktop      # included by example-baseline (organization)
+  name: example-desktop      # included by example-organization (organization)
 spec:
   defaults:
     session:
@@ -236,8 +236,9 @@ came from.
 ## Status
 
 Pre-1.0 and experimental: the resource APIs are `v1alpha1` and will change.
-Publishing goes to **one repository per platform** (`deskos-core-centos10`,
-`-almalinux10`, …); nothing has been published yet. The platform matrix, with what is
+Publishing goes to **one repository per platform** (`deskos-core-centos-stream-10`,
+`-almalinux-10`, …), after the gate built, scanned and booted each one.
+The platform matrix, with what is
 verified on each and how to install it, is [**docs/platforms.md**](docs/platforms.md).
 
 > [!IMPORTANT]

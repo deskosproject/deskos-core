@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-ubuntu-2604-org-packages
+spec:
+  layer: organization
+  description: Example organization; vendor tooling from the vendor's signed APT source.
+  resources:
+    - kind: PackageSet
+      name: example-org-packages

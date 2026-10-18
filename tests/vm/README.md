@@ -20,13 +20,13 @@ bootc-image-builder's default kernel arguments
 arguments, as an installed workstation does:
 
 ```bash
-deskosctl render --workstation deskos-core-centos10 --output ctx
-sudo podman build -t localhost/deskos-core-centos10:test ctx
+deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
+sudo podman build -t localhost/deskos-core-centos-stream-10:test ctx
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
-    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
+    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos-stream-10:test
 ```
 
 **Or install to a raw disk**, which is the path for a platform whose image is not
@@ -283,6 +283,19 @@ waiting for a report that never comes:
   B) do not. `sessioncheck.tmpfiles_arg` counts the unescaped content in bytes
   and refuses anything longer, loudly, instead of letting the guest drop it;
   anything larger travels as a credential of its own.
+  **The margin is the number to watch**, not the limit: the largest content the
+  harness writes today is the session report of the loaded example, 2,980 B of the
+  4,095 B cap (1,115 B of margin, measured 2026-10-18 on the rendered devops plan,
+  which declares 21 defaults and two binaries). A probe that does not fit is refused
+  here, loudly, before the machine boots: the cap is checked, not inherited.
+- **A report that does not run says so on the console.** The report unit runs
+  `/bin/bash` on a script the guest received, and bash writes a syntax error to the
+  unit's journal — which the harness does not read. The unit therefore carries
+  `StandardOutput=journal+console` and `StandardError=journal+console`, so a script
+  that does not parse, or a file that is not there, appears on the serial port the
+  harness is already watching, and the failure line quotes it back
+  (`bootcheck.serial_hint`). Without that, a broken script and a truncated
+  credential were indistinguishable: both left a serial log with no marker.
 - **A single SMBIOS type 11 credential is capped near 64 KiB.** The SMBIOS 2.1
   entry point records the length of the *whole* table in a 16-bit field
   (`SMBIOS_21_MAX_TABLES_LEN = 0xffff` in QEMU's `hw/smbios/smbios.c`), so every

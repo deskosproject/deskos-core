@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-rhel-10
+spec:
+  displayName: DeskOS Core (RHEL 10)
+  platformRef: rhel-10
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - rhel-family
+    # RHEL 10 keeps its own wallpaper and its own splash; it only needs the boot
+    # to stop printing text.
+    - deskos-boot

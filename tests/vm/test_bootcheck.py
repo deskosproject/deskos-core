@@ -57,5 +57,23 @@ class ImageTest(unittest.TestCase):
                 self.assertEqual(f.read(8), b"\x89PNG\r\n\x1a\n")
 
 
+class SerialHintTest(unittest.TestCase):
+    """What the guest said, in the failure line that used to say only what it did not."""
+
+    def test_an_empty_log_says_so(self):
+        self.assertEqual(bootcheck.serial_hint(b""),
+                         "; the serial log is empty, so the guest said nothing at all")
+
+    def test_the_tail_is_quoted(self):
+        got = bootcheck.serial_hint(b"\r\nreport.sh: line 2: syntax error near line 2\r\n")
+        self.assertEqual(got, "; the guest last said: report.sh: line 2: syntax error near line 2")
+
+    def test_it_is_bounded_and_keeps_the_end(self):
+        got = bootcheck.serial_hint(b"x" * 5000)
+        self.assertLessEqual(len(got), 430)
+        self.assertTrue(got.startswith("; the guest last said: …"))
+        self.assertTrue(got.endswith("x"))
+
+
 if __name__ == "__main__":
     unittest.main()

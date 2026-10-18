@@ -125,7 +125,7 @@ jobs:
           mkdir -p smoke-out
           podman run --rm -v "$PWD/smoke-out:/out:z" \
             quay.io/deskos/deskosctl:"$TAG" render \
-            --workstation deskos-core-centos10 --output /out
+            --workstation deskos-core-centos-stream-10 --output /out
           test -f smoke-out/Containerfile
 
       - name: Install Syft and Grype (pinned)
@@ -228,6 +228,12 @@ jobs:
           **If you declare your own \`Platform\` resource, read this before bumping.** A platform now says whether its base can fetch a verified artifact: \`downloads.baseFetches\`, and \`downloads.package\` when the base cannot. A plan that downloads anything — a \`BinaryArtifact\` or an \`RpmFile\` — on a platform that declares nothing fails composition with the platform named, instead of failing minutes into a build with \`curl: not found\` (ADR 0019). The platforms this repository ships declare it, so a workstation built on one needs no change. The same release bounds the build's own download: it retries a transient failure, gives up on one that never answers, and creates the destination directory of a downloaded binary by resolving \`/usr/local\` the way the platform image defines it.
 
           **If you declare your own \`BinaryArtifact/deskos\`, read this too.** Core's foundation declares the runtime as of v0.13.0, so an image that also declares it fails composition with \`duplicate resource BinaryArtifact/deskos\`. Remove your declaration and let the foundation carry it: two files cannot define one key and composition has no removal (ADR 0003), so keeping your own would mean giving up the foundation. The version an image gets is the one Core pins.
+
+          **If you run the commands in this repository's docs, or follow one of its published images, read this before bumping.** The names now spell each platform the way its resource does, and the examples lost a `core-` prefix that read as the shipped reference's:
+
+          - `deskosctl render --workstation deskos-core-centos10` is `--workstation deskos-core-centos-stream-10`; likewise `-almalinux10` is `-almalinux-10`, `-fedora44` is `-fedora-44` and `-ubuntu2604` is `-ubuntu-2604`.
+          - `examples/core-<platform>/` is `examples/<platform>/`, the workstation inside is `example-<platform>`, and the Ubuntu example that adds an organization's own signed package source is `example-ubuntu-2604-org-packages`.
+          - The published image repositories follow the workstation names: `quay.io/deskos/deskos-core-centos10` is now `quay.io/deskos/deskos-core-centos-stream-10`, and the same for `-almalinux-10` and `-ubuntu-2604`. The old repositories keep the digests already published in them and are not deleted, but **they stop receiving new images**: a machine whose reference points at one of them would stop updating until its reference is changed, which is a deliberate change on the machine and not something an update does by itself.
 
           **Coming from v0.11 or earlier**, DeskOS's GNOME defaults moved to the \`deskos-gnome\` profile, which a workstation now selects (ADR 0016), and the dock and every extension are decided by UUID in \`shell.extensions\` rather than by \`dock.enabled\` (ADR 0017). A workstation that adds \`deskos-gnome\` keeps what it had; one that does not stops inheriting the session lock, the idle timeout and the software-update policy. Ubuntu workstations keep their vendor's desktop and select neither." \
             "${flags[@]}"
