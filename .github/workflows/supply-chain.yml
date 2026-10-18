@@ -1,6 +1,9 @@
-name: supply-chain (experimental)
+name: supply-chain
 
 # Manual only. The single publish path: builds the DeskOS Core reference
+#
+# It used to call itself experimental, which is the opposite of what it is: this is the
+# only path that publishes an image, and it publishes the manifest it tested and signed.
 # workstation for each platform in the matrix from this checkout, writes the
 # declared SBOM with `deskosctl sbom`, produces the installed SBOM with Syft,
 # scans it with Grype, compares the two for RPM coverage, then makes a QCOW2
@@ -114,6 +117,11 @@ jobs:
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo chown "$(id -u):$(id -g)" "$WORK"
+          # The runner image ships a default CNI conflist while the CNI plugin binaries
+          # are not installed, and this podman uses netavark: nothing here creates a CNI
+          # network, and podman warns on every run that it cannot validate a file it does
+          # not read. Removing it keeps a warning in these logs worth reading.
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
 
       - name: Enable KVM for the runner user
         run: |
@@ -127,7 +135,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
 
-      - name: Pull the base and the builder, retrying a flaky registry
+      - name: Pull the base and the builder, with retries
         run: |
           # The publish gate is the longest job in the fleet (150 minutes), and quay.io's
           # CDN returned an EOF in the middle of a layer while this was being written
