@@ -183,6 +183,50 @@ func TestAptSourceWithoutAKeyOrWithTheWrongOneIsNotRendered(t *testing.T) {
 // A tar.gz member is installed only after the extraction proves it is a plain
 // file: tar would extract a symlink or hardlink member as such, and install
 // would then copy whatever it points at.
+// Every download the build makes carries the same hardening, and the two lists cannot
+// drift because there is one. A fetch that stalls or blips is the same failure whether
+// it brings a binary or an rpm file, and a build a network blip kills had nothing wrong
+// with it (measured 2026-10-18). The flags are pinned here so removing them is a change
+// under review rather than a silent loss.
+func TestEveryFetchCarriesTheRetriesAndTheBounds(t *testing.T) {
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
+	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{
+		Artifact: "tool", Version: "1", URL: "https://example.org/tool", Archive: "none",
+		SHA256: strings.Repeat("a", 64), Destination: "/usr/local/bin/tool", Mode: "0755",
+	}}
+	sum := sha256.Sum256([]byte("key"))
+	p.Artifact.RpmFiles = []plan.RpmFileInstall{{
+		URL: "https://example.org/vendor.rpm", SHA256: strings.Repeat("b", 64),
+		GPGKey: "key", GPGKeySHA256: hex.EncodeToString(sum[:]),
+	}}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cf string
+	for _, f := range files {
+		if f.Path == ContainerfilePath {
+			cf = string(f.Data)
+		}
+	}
+	fetches := strings.Count(cf, "curl --fail --silent --show-error --location")
+	if fetches != 2 {
+		t.Fatalf("expected both downloads to be rendered, found %d:\n%s", fetches, cf)
+	}
+	for _, want := range []string{
+		"--retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90",
+		"--connect-timeout 30 --speed-limit 1000 --speed-time 60",
+	} {
+		if n := strings.Count(cf, want); n != fetches {
+			t.Errorf("%d of %d downloads carry %q:\n%s", n, fetches, want, cf)
+		}
+	}
+	// The checksum still decides: the hardening is on the fetch, not on the verification.
+	if !strings.Contains(cf, "sha256sum --check --strict --quiet -") {
+		t.Errorf("the download step no longer verifies its checksum:\n%s", cf)
+	}
+}
+
 func TestBinaryArchiveMemberGuard(t *testing.T) {
 	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{

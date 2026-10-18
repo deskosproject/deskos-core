@@ -5,25 +5,26 @@ image you build (or pull, once it is published), a private RHEL 10 build, an Alm
 build, a Fedora 44 build, or an Ubuntu 26.04 build.
 
 > [!NOTE]
-> Downloadable QCOW2 and ISO images are not published yet. Until they
-> are, create an EL or Fedora disk from the container image with
+> Downloadable QCOW2 and ISO images are not published yet; the container image
+> is. Create an EL or Fedora disk from it with
 > `bootc-image-builder`, and an Ubuntu disk with `bootc install to-disk`
 > ([Ubuntu 26.04](#ubuntu-2604) below). You need **Linux with rootful
 > Podman** and about **20 GB free**.
 
 ## CentOS Stream 10
 
-DeskOS Core for CentOS Stream 10 **is not published yet**: build it locally
-(`deskosctl render` and `podman build`, see the [README](../README.md)), or pull
-it from `quay.io/deskos/deskos-core-centos10` once the first `publish=true`
-dispatch runs. The published `:latest` will be the newest image that passed the
-boot and session checks. Publishing is manual (the `supply-chain` workflow with
-`publish=true`) and moves `:latest` and the `:<commit>` tag together; for
-production, pin the digest you verified.
+DeskOS Core for CentOS Stream 10 is published at
+`quay.io/deskos/deskos-core-centos10`: pull it, or build it locally with
+`deskosctl render` and `podman build` (see the [README](../README.md)). The
+published `:latest` is the newest image that passed the boot and session checks.
+Publishing is manual (the `supply-chain` workflow with `publish=true`) and moves
+`:latest` and the `:<commit>` tag together; for production, pin the digest you
+verified — [architecture.md](architecture.md#validation-status) carries the one
+the last dispatch published.
 
-**1. Get the image, then make a QCOW2 disk** for a virtual machine. Nothing is
-published yet, so today the image is the one you built locally — a `localhost/`
-reference, which is what the builder takes here:
+**1. Get the image, then make a QCOW2 disk** for a virtual machine. Pull the
+published image, or use the one you built locally — a `localhost/` reference,
+which is what the builder takes here:
 
 ```bash
 # The path available today: the image you built, local to this host.
@@ -177,9 +178,10 @@ are private to your organization.
 ## AlmaLinux 10
 
 AlmaLinux 10 is a public, subscription-free EL10 base — the AlmaLinux project's
-own, which that project labels experimental. DeskOS publishes no AlmaLinux image,
-but CI builds and boots `example-core-almalinux-10` and runs the boot, session and
-first-boot checks on it, so the steps below are exercised. The platform's facts
+own, which that project labels experimental. The image is published at
+`quay.io/deskos/deskos-core-almalinux10`, and CI builds and boots
+`example-core-almalinux-10` and runs the boot, session and first-boot checks on it,
+so the steps below are exercised. The platform's facts
 are EL10 conventions modeled on RHEL 10 ([platforms.md](platforms.md)).
 
 Get `deskosctl` as in step 1 of the RHEL section above, then render the shipped
@@ -234,8 +236,9 @@ a machine at `bootc upgrade` ([platforms.md](platforms.md)).
 
 ## Ubuntu 26.04
 
-DeskOS publishes no Ubuntu image and implements no installer ISO for it — there is
-no ISO path here, built or validated. The base is owned by the DeskOS project and
+The image is published at `quay.io/deskos/deskos-core-ubuntu2604`, and DeskOS
+implements no installer ISO for it — there is no ISO path here, built or
+validated. The base is owned by the DeskOS project and
 pinned by digest in `resources/platforms/ubuntu-2604.yaml`. Get `deskosctl` (step
 1 of the RHEL section above), then build the image and write a disk with
 `bootc install to-disk`:
@@ -289,9 +292,10 @@ Three things here that must not be conflated:
   private registry, or one you make public — never at the local layout and never
   at the base: pointing it at the base would replace your derivative with the base
   at the next update.
-- **Publishing the derivative is your step, and CI does not test it.** DeskOS
-  publishes no Ubuntu image; that the image is built, installed and booted in CI
-  says nothing about a registry you publish to.
+- **Publishing a derivative of your own is your step, and CI does not test it.**
+  The gate publishes DeskOS's own image after the checks above; that the image is
+  built, installed and booted in CI says nothing about a registry *you* publish
+  to.
 
 After that the disk updates with `bootc` like any other platform
 ([operations.md](operations.md)).

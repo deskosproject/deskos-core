@@ -161,6 +161,19 @@ func TestAValueThatCannotBeReadIsReportedAndNotCountedAsADifference(t *testing.T
 	}
 }
 
+func TestCheckSaysItDoesNotReadTheBinariesItInstalls(t *testing.T) {
+	// The binaries are files the plan installs, and this check does not read them: it
+	// has to say so, or its list of what it covers reads as if it did (docs/adr/0018).
+	p := parsePlan(t, planText(t, nil))
+	p.Artifact.Binaries = append(p.Artifact.Binaries, plan.VerifiedBinaryInstall{
+		Artifact: "deskos", Version: "0.12.0", Archive: "none",
+		SHA256: hash("deskos"), Destination: "/usr/local/bin/deskos", Mode: "0755"})
+	joined := strings.Join(evidence.DeclaredScope(p).NotChecked, "\n")
+	if !strings.Contains(joined, "the bytes of the binaries the plan installs (1)") {
+		t.Errorf("scope does not say the binaries are left out:\n%s", joined)
+	}
+}
+
 func TestCheckPublishesWhatItLeavesOut(t *testing.T) {
 	// The scope is part of the answer: a check that only listed what it looks at would
 	// read as if it measured everything (docs/adr/0018).
