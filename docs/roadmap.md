@@ -60,8 +60,9 @@ each slice is reviewed on its own:
   `main`, builds, scans and boots each platform's image and then pushes and
   signs it to that platform's repository
   (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …) as `:latest` and
-  `:<commit>`. CentOS Stream 10 and AlmaLinux 10 today. **No dispatch has run
-  yet, so nothing is published**, and the older single repository
+  `:<commit>`. CentOS Stream 10, AlmaLinux 10 and Ubuntu 26.04 today, with the
+  digests and the run in [architecture.md](architecture.md#validation-status), and
+  the older single repository
   (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
   pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
