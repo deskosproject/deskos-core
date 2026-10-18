@@ -1,0 +1,11 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-ubuntu-2604
+spec:
+  displayName: DeskOS Core (Ubuntu 26.04 LTS)
+  platformRef: ubuntu-2604
+  # Core's foundation only. No rhel-family profile: an Ubuntu workstation must
+  # not carry firewalld, an RPM-named browser or an RPM application channel.
+  profiles:
+    - deskos-core

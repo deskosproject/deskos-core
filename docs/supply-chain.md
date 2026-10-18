@@ -36,8 +36,8 @@ intent, not installed content.
 
 ```bash
 deskosctl sbom ./examples/baseline-and-role \
-  --workstation example-devops-rhel10 \
-  --output dist/example-devops-rhel10.sbom.cdx.json
+  --workstation example-devops-rhel-10 \
+  --output dist/example-devops-rhel-10.sbom.cdx.json
 ```
 
 ### The installed SBOM and the CVE scan
@@ -48,10 +48,10 @@ image**, because only then do package versions and file contents exist:
 ```bash
 # Build the Core image from its rendered context.
 mkdir -p dist
-deskosctl render --workstation deskos-core-centos10 --output dist/deskos-core-centos10
-sudo podman build -t localhost/deskos-core-centos10:test dist/deskos-core-centos10
+deskosctl render --workstation deskos-core-centos-stream-10 --output dist/deskos-core-centos-stream-10
+sudo podman build -t localhost/deskos-core-centos-stream-10:test dist/deskos-core-centos-stream-10
 
-image=localhost/deskos-core-centos10:test
+image=localhost/deskos-core-centos-stream-10:test
 syft "$image" -o cyclonedx-json > installed.sbom.cdx.json
 grype "$image" -o table
 grype "$image" -o json > cves.json
@@ -141,8 +141,8 @@ names. Do not use `--insecure-ignore-tlog` on this path.
 
 ```bash
 # One repository per platform and release:
-# quay.io/deskos/deskos-core-centos10, -almalinux10, …
-ref=quay.io/deskos/deskos-core-centos10@sha256:…
+# quay.io/deskos/deskos-core-centos-stream-10, -almalinux-10, …
+ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
 identity='^https://github\.com/deskosproject/deskos-core/'
 

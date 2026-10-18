@@ -72,7 +72,7 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
   what intact: the base is the platform's, and DeskOS does not maintain a desktop it
   cannot deliver.
 - Removing the app menu token changes an existing plan
-  (`example-devops-rhel10`: `'appmenu:close'` becomes `':close'` — the close button
+  (`example-devops-rhel-10`: `'appmenu:close'` becomes `':close'` — the close button
   stays on the right, where it was), which was reviewed as a golden diff. The side is
   asserted by its own test, because a golden that compares only the produced string
   would not catch a swap of the two sides.

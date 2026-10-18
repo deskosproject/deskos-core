@@ -1,0 +1,13 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-core-fedora-44
+spec:
+  displayName: DeskOS Core (Fedora 44)
+  platformRef: fedora-44
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - fedora
+    - deskos-look
+    - deskos-reference-apps

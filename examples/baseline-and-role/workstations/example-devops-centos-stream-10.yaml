@@ -1,0 +1,15 @@
+# Same composition on the public platform, buildable without a subscription.
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-devops-centos-stream-10
+spec:
+  displayName: Example DevOps Workstation
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - rhel-family
+    - deskos-look
+    - example-baseline
+    - example-devops

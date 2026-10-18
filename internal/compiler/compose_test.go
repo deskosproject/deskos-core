@@ -860,7 +860,7 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 		return strings.Contains(strings.Join(packages(p), " "), "gnome-shell-extension-dash-to-dock")
 	}
 	t.Run("core", func(t *testing.T) {
-		p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
+		p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 		if v, ok := dconf(p, "/org/gnome/shell/favorite-apps"); ok {
 			t.Errorf("Core writes favorite-apps = %s", v)
 		}

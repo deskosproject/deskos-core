@@ -15,7 +15,7 @@ The installer runs `bootc switch` to the reference the ISO is built from, so
 they can pull.
 
 - For the CentOS Stream 10 image: pull it from
-  `quay.io/deskos/deskos-core-centos10:latest`, or use the one you built locally,
+  `quay.io/deskos/deskos-core-centos-stream-10:latest`, or use the one you built locally,
   and use that reference in the build command below.
   [architecture.md](architecture.md#validation-status) carries the digest the last
   `publish=true` dispatch published.
@@ -24,7 +24,7 @@ they can pull.
   tag you never pushed, leaves them *without an update source*:
 
   ```bash
-  deskosctl render --workstation deskos-core-centos10 --output ctx
+  deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
   sudo podman build -t registry.example.com/deskos/core:stable ctx
   sudo podman push registry.example.com/deskos/core:stable
   ```

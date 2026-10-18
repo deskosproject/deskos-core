@@ -207,7 +207,7 @@ declares `go 1.26.0`, and Go 1.26 is the oldest supported release, so
 
 ## Visual identity and boot (2026-09-28)
 
-Checked in `localhost/deskos-core-centos10:freeze`:
+Checked in `localhost/deskos-core-centos-stream-10:freeze`:
 
 | Package | Version |
 |---|---|
@@ -282,7 +282,7 @@ Checked in `localhost/deskos-core-centos10:freeze`:
   (default false); `src/libply/ply-key-file.c` skips `#` lines. The
   spinner frames are owned by `plymouth-theme-spinner`, the spinner
   watermark by `centos-logos`. A scratch build of the DeskOS theme and
-  initramfs steps on `localhost/deskos-core-centos10:freeze` gave
+  initramfs steps on `localhost/deskos-core-centos-stream-10:freeze` gave
   `Theme=deskos` in the image and the initramfs, only the `deskos`,
   `details` and `text` themes in the initramfs, and `rpm -V` changes only
   in `plymouthd.conf`.

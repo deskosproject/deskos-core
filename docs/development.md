@@ -38,7 +38,7 @@ Inspect the public CentOS reference workstation:
 
 ```bash
 ./bin/deskosctl plan \
-  --workstation deskos-core-centos10
+  --workstation deskos-core-centos-stream-10
 ```
 
 Add `--format json` to print the canonical plan.
@@ -51,19 +51,19 @@ Contributors build the image from their checkout instead of pulling it.
 
    ```bash
    ./bin/deskosctl render \
-     --workstation deskos-core-centos10 \
+     --workstation deskos-core-centos-stream-10 \
      --backend containerfile \
-     --output ./dist/deskos-core-centos10
+     --output ./dist/deskos-core-centos-stream-10
    ```
 
 2. Build it with **rootful Podman**, so bootc-image-builder can read it:
 
    ```bash
-   sudo podman build -t localhost/deskos-core-centos10 ./dist/deskos-core-centos10
+   sudo podman build -t localhost/deskos-core-centos-stream-10 ./dist/deskos-core-centos-stream-10
    ```
 
 The QCOW2 and ISO commands in [Installing DeskOS](install.md) work
-unchanged with `localhost/deskos-core-centos10` as the image reference.
+unchanged with `localhost/deskos-core-centos-stream-10` as the image reference.
 [tests/vm/README.md](../tests/vm/README.md) boots the disk and checks the
 GNOME session against the plan.
 
@@ -77,11 +77,11 @@ DeskOS resources *without copying them*; see
 
 ```bash
 ./bin/deskosctl plan ./examples/baseline-and-role \
-  --workstation example-devops-rhel10
+  --workstation example-devops-rhel-10
 
 ./bin/deskosctl render ./examples/baseline-and-role \
-  --workstation example-devops-rhel10 \
-  --output ./dist/example-devops-rhel10
+  --workstation example-devops-rhel-10 \
+  --output ./dist/example-devops-rhel-10
 ```
 
 > [!IMPORTANT]
@@ -124,7 +124,7 @@ Core needs no mount but the output directory:
 mkdir -p out
 podman run --rm --userns=keep-id -v "$PWD/out":/out:z \
     quay.io/deskos/deskosctl:latest render \
-    --workstation deskos-core-centos10 --output /out
+    --workstation deskos-core-centos-stream-10 --output /out
 ```
 
 Your own resources are an **extra** root — one that adds resources, not one that

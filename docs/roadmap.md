@@ -12,7 +12,7 @@ organization.
 
 ## Milestone 1: entitled RHEL 10 build and boot validation
 
-- **Done (retired):** entitled build of `example-devops-rhel10` on a pinned
+- **Done (retired):** entitled build of `example-devops-rhel-10` on a pinned
   base (image `0e65bf4b...`), lint passed, all layers scanned free of
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
@@ -59,7 +59,7 @@ each slice is reviewed on its own:
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots each platform's image and then pushes and
   signs it to that platform's repository
-  (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …) as `:latest` and
+  (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, …) as `:latest` and
   `:<commit>`. CentOS Stream 10, AlmaLinux 10 and Ubuntu 26.04 today, with the
   digests and the run in [architecture.md](architecture.md#validation-status), and
   the older single repository
@@ -70,11 +70,11 @@ each slice is reviewed on its own:
 - **A second Fedora release — plan, not policy.** DeskOS offers **Fedora 44**
   only: `:45` was a prerelease when it was measured and its base enables
   `updates-testing`, so it stays an example-only evaluation
-  (`examples/core-fedora-45/`, its own Platform resource, no reference
+  (`examples/fedora-45/`, its own Platform resource, no reference
   workstation, no image, **not built**). *When* a second Fedora release is
   supported, the plan is the current release plus the previous one: a platform
   resource and a re-pinned digest each, a re-validation each, a **separate image
-  repository** each (`quay.io/deskos/deskos-core-fedora44`, so a release cannot
+  repository** each (`quay.io/deskos/deskos-core-fedora-44`, so a release cannot
   change under a machine at `bootc upgrade`), and the older platform retired
   then. Re-pinning and re-validation are **manual**, like every other base pin
   ([platforms.md](platforms.md)). The trigger — how DeskOS learns a release is
@@ -129,14 +129,14 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
-- ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux10` in
-  `vm-bootcheck.yml` builds and boots `example-core-almalinux-10` with the boot,
+- ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux-10` in
+  `vm-bootcheck.yml` builds and boots `example-almalinux-10` with the boot,
   session and first-boot checks ([platforms.md](platforms.md)).
 - ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs
   `sessioncheck.py` on the Ubuntu disk beside the boot and first-boot checks
   ([platforms.md](platforms.md)). ~~Whether DeskOS publishes the Ubuntu
   derivative, and where~~ decided: it does, as
-  `quay.io/deskos/deskos-core-ubuntu2604`, for a person who asked for Ubuntu
+  `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
   support. Ubuntu and Fedora get no investment beyond that and are reviewed from
   time to time; the effort stays on the EL 10 path.
 - The **splash race**: on one disk, a first boot showed text for the whole boot

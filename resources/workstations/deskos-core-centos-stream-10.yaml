@@ -1,0 +1,13 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-core-centos-stream-10
+spec:
+  displayName: DeskOS Core (CentOS Stream 10)
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - rhel-family
+    - deskos-look
+    - deskos-reference-apps

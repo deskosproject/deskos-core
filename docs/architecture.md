@@ -35,7 +35,7 @@ reconcile deployed endpoint state.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos10, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as Workstation and Profiles in layers, deskosctl validates, composes, plans and renders a deterministic build context, podman builds a bootc image per platform — CentOS Stream 10, whose planned destination is quay.io/deskos/deskos-core-centos-stream-10, RHEL 10 built privately with a subscription and not published, and Ubuntu 26.04 on a base owned by the Project DeskOS rather than by its vendor, which is what its organization support tier means — then bootc-image-builder makes QCOW2 disks and installer ISOs from the EL images, and bootc install to-disk writes an Ubuntu disk" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -271,8 +271,8 @@ not alter package behavior to silence them.
 
 ## Public CentOS, private RHEL
 
-The public reference workstation `deskos-core-centos10` is
-redistributable and is the source of `quay.io/deskos/deskos-core-centos10`.
+The public reference workstation `deskos-core-centos-stream-10` is
+redistributable and is the source of `quay.io/deskos/deskos-core-centos-stream-10`.
 
 > [!IMPORTANT]
 > RHEL-derived images are covered by the RHEL EULA and are **never
@@ -335,9 +335,9 @@ account the upstream container image ships suppressing the wizard — is in
   (`quay.io/deskos/deskos-core`, run `37162282876`, commit `8ab0cc9`) is withdrawn and
   replaced by one repository per platform, published by the gate's `publish=true`
   dispatch (run `39067812799`, commit `e21c4f7`):
-  `quay.io/deskos/deskos-core-centos10` at `sha256:39dff937…`,
-  `quay.io/deskos/deskos-core-almalinux10` at `sha256:f28062cc…` and
-  `quay.io/deskos/deskos-core-ubuntu2604` at `sha256:f1c40dd4…`, each with `:latest`
+  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:39dff937…`,
+  `quay.io/deskos/deskos-core-almalinux-10` at `sha256:f28062cc…` and
+  `quay.io/deskos/deskos-core-ubuntu-2604` at `sha256:f1c40dd4…`, each with `:latest`
   and the commit tag at the same digest. `cosign verify` with the workflow issuer and
   this repository's identity passes on all three, with the SBOM, accepted-exception
   and effective-exception attestations bound to that digest. The organization-owned
@@ -354,8 +354,8 @@ account the upstream container image ships suppressing the wizard — is in
   enabled, unlike Fedora's minimal `fedora-bootc` base), and the Plymouth spinner
   frames. `deskosctl validate` and `go test` cover composition and rendering, and
   `ci.yml` renders the reference workstation. **Two images were built here, both
-  on 44**: the reference workstation `deskos-core-fedora44` (image
-  `5b44f2829d1e`) and the example `example-core-fedora-44` (image
+  on 44**: the reference workstation `deskos-core-fedora-44` (image
+  `5b44f2829d1e`) and the example `example-fedora-44` (image
   `c384826141cf`). The group transaction installed 395 packages (277 more marked
   as group members, 341 MiB); the built image selects the DeskOS Plymouth theme
   with the DeskOS frames inside the rebuilt initramfs; `bootc container lint`
@@ -366,7 +366,7 @@ account the upstream container image ships suppressing the wizard — is in
   platform ([platforms.md](platforms.md)). **Not measured: any boot.** No Fedora
   disk has been booted, so there is **no** GNOME, session or first-boot evidence
   for this platform, and no published Fedora image.
-- **Flatpak preinstall (RHEL).** `example-devops-rhel10` declares no Flatpaks; a
+- **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
   session bus), and its booted disk had no failed preinstall unit.
@@ -738,8 +738,8 @@ reserved in the Plan and not implemented.
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
 - **Published today: the container image, per platform.** It goes to one
-  repository per platform (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`,
-  `-ubuntu2604`), and the digests the last dispatch published, with the run that
+  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`,
+  `-ubuntu-2604`), and the digests the last dispatch published, with the run that
   produced them, are under
   [Validation status](#validation-status) on this page. Publishing is manual: the
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
