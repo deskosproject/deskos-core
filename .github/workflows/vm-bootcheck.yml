@@ -68,7 +68,7 @@ env:
   # would have to keep in step with.
 
 jobs:
-  core-centos10:
+  core-centos-stream-10:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     strategy:
@@ -85,7 +85,7 @@ jobs:
         include:
           - workstation: deskos-core-centos-stream-10
             root: ""
-            artifact: vm-evidence-core-centos10
+            artifact: vm-evidence-core-centos-stream-10
             image: localhost/deskos-core-centos-stream-10:ci
           - workstation: example-devops-centos-stream-10
             root: examples/baseline-and-role
@@ -256,7 +256,7 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
-  core-almalinux10:
+  core-almalinux-10:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
@@ -380,7 +380,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: vm-evidence-core-almalinux10
+          name: vm-evidence-core-almalinux-10
           path: |
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck

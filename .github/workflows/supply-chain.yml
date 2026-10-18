@@ -67,21 +67,21 @@ jobs:
         # platform's disk is not a gate, and a new platform must not be able to
         # silently inherit another's disk path and skip its own boot check.
         include:
-          - token: centos10
+          - token: centos-stream-10
             workstation: deskos-core-centos-stream-10
             exceptions: tests/supply-chain/exceptions.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true
-          - token: almalinux10
+          - token: almalinux-10
             workstation: deskos-core-almalinux-10
-            exceptions: tests/supply-chain/exceptions-almalinux10.json
+            exceptions: tests/supply-chain/exceptions-almalinux-10.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true
-          - token: ubuntu2604
+          - token: ubuntu-2604
             workstation: deskos-core-ubuntu-2604
-            exceptions: tests/supply-chain/exceptions-ubuntu2604.json
+            exceptions: tests/supply-chain/exceptions-ubuntu-2604.json
             disk: bootc-install
             diskfile: disk.raw
             splash: false

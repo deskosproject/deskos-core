@@ -142,7 +142,7 @@ sudo podman run --rm --privileged --pull=missing \
 
 Publishing is **per platform**, one repository each: `supply-chain.yml` with
 `publish=true` sends the image to `quay.io/deskos/deskos-core-centos-stream-10`,
-`-almalinux10`, `-ubuntu2604`, and so on, after the gate has built, scanned and
+`-almalinux-10`, `-ubuntu-2604`, and so on, after the gate has built, scanned and
 booted it. The digests published with their run are in
 [docs/architecture.md](docs/architecture.md#validation-status); the older single
 repository (`quay.io/deskos/deskos-core`) has been withdrawn. Rendering is deterministic — the same inputs
@@ -238,7 +238,8 @@ came from.
 
 Pre-1.0 and experimental: the resource APIs are `v1alpha1` and will change.
 Publishing goes to **one repository per platform** (`deskos-core-centos-stream-10`,
-`-almalinux10`, …); nothing has been published yet. The platform matrix, with what is
+`-almalinux-10`, …), after the gate built, scanned and booted each one.
+The platform matrix, with what is
 verified on each and how to install it, is [**docs/platforms.md**](docs/platforms.md).
 
 > [!IMPORTANT]

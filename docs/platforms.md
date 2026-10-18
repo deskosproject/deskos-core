@@ -9,7 +9,7 @@ DeskOS compiles the same Core intent onto a platform's own bootc base
 publishes no bootc base may be added as an organization-owned base with a named
 owner and a declared tier ([ADR 0014](adr/0014-platform-base-ownership.md)) —
 Ubuntu is that case. Publishing goes to one repository per platform
-(`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux10`, `-ubuntu2604`), and the
+(`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, `-ubuntu-2604`), and the
 three below that are published carry the digest and the run that verified them in
 [architecture.md](architecture.md#validation-status). RHEL is never published, and
 Fedora is not yet.

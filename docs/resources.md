@@ -14,7 +14,7 @@ schemas and composition) *without requiring Kubernetes*.
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: example-developer-centos10
+  name: example-developer-centos-stream-10
 spec:
   platformRef: centos-stream-10
   profiles:

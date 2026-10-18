@@ -59,7 +59,7 @@ each slice is reviewed on its own:
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots each platform's image and then pushes and
   signs it to that platform's repository
-  (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux10`, …) as `:latest` and
+  (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, …) as `:latest` and
   `:<commit>`. CentOS Stream 10, AlmaLinux 10 and Ubuntu 26.04 today, with the
   digests and the run in [architecture.md](architecture.md#validation-status), and
   the older single repository
@@ -129,7 +129,7 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
-- ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux10` in
+- ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux-10` in
   `vm-bootcheck.yml` builds and boots `example-almalinux-10` with the boot,
   session and first-boot checks ([platforms.md](platforms.md)).
 - ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs

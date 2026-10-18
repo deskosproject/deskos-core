@@ -738,8 +738,8 @@ reserved in the Plan and not implemented.
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
 - **Published today: the container image, per platform.** It goes to one
-  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux10`,
-  `-ubuntu2604`), and the digests the last dispatch published, with the run that
+  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`,
+  `-ubuntu-2604`), and the digests the last dispatch published, with the run that
   produced them, are under
   [Validation status](#validation-status) on this page. Publishing is manual: the
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes

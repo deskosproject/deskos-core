@@ -115,7 +115,7 @@ jobs:
           # The Fedora reference workstation renders: its platform is shipped and its
           # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
           # fails here rather than in a build nobody runs on a pull request.
-          ./bin/deskosctl render --workstation deskos-core-fedora-44 --output dist/fedora44
+          ./bin/deskosctl render --workstation deskos-core-fedora-44 --output dist/fedora-44
           # The Ubuntu reference renders too: it is what its publish leg builds,
           # and its context is pinned by a golden.
           ./bin/deskosctl render --workstation deskos-core-ubuntu-2604 --output dist/ubuntu-ref

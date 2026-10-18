@@ -120,13 +120,13 @@ install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 ```
 
 **2. Declare a RHEL 10 workstation** in a resource root of your own, for
-example `my-org/workstations/core-rhel10.yaml`:
+example `my-org/workstations/core-rhel-10.yaml`:
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: deskos-core-rhel10
+  name: deskos-core-rhel-10
 spec:
   displayName: DeskOS Core (RHEL 10)
   platformRef: rhel-10
@@ -150,9 +150,9 @@ organization**:
 
 ```bash
 ./bin/deskosctl render ./my-org \
-    --workstation deskos-core-rhel10 --output ./dist/deskos-core-rhel10
-sudo podman build -t registry.example.com/deskos/core-rhel10:latest \
-    ./dist/deskos-core-rhel10
+    --workstation deskos-core-rhel-10 --output ./dist/deskos-core-rhel-10
+sudo podman build -t registry.example.com/deskos/core-rhel-10:latest \
+    ./dist/deskos-core-rhel-10
 ```
 
 **4. Make the QCOW2** (or the ISO, as above) with the **RHEL** builder:
@@ -166,7 +166,7 @@ sudo podman run --rm -it --privileged --pull=missing \
     registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
-    registry.example.com/deskos/core-rhel10:latest
+    registry.example.com/deskos/core-rhel-10:latest
 ```
 
 In the image DeskOS builds and tests, every layer is free of the build
@@ -205,8 +205,8 @@ itself, so a build needs no entitlement. DeskOS publishes no Fedora image. Get
 
 ```bash
 ./bin/deskosctl render \
-    --workstation deskos-core-fedora-44 --output ./dist/fedora44
-sudo podman build -t localhost/deskos-core-fedora-44:test ./dist/fedora44
+    --workstation deskos-core-fedora-44 --output ./dist/fedora-44
+sudo podman build -t localhost/deskos-core-fedora-44:test ./dist/fedora-44
 ```
 
 `examples/fedora-44/` is the minimal example (Core and the family profile

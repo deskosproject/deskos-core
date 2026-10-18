@@ -156,16 +156,16 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
 		"c.yaml": ws("core-alma", "almalinux-10"),
-		"d.yaml": ws("core-fedora44", "fedora-44"),
-		"e.yaml": ws("core-fedora45", "fedora-45"),
+		"d.yaml": ws("core-fedora-44", "fedora-44"),
+		"e.yaml": ws("core-fedora-45", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	fedora44 := mustPlan(t, "core-fedora44", resourcesRoot, dir)
+	fedora44 := mustPlan(t, "core-fedora-44", resourcesRoot, dir)
 	// Fedora 45 is an evaluation, not a shipped platform, so its Platform resource
 	// comes from the example root that carries it.
-	fedora45 := mustPlan(t, "core-fedora45", resourcesRoot, fedora45Root, dir)
+	fedora45 := mustPlan(t, "core-fedora-45", resourcesRoot, fedora45Root, dir)
 	for _, p := range []*plan.Plan{rhel, alma, fedora44, fedora45} {
 		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
