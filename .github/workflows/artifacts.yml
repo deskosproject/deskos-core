@@ -43,13 +43,13 @@ jobs:
           # The reference organization on RHEL 10: one BinaryArtifact and four signed
           # repositories, which is where a version bump goes wrong.
           - example: examples/baseline-and-role
-            workstation: example-devops-rhel10
+            workstation: example-devops-rhel-10
           # The minimal ones declare no artifact, and that is worth checking too: a
           # plan that declares nothing must not be reported as a failure.
-          - example: examples/core-centos-stream-10
-            workstation: example-core-centos-stream-10
-          - example: examples/core-ubuntu-2604
-            workstation: example-core-ubuntu-2604
+          - example: examples/centos-stream-10
+            workstation: example-centos-stream-10
+          - example: examples/ubuntu-2604
+            workstation: example-ubuntu-2604
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7

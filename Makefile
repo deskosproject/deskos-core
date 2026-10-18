@@ -35,30 +35,30 @@ check: fmt-check vet test validate
 
 validate: build
 	$(BIN) validate $(EXAMPLE)
-	$(BIN) validate ./examples/core-centos-stream-10
-	$(BIN) validate ./examples/core-almalinux-10
-	$(BIN) validate ./examples/core-rhel-10
+	$(BIN) validate ./examples/centos-stream-10
+	$(BIN) validate ./examples/almalinux-10
+	$(BIN) validate ./examples/rhel-10
 # Fedora 44 is an offered platform (resources/platforms/); Fedora 45 is an
 # example-only prerelease evaluation, not an offered platform.
-	$(BIN) validate ./examples/core-fedora-44
-	$(BIN) validate ./examples/core-fedora-45
-	$(BIN) validate ./examples/core-ubuntu-2604
+	$(BIN) validate ./examples/fedora-44
+	$(BIN) validate ./examples/fedora-45
+	$(BIN) validate ./examples/ubuntu-2604
 
 plan-centos: build
-	$(BIN) plan --workstation deskos-core-centos10
+	$(BIN) plan --workstation deskos-core-centos-stream-10
 
 plan-example: build
-	$(BIN) plan $(EXAMPLE) --workstation example-devops-rhel10
+	$(BIN) plan $(EXAMPLE) --workstation example-devops-rhel-10
 
 render-centos: build
-	$(BIN) render --workstation deskos-core-centos10 --backend containerfile --output dist/deskos-core-centos10
+	$(BIN) render --workstation deskos-core-centos-stream-10 --backend containerfile --output dist/deskos-core-centos-stream-10
 
 render-example: build
-	$(BIN) render $(EXAMPLE) --workstation example-devops-rhel10 --backend containerfile --output dist/example-devops-rhel10
+	$(BIN) render $(EXAMPLE) --workstation example-devops-rhel-10 --backend containerfile --output dist/example-devops-rhel-10
 
 sbom-example: build
 	mkdir -p dist
-	$(BIN) sbom $(EXAMPLE) --workstation example-devops-rhel10 --output dist/example-devops-rhel10.sbom.cdx.json
+	$(BIN) sbom $(EXAMPLE) --workstation example-devops-rhel-10 --output dist/example-devops-rhel-10.sbom.cdx.json
 
 golden:
 	$(GO) test ./internal/compiler -update

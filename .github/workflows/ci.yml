@@ -38,18 +38,18 @@ jobs:
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples
         run: |
-          for ex in baseline-and-role core-centos-stream-10 core-almalinux-10 core-rhel-10 core-ubuntu-2604; do
+          for ex in baseline-and-role centos-stream-10 almalinux-10 rhel-10 ubuntu-2604; do
             ./bin/deskosctl validate "./examples/$ex"
           done
       - name: plan CentOS reference workstation
-        run: ./bin/deskosctl plan --workstation deskos-core-centos10
+        run: ./bin/deskosctl plan --workstation deskos-core-centos-stream-10
       - name: plan per-platform examples
         run: |
-          ./bin/deskosctl plan ./examples/core-centos-stream-10 --workstation example-core-centos-stream-10
-          ./bin/deskosctl plan ./examples/core-almalinux-10 --workstation example-core-almalinux-10
-          ./bin/deskosctl plan ./examples/core-rhel-10 --workstation example-core-rhel-10
+          ./bin/deskosctl plan ./examples/centos-stream-10 --workstation example-centos-stream-10
+          ./bin/deskosctl plan ./examples/almalinux-10 --workstation example-almalinux-10
+          ./bin/deskosctl plan ./examples/rhel-10 --workstation example-rhel-10
       - name: plan example RHEL workstation
-        run: ./bin/deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel10
+        run: ./bin/deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel-10
       - name: the pinned bases exist in their registries
         timeout-minutes: 10
         run: |
@@ -101,24 +101,24 @@ jobs:
         run: |
           # The embedded Core, twice (determinism), and a Core passed in two
           # orders with --no-core (order independence), all identical.
-          for ws in deskos-core-centos10 example-devops-rhel10; do
+          for ws in deskos-core-centos-stream-10 example-devops-rhel-10; do
             ./bin/deskosctl render ./examples/baseline-and-role --workstation "$ws" --output "dist/a/$ws"
             ./bin/deskosctl render ./examples/baseline-and-role --workstation "$ws" --output "dist/b/$ws"
             ./bin/deskosctl render --no-core ./resources ./examples/baseline-and-role --workstation "$ws" --output "dist/c/$ws"
             ./bin/deskosctl render --no-core ./examples/baseline-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
           done
           # The AlmaLinux example renders too: its platform is shipped.
-          ./bin/deskosctl render ./examples/core-almalinux-10 --workstation example-core-almalinux-10 --output dist/alma
+          ./bin/deskosctl render ./examples/almalinux-10 --workstation example-almalinux-10 --output dist/alma
           # The AlmaLinux reference workstation renders too: it is what the
           # publish path builds, and its Containerfile is pinned by a golden.
-          ./bin/deskosctl render --workstation deskos-core-almalinux10 --output dist/alma-ref
+          ./bin/deskosctl render --workstation deskos-core-almalinux-10 --output dist/alma-ref
           # The Fedora reference workstation renders: its platform is shipped and its
           # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
           # fails here rather than in a build nobody runs on a pull request.
-          ./bin/deskosctl render --workstation deskos-core-fedora44 --output dist/fedora44
+          ./bin/deskosctl render --workstation deskos-core-fedora-44 --output dist/fedora-44
           # The Ubuntu reference renders too: it is what its publish leg builds,
           # and its context is pinned by a golden.
-          ./bin/deskosctl render --workstation deskos-core-ubuntu2604 --output dist/ubuntu-ref
+          ./bin/deskosctl render --workstation deskos-core-ubuntu-2604 --output dist/ubuntu-ref
           diff -r dist/a dist/b
           diff -r dist/a dist/c
           diff -r dist/a dist/d

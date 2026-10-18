@@ -192,7 +192,7 @@ func TestUpdatePolicyComposition(t *testing.T) {
 // The generated units only stage the image or update Flatpaks: the content
 // is fixed, and nothing that reboots or applies is ever rendered.
 func TestUpdatePolicyUnits(t *testing.T) {
-	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +225,7 @@ func TestUpdatePolicyUnits(t *testing.T) {
 		t.Errorf("flatpak update without requireACPower has an AC condition:\n%s", svc)
 	}
 
-	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
 	if err != nil {
 		t.Fatal(err)
 	}

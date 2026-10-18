@@ -80,7 +80,7 @@ jobs:
           mkdir -p smoke-out
           podman run --rm -v "$PWD/smoke-out:/out:z" \
             "quay.io/deskos/deskosctl:$TAG" render \
-            --workstation deskos-core-centos10 --output /out
+            --workstation deskos-core-centos-stream-10 --output /out
           test -f smoke-out/Containerfile
 
       - name: The image renders what the repository pins
@@ -91,6 +91,6 @@ jobs:
         # Measured before this workflow existed: both files come out byte-identical.
         run: |
           diff smoke-out/Containerfile \
-            internal/compiler/testdata/golden/deskos-core-centos10.Containerfile
+            internal/compiler/testdata/golden/deskos-core-centos-stream-10.Containerfile
           diff smoke-out/plan.json \
-            internal/compiler/testdata/golden/deskos-core-centos10.plan.json
+            internal/compiler/testdata/golden/deskos-core-centos-stream-10.plan.json
