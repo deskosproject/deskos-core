@@ -108,7 +108,7 @@ ARTIFACT
 
 `plan` prints what the image will contain and **where each value came from**. To
 author your own machine, copy the
-[example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/baseline-and-role)
+[example organization](https://github.com/deskosproject/deskos-core/tree/main/examples/organization-and-role)
 — a `Workstation` plus the profiles it is made of — and point `deskosctl` at that
 directory. Building the image and a disk needs `podman` and root; that is the
 rest of the [Quickstart](#quickstart).
@@ -180,7 +180,7 @@ spec:
   profiles:
     - deskos-core        # foundation: packages and the update policy
     - deskos-gnome       # foundation: DeskOS's GNOME defaults
-    - example-baseline   # organization
+    - example-organization   # organization
     - example-devops     # role
 ```
 
@@ -207,7 +207,7 @@ file order. Here the organization shortens Core's screen blank from `10m` to `5m
 apiVersion: desktop.deskos.org/v1alpha1
 kind: GnomeProfile
 metadata:
-  name: example-desktop      # included by example-baseline (organization)
+  name: example-desktop      # included by example-organization (organization)
 spec:
   defaults:
     session:

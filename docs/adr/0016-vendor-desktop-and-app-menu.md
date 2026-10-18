@@ -63,9 +63,9 @@ default (`appmenu:close`, measured on CentOS Stream 10) that no profile declared
   there, so nothing is skipped.
 - **A workstation that wants DeskOS's GNOME defaults now asks for `deskos-gnome`.**
   This is a deliberate break for a consumer that pinned a release and selects
-  `deskos-core` alone: a flavor like DayTwo's RHEL workstations keeps its packages and
-  its update policy, and stops inheriting the session lock, the idle timeout and the
-  software-update policy until it adds the profile. The release notes name it, and the
+  `deskos-core` alone: a flavor that keeps its own packages and its own update policy
+  stops inheriting the session lock, the idle timeout and the software-update policy
+  until it adds the profile. The release notes name it, and the
   profile is additive, so the change is one line per workstation.
 - Anything that must still reach the user on Ubuntu has to be delivered the vendor's
   way, which keeps [ADR 0014](0014-platform-base-ownership.md)'s split of who owns

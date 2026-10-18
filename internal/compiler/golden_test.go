@@ -19,7 +19,7 @@ var update = flag.Bool("update", false, "rewrite golden files")
 
 const (
 	resourcesRoot = "../../resources"
-	exampleRoot   = "../../examples/baseline-and-role"
+	exampleRoot   = "../../examples/organization-and-role"
 	// ubuntuRoot is the Ubuntu example, which carries the second package
 	// manager's vendor source.
 	ubuntuRoot = "../../examples/ubuntu-2604"
