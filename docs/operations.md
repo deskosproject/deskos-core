@@ -114,7 +114,8 @@ to `deskosctl`, with the same checksum coverage, and **every Core image carries 
 Core declares a pinned `BinaryArtifact` for the release asset, so `/usr/local/bin/deskos`
 is on the machine and nobody has to install a tool to ask what it was built from
 (`/usr/local/bin`, because the model lets a `BinaryArtifact` write only there). The pin
-lands with the first release that ships the binary.
+is `resources/software/deskos.yaml`, and it moves like any other pin: a release
+publishes an asset, and the pin is bumped to it deliberately.
 
 ```bash
 deskos report        # what this machine was built from, read from the plan the image carries

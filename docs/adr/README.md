@@ -28,3 +28,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0016: A platform that keeps its vendor's desktop, and no assumed app menu](0016-vendor-desktop-and-app-menu.md) | accepted |
 | [0017: Extensions a profile may turn on, a Flatpak remote a workstation may retire, and the power button](0017-extensions-flatpak-remote-and-power-button.md) | accepted |
 | [0018: `deskos`, the runtime companion to `deskosctl`](0018-the-runtime-companion.md) | accepted |
+| [0019: A platform says whether its base can fetch](0019-a-platform-says-whether-its-base-can-fetch.md) | accepted |

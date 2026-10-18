@@ -183,6 +183,46 @@ reads them stays inside the tmpfiles.d argument cap as plans grow
 `edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at
 most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
 
+### Every binary the plan installs
+
+A binary the plan installs is a declaration like any other, so it gets an
+assertion. The plan carries each one's destination, its mode and the checksum its
+download was verified against at build time; the guest reads the file where it
+landed and the host compares. **The claim is the file the plan installs**: one the
+build never wrote, one that is not an executable regular file, one replaced
+afterwards, and one that lost its declared mode are all differences, and each is
+named.
+
+What that claim can be depends on **what the plan pins**, and there are two cases:
+
+- a **single-file artifact** (`archive: none`): the plan's checksum *is* the
+  installed file's, so the bytes are compared and a mismatch fails;
+- an **archive** (`archive: tar.gz`): the plan pins the archive's checksum, and the
+  file inside it cannot be compared with it here — the build verified that download,
+  and the archive is gone by the time a session runs. The file is verified as
+  installed with its declared mode, and the report says which claim it could make.
+  Comparing the two anyway reported a difference that was not one, on the example
+  workstation's own `openshift-client`; the VM check found that itself, on a real
+  boot.
+
+The mode is asserted in both cases, because the plan declares it: the right bytes
+with the wrong mode is a file the user may not be able to run, which is not what the
+plan says it installs. `stat` prints `755` where the plan writes `0755`, so the
+leading zero is not a difference. A mode that could not be read is not a mode that
+differs: it is a read that did not happen, reported as one. Both reads follow a link,
+so a symlink to the installed file describes the file that runs; whether the
+destination is a link is not a declared fact, so it is not asserted.
+
+`session.json` carries `plan_binaries` (`declared`, `checksum_verified`,
+`install_verified`, `unreadable`, and the ones that failed with their detail), and
+`session.md` prints the counts. `unreadable` counts the binaries with a read this
+machine would not give up — the bytes, the mode, or both — and the detail says which:
+a check can be verified on one axis and unmeasured on another (an archive whose member
+could not be hashed is installed, and a file whose mode could not be read still has
+its bytes compared). That is a read that did not happen, which is not the same claim
+as a value that disagreed, and the summary says so instead of counting it as
+verified.
+
 ### Seeding the skeleton and showing the widgets
 
 Two optional flags reach the per-user state a desktop theme lives in:
