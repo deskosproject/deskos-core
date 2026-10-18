@@ -13,7 +13,7 @@ would.
 | [`fedora-44/`](fedora-44/) | the same on Fedora 44 (Silverblue), a base that carries no RHEL packages |
 | [`fedora-45/`](fedora-45/) | **an evaluation**: the next Fedora release, with its own `Platform` resource living inside this root |
 | [`ubuntu-2604/`](ubuntu-2604/) | a platform whose vendor publishes **no** bootc base (ADR 0014), and an organization's own signed package source (`example-ubuntu-2604-org-packages`) |
-| [`baseline-and-role/`](baseline-and-role/) | the **composition axis**: an organization baseline and a role, on two platforms (`example-devops-rhel-10`, `example-devops-centos-stream-10`) |
+| [`organization-and-role/`](organization-and-role/) | the **composition axis**: an organization baseline and a role, on two platforms (`example-devops-rhel-10`, `example-devops-centos-stream-10`) |
 
 ## How the names work
 
@@ -24,7 +24,7 @@ would.
   (`example-ubuntu-2604-org-packages`). The workstations this repository *ships* are
   `deskos-core-<platform>` instead: those are the ones a reader is meant to take
   ([resources/workstations/](../resources/workstations/)).
-- **`baseline-and-role/` is the exception**, and keeps a name about composition because it
+- **`organization-and-role/` is the exception**, and keeps a name about composition because it
   is not about one platform.
 
 ## Running one

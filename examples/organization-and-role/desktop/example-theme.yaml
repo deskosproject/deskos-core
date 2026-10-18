@@ -1,0 +1,41 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: Theme
+metadata:
+  name: example-theme
+spec:
+  # An organization's palette on top of Core's look. It is the third kind of thing a
+  # desktop is, next to the session basics and the artwork: the colors.
+  #
+  # Three deliberate omissions, each for a reason worth reading:
+  #
+  #  - no `wallpaper`: the GnomeProfile beside this file sets the organization's artwork,
+  #    and a Theme that says nothing about it does not fight it;
+  #  - no `fonts`: the same profile decides them, and two resources in one layer cannot
+  #    disagree about a key (ADR 0003) -- one of them would have to move, and the profile
+  #    is the one that also covers the interface and document fonts;
+  #  - no locks: a Theme layers like any other appearance setting, and this example is an
+  #    organization's choice, not an image-level rule.
+  mode: dark
+  # Any hex; it is mapped to the closest of GNOME's accents by hue, with a slate fallback
+  # for near-achromatic colors. This blue is the palette's own.
+  accent: "#7aa2f7"
+  # The palette generates named-color overrides for GTK4 and GTK3 under
+  # /etc/skel/.config/gtk-{4,3}.0/gtk.css, and -- because all six normal ANSI colors are
+  # here -- a Ptyxis terminal palette. Users the installer or GNOME Initial Setup create
+  # inherit both. The values are Tokyo Night's, cited rather than invented, because a
+  # palette that a person recognizes is easier to check against the real thing.
+  palette:
+    background: "#1a1b26"
+    foreground: "#a9b1d6"
+    black: "#15161e"
+    red: "#f7768e"
+    green: "#9ece6a"
+    yellow: "#e0af68"
+    blue: "#7aa2f7"
+    magenta: "#ad8ee6"
+    cyan: "#449dab"
+    white: "#c0caf5"
+  # Both are in the base and in every platform this repository ships, so the example does
+  # not depend on a package it forgets to declare.
+  iconTheme: Adwaita
+  cursorTheme: Adwaita

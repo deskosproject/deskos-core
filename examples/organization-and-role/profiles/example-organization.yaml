@@ -1,14 +1,18 @@
 apiVersion: core.deskos.org/v1alpha1
 kind: Profile
 metadata:
-  name: example-baseline
+  name: example-organization
 spec:
   layer: organization
   description: Example organization baseline for every workstation.
   resources:
     - kind: PackageSet
-      name: example-baseline
+      name: example-organization
     - kind: TrustAnchor
       name: example-root-ca
     - kind: GnomeProfile
       name: example-desktop
+    # The palette, as a Theme: the one kind this repository defined without a resource
+    # using it until now.
+    - kind: Theme
+      name: example-theme

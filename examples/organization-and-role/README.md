@@ -4,12 +4,12 @@ A **separate resource root** that composes an organization baseline and a
 role on top of DeskOS Core, referencing DeskOS resources by name:
 
 ```bash
-deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel-10
+deskosctl plan ./examples/organization-and-role --workstation example-devops-rhel-10
 ```
 
 | Resource | Contents |
 |---|---|
-| `example-baseline` (organization) | fonts, wallpaper, window controls, dock and idle/lock defaults for every workstation of the organization, and the organization root CA trusted through `TrustAnchor` |
+| `example-organization` (organization) | fonts, wallpaper, window controls, dock and idle/lock defaults for every workstation of the organization, and the organization root CA trusted through `TrustAnchor` |
 | `example-devops` (role) | containers, virtualization, Terraform, kubectl, VS Code, Chrome and the OpenShift CLI |
 | `example-devops-rhel-10` | the target |
 | `example-devops-centos-stream-10` | composes the same profiles on the public platform so it can be built without a subscription |

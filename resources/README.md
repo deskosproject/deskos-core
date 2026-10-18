@@ -2,7 +2,7 @@
 
 The resources **DeskOS Core ships**: the foundation a flavor references by name, the facts
 about each platform, and the reference workstations. An organization's own root adds its
-resources next to these, in whatever layout it likes — [`examples/baseline-and-role/`](../examples/baseline-and-role/)
+resources next to these, in whatever layout it likes — [`examples/organization-and-role/`](../examples/organization-and-role/)
 is the shape of one.
 
 The model behind them (envelopes, layers, schemas, how a set unions and a keyed definition
@@ -22,7 +22,7 @@ different things.
 
 Four kinds live **only in the examples**, which is worth knowing before hunting for them
 here: `RpmRepository` and `TrustAnchor` in
-[`examples/baseline-and-role/`](../examples/baseline-and-role/), and `AptRepository` in
+[`examples/organization-and-role/`](../examples/organization-and-role/), and `AptRepository` in
 [`examples/ubuntu-2604/`](../examples/ubuntu-2604/). `Theme` is the one kind this
 repository defines without a resource using it yet: its example in
 [`docs/resources.md`](../docs/resources.md) is illustrative, not a file here.

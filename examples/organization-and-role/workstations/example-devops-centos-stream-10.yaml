@@ -11,5 +11,5 @@ spec:
     - deskos-gnome
     - rhel-family
     - deskos-look
-    - example-baseline
+    - example-organization
     - example-devops

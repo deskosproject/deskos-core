@@ -25,6 +25,11 @@ They are few, and most confusion comes from two of them meaning more than one th
   examples that show how they are put together.
 - **Profile**: a layer of intent — `foundation`, `organization`, `role`, `workstation`. A
   profile selects resources; it does not describe a machine on its own.
+- **Baseline**: the boundary of what DeskOS manages at all — machine-wide software an
+  organization requires for any authorized user, complete before any user's home directory
+  exists (ADR 0005). It is **not** a layer and not a file: what an organization's own layer
+  carries is a profile with layer `organization`, and the example that shows it is
+  [`examples/organization-and-role/`](../examples/organization-and-role/).
 - **Resource**: the declarative unit you write, one of fourteen kinds ([Resources](resources.md)
   lists them all with an example).
 - **Desktop**: the GNOME part of a workstation, and the word covers three things that are
