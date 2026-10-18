@@ -85,7 +85,8 @@
       {
         "name": "workstation",
         "members": [
-          "ubuntu-desktop-minimal"
+          "ubuntu-desktop-minimal",
+          "curl"
         ],
         "provenance": [
           {

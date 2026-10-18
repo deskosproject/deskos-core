@@ -733,6 +733,15 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 				w("    [ -f %s ] && [ ! -L %s ] && [ \"$(stat -c %%h %s)\" = 1 ] || { echo %s >&2; exit 1; }; \\\n",
 					src, src, src, shq("archive member "+bin.Member+" is not a regular file"))
 			}
+			// The destination's directory must exist before install can write into it.
+			// `install -D` creates the parents, but it cannot traverse a `/usr/local`
+			// that is a dangling symlink: Debian and Ubuntu ship
+			// `/usr/local -> ../var/usrlocal`, and that target is created at boot by a
+			// bootc tmpfiles rule rather than by the base image (measured 2026-10-18 on
+			// the Ubuntu base, whose `install -D ... /usr/local/bin/deskos` failed with
+			// "cannot create directory"). `readlink -m` canonicalises without requiring
+			// existence, so the directory is created where the file will really land.
+			w("    mkdir -p \"$(readlink -m \"$(dirname %s)\")\"; \\\n", shq(bin.Destination))
 			w("    install -D -m %s %s %s; \\\n", bin.Mode, src, shq(bin.Destination))
 		}
 		w("    rm -rf \"$tmp\"\n")

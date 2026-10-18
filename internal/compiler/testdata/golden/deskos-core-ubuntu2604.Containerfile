@@ -10,6 +10,7 @@ RUN \
     apt-get update \
     && apt-get -y install \
         'ubuntu-desktop-minimal' \
+        'curl' \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Binary artifact deskos 0.12.0 (sha256-verified)
@@ -18,6 +19,7 @@ RUN set -eu; \
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
         -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64'; \
     echo '715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/deskos')")"; \
     install -D -m 0755 "$tmp/download" '/usr/local/bin/deskos'; \
     rm -rf "$tmp"
 

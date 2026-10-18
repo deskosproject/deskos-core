@@ -32,9 +32,16 @@ spec:
     requiresSubscription: false
   packageGroups:
     # The workstation group maps to the platform's own metapackage. The base
-    # already ships it, so on this platform the group installs nothing.
+    # already ships it, so on this platform the group installs nothing but curl.
+    #
+    # Measured 2026-10-18: this base carries no `curl`, while the EL and Fedora
+    # bases do (dnf needs it), and the containerfile backend fetches every
+    # BinaryArtifact with it. Without this line the Ubuntu images fail at build
+    # with "/bin/sh: 1: curl: not found" — and the failure is late on purpose, since
+    # the platform is what knows what its base ships. The package is in the archive
+    # (curl 8.18.0-1ubuntu2.8 at the time of measuring).
     - name: workstation
-      members: [ubuntu-desktop-minimal]
+      members: [ubuntu-desktop-minimal, curl]
       graphical: true
   displayManager: gdm.service
   # Ubuntu's graphical splash uses "splash" where the RHEL family uses "rhgb".
