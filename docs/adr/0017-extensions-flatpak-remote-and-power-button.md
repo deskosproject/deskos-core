@@ -48,8 +48,9 @@ session timeout the same decision covers already exists
    the platform's own GNOME default stands. A UUID that the platform lists in
    `enabledExtensions` is presumed already shipped and enabled: turning it **off**
    needs no entry in the extension catalog, because there is no package to install.
-   `dock.enabled: false` removes the dock's UUID the same way, whether or not the
-   platform offers it as a package (ADR 0008's disable path keeps its semantics).
+   `dock.enabled: false` removes the dock's UUID the same way, and it needs the
+   platform's catalog entry like the `true` does (see below); ADR 0008's disable path
+   keeps its semantics.
 5. Dash to Dock's UUID is reserved for `dock.enabled`, and that UUID is the one the
    platform's catalog declares: deciding about the dock at all — a `true` that installs
    its package, or a `false` that removes it from the platform's own list — needs that
@@ -123,15 +124,20 @@ session timeout the same decision covers already exists
 
 - Enabling an extension is a **field on an existing kind**, so the public kind count
   stays at fourteen (invariant 4).
-- `enabled-extensions` has one writer. `dock.enabled` and `shell.extensions` cannot
-  disagree, and a manifest ordering cannot change the output.
+- `enabled-extensions` has **one writer in the plan**. `dock.enabled` and
+  `shell.extensions` cannot disagree, and a manifest ordering cannot change the output.
+  One writer exists outside the plan: the experimental Shell stylesheet path writes
+  `61-deskos-shell`, which repeats the whole list because dconf does not merge arrays
+  and sorts after the plan's file, so whoever opts into it has to pass the effective
+  list.
 - The vocabulary grows by one key (the power button) and by the extension decisions,
   which are bounded by the platform's own catalog rather than by the profile.
 - A profile can name an extension and, when a platform declares a capability, a
   setting for it. It can never introduce a dconf key, a schema path or a command.
-- Retiring a remote cannot break the image's own install, cannot silently force, and
-  cannot claim to remove applications that stay; the reason field makes the intent
-  reviewable.
+- A retirement cannot silently force and cannot claim to remove applications that
+  stay; the reason field makes the intent reviewable. A remote the base itself installs
+  from is the one case composition cannot see, and it is named above rather than
+  promised away.
 - The two lists a workstation adds are refusals and decisions, not new software, so
   the boundary of ADR 0005 holds: DeskOS declares what the machine keeps, not what
   the user installs.
