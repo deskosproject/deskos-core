@@ -78,6 +78,23 @@ spec:
 example-devops-centos10` shows the composed result, including **which
 layer won each setting**.
 
+A workstation can also **retire a Flatpak remote the base ships**, so a machine
+whose owner does not want that application source configured does not have it:
+
+```yaml
+spec:
+  flatpak:
+    removeRemotes:
+      - name: flathub
+        reason: apps come from the organization's own remote
+```
+
+The reason is mandatory. A remote the composition also declares is a contradiction
+and fails; a `FlatpakSet` names its remote as a declared resource, so it is covered.
+The removal is image-level: it is **not** `flatpak uninstall`, applications already
+installed from that remote stay on an updated machine, and DeskOS never forces
+([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
+
 ### `Profile`
 
 Places resources at **one semantic layer**:
@@ -455,8 +472,7 @@ spec:
 - **`power.buttonAction`** is the hardware power button's action, from GNOME's own
   values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
-  through the Platform's application launcher (`gtk-launch` on EL10).
-- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
+  through the Platform's application launcher (`gtk-launch` on EL10).- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
 ### `Theme`

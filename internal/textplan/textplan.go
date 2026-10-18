@@ -140,7 +140,7 @@ func Write(out io.Writer, p *plan.Plan) error {
 
 	pr := p.Provisioning
 	pf("\nPROVISIONING\n")
-	if len(pr.FlatpakRemotes) == 0 && len(pr.FlatpakApplications) == 0 {
+	if len(pr.FlatpakRemotes) == 0 && len(pr.FlatpakApplications) == 0 && len(pr.FlatpakRemovedRemotes) == 0 {
 		pf("  none\n")
 	} else {
 		section(w, "Flatpak remotes (system)", len(pr.FlatpakRemotes))
@@ -150,6 +150,12 @@ func Write(out io.Writer, p *plan.Plan) error {
 		section(w, "Flatpak applications (preinstalled at startup)", len(pr.FlatpakApplications))
 		for _, app := range pr.FlatpakApplications {
 			pf("    %s//%s\tfrom %s\t%s\n", app.ID, app.Branch, app.Remote, origins(app.Provenance))
+		}
+		if len(pr.FlatpakRemovedRemotes) > 0 {
+			section(w, "Flatpak remotes retired (image only; applications already installed stay)", len(pr.FlatpakRemovedRemotes))
+			for _, r := range pr.FlatpakRemovedRemotes {
+				pf("    %s\t%s\t%s\n", r.Name, r.Reason, origins(r.Provenance))
+			}
 		}
 	}
 

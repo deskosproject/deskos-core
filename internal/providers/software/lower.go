@@ -164,11 +164,13 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 
 	remotes := map[string]Remote{}
+	remoteProv := map[string][]model.Provenance{}
 	var flatpakProv []model.Provenance
 	var authenticatorProv []model.Provenance
 	for _, k := range r.Keyed(DomainFlatpakRemotes) {
 		rm := k.Value.(Remote)
 		remotes[rm.Name] = rm
+		remoteProv[rm.Name] = k.Provenance
 		flatpakProv = append(flatpakProv, k.Provenance...)
 		if rm.Authenticator != "" {
 			authenticatorProv = append(authenticatorProv, k.Provenance...)
@@ -199,6 +201,23 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 	if len(flatpakProv) > 0 && pl.Flatpak.Package != "" {
 		p.AddPackage(pl.Flatpak.Package, flatpakProv...)
+	}
+	// Retiring a remote is a negative operation, so the composition must not declare
+	// the same remote: the two say the opposite about the same key. A `FlatpakSet`
+	// always names a declared remote, so this covers it too (docs/adr/0017).
+	if wf := c.WorkstationSpec.Flatpak; wf != nil {
+		for _, rm := range wf.RemoveRemotes {
+			prov := []model.Provenance{{
+				Resource: c.Workstation.ID(), Layer: model.LayerWorkstation.String(), Source: c.Workstation.Source.String(),
+			}}
+			if declared, ok := remoteProv[rm.Name]; ok {
+				errs.Add(fmt.Errorf("Flatpak remote %q is retired and declared by the same composition\n  retired by: %s\n  declared by: %s",
+					rm.Name, rm.Reason, describe(declared)))
+				continue
+			}
+			p.Provisioning.FlatpakRemovedRemotes = append(p.Provisioning.FlatpakRemovedRemotes,
+				plan.FlatpakRemoval{Name: rm.Name, Reason: rm.Reason, Provenance: prov})
+		}
 	}
 	if len(apps) > 0 && pl.Flatpak.Preinstall {
 		p.Provisioning.FlatpakPreinstallUnit = PreinstallUnit

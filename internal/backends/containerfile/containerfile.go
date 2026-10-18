@@ -50,6 +50,9 @@ const (
 	dracutConfPath        = "/usr/lib/dracut/dracut.conf.d/50-deskos.conf"
 	systemdUnitDir        = "/usr/lib/systemd/system"
 	flatpakRemotesDir     = "/usr/share/flatpak/remotes.d"
+	// Where a distribution's own base declares its remotes; a retired one is
+	// removed from both places (docs/adr/0017).
+	flatpakEtcRemotesDir = "/etc/flatpak/remotes.d"
 )
 
 // File is one file of the build context.
@@ -762,6 +765,14 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	}
 	if a.Dconf != nil {
 		steps = append(steps, "dconf update")
+	}
+	// A retired Flatpak remote leaves the image as a file removal, never as
+	// `flatpak uninstall` and never with --force: applications already installed
+	// from it stay on an updated machine (docs/adr/0017).
+	for _, rm := range p.Provisioning.FlatpakRemovedRemotes {
+		steps = append(steps, "rm -f "+
+			shq(path.Join(flatpakRemotesDir, rm.Name+".flatpakrepo"))+" "+
+			shq(path.Join(flatpakEtcRemotesDir, rm.Name+".flatpakrepo")))
 	}
 	for _, c := range a.IconCaches {
 		steps = append(steps, c.Command+" "+shq(c.Dir))

@@ -233,6 +233,24 @@ type WorkstationSpec struct {
 	DisplayName string   `json:"displayName,omitempty"`
 	PlatformRef string   `json:"platformRef"`
 	Profiles    []string `json:"profiles"`
+	// Flatpak is what this machine does with the Flatpak remotes the base
+	// carries besides the ones the composition declares.
+	Flatpak *WorkstationFlatpak `json:"flatpak,omitempty"`
+}
+
+// WorkstationFlatpak is the workstation's Flatpak intent.
+type WorkstationFlatpak struct {
+	// RemoveRemotes retires remotes the base ships. Retiring a source is a
+	// decision, so each one carries the reason it was taken (docs/adr/0017).
+	RemoveRemotes []RemoteRemoval `json:"removeRemotes,omitempty"`
+}
+
+// RemoteRemoval retires a Flatpak remote in the image. It is not `flatpak
+// uninstall`: applications already installed from that remote stay on an updated
+// machine, and DeskOS never forces (docs/adr/0017).
+type RemoteRemoval struct {
+	Name   string `json:"name"`
+	Reason string `json:"reason"`
 }
 
 var (
@@ -436,6 +454,21 @@ func (workstationProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "profile %q is listed twice", p))
 		}
 		seen[p] = true
+	}
+	if f := s.Flatpak; f != nil {
+		seenRemote := map[string]bool{}
+		for _, r := range f.RemoveRemotes {
+			if !model.ValidName(r.Name) {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q is not a valid remote name", r.Name))
+			}
+			if strings.TrimSpace(r.Reason) == "" {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q needs the reason it is retired", r.Name))
+			}
+			if seenRemote[r.Name] {
+				errs.Add(model.Errorf(res, "flatpak.removeRemotes: %q is listed twice", r.Name))
+			}
+			seenRemote[r.Name] = true
+		}
 	}
 	res.Object = &s
 	return errs.Err()

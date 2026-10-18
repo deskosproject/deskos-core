@@ -88,9 +88,14 @@ session timeout the same decision covers already exists
    ```
    `reason` is mandatory, in the style of `unavailablePackages`.
 12. A remote that the composition **declares** (a `FlatpakRemote`) and also retires is
-   a composition error: the two say the opposite about the same key.
-13. A remote a declared `FlatpakSet` installs from cannot be retired: the image's own
-    first-boot install would lose its source, so composition fails with that reason.
+   a composition error: the two say the opposite about the same key. A `FlatpakSet`
+   names its remote as a declared resource, so this covers it as well.
+13. A remote the **base image itself** installs from is not visible to composition: the
+   base's files are not resources. Retiring one of those is the workstation author's
+   decision, which is what the mandatory `reason` exists to make reviewable, and a
+   broken first-boot install shows up as a failed unit in the session check instead of
+   passing unnoticed. Closing that gap needs a platform fact listing the remotes a base
+   ships; this ADR does not add one.
 14. The removal is an **image** operation: the plan records it and the backend removes
     the remote's configuration at build time. It is **not** `flatpak uninstall`:
     applications already installed from that remote stay on the machine (their data

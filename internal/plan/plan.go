@@ -345,12 +345,24 @@ const (
 type Provisioning struct {
 	FlatpakRemotes      []FlatpakRemote     `json:"flatpakRemotes"`
 	FlatpakApplications []FlatpakPreinstall `json:"flatpakApplications"`
+	// FlatpakRemovedRemotes are remotes the base carries and the workstation
+	// retires. The removal is image-level: it is not `flatpak uninstall`, so
+	// applications already installed from that remote stay on an updated machine
+	// (docs/adr/0017).
+	FlatpakRemovedRemotes []FlatpakRemoval `json:"flatpakRemovedRemotes,omitempty"`
 	// FlatpakPreinstallUnit is the systemd unit that runs the upstream
 	// `flatpak preinstall` at startup; empty when nothing is preinstalled.
 	FlatpakPreinstallUnit string `json:"flatpakPreinstallUnit,omitempty"`
 	// FlatpakAuthenticatorUnit is the systemd unit that points OCI remotes at
 	// their authenticator at startup; empty when no remote declares one.
 	FlatpakAuthenticatorUnit string `json:"flatpakAuthenticatorUnit,omitempty"`
+}
+
+// FlatpakRemoval is one retired remote with the reason the workstation gave.
+type FlatpakRemoval struct {
+	Name       string             `json:"name"`
+	Reason     string             `json:"reason"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 type FlatpakRemote struct {
@@ -548,6 +560,7 @@ func (p *Plan) Normalize() error {
 	pr := &p.Provisioning
 	sort.Slice(pr.FlatpakRemotes, func(i, j int) bool { return pr.FlatpakRemotes[i].Name < pr.FlatpakRemotes[j].Name })
 	sort.Slice(pr.FlatpakApplications, func(i, j int) bool { return pr.FlatpakApplications[i].ID < pr.FlatpakApplications[j].ID })
+	sort.Slice(pr.FlatpakRemovedRemotes, func(i, j int) bool { return pr.FlatpakRemovedRemotes[i].Name < pr.FlatpakRemovedRemotes[j].Name })
 	sort.Strings(p.Warnings)
 	nonNil(p)
 	return nil
