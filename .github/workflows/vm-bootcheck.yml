@@ -61,9 +61,9 @@ env:
   WORK: /mnt/deskos-work
   # bootc-image-builder pinned to the digest used for local test disks.
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
-  # The Ubuntu base is pinned by digest in the platform resource, and this is the same
-  # base the platform renders FROM, pulled from the registry the platform names.
-  UBUNTU_BASE: quay.io/deskos/deskos-ubuntu-base:26.04
+  # No base image is named here on purpose: each job pulls what its own rendered
+  # Containerfile says FROM, which is the platform's digest pin and not a tag this file
+  # would have to keep in step with.
 
 jobs:
   core-centos10:
@@ -127,9 +127,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
 
+      - name: Pull the base and the builder, retrying a flaky registry
+        run: |
+          # quay.io's CDN returned an EOF in the middle of a layer while this was being
+          # written (2026-10-18), and losing a build of this length to a pull that had
+          # nothing wrong with it is losing the work of the whole job. The retry is
+          # explicit and bounded, and the build below runs with --pull=never: what it
+          # uses is what arrived, so a failure there is a real one.
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
+          done
+
       - name: Build the image
         timeout-minutes: 40
-        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
 
       - name: Record image evidence
         run: |
@@ -145,7 +163,7 @@ jobs:
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
-          sudo podman run --rm --privileged --pull=missing \
+          sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
@@ -273,9 +291,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
 
+      - name: Pull the base and the builder, retrying a flaky registry
+        run: |
+          # quay.io's CDN returned an EOF in the middle of a layer while this was being
+          # written (2026-10-18), and losing a build of this length to a pull that had
+          # nothing wrong with it is losing the work of the whole job. The retry is
+          # explicit and bounded, and the build below runs with --pull=never: what it
+          # uses is what arrived, so a failure there is a real one.
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
+          done
+
       - name: Build the image
         timeout-minutes: 40
-        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
 
       - name: Record image evidence
         run: |
@@ -290,7 +326,7 @@ jobs:
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
-          sudo podman run --rm --privileged --pull=missing \
+          sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
@@ -394,14 +430,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
 
+      - name: Pull the pinned base, retrying a flaky registry
+        run: |
+          # quay.io's CDN returned an EOF in the middle of a layer while this was being
+          # written (2026-10-18), and this base is the largest pull in the fleet. The
+          # retry is explicit and bounded, and the build below runs with --pull=never:
+          # what it uses is what arrived, so a failure there is a real one.
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          ok=0
+          for i in 1 2 3 4 5; do
+            if sudo podman pull "$base"; then ok=1; break; fi
+            echo "attempt $i failed pulling $base; retrying in 20s" >&2
+            sleep 20
+          done
+          [ "$ok" = 1 ] || { echo "could not pull $base after 5 attempts" >&2; exit 1; }
+
       - name: Build the image from the pinned base
         timeout-minutes: 40
         run: |
-          # The platform's FROM is the base pinned by digest, so this pulls exactly what
-          # the platform names; the tag is written here only for the evidence file.
-          sudo podman pull "$UBUNTU_BASE"
+          # The platform's FROM is the base pinned by digest, and it was pulled with
+          # retries in the step above, so this step needs no network for it: --pull=never
+          # keeps a failure here a real one. The tag is only for the evidence file.
           grep '^FROM ' ctx/Containerfile
-          sudo podman build --pull=missing -t "$IMAGE" ctx
+          sudo podman build --pull=never -t "$IMAGE" ctx
 
       - name: Record image evidence
         run: |

@@ -127,9 +127,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
 
+      - name: Pull the base and the builder, retrying a flaky registry
+        run: |
+          # The publish gate is the longest job in the fleet (150 minutes), and quay.io's
+          # CDN returned an EOF in the middle of a layer while this was being written
+          # (2026-10-18). The retry is explicit and bounded, and the build and the writer
+          # below run with --pull=never: what they use is what arrived, so a failure there
+          # is a real one.
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
+          done
+
       - name: Build the image
         timeout-minutes: 40
-        run: sudo podman build --pull=missing -t "$IMAGE" ctx
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
 
       - name: Export the image to an OCI archive
         run: |
@@ -193,7 +211,7 @@ jobs:
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
-          sudo podman run --rm --privileged --pull=missing \
+          sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" -v /var/lib/containers/storage:/var/lib/containers/storage \
             "$BIB" build --type qcow2 --no-default-kernel-args \
