@@ -83,7 +83,8 @@ func TestCheckComparesTheDeclaredScopeAndPublishesItsLimits(t *testing.T) {
 	for _, want := range []string{
 		"Compared 0 item(s) against the plan",
 		"Scope of this check",
-		"NOT checked: anything under /etc or /var",
+		"NOT checked: anything a user or another tool changed under /etc, /var or anywhere else",
+		"NOT checked: whether the extensions the plan enables are really loaded",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("check lacks %q:\n%s", want, out)
@@ -111,30 +112,25 @@ func TestCheckFailsWhenSomethingChanged(t *testing.T) {
 }
 
 func TestUpdateRefusesWithoutAPlanAndChangesNothing(t *testing.T) {
-	code, _, errOut := runCLI(t, "update", "--root", t.TempDir())
+	// update takes no --root: it acts on the machine it runs on. On a machine without
+	// the plan it refuses instead of updating something into something else.
+	code, out, errOut := runCLI(t, "update")
 	if code != 1 {
-		t.Fatalf("exit %d, want 1", code)
+		t.Fatalf("exit %d, want 1 (stdout %q)", code, out)
 	}
 	if !strings.Contains(errOut, "does not carry a plan") {
 		t.Errorf("stderr = %q", errOut)
 	}
+	if strings.Contains(out, "running: bootc") {
+		t.Errorf("an update ran without a plan: %q", out)
+	}
 }
 
-func TestUpdateDryRunSaysWhatItWouldDo(t *testing.T) {
-	// Nothing runs on a machine without bootc, so the guard refuses first: the dry run
-	// is what shows the command the guard protects.
-	root := withPlan(t, nil)
-	code, out, _ := runCLI(t, "update", "--root", root, "--dry-run")
-	if code != 0 {
-		// A refusal is also correct: the test machine is not a bootc deployment. What
-		// must never happen is an update running.
-		if !strings.Contains(out, "REFUSED") {
-			t.Fatalf("exit %d with %q", code, out)
-		}
-		return
-	}
-	if !strings.Contains(out, "would run: bootc upgrade") {
-		t.Errorf("dry run said:\n%s", out)
+func TestUpdateTakesNoRoot(t *testing.T) {
+	// A flag that mixed one tree's plan with the host's bootc would be a footgun.
+	code, _, _ := runCLI(t, "update", "--root", t.TempDir())
+	if code != 2 {
+		t.Errorf("exit %d, want 2 for an unknown flag", code)
 	}
 }
 

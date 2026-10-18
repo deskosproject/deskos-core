@@ -109,9 +109,9 @@ sudo reboot
 
 ## On the machine: `deskos`
 
-`deskos` is the runtime companion to `deskosctl` (ADR 0018). It ships as a release
-asset, like `deskosctl`, and a workstation that wants it on its machines declares a
-`BinaryArtifact` for it.
+`deskos` is the runtime companion to `deskosctl` (ADR 0018). The release ships it
+next to `deskosctl`, with the same checksum coverage, and a workstation that wants it
+on its machines declares a `BinaryArtifact` for that asset.
 
 ```bash
 deskos report        # what this machine was built from, read from the plan the image carries

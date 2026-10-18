@@ -130,7 +130,7 @@ func TestCheckReportsADifferenceAndNamesIt(t *testing.T) {
 	if !strings.Contains(out.String(), "CHANGED  file "+p.Artifact.Files[0].Path) {
 		t.Errorf("the changed file is not named:\n%s", out.String())
 	}
-	if !strings.Contains(out.String(), "the session sees uint32 900") {
+	if !strings.Contains(out.String(), "this user's dconf context reads uint32 900") {
 		t.Errorf("the change does not say what it saw:\n%s", out.String())
 	}
 }
@@ -154,7 +154,7 @@ func TestAValueThatCannotBeReadIsReportedAndNotCountedAsADifference(t *testing.T
 	}
 	var out bytes.Buffer
 	evidence.Text(&out, findings, scope)
-	for _, want := range []string{"UNCHECKED dconf default", "unmeasured:  dconf defaults could not be read (1)"} {
+	for _, want := range []string{"UNCHECKED dconf default", "unmeasured:  dconf defaults could not be read from this user's context (1)"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("report lacks %q:\n%s", want, out.String())
 		}
@@ -170,7 +170,7 @@ func TestCheckPublishesWhatItLeavesOut(t *testing.T) {
 	joined := strings.Join(append(append([]string{}, scope.Checked...), scope.NotChecked...), "\n")
 	for _, want := range []string{
 		"the files the plan installs (1)",
-		"anything under /etc or /var",
+		"anything a user or another tool changed under /etc, /var or anywhere else",
 		"packages installed, removed or replaced after the image was built",
 		"whether the running image is the one this plan was rendered for",
 	} {
@@ -189,11 +189,11 @@ func TestReportSeparatesWhatIsInstalledFromWhatIsOnlyDeclared(t *testing.T) {
 	for _, want := range []string{
 		"Workstation: ws",
 		"Base image:  example.org/bootc:1 @ sha256:aaaa  [declared]",
-		"image:  quay.io/example/ws:latest",
-		"digest: sha256:bbbb",
+		"booted:  quay.io/example/ws:latest",
+		"digest:  sha256:bbbb",
 		"plan: installed on this machine",
-		"SBOM: declared by the build pipeline and shipped with the release, NOT installed on",
-		"Updates:     the image updates itself (image)",
+		"NOT installed on this machine (ADR 0010",
+		"the plan schedules image updates for the image itself",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("report lacks %q:\n%s", want, got)

@@ -21,19 +21,42 @@ type system struct{ root string }
 
 func (s system) ReadFile(p string) ([]byte, error) { return os.ReadFile(path.Join(s.root, p)) }
 
-// bootcStatus is the subset of `bootc status --json` that says what is booted.
+// bootcStatus is the subset of `bootc status --json` this command reads, in the shape
+// the tool really emits (verified against a `bootc status --json` sample: the image
+// reference is nested, `status.booted.image.image.image`, and the digest is
+// `status.booted.image.imageDigest`):
+//
+//	{"spec":{"image":{"image":"<ref>","transport":"registry"}},
+//	 "status":{"booted":{"image":{"image":{"image":"<ref>"},"version":"…","imageDigest":"sha256:…"}},
+//	           "staged":null|{"image":{…}}}}
 type bootcStatus struct {
+	Kind   string `json:"kind"`
+	Spec   bootcSpec
 	Status struct {
-		Booted struct {
-			Image struct {
-				Image string `json:"image"`
-			} `json:"image"`
-			Digest string `json:"imageDigest"`
-		} `json:"booted"`
+		Booted *bootcDeployment `json:"booted"`
+		Staged *bootcDeployment `json:"staged"`
 	} `json:"status"`
 }
 
+type bootcSpec struct {
+	Image struct {
+		Image string `json:"image"`
+	} `json:"image"`
+}
+
+type bootcDeployment struct {
+	Image struct {
+		Image struct {
+			Image string `json:"image"`
+		} `json:"image"`
+		Version     string `json:"version"`
+		ImageDigest string `json:"imageDigest"`
+	} `json:"image"`
+}
+
 func (s system) Booted() (evidence.Booted, error) {
+	// The marker ostree-based systems create at boot: without it this machine did not
+	// boot from a deployment at all, and there is nothing for bootc to read.
 	if _, err := os.Stat(path.Join(s.root, "/run/ostree-booted")); err != nil {
 		return evidence.Booted{}, nil
 	}
@@ -43,13 +66,22 @@ func (s system) Booted() (evidence.Booted, error) {
 	}
 	var status bootcStatus
 	if err := json.Unmarshal(out, &status); err != nil {
-		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: %w", err)
+		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: unexpected shape: %w", err)
 	}
-	return evidence.Booted{
-		IsBootc: true,
-		Image:   status.Status.Booted.Image.Image,
-		Digest:  status.Status.Booted.Digest,
-	}, nil
+	b := evidence.Booted{
+		IsBootc: status.Kind == "BootcHost" || true,
+		Follows: status.Spec.Image.Image,
+	}
+	if d := status.Status.Booted; d != nil {
+		b.Image = d.Image.Image.Image
+		b.Digest = d.Image.ImageDigest
+		b.Version = d.Image.Version
+	}
+	if d := status.Status.Staged; d != nil {
+		b.StagedImage = d.Image.Image.Image
+		b.StagedDigest = d.Image.ImageDigest
+	}
+	return b, nil
 }
 
 func (s system) DconfRead(key string) (string, error) {

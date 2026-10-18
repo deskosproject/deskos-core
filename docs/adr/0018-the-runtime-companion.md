@@ -66,8 +66,10 @@ compiler stays the only thing that decides what an artifact is.
   checks are exercised against a machine a test describes.
 - The two binaries answer two questions and can be shipped apart: `deskosctl` is what a
   flavor pins and runs to render its image, `deskos` is what a machine carries. The
-  release ships both, with their checksums in `SHA256SUMS`, exactly like `deskosctl`
-  today.
+  release builds and attaches both, with their checksums in `SHA256SUMS`.
+- `deskos update` acts on the machine it runs on and takes no `--root`: reading one
+  tree's plan while asking the host's bootc to upgrade would mix two machines. It is
+  read-only commands that accept a root, for images and tests.
 - Whether Core's own images carry the runtime binary is a separate decision, and the
   mechanism already exists: a workstation that wants it on its machines declares a
   `BinaryArtifact` for the release asset, with the checksum the release publishes.

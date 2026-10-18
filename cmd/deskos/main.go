@@ -28,7 +28,7 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         dconf defaults it declares) with this machine, and publish which paths and
         states it checks and which it leaves out.
 
-  deskos update [--root DIR] [--apply] [--dry-run]
+  deskos update [--apply] [--dry-run]
         Update this machine's image with a guard: it refuses when a condition prevents
         a safe update and reports the rest. It is not a reconciler, and it does not
         touch what a user changed.
@@ -115,14 +115,15 @@ func check(args []string, out, errOut io.Writer) int {
 func update(args []string, out, errOut io.Writer) int {
 	fs := flag.NewFlagSet("update", flag.ContinueOnError)
 	fs.SetOutput(errOut)
-	root := fs.String("root", "/", "root of the machine to read, for tests and images")
+	// No --root here: an update acts on the machine it runs on, and reading another
+	// tree's plan while asking the host's bootc to upgrade would mix two machines.
 	apply := fs.Bool("apply", false, "apply now, instead of staging until the next reboot")
 	dryRun := fs.Bool("dry-run", false, "say what would run, and change nothing")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	sys := system{root: *root}
-	p, err := loadPlan(*root)
+	sys := system{root: "/"}
+	p, err := loadPlan("/")
 	if err != nil {
 		// Without a plan the machine cannot be told what it is: refuse instead of
 		// updating something into something else.

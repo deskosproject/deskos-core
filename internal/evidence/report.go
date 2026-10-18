@@ -66,19 +66,31 @@ func Report(w io.Writer, p *plan.Plan, present *Booted) {
 		pf("Boot args:   %s\n", strings.Join(args, " "))
 	}
 	if kinds := updatingKinds(p); len(kinds) > 0 {
-		pf("Updates:     the image updates itself (%s)\n", strings.Join(kinds, ", "))
+		pf("Updates:     the plan schedules %s updates for the image itself (declared, not that a timer is on)\n",
+			strings.Join(kinds, ", "))
 	}
 
 	if present != nil {
-		pf("\nBooted deployment  [present]\n")
+		pf("\nDeployment  [present, read from bootc]\n")
 		if !present.IsBootc {
-			pf("  this machine is not a bootc deployment: nothing here can be read from one\n")
+			pf("  this machine did not boot from a bootc deployment: there is no deployment to read\n")
 		} else {
 			if present.Image != "" {
-				pf("  image:  %s\n", present.Image)
+				pf("  booted:  %s\n", present.Image)
 			}
 			if present.Digest != "" {
-				pf("  digest: %s\n", present.Digest)
+				pf("  digest:  %s\n", present.Digest)
+			}
+			if present.Version != "" {
+				pf("  version: %s\n", present.Version)
+			}
+			if present.Follows != "" {
+				pf("  updates from: %s\n", present.Follows)
+			}
+			if present.StagedImage != "" {
+				pf("  staged, waiting for a reboot: %s @ %s\n", present.StagedImage, present.StagedDigest)
+			} else {
+				pf("  nothing staged\n")
 			}
 		}
 	}
@@ -87,8 +99,9 @@ func Report(w io.Writer, p *plan.Plan, present *Booted) {
 	// is not, and a report may not describe installed content from the declared one.
 	pf("\nEvidence\n")
 	pf("  plan: installed on this machine (%s), and this report reads it\n", PlanPath)
-	pf("  SBOM: declared by the build pipeline and shipped with the release, NOT installed on\n")
-	pf("        this machine (ADR 0010 stage 4 is planned), so this report does not describe it\n")
+	pf("  SBOM: built by the pipeline as CI evidence (attached to the workflow run, not\n")
+	pf("        shipped with the release) and NOT installed on this machine (ADR 0010\n")
+	pf("        stage 4 is planned), so this report does not describe it\n")
 }
 
 func profileNames(p *plan.Plan) []string {

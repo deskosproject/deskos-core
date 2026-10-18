@@ -219,8 +219,9 @@ jobs:
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
           gh release create "$TAG" \
-            release/deskosctl-"$TAG"-linux-amd64 release/deskos-resources-"$TAG".tar.gz \
-            release/deskosctl-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
+            release/deskosctl-"$TAG"-linux-amd64 release/deskos-"$TAG"-linux-amd64 \
+            release/deskos-resources-"$TAG".tar.gz \
+            release/deskosctl-linux-amd64 release/deskos-linux-amd64 release/deskos-resources.tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} for linux/amd64, the DeskOS resources, and the same tool as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
+            --notes "deskosctl ${TAG} (builds an image) and deskos ${TAG} (runs on the machine) for linux/amd64, the DeskOS resources, and deskosctl as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS" \
             "${flags[@]}"
