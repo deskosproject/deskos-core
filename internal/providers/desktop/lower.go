@@ -307,10 +307,15 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 	}
 }
 
-// lowerExtensions writes the effective `enabled-extensions` list. It is the **only**
-// writer of that key: the platform's own list, every profile decision and the dock
+// lowerExtensions writes the effective `enabled-extensions` list. It is the only
+// writer **of the plan**: the platform's own list, every profile decision and the dock
 // all pass through here, so two writers cannot disagree and neither the order of the
 // profiles nor of the files can change the result (docs/adr/0017).
+//
+// One other writer exists outside the plan: the experimental GNOME Shell stylesheet
+// path writes its own drop-in, `61-deskos-shell`, which repeats the whole list because
+// dconf does not merge arrays and sorts after `50-deskos`. Whoever opts into it has to
+// pass the effective list, or it overrides this one (docs/roadmap.md).
 //
 // The list is the platform's own, in its order, with the decisions applied and the
 // dock added or removed as `dock.enabled` says. Nothing is written when the
@@ -438,6 +443,17 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 	const schema = "/org/gnome/shell/extensions/dash-to-dock/"
 	en, hasEn := get(KeyDockEnabled)
 	enabled := hasEn && en.Value.(bool)
+	pl := l.c.PlatformSpec
+	ext, dockInCatalog := pl.GnomeExtension(DockExtension)
+	// The dock's UUID is the one the platform's catalog declares, so deciding about
+	// it at all needs that entry: without it neither a true (no package to install)
+	// nor a false (no UUID to remove from the platform's own list) can be honored
+	// (docs/adr/0017).
+	if hasEn && !dockInCatalog {
+		l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q required by %s, so the dock cannot be decided\n  set by: %s",
+			l.c.Platform.ID(), DockExtension, KeyDockEnabled, describe(en.Provenance)))
+		return
+	}
 	var active []compose.Scalar
 	for _, key := range dockOptions {
 		v, ok := get(key)
@@ -455,16 +471,9 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 				key, v.Layer, KeyDockEnabled, en.Layer, describe(v.Provenance), describe(en.Provenance)))
 		}
 	}
-	pl := l.c.PlatformSpec
 	if !enabled {
 		// The list itself is lowerExtensions' job; here a false dock.enabled only has
 		// to reject options that cannot run.
-		return
-	}
-	ext, ok := pl.GnomeExtension(DockExtension)
-	if !ok {
-		l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q required by %s\n  set by: %s",
-			l.c.Platform.ID(), DockExtension, KeyDockEnabled, describe(en.Provenance)))
 		return
 	}
 	l.p.AddPackage(ext.Package, en.Provenance...)

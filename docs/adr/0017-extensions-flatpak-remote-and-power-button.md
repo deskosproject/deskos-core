@@ -50,9 +50,14 @@ session timeout the same decision covers already exists
    needs no entry in the extension catalog, because there is no package to install.
    `dock.enabled: false` removes the dock's UUID the same way, whether or not the
    platform offers it as a package (ADR 0008's disable path keeps its semantics).
-5. Dash to Dock's UUID is reserved for `dock.enabled`, including when the platform
-   enables it by default; declaring it in `shell.extensions` is a validation error, so
-   `dock.enabled: false` never competes with a second writer.
+5. Dash to Dock's UUID is reserved for `dock.enabled`, and that UUID is the one the
+   platform's catalog declares: deciding about the dock at all — a `true` that installs
+   its package, or a `false` that removes it from the platform's own list — needs that
+   entry, so `dock.enabled` on a platform that does not offer the extension fails.
+   Naming the dock's UUID in `shell.extensions` is a validation error, so there is no
+   second writer. A UUID the platform enables by default without offering it as a
+   package has no identity to reserve; it is decided like any other default-enabled
+   extension.
 6. A UUID that is neither in the platform's catalog (`gnome.extensions`) nor in its
    `enabledExtensions` **fails composition** with the platform's reason; it is never
    dropped silently. An enabled extension's package is installed from the catalog.
@@ -92,9 +97,10 @@ session timeout the same decision covers already exists
    names its remote as a declared resource, so this covers it as well.
 13. A remote the **base image itself** installs from is not visible to composition: the
    base's files are not resources. Retiring one of those is the workstation author's
-   decision, which is what the mandatory `reason` exists to make reviewable, and a
-   broken first-boot install shows up as a failed unit in the session check instead of
-   passing unnoticed. Closing that gap needs a platform fact listing the remotes a base
+   decision, which is what the mandatory `reason` exists to make reviewable. A broken
+   first-boot install is a risk the session check observes when the unit fails, not a
+   guarantee: this repository documents that `flatpak preinstall` can also exit zero
+   without network. Closing the gap needs a platform fact listing the remotes a base
    ships; this ADR does not add one.
 14. The removal is an **image** operation: the plan records it and the backend removes
     the remote's configuration at build time. It is **not** `flatpak uninstall`:

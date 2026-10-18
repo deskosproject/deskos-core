@@ -383,3 +383,24 @@ func TestAnUnknownPowerButtonActionIsRejected(t *testing.T) {
 	_, err := planOf(t, "ws", dir)
 	mustFail(t, err, "at /spec/defaults/power/buttonAction: value must be one of 'nothing', 'suspend', 'hibernate', 'interactive'")
 }
+
+func TestTheDockNeedsThePlatformsCatalogEntryEvenToBeTurnedOff(t *testing.T) {
+	// The dock's UUID is the one the catalog declares, so without that entry neither
+	// a true (no package to install) nor a false (no UUID to remove from the
+	// platform's own list) can be honored (docs/adr/0017).
+	platform := strings.Replace(platformYAML,
+		"    extensions:\n      - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}\n", "", 1)
+	for _, enabled := range []string{"true", "false"} {
+		t.Run("enabled="+enabled, func(t *testing.T) {
+			dir := fixture{"platform.yaml": platform}.with(fixture{
+				"ws.yaml": workstation("ws", "org"),
+				"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+				"g.yaml":  gnome("g", "    dock:\n      enabled: "+enabled+"\n"),
+			}).dir(t)
+			_, err := planOf(t, "ws", dir)
+			mustFail(t, err,
+				`does not provide the GNOME extension "dash-to-dock" required by dock.enabled`,
+				"organization GnomeProfile/g")
+		})
+	}
+}
