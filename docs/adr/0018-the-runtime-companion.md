@@ -72,10 +72,12 @@ its packages.) Two alternatives were considered and rejected:
 - building it inside the image does not reach the consumers who render from the
   resources tarball, because they build without this source tree.
 
-A pinned asset has to exist before a pin can point at it, so the pin lands with the
-first release that ships the binary. Until then the images do not carry it, and that is
-stated rather than assumed: a release that ships `deskos` is what unblocks the pin,
-after which every Core image carries it by default.
+A pinned asset has to exist before a pin can point at it. v0.12.0 is the first release
+that publishes it, and the pin landed with it: `resources/software/deskos.yaml` names
+that asset and its checksum, and `deskos-core` references it, so every Core image
+installs `/usr/local/bin/deskos` and a machine can be asked what it was built from
+without anyone installing a tool first. The binary is also part of the declared SBOM,
+because it is an input of the image like any other.
 
 ## Consequences
 
@@ -91,7 +93,7 @@ after which every Core image carries it by default.
   read-only commands that accept a root, for images and tests.
 - **Every Core image carries `deskos`**, from a pinned release asset (above), so a
   machine can always be asked what it was built from without anyone having to install a
-  tool first. The pin lands with the first release that ships the binary.
+  tool first. It landed with v0.12.0, the first release that publishes the asset.
 - `check` cannot see drift it does not own, and it says so on every run. That is the
   honest version of "measure the drift": `ujust`'s `check-local-overrides` admits the
   gap, and this admits it in writing.

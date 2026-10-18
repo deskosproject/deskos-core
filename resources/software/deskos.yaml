@@ -1,0 +1,25 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: deskos
+spec:
+  # DeskOS's runtime companion, from the same release a flavor pins to build with
+  # (ADR 0018): it reads the plan the image carries, so a machine can be asked what
+  # it was built from, have its drift measured against that plan, and update behind a
+  # guard. The pin names a published release asset and its checksum, the same way a
+  # platform's base names a digest, so it is watched and bumped deliberately.
+  #
+  # Measured, and the reason the destination is /usr/local/bin: the model lets a
+  # BinaryArtifact write only there. /usr/bin belongs to the image and to the
+  # packages the platform installs.
+  #
+  # v0.12.0 is the first release that publishes this asset; until a release exists,
+  # no image can point at it.
+  version: 0.12.0
+  source:
+    url: https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64
+    sha256: 715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390
+  archive: none
+  files:
+    - destination: /usr/local/bin/deskos
+      mode: "0755"

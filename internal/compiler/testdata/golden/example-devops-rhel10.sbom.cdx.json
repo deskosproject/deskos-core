@@ -22,6 +22,27 @@
   "components": [
     {
       "type": "application",
+      "name": "deskos",
+      "version": "0.12.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/bin/deskos"
+        }
+      ]
+    },
+    {
+      "type": "application",
       "name": "openshift-client",
       "version": "4.22.17",
       "hashes": [
