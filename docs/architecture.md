@@ -688,8 +688,9 @@ three ways**. Files DeskOS writes under `/etc` (dconf keyfiles, repository
 files) follow image updates only while they are locally unmodified. A new
 release changes the image; it does not force a machine that was edited
 locally back into line. Organizations that need guaranteed enforcement use
-configuration management on top of the image. A future `deskos status` or
-`deskos diff` may *report* drift; DeskOS will not enforce.
+configuration management on top of the image. `deskos check` **reports** the drift it
+can measure and publishes what it leaves out; DeskOS will not enforce, and `deskos`
+does not reconcile the machine against its plan (ADR 0018).
 
 ## Provisioning and enrollment
 

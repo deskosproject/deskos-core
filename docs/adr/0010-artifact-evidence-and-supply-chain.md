@@ -46,7 +46,7 @@ pipeline, never inside compiler semantics.** The compiler may only
 | 1 | Declared SBOM: `deskosctl sbom`, deterministic, tested | **done** (v0.8.0) |
 | 2 | CI: render → build the CS10 image → Syft SBOM → Grype scan → upload artifacts, fail on critical; compare declared vs installed | **done**: `supply-chain.yml` runs it; the gate passed on 2026-10-10 |
 | 3 | Signing and provenance: `cosign sign` over the digest and an SBOM attestation; promotion by digest | **done**: keyless for CentOS Stream 10 in CI, key-based for RHEL in a downstream organization's pipeline (2026-10-14) |
-| 4 | Evidence travels with the artifact: ship the SBOM beside `plan.json`; an endpoint command reports it | planned |
+| 4 | Evidence travels with the artifact: ship the SBOM beside `plan.json`; an endpoint command reports it | **half done**: `deskos report` describes the plan and says the SBOM is not installed ([ADR 0018](0018-the-runtime-companion.md)); the SBOM still does not travel with the artifact |
 | 5 | Compliance resources (`TrustPolicy`, `ComplianceProfile`) and OpenSCAP execution | later |
 
 The how-to for stages 1–3 is [docs/supply-chain.md](../supply-chain.md).

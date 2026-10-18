@@ -72,6 +72,11 @@ sudo bootc upgrade
 sudo reboot
 ```
 
+`deskos update` is the same staging step behind a guard: it refuses when this is not a
+bootc deployment or when bootc cannot read the deployment, and it reports — without
+refusing — an image that updates itself and whatever the plan owns under `/etc`, since
+customization there is the machine owner's.
+
 On the EL platforms only, the Flatpak half:
 
 ```bash
@@ -102,9 +107,21 @@ sudo bootc switch registry.example.com/deskos/core-rhel10:latest
 sudo reboot
 ```
 
-## When `deskos` lands
+## On the machine: `deskos`
 
-The endpoint command (roadmap, Milestone 7) wraps these units: `deskos
-status` for what is staged, `deskos update` to run the image-update service
-on demand, `deskos rollback`. Until it ships, the commands above are the
-supported path.
+`deskos` is the runtime companion to `deskosctl` (ADR 0018). It ships as a release
+asset, like `deskosctl`, and a workstation that wants it on its machines declares a
+`BinaryArtifact` for it.
+
+```bash
+deskos report        # what this machine was built from, read from the plan the image carries
+deskos check         # compare the plan's declared scope with this machine, and say what it leaves out
+deskos update        # update the image, after a guard that refuses only what is unsafe
+```
+
+It is not a reconciler: it changes the deployment the machine boots from and nothing
+else, it never touches a home, and it does not re-apply the plan. `deskos check` prints
+its scope on every run, because it measures what the artifact declares and not
+everything the machine has become. `status` and `rollback` are not part of it: the
+approved scope is those three commands, and `bootc status` and `bootc rollback` answer
+the other two questions in the meantime.

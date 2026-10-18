@@ -57,6 +57,13 @@ jobs:
           out=$("release/$asset" version)
           echo "$out"
           [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
+          # The runtime companion, same commit, same checks: it reads the plan an
+          # image carries instead of building one (docs/adr/0018).
+          runtime="deskos-${TAG}-linux-amd64"
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "release/$runtime" ./cmd/deskos
+          out=$("release/$runtime" version)
+          echo "$out"
+          [ "$out" = "deskos ${TAG} (commit ${GITHUB_SHA})" ]
           # Resources of the same commit; reproducible archive (sorted, commit time, no owner, no gzip name or time).
           resources="deskos-resources-${TAG}.tar.gz"
           tar --sort=name --mtime="@$(git log -1 --format=%ct)" --owner=0 --group=0 --numeric-owner \
@@ -70,8 +77,9 @@ jobs:
           # Version-less aliases, so releases/latest/download/<name> works
           # without knowing the tag.
           cp "release/$asset" release/deskosctl-linux-amd64
+          cp "release/$runtime" release/deskos-linux-amd64
           cp "release/$resources" release/deskos-resources.tar.gz
-          (cd release && sha256sum "$asset" "$resources" deskosctl-linux-amd64 deskos-resources.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS)
+          (cd release && sha256sum "$asset" "$runtime" "$resources" deskosctl-linux-amd64 deskos-linux-amd64 deskos-resources.tar.gz > SHA256SUMS && sha256sum -c SHA256SUMS)
       - uses: actions/upload-artifact@v7
         with:
           name: release-assets
