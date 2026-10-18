@@ -1,4 +1,4 @@
-name: vm-bootcheck (experimental)
+name: vm-bootcheck
 
 # Boots the artifact and asks the guest what it did, per platform.
 #
@@ -25,7 +25,9 @@ name: vm-bootcheck (experimental)
 # the raw disk are test input and are not uploaded; the only publish path is
 # supply-chain.yml. Nested virtualization on GitHub-hosted runners is not officially
 # supported, so a failure here is not by itself evidence of an artifact defect — but it has
-# worked, and /dev/kvm is enabled below the same way it has been since the first run.
+# worked, and /dev/kvm is enabled below the same way it has been since the first run. That
+# caveat is why this workflow used to say "experimental" in its name; it belongs here,
+# where a reader meets it before trusting a red run, and not in a name that hides it.
 on:
   workflow_dispatch:
   pull_request:
@@ -114,6 +116,11 @@ jobs:
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo chown "$(id -u):$(id -g)" "$WORK"
+          # The runner image ships a default CNI conflist while the CNI plugin binaries
+          # are not installed, and this podman uses netavark: nothing here creates a CNI
+          # network, and podman warns on every run that it cannot validate a file it does
+          # not read. Removing it keeps a warning in these logs worth reading.
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
 
       - name: Enable KVM for the runner user
         run: |
@@ -127,7 +134,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
 
-      - name: Pull the base and the builder, retrying a flaky registry
+      - name: Pull the base and the builder, with retries
         run: |
           # quay.io's CDN returned an EOF in the middle of a layer while this was being
           # written (2026-10-18), and losing a build of this length to a pull that had
@@ -278,6 +285,11 @@ jobs:
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo chown "$(id -u):$(id -g)" "$WORK"
+          # The runner image ships a default CNI conflist while the CNI plugin binaries
+          # are not installed, and this podman uses netavark: nothing here creates a CNI
+          # network, and podman warns on every run that it cannot validate a file it does
+          # not read. Removing it keeps a warning in these logs worth reading.
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
 
       - name: Enable KVM for the runner user
         run: |
@@ -291,7 +303,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
 
-      - name: Pull the base and the builder, retrying a flaky registry
+      - name: Pull the base and the builder, with retries
         run: |
           # quay.io's CDN returned an EOF in the middle of a layer while this was being
           # written (2026-10-18), and losing a build of this length to a pull that had
@@ -415,6 +427,11 @@ jobs:
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo chown "$(id -u):$(id -g)" "$WORK"
+          # The runner image ships a default CNI conflist while the CNI plugin binaries
+          # are not installed, and this podman uses netavark: nothing here creates a CNI
+          # network, and podman warns on every run that it cannot validate a file it does
+          # not read. Removing it keeps a warning in these logs worth reading.
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
 
       - name: Enable KVM for the runner user
         run: |
@@ -430,7 +447,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
 
-      - name: Pull the pinned base, retrying a flaky registry
+      - name: Pull the pinned base, with retries
         run: |
           # quay.io's CDN returned an EOF in the middle of a layer while this was being
           # written (2026-10-18), and this base is the largest pull in the fleet. The
