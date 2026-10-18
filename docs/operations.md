@@ -111,8 +111,9 @@ sudo reboot
 
 `deskos` is the runtime companion to `deskosctl` (ADR 0018). The release ships it next
 to `deskosctl`, with the same checksum coverage, and **every Core image carries it**:
-Core declares a pinned `BinaryArtifact` for the release asset, so `/usr/bin/deskos` is
-on the machine and nobody has to install a tool to ask what it was built from. The pin
+Core declares a pinned `BinaryArtifact` for the release asset, so `/usr/local/bin/deskos`
+is on the machine and nobody has to install a tool to ask what it was built from
+(`/usr/local/bin`, because the model lets a `BinaryArtifact` write only there). The pin
 lands with the first release that ships the binary.
 
 ```bash
