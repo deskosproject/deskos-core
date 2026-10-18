@@ -1,9 +1,9 @@
 {
   "format": "plan.deskos.org/v1alpha1",
   "workstation": {
-    "name": "example-ubuntu-2604-vendor",
+    "name": "example-ubuntu-2604-org-packages",
     "displayName": "Example Ubuntu 26.04 Workstation (vendor APT source)",
-    "source": "ubuntu-2604/workstations/example-ubuntu-2604-vendor.yaml:1"
+    "source": "ubuntu-2604/workstations/example-ubuntu-2604-org-packages.yaml:1"
   },
   "platform": {
     "name": "ubuntu-2604",
@@ -25,9 +25,9 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
-      "name": "example-ubuntu-2604-vendor",
+      "name": "example-ubuntu-2604-org-packages",
       "layer": "organization",
-      "source": "ubuntu-2604/profiles/example-ubuntu-2604-vendor.yaml:1"
+      "source": "ubuntu-2604/profiles/example-ubuntu-2604-org-packages.yaml:1"
     }
   ],
   "artifact": {
@@ -43,7 +43,7 @@
       },
       {
         "name": "org.deskos.workstation",
-        "value": "example-ubuntu-2604-vendor"
+        "value": "example-ubuntu-2604-org-packages"
       },
       {
         "name": "org.opencontainers.image.title",
@@ -73,10 +73,10 @@
         "provenance": [
           {
             "resource": "AptRepository/vscode",
-            "via": "PackageSet/example-vendor-tools",
-            "profile": "example-ubuntu-2604-vendor",
+            "via": "PackageSet/example-org-packages",
+            "profile": "example-ubuntu-2604-org-packages",
             "layer": "organization",
-            "source": "ubuntu-2604/software/vendor-tools.yaml:5"
+            "source": "ubuntu-2604/software/org-packages.yaml:9"
           }
         ]
       }
@@ -102,10 +102,10 @@
         "name": "code",
         "provenance": [
           {
-            "resource": "PackageSet/example-vendor-tools",
-            "profile": "example-ubuntu-2604-vendor",
+            "resource": "PackageSet/example-org-packages",
+            "profile": "example-ubuntu-2604-org-packages",
             "layer": "organization",
-            "source": "ubuntu-2604/software/vendor-tools.yaml:25"
+            "source": "ubuntu-2604/software/org-packages.yaml:29"
           }
         ]
       },

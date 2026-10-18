@@ -89,12 +89,12 @@ func TestGoldenExampleRHELSBOM(t *testing.T) {
 // its key, its deb822 fields and the order of the file's rendering belong in the
 // evidence like any other artifact.
 func TestGoldenExampleUbuntuVendorPlan(t *testing.T) {
-	p := mustPlan(t, "example-ubuntu-2604-vendor", resourcesRoot, ubuntuRoot)
+	p := mustPlan(t, "example-ubuntu-2604-org-packages", resourcesRoot, ubuntuRoot)
 	b, err := p.JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-ubuntu-2604-vendor.plan.json", b)
+	golden(t, "example-ubuntu-2604-org-packages.plan.json", b)
 }
 
 func TestGoldenContainerfiles(t *testing.T) {
@@ -105,7 +105,7 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"deskos-core-almalinux-10", []string{resourcesRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		{"example-ubuntu-2604-vendor", []string{resourcesRoot, ubuntuRoot}},
+		{"example-ubuntu-2604-org-packages", []string{resourcesRoot, ubuntuRoot}},
 		// Fedora 44's shipped reference workstation: it pins the rendered build
 		// context for the newest platform, so a change to the Fedora facts or to the
 		// backend shows up as a reviewable diff. ci.yml renders the same workstation.

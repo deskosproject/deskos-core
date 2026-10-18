@@ -42,9 +42,9 @@ func aptKeySHA() string {
 // set names an AptRepository, so the wrong platform reports the gap instead of
 // including it where nothing reads it (invariant 9).
 func TestPackageSetIncludesItsAptRepository(t *testing.T) {
-	set := packageSet("vendor-tools", "code") + "  aptRepositories: [vscode]\n"
+	set := packageSet("org-packages", "code") + "  aptRepositories: [vscode]\n"
 	files := fixture{
-		"p.yaml":             profile("core", "foundation", "PackageSet/vendor-tools"),
+		"p.yaml":             profile("core", "foundation", "PackageSet/org-packages"),
 		"set.yaml":           set,
 		"apt.yaml":           aptRepo("vscode", aptVSCodeSpec),
 		"assets/apt-key.asc": testArmoredKey(),
@@ -56,7 +56,7 @@ func TestPackageSetIncludesItsAptRepository(t *testing.T) {
 		t.Fatalf("the source the set names was not included: %d sources", n)
 	}
 	_, err := planOf(t, "ws", base.with(files).dir(t))
-	mustFail(t, err, "an APT source requires an APT platform", "AptRepository/vscode", "PackageSet/vendor-tools")
+	mustFail(t, err, "an APT source requires an APT platform", "AptRepository/vscode", "PackageSet/org-packages")
 }
 
 // The mirror of TestRpmRepositoryOnADebPlatformIsReported. A repository belongs

@@ -1,7 +1,11 @@
-# An organization's vendor tooling on Ubuntu, from the vendor's own signed APT
-# source. It is the same vendor repository the RPM example declares, expressed
-# for the other package manager: a repository of one manager is not a repository
-# of another (ADR 0015).
+# An organization's own package source on Ubuntu: a third party's repository, apt's
+# signing required. Microsoft publishes VS Code this way, and it is the same third party
+# the RPM example declares, expressed for the other package manager -- a repository of
+# one manager is not a repository of another (ADR 0015).
+#
+# "Vendor" is careful here. The platform's vendor (Canonical, for this platform) is who
+# makes the operating system; this file is about a *software* vendor the organization
+# chooses to install from, which is a different party and a different decision.
 apiVersion: software.deskos.org/v1alpha1
 kind: AptRepository
 metadata:
@@ -25,7 +29,7 @@ spec:
 apiVersion: software.deskos.org/v1alpha1
 kind: PackageSet
 metadata:
-  name: example-vendor-tools
+  name: example-org-packages
 spec:
   packages:
     - code

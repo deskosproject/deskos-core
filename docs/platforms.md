@@ -24,6 +24,13 @@ Fedora is not yet.
 | Ubuntu 26.04 | `quay.io/deskos/deskos-ubuntu-base` (the DeskOS project, tier `organization`) | manifest, by digest | **validated** (golden test, CI) | **CI** | **CI**: GNOME; session check; first-boot check | **published** (`quay.io/deskos/deskos-core-ubuntu-2604`) | **none** declared |
 | Fedora 44 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-17 | not measured | none | Flatpak preinstall |
 
+`(vendor)` in the table means the base is the platform's own supplier's: Canonical for
+Ubuntu, Red Hat for RHEL, the CentOS and AlmaLinux projects, the Fedora Project. Where it
+says the DeskOS project, the base is organization-owned instead, with the named owner and
+tier that ADR 0014 requires. The distinction matters beyond the base: the desktop a session
+starts with is the vendor's on a platform that declares `gnome.keepsVendorDefaults`, and
+DeskOS's own where it does not (ADR 0016).
+
 "Composes and renders" means the workstation compiles to a deterministic plan and
 build context. It does **not** mean the image builds or boots — that is the next
 two columns. Evidence, per claim, is in

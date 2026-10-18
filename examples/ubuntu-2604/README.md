@@ -15,13 +15,13 @@ deskosctl plan ./examples/ubuntu-2604 \
 | Resource | Contents |
 |---|---|
 | `example-ubuntu-2604` | the target: `ubuntu-2604` + the `deskos-core` profile |
-| `example-ubuntu-2604-vendor` | the same Core plus an organization profile that installs `code` from a declared, signed APT source |
+| `example-ubuntu-2604-org-packages` | the same Core plus an organization profile that installs `code` from a declared, signed APT source |
 
 This example does not include the `rhel-family` profile: its workstation is
 Core's foundation plus the organization profile, without firewalld, an
 RPM-named browser or an RPM application channel.
 
-`example-ubuntu-2604-vendor` declares a signed `AptRepository` and a `PackageSet`
+`example-ubuntu-2604-org-packages` declares a signed `AptRepository` and a `PackageSet`
 that names it. The build writes the deb822 source and its key under `/etc/apt/`,
 and `apt-get update` verifies the signature before the packages install; the
 `PackageSet` does not bind a package to one source, so this does not claim which

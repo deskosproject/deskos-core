@@ -401,7 +401,7 @@ jobs:
         # comes from a declared APT source. The second is what proves the source
         # and its key against the vendor's own archive: `apt-get update` fails if
         # the deb822 fields are wrong or the signature is not verified.
-        workstation: [example-ubuntu-2604, example-ubuntu-2604-vendor]
+        workstation: [example-ubuntu-2604, example-ubuntu-2604-org-packages]
     env:
       WS: ${{ matrix.workstation }}
       IMAGE: localhost/deskos-core-ubuntu-2604:${{ matrix.workstation }}
