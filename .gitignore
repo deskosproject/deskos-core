@@ -17,3 +17,4 @@
 
 # Python bytecode from the VM harness tests
 __pycache__/
+/tmp-ctx/
