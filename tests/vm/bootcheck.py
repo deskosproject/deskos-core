@@ -179,6 +179,22 @@ def find_ovmf(code, vars_):
     raise HarnessError("no OVMF firmware found; pass --ovmf-code and --ovmf-vars")
 
 
+def serial_hint(text, limit=400):
+    """What the guest last said, when what it did not say is the failure.
+
+    A report unit that never runs and a report that never arrives look identical from the
+    end marker alone. The unit's output goes to the console for that reason, so the tail of
+    the serial log is the sentence that turns a long wait into a reason. Bounded: a failure
+    is read in a summary, not in a file.
+    """
+    tail = " ".join(text.decode("utf-8", "replace").split())
+    if not tail:
+        return "; the serial log is empty, so the guest said nothing at all"
+    if len(tail) > limit:
+        tail = "…" + tail[-limit:]
+    return f"; the guest last said: {tail}"
+
+
 def run(args):
     if not os.access("/dev/kvm", os.R_OK | os.W_OK):
         raise HarnessError("/dev/kvm is not accessible")
@@ -297,7 +313,8 @@ def run(args):
                     summary["failures"].append(
                         f"serial marker {ready_marker!r} not seen within {ready_timeout}s: "
                         f"the guest never signalled it was instrumented "
-                        f"(a credential may have been dropped)")
+                        f"(a credential may have been dropped)"
+                        + serial_hint(serial_text()))
                     ready_failed = True
                     break
             if marker and marker_seen():
@@ -313,7 +330,9 @@ def run(args):
         if marker:
             summary["serial_marker_s"] = marker_at
             if marker_at is None and not ready_failed:
-                summary["failures"].append(f"serial marker {marker!r} not seen within {args.boot_timeout}s")
+                summary["failures"].append(
+                    f"serial marker {marker!r} not seen within {args.boot_timeout}s"
+                    + serial_hint(serial_text()))
         elif stable < args.stable_frames:
             summary["failures"].append(f"no stable graphical screen within {args.boot_timeout}s")
         if args.expect_splash and splash_at is None:
