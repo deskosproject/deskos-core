@@ -68,3 +68,9 @@ spec:
     # platform's names, not Core's (ADR 0004).
     package: gtk-update-icon-cache
     command: gtk-update-icon-cache --force --quiet
+  downloads:
+    # Not measured on this base: RHEL 10's base is behind a subscription this
+    # repository does not carry (ADR 0004). The EL bases that are public do ship curl
+    # (measured 2026-10-18 in centos-bootc:stream10 and almalinux-bootc:10, curl
+    # 8.12.1), and RHEL's own package manager needs it for the same reason.
+    baseFetches: true

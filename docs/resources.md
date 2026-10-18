@@ -118,7 +118,8 @@ spec:
 
 Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
-capabilities, and its redistribution constraints. DeskOS ships `centos-stream-10`,
+capabilities, **whether its base can fetch a verified artifact**, and its
+redistribution constraints. DeskOS ships `centos-stream-10`,
 `almalinux-10`, `rhel-10`, `fedora-44` and `ubuntu-2604` in
 [`resources/platforms/`](../resources/platforms/); the canonical status of each,
 and how to install it, is [platforms.md](platforms.md). A platform that is only
@@ -143,6 +144,16 @@ worse with every platform added. A platform that declares nothing where a name i
 needed reports the gap at compile time (invariant 9): a desktop entry with an icon
 on a platform with no `iconCache` fails composition, rather than shipping an icon
 that never appears.
+
+The same rule covers the one capability a build cannot proceed without: a
+`BinaryArtifact` or an `RpmFile` has to be *fetched*, so `downloads.baseFetches`
+says whether the base can fetch, and `downloads.package` names the fetcher on a
+base that cannot. A plan that downloads from a platform that declares nothing
+fails composition with the platform and the resource named, and a base without a
+fetcher gets that package added to the plan, carrying the provenance of the
+download that needed it ([ADR 0019](adr/0019-a-platform-says-whether-its-base-can-fetch.md)).
+What the backend fetches *with* stays Core's own choice: the platform states that a
+base can satisfy it, not a command line to run.
 
 ### `PackageSet`
 

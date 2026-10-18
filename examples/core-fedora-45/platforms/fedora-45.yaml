@@ -108,3 +108,7 @@ spec:
     # Measured: gtk-update-icon-cache 3.24.52 (gtk3).
     package: gtk-update-icon-cache
     command: gtk-update-icon-cache --force --quiet
+  downloads:
+    # Measured 2026-10-18 on this base: it ships curl (8.21.0-6.fc45) at
+    # /usr/sbin/curl, so the build's verified download works as it is.
+    baseFetches: true

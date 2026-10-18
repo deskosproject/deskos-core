@@ -298,6 +298,66 @@ func TestPlatformOwnerAndTierAreTyped(t *testing.T) {
 // A platform that cannot preinstall system Flatpaks says so, and a FlatpakSet
 // asked of it fails with that reason instead of compiling something that would
 // never install (invariant 9).
+// A plan that downloads has to know how its base fetches, and a platform that does
+// not say fails composition instead of the build failing on a missing command. The
+// verifiable artifact the download checks is the point: without it the image cannot
+// be built at all (invariant 9, docs/adr/0019).
+func TestDownloadsAreThePlatformsFact(t *testing.T) {
+	binary := appArtifact("ghostty", "/usr/local/bin/ghostty", "")
+	withDownloads := func(block string) string {
+		return strings.Replace(platformYAML, "  downloads: {baseFetches: true}\n", block, 1)
+	}
+	plan := func(platform string) (*plan.Plan, error) {
+		dir := fixture{
+			"platform.yaml": platform,
+			"p.yaml":        profile("core", "foundation", "BinaryArtifact/ghostty"),
+			"ws.yaml":       workstation("ws", "core"),
+			"a.yaml":        binary,
+		}.dir(t)
+		return planOf(t, "ws", dir)
+	}
+
+	t.Run("a platform that says nothing fails", func(t *testing.T) {
+		_, err := plan(strings.Replace(platformYAML, "  downloads: {baseFetches: true}\n", "", 1))
+		mustFail(t, err, "does not say whether its base can fetch a verified artifact",
+			"Platform/test-platform", "ghostty", "BinaryArtifact/ghostty")
+	})
+
+	t.Run("a base that cannot fetch gets the fetcher installed", func(t *testing.T) {
+		p, err := plan(withDownloads("  downloads: {baseFetches: false, package: fetch-tool}\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		// The plan names the package and says which download needed it, so the report
+		// answers "why is this installed" without reading the platform resource.
+		var found bool
+		for _, pkg := range p.Artifact.Packages {
+			if pkg.Name != "fetch-tool" {
+				continue
+			}
+			found = true
+			if len(pkg.Provenance) == 0 || pkg.Provenance[0].Resource != "BinaryArtifact/ghostty" {
+				t.Errorf("the fetcher package does not carry the download's provenance: %+v", pkg.Provenance)
+			}
+		}
+		if !found {
+			t.Errorf("the fetcher package is not in the plan: %+v", p.Artifact.Packages)
+		}
+	})
+
+	t.Run("a base that fetches installs nothing extra", func(t *testing.T) {
+		p, err := plan(platformYAML)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, pkg := range p.Artifact.Packages {
+			if pkg.Name == "fetch-tool" || pkg.Name == "curl" {
+				t.Errorf("a base that fetches should not install a fetcher: %+v", p.Artifact.Packages)
+			}
+		}
+	})
+}
+
 func TestFlatpakSetNeedsPreinstallAndThePlatformSaysSo(t *testing.T) {
 	noPreinstall := strings.Replace(platformYAML,
 		"  flatpak: {package: flatpak, preinstall: true}\n",
@@ -371,8 +431,22 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 			t.Errorf("DeskOS Core installs %s", pkg)
 		}
 	}
-	if len(p.Artifact.RpmRepositories) != 0 || len(p.Artifact.Binaries) != 0 {
-		t.Error("DeskOS Core adds third-party repositories or binaries")
+	if len(p.Artifact.RpmRepositories) != 0 {
+		t.Error("DeskOS Core adds third-party repositories")
+	}
+	// Core carries exactly one binary, and it is Core's own: the runtime tool every
+	// image ships so a machine can say what it was built from (ADR 0018). The name
+	// alone proves nothing, so this audits where it lands and where it comes from;
+	// anything else here would be a customer's software, which is what this test
+	// refuses.
+	if len(p.Artifact.Binaries) != 1 {
+		t.Fatalf("DeskOS Core declares %d binary artifact(s); it carries exactly its own runtime tool",
+			len(p.Artifact.Binaries))
+	}
+	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/local/bin/deskos" ||
+		!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
+		t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
+			b.Artifact, b.Destination, b.URL)
 	}
 	if p.Artifact.Dconf != nil && len(p.Artifact.Dconf.Locks) != 0 {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")

@@ -420,7 +420,23 @@ Acquisition order:
 
 `BinaryArtifact` requires an exact version, an https URL that is not a
 floating location, a SHA-256 checksum, and installs only directly into
-`/usr/local/bin` with mode `0755` or `0555`.
+`/usr/local/bin` with mode `0755` or `0555`. The verification is part of the
+build: the containerfile fetches over https and fails on a checksum that does not
+match. That fetch uses `curl`, which **the platform's image must provide** — the EL
+and Fedora bases ship it because `dnf` needs it, and the Ubuntu base does not, so
+`Platform/ubuntu-2604` declares it (measured 2026-10-18). A platform that neither
+ships nor declares it fails at build with `/bin/sh: 1: curl: not found`, which is
+late: making it a composition error needs a typed statement of what a base provides,
+and that is not modeled yet.
+
+The destination has a platform difference of its own. The backend creates the
+directory the file lands in, resolving symlinks (`readlink -m`), because
+`install -D` cannot traverse a `/usr/local` that is a **dangling symlink**: Debian and
+Ubuntu ship `/usr/local -> ../var/usrlocal` and create that target at boot with a
+bootc tmpfiles rule, so it does not exist during the build (measured 2026-10-18 on the
+Ubuntu base, where `install -D ... /usr/local/bin/deskos` failed to create the
+directory). With the directory created where the file really lands, the same step
+works on both families.
 
 A single-file `BinaryArtifact` may declare a `desktopEntry`. The
 software lowerer turns it into a `DesktopEntry`, a `FileInstall` for its

@@ -72,10 +72,12 @@ its packages.) Two alternatives were considered and rejected:
 - building it inside the image does not reach the consumers who render from the
   resources tarball, because they build without this source tree.
 
-A pinned asset has to exist before a pin can point at it, so the pin lands with the
-first release that ships the binary. Until then the images do not carry it, and that is
-stated rather than assumed: a release that ships `deskos` is what unblocks the pin,
-after which every Core image carries it by default.
+A pinned asset has to exist before a pin can point at it. v0.12.0 is the first release
+that publishes it, and the pin landed with it: `resources/software/deskos.yaml` names
+that asset and its checksum, and `deskos-core` references it, so every Core image
+installs `/usr/local/bin/deskos` and a machine can be asked what it was built from
+without anyone installing a tool first. The binary is also part of the declared SBOM,
+because it is an input of the image like any other.
 
 ## Consequences
 
@@ -91,12 +93,17 @@ after which every Core image carries it by default.
   read-only commands that accept a root, for images and tests.
 - **Every Core image carries `deskos`**, from a pinned release asset (above), so a
   machine can always be asked what it was built from without anyone having to install a
-  tool first. The pin lands with the first release that ships the binary.
+  tool first. It landed with v0.12.0, the first release that publishes the asset.
 - `check` cannot see drift it does not own, and it says so on every run. That is the
   honest version of "measure the drift": `ujust`'s `check-local-overrides` admits the
   gap, and this admits it in writing.
 - The guard refuses only on conditions that make an update unsafe, so a machine whose
   owner changed files under `/etc` is never held back and never silently reverted.
+- The pin pins bytes and nothing more: the checksum says the asset is the one that was
+  published and reviewed, not that it was built from this source tree. The release
+  signs the `deskosctl` tool image; it does not sign this binary. Closing that would
+  mean signing and attesting the asset itself, which is a separate decision (and one a
+  human has to take).
 - ADR 0010 stage 4 is half done: the command that reports evidence exists; the SBOM
   still does not travel with the artifact, and until it does, a report repeats that
   rather than implying otherwise.

@@ -179,6 +179,16 @@
               "pattern": "^[A-Za-z0-9][A-Za-z0-9._+= /-]*$"
             }
           }
+        },
+        "downloads": {
+          "description": "Whether the base can fetch a verified artifact, and the package that provides the fetcher when it cannot. The build downloads every BinaryArtifact, so a platform that leaves this out fails composition when a plan installs one (ADR 0019).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseFetches"],
+          "properties": {
+            "baseFetches": { "type": "boolean" },
+            "package": { "$ref": "../../common/definitions.json#/$defs/packageName" }
+          }
         }
       }
     }

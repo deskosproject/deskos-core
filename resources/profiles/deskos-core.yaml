@@ -10,6 +10,12 @@ spec:
       name: deskos-core
     - kind: UpdatePolicy
       name: deskos-core
+    # The runtime tool, on every Core image: a machine should be able to say what it
+    # was built from without anyone having to install a tool first (ADR 0018). It is
+    # not desktop software, so it lives here and not in deskos-gnome: a platform that
+    # keeps its own desktop still carries it.
+    - kind: BinaryArtifact
+      name: deskos
     # The GNOME defaults are deliberately absent here: they are DeskOS's own
     # opinion about the desktop, and a workstation whose platform ships a desktop
     # of its own must be able to leave them out. A workstation that wants them
