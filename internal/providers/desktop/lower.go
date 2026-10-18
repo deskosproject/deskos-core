@@ -44,6 +44,11 @@ const ptyxisProfileUUID = "9a1f0f9a-6f2b-4a0e-8e0b-0d9f4a1c2b30"
 // At or after it the shell does not show its first-run welcome dialog.
 const welcomeDialogShownVersion = "40.beta"
 
+// dockSettingsAdapter names the adapter in messages: the settings DeskOS writes for
+// the dock need the platform to declare the extension they belong to, because that
+// entry is what names the UUID whose decision gates them (docs/adr/0017).
+const dockSettingsAdapter = "the dock settings adapter"
+
 // DockExtension is the platform extension name that implements the dock.
 const DockExtension = "dash-to-dock"
 
@@ -427,8 +432,8 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 		switch {
 		case !ok:
 		case !dockInCatalog:
-			l.errs.Add(fmt.Errorf("%s requires the GNOME extension %q, which %s does not provide\n  set by: %s",
-				key, DockExtension, l.c.Platform.ID(), describe(v.Provenance)))
+			l.errs.Add(fmt.Errorf("%s needs the GNOME extension DeskOS models as %q (%s) so the settings have an extension to gate them, and %s does not declare it\n  set by: %s",
+				key, DockExtension, dockSettingsAdapter, l.c.Platform.ID(), describe(v.Provenance)))
 		case !hasEn:
 			l.errs.Add(fmt.Errorf("%s requires enabling %q, which no profile decides\n  set by: %s",
 				key, ext.UUID, describe(v.Provenance)))

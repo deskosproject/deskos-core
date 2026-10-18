@@ -95,14 +95,17 @@ def extension_reads():
 
     Membership in `enabled-extensions` is only the declared default: whether the
     extension really loads is a session fact, and this is where it is read
-    (docs/adr/0017).
+    (docs/adr/0017). LC_ALL=C keeps the tool's labels English, so the parse does not
+    depend on the guest's locale. What is read is the state GNOME Shell reports for a
+    fresh user, not that the extension does its job: the state checks of the test
+    design are what look at behavior.
     """
     return (
         "# Every extension the composition enabled, asked about in the session.\n"
         f"mapfile -t enabled_extensions < {ENABLED_EXTENSIONS_PATH}\n"
         'for i in "${!enabled_extensions[@]}"; do\n'
         '  u="${enabled_extensions[$i]}"\n'
-        '  info=$(gnome-extensions info "$u" 2>/dev/null) || info=""\n'
+        '  info=$(LC_ALL=C gnome-extensions info "$u" 2>/dev/null) || info=""\n'
         '  if [ -z "$info" ]; then\n'
         '    echo "extension_$i=missing"\n'
         '  else\n'

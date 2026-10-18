@@ -75,13 +75,14 @@ the distribution's logo packages are never replaced or falsified.
    (with `dock.showTrash`):
    - dock options (`position`, `behavior`, `iconSize`, `showTrash`) need an
      effective decision enabling the dock's extension; with no decision they fail;
-   - `enabled: false` at a layer masks options that won at lower layers
-     (no extension keys, no package, a plan warning per masked option);
-   - options at the same or a higher layer than an effective
-     `enabled: false` fail, naming both sides;
-   - `enabled: true` on a platform without the extension fails;
-   - `enabled: false` writes `enabled-extensions` without the dock only if
-     the platform's default list contains it or the setting is locked;
+   - a decision of `false` at a layer masks dock settings that won at lower
+     layers (no extension keys, no package, a plan warning per masked setting);
+   - dock settings at the same or a higher layer than an effective `enabled:
+     false` fail, naming both sides;
+   - dock settings on a platform that does not declare the extension DeskOS
+     models as dash-to-dock fail, because nothing names the UUID that gates them;
+   - the plan states the `enabled-extensions` list it applies, and the session
+     check asks GNOME about every extension the composition turned on;
    - `deskosctl validate` prints plan warnings (including masks) to
      stderr and still exits 0.
    `shell.favorites` is native GNOME Shell state, ordered, and independent

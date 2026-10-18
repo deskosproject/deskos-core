@@ -43,11 +43,13 @@ session timeout the same decision covers already exists
 3. The effective `enabled-extensions` list is computed **once**, from the platform's
    `enabledExtensions` with the decisions applied, in a stable order. No writer
    appends to it independently.
-4. The plan **always states the list it enables**, so the artifact carries what it
-   decided instead of leaning on whichever default the vendor shipped. A UUID the
-   platform lists in `enabledExtensions` is presumed already shipped and enabled:
-   turning it **off** needs no catalog entry, because there is no package to turn
-   away. A UUID the platform's catalog declares gets its package installed.
+4. The plan **states the list it enables** whenever the composition carries any GNOME
+   setting at all, so the artifact says what it decided instead of leaning on whichever
+   default the vendor shipped. (A composition with no GNOME intent writes no dconf
+   database, and so no list: DeskOS does not touch a desktop nobody configured.) A UUID
+   the platform lists in `enabledExtensions` is presumed already shipped and enabled:
+   turning it **off** needs no catalog entry, because there is no package to turn away.
+   A UUID the platform's catalog declares gets its package installed.
 5. **Enabling is open.** Any UUID may be decided, including one the platform's catalog
    does not know: the extension the composition brings itself is installed by the
    packages the composition declares, so a workstation is not limited to the
@@ -85,8 +87,6 @@ session timeout the same decision covers already exists
 10. When an option of an unmodeled extension must be part of the artifact, the way to
    add it is an adapter in the lowerer plus its test — a reviewed, typed change — not
    a new place for a resource to name dconf keys.
-
-### Configuring an extension
 
 ### Retiring a Flatpak remote
 
@@ -140,9 +140,12 @@ session timeout the same decision covers already exists
   and sorts after the plan's file, so whoever opts into it has to pass the effective
   list.
 - The vocabulary grows by one key (the power button) and by the extension decisions,
-  which are bounded by the platform's own catalog rather than by the profile.
-- A profile can name an extension and, when a platform declares a capability, a
-  setting for it. It can never introduce a dconf key, a schema path or a command.
+  which any layer may take: a workstation is not limited to the extensions DeskOS
+  modeled.
+- A profile can name an extension, and only a typed adapter can configure one. A
+  profile can never introduce a dconf key, a schema path or a command, and an
+  extension DeskOS does not model keeps its own defaults for its user to change
+  (ADR 0005).
 - A retirement cannot silently force and cannot claim to remove applications that
   stay; the reason field makes the intent reviewable. A remote the base itself installs
   from is the one case composition cannot see, and it is named above rather than

@@ -835,7 +835,9 @@ func TestDockSemantics(t *testing.T) {
 			"d.yaml":        settingsOnly("d", "      showTrash: false\n"),
 		}.dir(t)
 		_, err := planOf(t, "ws", dir)
-		mustFail(t, err, `requires the GNOME extension "dash-to-dock", which Platform/test-platform does not provide`)
+		mustFail(t, err,
+			`needs the GNOME extension DeskOS models as "dash-to-dock"`,
+			`and Platform/test-platform does not declare it`)
 	})
 }
 

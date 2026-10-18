@@ -59,34 +59,34 @@ type Profile struct {
 
 // Artifact is image-owned content.
 type Artifact struct {
-	BaseImage        BaseImage                `json:"baseImage"`
-	Labels           []Label                  `json:"labels"`
-	RpmRepositories  []RpmRepository          `json:"rpmRepositories"`
-	AptRepositories  []AptRepository          `json:"aptRepositories"`
-	PackageGroups    []PackageGroupInstall    `json:"packageGroups"`
-	Packages         []PackageInstall         `json:"packages"`
-	RpmFiles         []RpmFileInstall         `json:"rpmFiles"`
-	Binaries         []VerifiedBinaryInstall  `json:"binaries"`
-	Files            []FileInstall            `json:"files"`
-	GeneratedFiles   []GeneratedFile          `json:"generatedFiles,omitempty"`
-	TrustAnchors     []TrustAnchorInstall     `json:"trustAnchors"`
-	TrustStore       *TrustStoreUpdate        `json:"trustStore,omitempty"`
-	DesktopEntries   []DesktopEntry           `json:"desktopEntries"`
-	IconCaches       []IconCacheUpdate        `json:"iconCaches"`
-	Dconf            *DconfDatabase           `json:"dconf,omitempty"`
-	GSettings        []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
+	BaseImage       BaseImage                `json:"baseImage"`
+	Labels          []Label                  `json:"labels"`
+	RpmRepositories []RpmRepository          `json:"rpmRepositories"`
+	AptRepositories []AptRepository          `json:"aptRepositories"`
+	PackageGroups   []PackageGroupInstall    `json:"packageGroups"`
+	Packages        []PackageInstall         `json:"packages"`
+	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
+	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
+	Files           []FileInstall            `json:"files"`
+	GeneratedFiles  []GeneratedFile          `json:"generatedFiles,omitempty"`
+	TrustAnchors    []TrustAnchorInstall     `json:"trustAnchors"`
+	TrustStore      *TrustStoreUpdate        `json:"trustStore,omitempty"`
+	DesktopEntries  []DesktopEntry           `json:"desktopEntries"`
+	IconCaches      []IconCacheUpdate        `json:"iconCaches"`
+	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
+	GSettings       []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
 	// EnabledExtensions are the GNOME Shell extensions the composition decided to
 	// turn on, beyond whatever the platform already enables. The list is what the
 	// session check asks GNOME about: a decision that does not really load must be
 	// visible, not silent (docs/adr/0017).
-	EnabledExtensions []string `json:"enabledExtensions,omitempty"`
-	KernelArguments  []KernelArgument         `json:"kernelArguments"`
-	Initramfs        *InitramfsRegeneration   `json:"initramfs,omitempty"`
-	PlymouthTheme    *PlymouthTheme           `json:"plymouthTheme,omitempty"`
-	SystemdUnits     []SystemdEnable          `json:"systemdUnits"`
-	SystemdMasks     []SystemdMask            `json:"systemdMasks"`
-	ScheduledUpdates []ScheduledUpdate        `json:"scheduledUpdates"`
-	DefaultTarget    *DefaultTarget           `json:"defaultTarget,omitempty"`
+	EnabledExtensions []string               `json:"enabledExtensions,omitempty"`
+	KernelArguments   []KernelArgument       `json:"kernelArguments"`
+	Initramfs         *InitramfsRegeneration `json:"initramfs,omitempty"`
+	PlymouthTheme     *PlymouthTheme         `json:"plymouthTheme,omitempty"`
+	SystemdUnits      []SystemdEnable        `json:"systemdUnits"`
+	SystemdMasks      []SystemdMask          `json:"systemdMasks"`
+	ScheduledUpdates  []ScheduledUpdate      `json:"scheduledUpdates"`
+	DefaultTarget     *DefaultTarget         `json:"defaultTarget,omitempty"`
 }
 
 type BaseImage struct {
