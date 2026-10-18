@@ -15,8 +15,8 @@ deskosctl plan ./examples/baseline-and-role --workstation example-devops-rhel-10
 | `example-devops-centos-stream-10` | composes the same profiles on the public platform so it can be built without a subscription |
 
 The minimal per-platform examples live in the sibling directories
-(`core-centos-stream-10/`, `core-almalinux-10/`, `core-rhel-10/`,
-`core-ubuntu-2604/`); this one
+(`centos-stream-10/`, `almalinux-10/`, `rhel-10/`,
+`ubuntu-2604/`); this one
 shows the *composition* axis (baseline + role) on EL10.
 
 ## Known gap: virt-manager
