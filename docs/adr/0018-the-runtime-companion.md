@@ -61,9 +61,11 @@ compiler stays the only thing that decides what an artifact is.
 ### How it gets onto a machine
 
 `deskos` is a **pinned `BinaryArtifact` in Core's foundation**, the same shape a flavor
-uses for any verified binary, so every Core image installs `/usr/bin/deskos` from a
-published release asset with its checksum, and the pin can be watched and bumped
-deliberately like a base image's digest. Two alternatives were considered and rejected:
+uses for any verified binary, so every Core image installs `/usr/local/bin/deskos` from
+a published release asset with its checksum, and the pin can be watched and bumped
+deliberately like a base image's digest. (`/usr/local/bin`, not `/usr/bin`: the model
+lets a `BinaryArtifact` write only there, because `/usr/bin` belongs to the image and
+its packages.) Two alternatives were considered and rejected:
 
 - committing a built binary into the repository would put a build artifact in git and
   let it drift from the source it was built from;
