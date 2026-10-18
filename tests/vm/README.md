@@ -186,11 +186,12 @@ most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
 ### Every binary the plan installs
 
 A binary the plan installs is a declaration like any other, so it gets an
-assertion. The plan carries each one's destination and the checksum its download
-was verified against at build time; the guest hashes the file where it landed and
-the host compares. **The claim is the bytes, not the presence**: a binary the build
-never wrote, one replaced afterwards, and one that lost its executable bit are all
-differences, and each is named.
+assertion. The plan carries each one's destination, its mode and the checksum its
+download was verified against at build time; the guest reads the file where it
+landed and the host compares. **The claim is the file the plan installs**: one the
+build never wrote, one that is not an executable regular file, one replaced
+afterwards, and one that lost its declared mode are all differences, and each is
+named.
 
 What that claim can be depends on **what the plan pins**, and there are two cases:
 
@@ -199,13 +200,24 @@ What that claim can be depends on **what the plan pins**, and there are two case
 - an **archive** (`archive: tar.gz`): the plan pins the archive's checksum, and the
   file inside it cannot be compared with it here — the build verified that download,
   and the archive is gone by the time a session runs. The file is verified as
-  installed and executable, and the report says which claim it could make. Comparing
-  the two anyway reported a difference that was not one, on the example workstation's
-  own `openshift-client`; the VM check found that itself, on a real boot.
+  installed with its declared mode, and the report says which claim it could make.
+  Comparing the two anyway reported a difference that was not one, on the example
+  workstation's own `openshift-client`; the VM check found that itself, on a real
+  boot.
+
+The mode is asserted in both cases, because the plan declares it: the right bytes
+with the wrong mode is a file the user may not be able to run, which is not what the
+plan says it installs. `stat` prints `755` where the plan writes `0755`, so the
+leading zero is not a difference. Both reads follow a link, so a symlink to the
+installed file describes the file that runs; whether the destination is a link is
+not a declared fact, so it is not asserted.
 
 `session.json` carries `plan_binaries` (`declared`, `checksum_verified`,
-`install_verified`, and the ones that failed with their detail), and `session.md`
-prints the counts.
+`install_verified`, `unreadable`, and the ones that failed with their detail), and
+`session.md` prints the counts. A file that is there and executable but cannot be
+read is counted in `unreadable` and reported with that reason, not as a difference:
+the bytes are a fact the machine would not give up, which is not the same claim as
+bytes that disagree.
 
 ### Seeding the skeleton and showing the widgets
 

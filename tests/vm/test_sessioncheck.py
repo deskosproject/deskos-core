@@ -54,6 +54,7 @@ def reported(plan):
         out[f"extension_{i}"] = "Yes/ACTIVE"
     for i, b in enumerate(sc.plan_binaries(plan)):
         out[f"binary_{i}"] = b["sha256"]
+        out[f"binary_mode_{i}"] = b["mode"]
     return out
 
 
@@ -241,12 +242,26 @@ class PlanBinariesTest(unittest.TestCase):
         # claim of a checksum-verified download.
         c = self.binary_check(GOOD)
         self.assertTrue(c["pass"])
-        self.assertIn("as the plan pins it", c["detail"])
+        self.assertIn("as the plan declares", c["detail"])
         summary = sc.binary_summary(sc.evaluate(GOOD, PLAN))
         self.assertEqual(summary["declared"], 1)
         self.assertEqual(summary["checksum_verified"], 1)
         self.assertEqual(summary["install_verified"], 0)
         self.assertEqual(summary["failed"], [])
+
+    def test_a_binary_with_the_wrong_mode_fails(self):
+        # The mode is declared too, so it is asserted: the right bytes with the wrong
+        # mode is a file a user may not be able to run, which is not what the plan says
+        # it installs. `stat` prints 755 where the plan writes 0755.
+        for got in ("777", "644"):
+            with self.subTest(mode=got):
+                c = self.binary_check(dict(GOOD, binary_mode_0=got))
+                self.assertFalse(c["pass"])
+                self.assertIn("the plan declares 0755", c["detail"])
+        # The declared mode's leading zero is not a difference, and a mode that could
+        # not be read is a mode that was not read.
+        self.assertTrue(self.binary_check(dict(GOOD, binary_mode_0="755"))["pass"])
+        self.assertFalse(self.binary_check(dict(GOOD, binary_mode_0="unreadable"))["pass"])
 
     def test_a_binary_whose_bytes_differ_fails(self):
         values = dict(GOOD, binary_0="bb" * 32)
@@ -273,6 +288,27 @@ class PlanBinariesTest(unittest.TestCase):
         missing = dict(GOOD, binary_0="missing")
         self.assertFalse(self.binary_check(missing, plan=plan)["pass"])
 
+    def test_a_binary_whose_bytes_cannot_be_read_is_reported_not_failed(self):
+        # The file is there and executable, so what the plan installs is on the machine;
+        # its bytes are a fact this machine would not give up. That is a read that did
+        # not happen, and calling it a difference would be a claim the run cannot make.
+        values = dict(GOOD, binary_0="unreadable")
+        c = self.binary_check(values)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("unreadable here", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        self.assertEqual(summary["unreadable"], 1)
+        self.assertEqual(summary["checksum_verified"], 0)
+        self.assertEqual(summary["failed"], [])
+        # An archive is claimed as installed either way: the plan pins the archive's
+        # checksum, so an unreadable member changes nothing about that claim.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["binaries"][0]["archive"] = "tar.gz"
+        summary = sc.binary_summary(sc.evaluate(values, plan))
+        self.assertEqual((summary["install_verified"], summary["unreadable"]), (1, 0))
+        self.assertIn("could not be read here", self.binary_check(values, plan=plan)["detail"])
+
     def test_the_binaries_are_not_counted_as_defaults(self):
         # A binary has no image/session axis, so it must not appear in the defaults
         # coverage: mixing them would report a default that does not exist.
@@ -283,7 +319,7 @@ class PlanBinariesTest(unittest.TestCase):
         values = dict(GOOD, binary_0="missing")
         c = self.binary_check(values)
         self.assertFalse(c["pass"])
-        self.assertIn("is not there or is not executable", c["detail"])
+        self.assertIn("is not an executable regular file", c["detail"])
 
     def test_a_plan_without_binaries_asserts_none(self):
         checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})

@@ -135,10 +135,20 @@ def binary_reads():
         f"mapfile -t plan_binaries < {BINARY_PATHS_PATH}\n"
         'for i in "${!plan_binaries[@]}"; do\n'
         '  b="${plan_binaries[$i]}"\n'
-        '  if [ -x "$b" ]; then\n'
-        '    echo "binary_$i=$(sha256sum "$b" | cut -d" " -f1)"\n'
+        '  if [ -f "$b" ] && [ -x "$b" ]; then\n'
+        # An executable file whose bytes cannot be read is not a file that changed: it
+        # is a fact this machine would not give up, and the host separates it from a
+        # mismatch, the same way a session read that fails is reported with its reason.
+        '    h="$(sha256sum "$b" 2>/dev/null | cut -d" " -f1)"\n'
+        '    if [ -n "$h" ]; then echo "binary_$i=$h"; else echo "binary_$i=unreadable"; fi\n'
+        # The plan declares the mode too, so the guest reports it: a file with the right
+        # bytes and the wrong mode is not the file the plan says it installs. The reads
+        # follow a link, as the byte read does, so both describe the file that runs.
+        '    m="$(stat -Lc %a "$b" 2>/dev/null)"\n'
+        '    echo "binary_mode_$i=${m:-unreadable}"\n'
         '  else\n'
         '    echo "binary_$i=missing"\n'
+        '    echo "binary_mode_$i=missing"\n'
         '  fi\n'
         "done\n"
     )
@@ -568,7 +578,9 @@ def binary_summary(checks):
     bins = [c for c in checks if c["check"].startswith(BINARY_CHECK_PREFIX)]
     strict = sum(1 for c in bins if c["coverage"]["image"] == "checked-bytes" and c["pass"])
     install = sum(1 for c in bins if c["coverage"]["image"] == "install-only" and c["pass"])
+    unreadable = sum(1 for c in bins if c["coverage"]["image"] == "unread")
     return {"declared": len(bins), "checksum_verified": strict, "install_verified": install,
+            "unreadable": unreadable,
             "failed": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
 
 
@@ -771,23 +783,41 @@ def evaluate(values, plan, journal="", skel_rels=()):
     for i, b in enumerate(plan_binaries(plan)):
         name = BINARY_CHECK_PREFIX + b["destination"]
         got = values.get(f"binary_{i}", "missing")
-        if b.get("archive", "none") == "none":
-            if got == "missing":
-                check(name, False, f"{b['destination']} is not there or is not executable",
-                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
-            elif got != b["sha256"]:
-                check(name, False, f"sha256 {got}, the plan pins {b['sha256']}",
-                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
-            else:
-                check(name, True, f"sha256 {got}, as the plan pins it",
-                      coverage={"source": "binary", "key": b["destination"], "image": "checked-bytes", "session": "checked-bytes"})
+        archived = b.get("archive", "none") != "none"
+        # The plan declares the mode, so it is asserted: a file with the right bytes and
+        # the wrong mode is not the file the plan installs. `stat` prints 755 where the
+        # plan writes 0755, so the leading zero is not a difference.
+        declared_mode = b.get("mode") or ""
+        read_mode = values.get(f"binary_mode_{i}", "missing")
+        mode_ok = not declared_mode or read_mode.lstrip("0") == declared_mode.lstrip("0")
+        mode_text = ("mode " + (read_mode or "not read") +
+                     (", as the plan declares" if mode_ok else f", the plan declares {declared_mode}"))
+        # An archive is claimed as installed and a single file by its bytes; a file
+        # whose bytes could not be read is claimed by neither, and is counted as a read
+        # that did not happen rather than as one that disagreed.
+        axis = "install-only" if archived else "checked-bytes"
+        coverage = {"source": "binary", "key": b["destination"], "image": axis, "session": axis}
+        if got == "missing":
+            check(name, False, f"{b['destination']} is not an executable regular file",
+                  coverage=coverage)
+        elif not mode_ok:
+            check(name, False, f"{b['destination']} is installed with {mode_text}",
+                  coverage=coverage)
+        elif archived:
+            read = f" (sha256 {got[:12]}…)" if got != "unreadable" else " (its bytes could not be read here)"
+            check(name, True,
+                  f"installed and executable{read}, {mode_text}; the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
+                  coverage=coverage)
+        elif got == "unreadable":
+            check(name, True,
+                  f"{b['destination']} is installed and executable, {mode_text}; whether its bytes are the plan's is unreadable here",
+                  skipped=True,
+                  coverage=dict(coverage, image="unread", session="unread"))
+        elif got != b["sha256"]:
+            check(name, False, f"sha256 {got}, the plan pins {b['sha256']}",
+                  coverage=coverage)
         else:
-            if got == "missing":
-                check(name, False, f"{b['destination']} is not there or is not executable",
-                      coverage={"source": "binary", "key": b["destination"], "image": "install-only", "session": "install-only"})
-            else:
-                check(name, True, f"installed and executable (sha256 {got[:12]}…); the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
-                      coverage={"source": "binary", "key": b["destination"], "image": "install-only", "session": "install-only"})
+            check(name, True, f"sha256 {got} and {mode_text}", coverage=coverage)
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -928,7 +958,8 @@ def main():
     if "plan_binaries" in result:
         b = result["plan_binaries"]
         lines.append(f"- Plan binaries: {b['declared']} declared; {b['checksum_verified']} verified against the checksum the plan pins, "
-                     f"{b['install_verified']} verified as installed (the plan pins an archive)")
+                     f"{b['install_verified']} verified as installed (the plan pins an archive)"
+                     + (f", {b['unreadable']} unreadable here" if b.get("unreadable") else ""))
         for c in b["failed"]:
             lines.append(f"  - {c['check']} ({c['detail']})")
     if "platform_diagnostics" in result:
