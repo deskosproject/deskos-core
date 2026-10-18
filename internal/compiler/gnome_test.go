@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
+	"github.com/deskosproject/deskos-core/internal/plan"
 )
 
 const (
@@ -257,4 +258,128 @@ func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {
 	}).dir(t)
 	_, err := planOf(t, "ws", dir)
 	mustFail(t, err, "gnome.loginScreen is declared although the platform keeps its vendor's desktop defaults")
+}
+
+const (
+	enabledExtensionsKey = "/org/gnome/shell/enabled-extensions"
+	appIndicatorUUID     = "appindicatorsupport@rgcjonas.gmail.com"
+	backgroundLogoUUID   = "background-logo@fedorahosted.org"
+)
+
+// platformWithAppIndicator adds a second extension to the test platform's catalog.
+func platformWithAppIndicator() string {
+	return strings.Replace(platformYAML,
+		"      - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}",
+		"      - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}\n"+
+			"      - {name: appindicator, package: gnome-shell-extension-appindicator, uuid: "+appIndicatorUUID+"}",
+		1)
+}
+
+func extensionDecision(uuid string, enabled bool) string {
+	state := "true"
+	if !enabled {
+		state = "false"
+	}
+	return "      extensions:\n        - {uuid: " + uuid + ", enabled: " + state + "}\n"
+}
+
+func extensionPlan(t *testing.T, layer, defaults string) *plan.Plan {
+	t.Helper()
+	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", layer, "GnomeProfile/g"),
+		"g.yaml":  gnome("g", shellDefaults(defaults)),
+	}).dir(t)
+	return mustPlan(t, "ws", dir)
+}
+
+func TestAProfileEnablesAnExtensionThePlatformDeclares(t *testing.T) {
+	// The platform offers it, a profile turns it on, and its package comes from the
+	// platform's catalog (docs/adr/0017).
+	p := extensionPlan(t, "organization", extensionDecision(appIndicatorUUID, true))
+	want := "['" + backgroundLogoUUID + "', '" + appIndicatorUUID + "']"
+	if v, _ := dconf(p, enabledExtensionsKey); v != want {
+		t.Errorf("enabled-extensions = %s, want %s", v, want)
+	}
+	if !strings.Contains(strings.Join(packages(p), " "), "gnome-shell-extension-appindicator") {
+		t.Errorf("packages lack the extension the profile enabled: %v", packages(p))
+	}
+}
+
+func TestAProfileDisablesAnExtensionThePlatformEnables(t *testing.T) {
+	// A UUID the platform enables by default needs no catalog entry to be turned
+	// off: there is no package to install, and the list is rewritten without it.
+	p := extensionPlan(t, "organization", extensionDecision(backgroundLogoUUID, false))
+	// dconf prints an empty array with its type annotation, which the session check
+	// knows how to compare with the plan's `[]`.
+	if v, _ := dconf(p, enabledExtensionsKey); v != "@as []" {
+		t.Errorf("enabled-extensions = %s, want @as []", v)
+	}
+}
+
+func TestAnExtensionDecidedTheSameWayTwiceInOneLayerFails(t *testing.T) {
+	// One UUID, two decisions, no order to break the tie (docs/adr/0017).
+	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml": gnome("g", shellDefaults("      extensions:\n"+
+			"        - {uuid: "+appIndicatorUUID+", enabled: true}\n"+
+			"        - {uuid: "+appIndicatorUUID+", enabled: false}\n")),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "shell.extensions: \""+appIndicatorUUID+"\" is decided twice")
+}
+
+func TestAnExtensionThePlatformDoesNotDeclareFails(t *testing.T) {
+	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", shellDefaults(extensionDecision("elsewhere@example.com", true))),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err,
+		"Platform/test-platform does not provide the GNOME extension \"elsewhere@example.com\"",
+		"organization GnomeProfile/g")
+}
+
+func TestTheDocksExtensionIsDecidedByDockEnabled(t *testing.T) {
+	// Dash to Dock has its own key, so nothing decides it twice (docs/adr/0017).
+	dir := fixture{"platform.yaml": platformWithAppIndicator()}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", shellDefaults(extensionDecision("dash-to-dock@micxgx.gmail.com", true))),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "dash-to-dock@micxgx.gmail.com is decided by dock.enabled, not by shell.extensions")
+}
+
+func TestNothingIsWrittenWhenNoDecisionChangesThePlatformList(t *testing.T) {
+	// The platform already enables it: turning it on changes nothing, so the plan
+	// writes no key and the platform's own GNOME default stands.
+	p := extensionPlan(t, "organization", extensionDecision(backgroundLogoUUID, true))
+	if v, ok := dconf(p, enabledExtensionsKey); ok {
+		t.Errorf("enabled-extensions written although the platform list did not change: %s", v)
+	}
+}
+
+func TestThePowerButtonIsAScalarLikeEveryOtherOption(t *testing.T) {
+	dir := fixture{"platform.yaml": platformYAML}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", "    power:\n      buttonAction: hibernate\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	if v, _ := dconf(p, "/org/gnome/settings-daemon/plugins/power/power-button-action"); v != "'hibernate'" {
+		t.Errorf("power-button-action = %s", v)
+	}
+}
+
+func TestAnUnknownPowerButtonActionIsRejected(t *testing.T) {
+	dir := fixture{"platform.yaml": platformYAML}.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml":  gnome("g", "    power:\n      buttonAction: reboot\n"),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "at /spec/defaults/power/buttonAction: value must be one of 'nothing', 'suspend', 'hibernate', 'interactive'")
 }

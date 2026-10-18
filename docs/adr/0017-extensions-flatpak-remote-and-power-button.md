@@ -1,6 +1,6 @@
 # ADR 0017: Extensions a profile may turn on, a Flatpak remote a workstation may retire, and the power button
 
-**Status:** proposed (2026-10-18)
+**Status:** accepted (2026-10-18)
 
 ## Context
 

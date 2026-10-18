@@ -427,18 +427,33 @@ spec:
           name: Development
           apps: [code.desktop]
           categories: [Development]
+      extensions:
+        - uuid: appindicatorsupport@rgcjonas.gmail.com
+          enabled: true            # or false; leaving the uuid out inherits the platform
     clock:
       showWeekday: true
       format: 24h                  # 24h | 12h
     keyboard:
       numLock: true
       terminal: com.mitchellh.ghostty.desktop   # Ctrl+Alt+T
+    power:
+      buttonAction: hibernate      # nothing | suspend | hibernate | interactive
 ```
 
 - **`appFolders`** replaces GNOME's built-in folders (such as
   *Utilities*); declare every folder the app grid should have. A higher
   layer replaces the whole list. Not available on RHEL 10.2, whose GNOME
   Shell 49.4 overwrites them at first login.
+- **`extensions`** decides, one UUID at a time, whether a GNOME Shell extension
+  the **platform declares** is enabled. A profile never names a package, a schema
+  or a dconf key: the UUID must be in the platform's own catalog, or in the list it
+  enables by default (which can be turned off without installing anything), and an
+  extension DeskOS does not know fails composition with the platform's reason.
+  Dash to Dock is decided by `dock.enabled`, not here. The plan writes
+  `enabled-extensions` only when the composition changes the platform's own list
+  ([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
+- **`power.buttonAction`** is the hardware power button's action, from GNOME's own
+  values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
   through the Platform's application launcher (`gtk-launch` on EL10).
 - **`welcomeTour`** (default `true`) controls GNOME Shell's first-run

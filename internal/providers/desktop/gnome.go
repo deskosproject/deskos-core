@@ -63,7 +63,24 @@ const (
 	KeyClockFormat     = "clock.format"
 	KeyNumLock         = "keyboard.numLock"
 	KeyTerminal        = "keyboard.terminal"
+	KeyPowerButton     = "power.buttonAction"
 )
+
+// extensionKeyPrefix names one extension decision in the composed settings. Each
+// decision is its own scalar, keyed by the UUID it decides about, so the layer
+// rules apply unchanged: the highest layer wins and one layer cannot decide twice
+// (docs/adr/0017).
+const extensionKeyPrefix = "shell.extension."
+
+// ExtensionSetting is the semantic setting key of one extension decision.
+func ExtensionSetting(uuid string) string { return extensionKeyPrefix + uuid }
+
+// keyExtensions names the profile field in messages. Each decision composes under
+// its own key (ExtensionSetting), so this one is not a scalar.
+const keyExtensions = "shell.extensions"
+
+// powerButtonActions are the values GNOME's power plugin accepts.
+var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactive"}
 
 var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
@@ -72,6 +89,7 @@ var knownKeys = map[string]bool{
 	KeyLockDelay: true, KeyDockEnabled: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
+	KeyPowerButton: true,
 }
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
@@ -100,6 +118,12 @@ type Settings struct {
 	Software   *Software   `json:"software,omitempty"`
 	Clock      *Clock      `json:"clock,omitempty"`
 	Keyboard   *Keyboard   `json:"keyboard,omitempty"`
+	Power      *Power      `json:"power,omitempty"`
+}
+
+// Power is the hardware power button's action.
+type Power struct {
+	ButtonAction string `json:"buttonAction,omitempty"`
 }
 
 type Windows struct {
@@ -139,6 +163,15 @@ type Shell struct {
 	WelcomeTour *bool       `json:"welcomeTour,omitempty"`
 	Workspaces  any         `json:"workspaces,omitempty"`
 	AppFolders  []AppFolder `json:"appFolders,omitempty"`
+	Extensions  []Extension `json:"extensions,omitempty"`
+}
+
+// Extension turns one platform-declared GNOME Shell extension on or off. Naming a
+// UUID is the decision: a UUID a profile does not name keeps whatever the platform
+// decided (docs/adr/0017).
+type Extension struct {
+	UUID    string `json:"uuid"`
+	Enabled bool   `json:"enabled"`
 }
 
 // AppFolder is an app grid folder; declared folders replace GNOME's built-in ones.
@@ -219,14 +252,15 @@ type decoded struct {
 }
 
 var (
-	fontFamilyRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 _-]*$`)
-	themeRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 ._+-]*$`)
-	desktopIDRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.desktop$`)
-	assetNameRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|svg)$`)
-	logoNameRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|svg)$`)
-	folderIDRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
-	categoryRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
-	folderNameRE = regexp.MustCompile(`^[^\x00-\x1f\x7f]+$`)
+	fontFamilyRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 _-]*$`)
+	themeRE         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 ._+-]*$`)
+	desktopIDRE     = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.desktop$`)
+	assetNameRE     = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|jpg|jpeg|svg)$`)
+	logoNameRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.(png|svg)$`)
+	folderIDRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	categoryRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
+	folderNameRE    = regexp.MustCompile(`^[^\x00-\x1f\x7f]+$`)
+	extensionUUIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$`)
 )
 
 // Providers returns the desktop.deskos.org providers.
@@ -423,6 +457,26 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			}
 			set(KeyAppFolders, sh.AppFolders, strings.Join(ids, ", "))
 		}
+		if sh.Extensions != nil {
+			// One scalar per UUID, so a profile's decision composes like every other
+			// setting: the highest layer wins, and naming one UUID twice in the same
+			// list is ambiguous rather than a silent last-one-wins (docs/adr/0017).
+			seenUUID := map[string]bool{}
+			for _, e := range sh.Extensions {
+				if !extensionUUIDRE.MatchString(e.UUID) {
+					bad("%s: %q is not an extension uuid (name@domain)", keyExtensions, e.UUID)
+				}
+				if seenUUID[e.UUID] {
+					bad("%s: %q is decided twice; leave the UUID out to inherit the platform's decision", keyExtensions, e.UUID)
+				}
+				seenUUID[e.UUID] = true
+				state := "enabled"
+				if !e.Enabled {
+					state = "disabled"
+				}
+				set(ExtensionSetting(e.UUID), e.Enabled, e.UUID+" "+state)
+			}
+		}
 	}
 
 	if c := s.Clock; c != nil {
@@ -507,6 +561,13 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			bad("%s: expected %s, got %q", KeySoftwareUpdates, strings.Join(updateModes, ", "), sw.Updates)
 		}
 		set(KeySoftwareUpdates, sw.Updates, sw.Updates)
+	}
+
+	if pw := s.Power; pw != nil && pw.ButtonAction != "" {
+		if !slices.Contains(powerButtonActions, pw.ButtonAction) {
+			bad("%s: expected %s, got %q", KeyPowerButton, strings.Join(powerButtonActions, ", "), pw.ButtonAction)
+		}
+		set(KeyPowerButton, pw.ButtonAction, pw.ButtonAction)
 	}
 
 	seenLock := map[string]bool{}

@@ -198,6 +198,21 @@ func (p *PlatformSpec) GnomeExtension(name string) (GnomeExtension, bool) {
 	return GnomeExtension{}, false
 }
 
+// GnomeCatalogExtension returns the platform-declared extension with this UUID. The
+// catalog, together with the platform's own enabled extensions, is what a profile may
+// decide about (docs/adr/0017).
+func (p *PlatformSpec) GnomeCatalogExtension(uuid string) (GnomeExtension, bool) {
+	if p.Gnome == nil {
+		return GnomeExtension{}, false
+	}
+	for _, e := range p.Gnome.Extensions {
+		if e.UUID == uuid {
+			return e, true
+		}
+	}
+	return GnomeExtension{}, false
+}
+
 // BaseImageRef returns the FROM reference, digest-pinned when a digest is set.
 func (p *PlatformSpec) BaseImageRef() string {
 	if p.Bootc.Digest != "" {

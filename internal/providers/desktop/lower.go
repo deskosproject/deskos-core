@@ -3,6 +3,7 @@ package desktop
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -217,8 +218,12 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeySoftwareUpdates, "/org/gnome/software/allow-updates", "b", strconv.FormatBool(mode != "disabled"), v.Provenance)
 		l.set(KeySoftwareUpdates, "/org/gnome/software/download-updates", "b", strconv.FormatBool(mode == "automatic"), v.Provenance)
 	}
+	if v, ok := get(KeyPowerButton); ok {
+		l.set(KeyPowerButton, "/org/gnome/settings-daemon/plugins/power/power-button-action", "s", gvString(v.Value.(string)), v.Provenance)
+	}
 
 	l.lowerShell(get)
+	l.lowerExtensions(get, locks)
 	l.lowerDock(get)
 
 	for _, lk := range locks {
@@ -302,6 +307,126 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 	}
 }
 
+// lowerExtensions writes the effective `enabled-extensions` list. It is the **only**
+// writer of that key: the platform's own list, every profile decision and the dock
+// all pass through here, so two writers cannot disagree and neither the order of the
+// profiles nor of the files can change the result (docs/adr/0017).
+//
+// The list is the platform's own, in its order, with the decisions applied and the
+// dock added or removed as `dock.enabled` says. Nothing is written when the
+// composition does not change what the platform ships, so a platform default nobody
+// touched keeps standing.
+func (l *lowering) lowerExtensions(get func(string) (compose.Scalar, bool), locks []compose.Member) {
+	const key = "/org/gnome/shell/enabled-extensions"
+	pl := l.c.PlatformSpec
+	list := append([]string(nil), pl.Gnome.EnabledExtensions...)
+
+	dockUUID := ""
+	if ext, ok := pl.GnomeExtension(DockExtension); ok {
+		dockUUID = ext.UUID
+	}
+
+	var decisions []compose.Scalar
+	for _, s := range l.c.Result.Scalars(DomainSettings) {
+		if strings.HasPrefix(s.Key, extensionKeyPrefix) {
+			decisions = append(decisions, s)
+		}
+	}
+	// Sorted by the UUID they decide about, so the appended order does not depend on
+	// how the composition happened to enumerate them.
+	sort.Slice(decisions, func(i, j int) bool { return decisions[i].Key < decisions[j].Key })
+
+	var prov []model.Provenance
+	for _, s := range decisions {
+		uuid := strings.TrimPrefix(s.Key, extensionKeyPrefix)
+		if dockUUID != "" && uuid == dockUUID {
+			l.errs.Add(fmt.Errorf("%s: %s is decided by %s, not by %s\n  set by: %s",
+				keyExtensions, uuid, KeyDockEnabled, keyExtensions, describe(s.Provenance)))
+			continue
+		}
+		ext, inCatalog := pl.GnomeCatalogExtension(uuid)
+		if !inCatalog && !contains(pl.Gnome.EnabledExtensions, uuid) {
+			l.errs.Add(fmt.Errorf("%s does not provide the GNOME extension %q, so %s cannot decide about it\n  set by: %s",
+				l.c.Platform.ID(), uuid, keyExtensions, describe(s.Provenance)))
+			continue
+		}
+		if s.Value.(bool) {
+			if !contains(list, uuid) {
+				list = append(list, uuid)
+			}
+			if inCatalog {
+				l.p.AddPackage(ext.Package, s.Provenance...)
+			}
+		} else {
+			list = without(list, uuid)
+		}
+		prov = append(prov, s.Provenance...)
+	}
+
+	// The dock is a decision like any other. A false removes it from the platform's
+	// own list, which is ADR 0008's disable path; a true adds it, and lowerDock
+	// installs its package and its options.
+	setting := ""
+	if en, ok := get(KeyDockEnabled); ok {
+		setting = KeyDockEnabled
+		prov = append(append([]model.Provenance(nil), en.Provenance...), prov...)
+		if en.Value.(bool) {
+			if dockUUID != "" && !contains(list, dockUUID) {
+				list = append(list, dockUUID)
+			}
+		} else {
+			list = without(list, dockUUID)
+		}
+	} else if len(decisions) > 0 {
+		setting = decisions[0].Key
+		prov = decisions[0].Provenance
+	}
+	if setting == "" {
+		return
+	}
+	// The key is written when the list differs from the platform's, or when a lock
+	// asks for it: a lock needs a key to attach to, and dock.enabled false alone would
+	// otherwise leave the lock with nothing to lock.
+	if sameStrings(list, pl.Gnome.EnabledExtensions) && !locksNamed(locks, setting) {
+		return
+	}
+	l.set(setting, key, "as", gvStrings(list), prov)
+}
+
+// locksNamed reports whether a lock names one of the settings given.
+func locksNamed(locks []compose.Member, settings ...string) bool {
+	for _, lk := range locks {
+		for _, s := range settings {
+			if lk.Name == s {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func without(list []string, s string) []string {
+	out := make([]string, 0, len(list))
+	for _, x := range list {
+		if x != s {
+			out = append(out, x)
+		}
+	}
+	return out
+}
+
+func sameStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // dockOptions are settings that only exist while the dock extension runs.
 var dockOptions = []string{KeyDockPosition, KeyDockBehavior, KeyDockIconSize, KeyDockShowTrash}
 
@@ -332,9 +457,8 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 	}
 	pl := l.c.PlatformSpec
 	if !enabled {
-		if hasEn {
-			l.disableDock(en)
-		}
+		// The list itself is lowerExtensions' job; here a false dock.enabled only has
+		// to reject options that cannot run.
 		return
 	}
 	ext, ok := pl.GnomeExtension(DockExtension)
@@ -344,11 +468,6 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 		return
 	}
 	l.p.AddPackage(ext.Package, en.Provenance...)
-	exts := append([]string(nil), pl.Gnome.EnabledExtensions...)
-	if !contains(exts, ext.UUID) {
-		exts = append(exts, ext.UUID)
-	}
-	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
 	for _, v := range active {
 		switch v.Key {
 		case KeyDockPosition:
@@ -364,33 +483,6 @@ func (l *lowering) lowerDock(get func(string) (compose.Scalar, bool)) {
 			l.set(v.Key, schema+"show-trash", "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
 		}
 	}
-}
-
-// disableDock handles an effective dock.enabled false. Nothing is written
-// unless the platform enables the dock by default or the setting is locked;
-// then enabled-extensions is set to the platform list without the dock.
-func (l *lowering) disableDock(en compose.Scalar) {
-	pl := l.c.PlatformSpec
-	ext, ok := pl.GnomeExtension(DockExtension)
-	if !ok {
-		return
-	}
-	locked := false
-	for _, m := range l.c.Result.Set(DomainLocks) {
-		if m.Name == KeyDockEnabled {
-			locked = true
-		}
-	}
-	if !contains(pl.Gnome.EnabledExtensions, ext.UUID) && !locked {
-		return
-	}
-	var exts []string
-	for _, e := range pl.Gnome.EnabledExtensions {
-		if e != ext.UUID {
-			exts = append(exts, e)
-		}
-	}
-	l.set(KeyDockEnabled, "/org/gnome/shell/enabled-extensions", "as", gvStrings(exts), en.Provenance)
 }
 
 func describeShort(ps []model.Provenance) string {
