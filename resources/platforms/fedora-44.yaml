@@ -24,12 +24,13 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/fedora/fedora-silverblue:44
-    # x86_64 manifest of the :44 index (config sha256:b48d314a...), built
-    # 2026-10-17T00:55:25Z as Fedora 44.20261017.0 (ostree commit 2b54c661...); the
-    # index itself resolves to sha256:b514a170.... Fedora 44 is the released release
+    # x86_64 manifest of the :44 index (config sha256:f40cb714...), built
+    # 2026-10-18T00:58:16Z as Fedora 44.20261018.0 (ostree commit bd04a8c7...); the
+    # index itself resolves to sha256:3232aae7.... Fedora 44 is the released release
     # (measured: os-release has no "Prerelease" suffix and updates-testing is
-    # disabled). It moves deliberately.
-    digest: sha256:226ffb233b69b0ca3e8d788aa56f029826db02415a485779dab1e30b5d28a0de
+    # disabled). It moves deliberately. Re-pinned 2026-10-18: the registry stopped
+    # serving the previous digest, and the `validate` job reports exactly that.
+    digest: sha256:842c894e9d33a45a252f668a218ed5783ef0e5dbbe2cf5c5a3e2999c30213ea4
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
