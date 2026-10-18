@@ -58,6 +58,23 @@ nothing that crosses layers, no reconciliation of the machine against the plan, 
 network of its own beyond what `bootc` does, and no dependence on a model. The
 compiler stays the only thing that decides what an artifact is.
 
+### How it gets onto a machine
+
+`deskos` is a **pinned `BinaryArtifact` in Core's foundation**, the same shape a flavor
+uses for any verified binary, so every Core image installs `/usr/bin/deskos` from a
+published release asset with its checksum, and the pin can be watched and bumped
+deliberately like a base image's digest. Two alternatives were considered and rejected:
+
+- committing a built binary into the repository would put a build artifact in git and
+  let it drift from the source it was built from;
+- building it inside the image does not reach the consumers who render from the
+  resources tarball, because they build without this source tree.
+
+A pinned asset has to exist before a pin can point at it, so the pin lands with the
+first release that ships the binary. Until then the images do not carry it, and that is
+stated rather than assumed: a release that ships `deskos` is what unblocks the pin,
+after which every Core image carries it by default.
+
 ## Consequences
 
 - The logic lives in `internal/evidence`, which takes a `Probe` and never executes a
@@ -70,9 +87,9 @@ compiler stays the only thing that decides what an artifact is.
 - `deskos update` acts on the machine it runs on and takes no `--root`: reading one
   tree's plan while asking the host's bootc to upgrade would mix two machines. It is
   read-only commands that accept a root, for images and tests.
-- Whether Core's own images carry the runtime binary is a separate decision, and the
-  mechanism already exists: a workstation that wants it on its machines declares a
-  `BinaryArtifact` for the release asset, with the checksum the release publishes.
+- **Every Core image carries `deskos`**, from a pinned release asset (above), so a
+  machine can always be asked what it was built from without anyone having to install a
+  tool first. The pin lands with the first release that ships the binary.
 - `check` cannot see drift it does not own, and it says so on every run. That is the
   honest version of "measure the drift": `ujust`'s `check-local-overrides` admits the
   gap, and this admits it in writing.

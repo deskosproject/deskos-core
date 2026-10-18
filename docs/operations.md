@@ -109,9 +109,11 @@ sudo reboot
 
 ## On the machine: `deskos`
 
-`deskos` is the runtime companion to `deskosctl` (ADR 0018). The release ships it
-next to `deskosctl`, with the same checksum coverage, and a workstation that wants it
-on its machines declares a `BinaryArtifact` for that asset.
+`deskos` is the runtime companion to `deskosctl` (ADR 0018). The release ships it next
+to `deskosctl`, with the same checksum coverage, and **every Core image carries it**:
+Core declares a pinned `BinaryArtifact` for the release asset, so `/usr/bin/deskos` is
+on the machine and nobody has to install a tool to ask what it was built from. The pin
+lands with the first release that ships the binary.
 
 ```bash
 deskos report        # what this machine was built from, read from the plan the image carries
