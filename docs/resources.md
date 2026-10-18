@@ -63,7 +63,7 @@ is the composition kind — the machine you author — not a Fedora edition.
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: example-devops-centos10
+  name: example-devops-centos-stream-10
 spec:
   displayName: Example DevOps Workstation
   platformRef: centos-stream-10
@@ -75,7 +75,7 @@ spec:
 ```
 
 `deskosctl plan ./examples/baseline-and-role --workstation
-example-devops-centos10` shows the composed result, including **which
+example-devops-centos-stream-10` shows the composed result, including **which
 layer won each setting**.
 
 A workstation can also **retire a Flatpak remote the base ships**, so a machine
@@ -125,7 +125,7 @@ redistribution constraints. DeskOS ships `centos-stream-10`,
 and how to install it, is [platforms.md](platforms.md). A platform that is only
 being *evaluated* is not shipped: Fedora 45's prerelease evaluation carries its
 own `Platform` resource inside its example root
-([`examples/core-fedora-45/`](../examples/core-fedora-45/README.md)).
+([`examples/fedora-45/`](../examples/fedora-45/README.md)).
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. A platform declares one

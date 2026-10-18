@@ -68,19 +68,19 @@ jobs:
         # silently inherit another's disk path and skip its own boot check.
         include:
           - token: centos10
-            workstation: deskos-core-centos10
+            workstation: deskos-core-centos-stream-10
             exceptions: tests/supply-chain/exceptions.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true
           - token: almalinux10
-            workstation: deskos-core-almalinux10
+            workstation: deskos-core-almalinux-10
             exceptions: tests/supply-chain/exceptions-almalinux10.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true
           - token: ubuntu2604
-            workstation: deskos-core-ubuntu2604
+            workstation: deskos-core-ubuntu-2604
             exceptions: tests/supply-chain/exceptions-ubuntu2604.json
             disk: bootc-install
             diskfile: disk.raw

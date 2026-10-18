@@ -110,7 +110,7 @@ func TestAptSourceLandsInThePlanOnADebPlatform(t *testing.T) {
 	}
 	// An RPM platform's plan is unaffected: the field exists and is empty, so a
 	// consumer never has to guess between absent and empty.
-	rpm := mustPlan(t, "deskos-core-centos10", resourcesRoot)
+	rpm := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 	if rpm.Artifact.AptRepositories == nil {
 		t.Error("aptRepositories is nil on an RPM plan, want []")
 	}

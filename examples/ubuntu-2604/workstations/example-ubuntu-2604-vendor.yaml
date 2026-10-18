@@ -1,0 +1,13 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-ubuntu-2604-vendor
+spec:
+  displayName: Example Ubuntu 26.04 Workstation (vendor APT source)
+  platformRef: ubuntu-2604
+  # Core's foundation plus an organization's vendor tooling. The APT source the
+  # organization declares is what makes `code` installable on this platform, and
+  # the image carries it under /etc/apt/sources.list.d with the key apt requires.
+  profiles:
+    - deskos-core
+    - example-ubuntu-2604-vendor

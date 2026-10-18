@@ -250,7 +250,7 @@ func TestExampleVirtManagerGapIsReported(t *testing.T) {
 		_, err := planOf(t, ws, resourcesRoot, exampleRoot, dir)
 		mustFail(t, err, `package "virt-manager" is not available on `+strings.SplitN(want, ":", 2)[0], strings.SplitN(want, ": ", 2)[1], "PackageSet/example-virt-manager")
 	}
-	if slices.Contains(packages(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)), "virt-manager") {
+	if slices.Contains(packages(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)), "virt-manager") {
 		t.Error("virt-manager must not be installed silently")
 	}
 }
@@ -423,7 +423,7 @@ func TestDesktopEntryNeedsThePlatformIconCache(t *testing.T) {
 
 // Organization- and role-specific software never appears in DeskOS Core.
 func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
-	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
+	p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 	forbidden := []string{"libvirt", "qemu-kvm", "virt-install", "virt-manager", "gnome-boxes", "terraform",
 		"kubectl", "code", "google-chrome-stable", "zerotier-one", "tailscale", "ipa-client", "cockpit-machines"}
 	for _, pkg := range packages(p) {
@@ -452,7 +452,7 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")
 	}
 
-	example := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)
+	example := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
 	for _, want := range []string{"libvirt", "virt-install", "terraform", "kubectl", "code", "google-chrome-stable"} {
 		if !slices.Contains(packages(example), want) {
 			t.Errorf("the example DevOps workstation is missing %s", want)
@@ -521,7 +521,7 @@ func TestMakeFmtCheckFailsWithoutGofmt(t *testing.T) {
 // CS10 Core leaves out setroubleshoot only through the group exclusion, and no
 // rendered file weakens SELinux enforcement or audit logging.
 func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
-	cs10, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	cs10, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -532,7 +532,7 @@ func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
 			t.Errorf("the CS10 group transaction does not exclude %s", x)
 		}
 	}
-	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
 	if err != nil {
 		t.Fatal(err)
 	}

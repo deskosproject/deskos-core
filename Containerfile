@@ -22,7 +22,7 @@
 #   mkdir -p out
 #   podman run --rm --userns=keep-id -v "$PWD/out":/out:z \
 #       quay.io/deskos/deskosctl:dev render \
-#       --workstation deskos-core-centos10 --output /out
+#       --workstation deskos-core-centos-stream-10 --output /out
 
 # Pinned by the tag's index digest so the toolchain is the one that was tested;
 # bump the tag and the digest together.

@@ -20,13 +20,13 @@ bootc-image-builder's default kernel arguments
 arguments, as an installed workstation does:
 
 ```bash
-deskosctl render --workstation deskos-core-centos10 --output ctx
-sudo podman build -t localhost/deskos-core-centos10:test ctx
+deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
+sudo podman build -t localhost/deskos-core-centos-stream-10:test ctx
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
-    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos10:test
+    build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos-stream-10:test
 ```
 
 **Or install to a raw disk**, which is the path for a platform whose image is not

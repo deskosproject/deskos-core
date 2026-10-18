@@ -22,11 +22,11 @@ const (
 	exampleRoot   = "../../examples/baseline-and-role"
 	// ubuntuRoot is the Ubuntu example, which carries the second package
 	// manager's vendor source.
-	ubuntuRoot = "../../examples/core-ubuntu-2604"
+	ubuntuRoot = "../../examples/ubuntu-2604"
 	// fedora45Root is the Fedora 45 evaluation. It carries its own Platform
 	// resource, because DeskOS ships Fedora 44 only: the next Fedora release is
 	// evaluated as an example before anyone commits to it.
-	fedora45Root = "../../examples/core-fedora-45"
+	fedora45Root = "../../examples/fedora-45"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -58,43 +58,43 @@ func golden(t *testing.T, name string, got []byte) {
 }
 
 func TestGoldenCentOSReferencePlan(t *testing.T) {
-	p := mustPlan(t, "deskos-core-centos10", resourcesRoot)
+	p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 	b, err := p.JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "deskos-core-centos10.plan.json", b)
+	golden(t, "deskos-core-centos-stream-10.plan.json", b)
 }
 
 func TestGoldenExampleRHELPlan(t *testing.T) {
-	p := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)
+	p := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
 	b, err := p.JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-devops-rhel10.plan.json", b)
+	golden(t, "example-devops-rhel-10.plan.json", b)
 }
 
 // The declared SBOM is part of the artifact evidence: it must be canonical
 // for the example workstation, like the plan and the Containerfile.
 func TestGoldenExampleRHELSBOM(t *testing.T) {
-	b, err := sbom.Build(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+	b, err := sbom.Build(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-devops-rhel10.sbom.cdx.json", b)
+	golden(t, "example-devops-rhel-10.sbom.cdx.json", b)
 }
 
 // The Ubuntu example is the one plan whose source comes from an APT repository:
 // its key, its deb822 fields and the order of the file's rendering belong in the
 // evidence like any other artifact.
 func TestGoldenExampleUbuntuVendorPlan(t *testing.T) {
-	p := mustPlan(t, "example-ubuntu-vendor", resourcesRoot, ubuntuRoot)
+	p := mustPlan(t, "example-ubuntu-2604-vendor", resourcesRoot, ubuntuRoot)
 	b, err := p.JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-ubuntu-vendor.plan.json", b)
+	golden(t, "example-ubuntu-2604-vendor.plan.json", b)
 }
 
 func TestGoldenContainerfiles(t *testing.T) {
@@ -102,17 +102,17 @@ func TestGoldenContainerfiles(t *testing.T) {
 		ws    string
 		roots []string
 	}{
-		{"deskos-core-centos10", []string{resourcesRoot}},
-		{"deskos-core-almalinux10", []string{resourcesRoot}},
-		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
-		{"example-ubuntu-vendor", []string{resourcesRoot, ubuntuRoot}},
+		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
+		{"deskos-core-almalinux-10", []string{resourcesRoot}},
+		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
+		{"example-ubuntu-2604-vendor", []string{resourcesRoot, ubuntuRoot}},
 		// Fedora 44's shipped reference workstation: it pins the rendered build
 		// context for the newest platform, so a change to the Fedora facts or to the
 		// backend shows up as a reviewable diff. ci.yml renders the same workstation.
-		{"deskos-core-fedora44", []string{resourcesRoot}},
+		{"deskos-core-fedora-44", []string{resourcesRoot}},
 		// Ubuntu 26.04's shipped reference workstation: it is what its publish leg
 		// builds, and ci.yml renders the same workstation.
-		{"deskos-core-ubuntu2604", []string{resourcesRoot}},
+		{"deskos-core-ubuntu-2604", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {
@@ -130,7 +130,7 @@ func TestGoldenContainerfiles(t *testing.T) {
 // loop, and no ordering that makes boot targets or GDM wait for it or for the
 // network (see docs/architecture.md, System Flatpaks).
 func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
-	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,11 +158,11 @@ func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 }
 
 func TestDeterministicPlanJSON(t *testing.T) {
-	a, err := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot).JSON()
+	a, err := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := mustPlan(t, "example-devops-rhel10", exampleRoot, resourcesRoot).JSON()
+	b, err := mustPlan(t, "example-devops-rhel-10", exampleRoot, resourcesRoot).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestDeterministicPlanJSON(t *testing.T) {
 
 func TestDeterministicRender(t *testing.T) {
 	render := func(dir string) map[string][]byte {
-		files, err := containerfile.Render(mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot))
+		files, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -219,7 +219,7 @@ func TestDeterministicRender(t *testing.T) {
 		t.Fatal("re-render changed the file set")
 	}
 	// Repository assets are copied verbatim; only generated text is checked.
-	p := mustPlan(t, "example-devops-rhel10", resourcesRoot, exampleRoot)
+	p := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
 	copied := map[string]bool{}
 	for _, f := range p.Artifact.Files {
 		copied[filepath.Join("rootfs", f.Path)] = true
@@ -242,7 +242,7 @@ func TestRenderRefusesForeignDirectory(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("mine"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos10", resourcesRoot))
+	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -262,11 +262,11 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		ws    string
 		roots []string
 	}{
-		{"deskos-core-centos10", []string{resourcesRoot}},
-		{"example-devops-centos10", []string{resourcesRoot, exampleRoot}},
-		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}},
-		{"deskos-core-fedora44", []string{resourcesRoot}},
-		{"example-core-fedora-45", []string{resourcesRoot, fedora45Root}},
+		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
+		{"example-devops-centos-stream-10", []string{resourcesRoot, exampleRoot}},
+		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
+		{"deskos-core-fedora-44", []string{resourcesRoot}},
+		{"example-fedora-45", []string{resourcesRoot, fedora45Root}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		files, err := containerfile.Render(p)
@@ -339,7 +339,7 @@ func TestWallpaperReachesInitialSetupAsSchemaDefault(t *testing.T) {
 		light, dark string
 	}{
 		{lookWorkstation, []string{resourcesRoot, look}, "deskos-light.svg", "deskos-dark.svg"},
-		{"example-devops-rhel10", []string{resourcesRoot, exampleRoot}, "example.svg", "example.svg"},
+		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}, "example.svg", "example.svg"},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		want := header + "[org.gnome.desktop.background]\n" +

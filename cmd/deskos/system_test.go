@@ -14,12 +14,12 @@ const bootcStatusSample = `{
   "apiVersion": "org.containers.bootc/v1",
   "kind": "BootcHost",
   "metadata": {"name": "host"},
-  "spec": {"image": {"image": "quay.io/deskos/deskos-core-centos10:latest", "transport": "registry"}, "bootOrder": "default"},
+  "spec": {"image": {"image": "quay.io/deskos/deskos-core-centos-stream-10:latest", "transport": "registry"}, "bootOrder": "default"},
   "status": {
     "staged": null,
     "booted": {
       "image": {
-        "image": {"image": "quay.io/deskos/deskos-core-centos10:latest", "transport": "registry"},
+        "image": {"image": "quay.io/deskos/deskos-core-centos-stream-10:latest", "transport": "registry"},
         "version": "10.20261017",
         "timestamp": "2026-10-17T20:46:00Z",
         "imageDigest": "sha256:39dff9371234"
@@ -44,7 +44,7 @@ func TestBootcStatusShapeIsTheRealOne(t *testing.T) {
 	if status.Status.Booted == nil {
 		t.Fatal("booted deployment not read")
 	}
-	if got := status.Status.Booted.Image.Image.Image; got != "quay.io/deskos/deskos-core-centos10:latest" {
+	if got := status.Status.Booted.Image.Image.Image; got != "quay.io/deskos/deskos-core-centos-stream-10:latest" {
 		t.Errorf("booted image = %q", got)
 	}
 	if got := status.Status.Booted.Image.ImageDigest; got != "sha256:39dff9371234" {
@@ -53,7 +53,7 @@ func TestBootcStatusShapeIsTheRealOne(t *testing.T) {
 	if got := status.Status.Booted.Image.Version; got != "10.20261017" {
 		t.Errorf("booted version = %q", got)
 	}
-	if got := status.Spec.Image.Image; got != "quay.io/deskos/deskos-core-centos10:latest" {
+	if got := status.Spec.Image.Image; got != "quay.io/deskos/deskos-core-centos-stream-10:latest" {
 		t.Errorf("the image the machine follows = %q", got)
 	}
 	if status.Status.Staged != nil {

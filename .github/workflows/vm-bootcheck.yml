@@ -7,7 +7,7 @@ name: vm-bootcheck
 # each, runs tests/vm/bootcheck.py on the unmodified disk, then
 # tests/vm/sessioncheck.py on an instrumented boot of the same disk, then
 # tests/vm/firstbootcheck.py, which is the one that answers whether the first-boot wizard
-# ran and whether any account could log in. Booting example-devops-centos10 is what
+# ran and whether any account could log in. Booting example-devops-centos-stream-10 is what
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
@@ -83,14 +83,14 @@ jobs:
         # does not claim the example's virt-manager requirement is met
         # (see examples/baseline-and-role/README.md).
         include:
-          - workstation: deskos-core-centos10
+          - workstation: deskos-core-centos-stream-10
             root: ""
             artifact: vm-evidence-core-centos10
-            image: localhost/deskos-core-centos10:ci
-          - workstation: example-devops-centos10
+            image: localhost/deskos-core-centos-stream-10:ci
+          - workstation: example-devops-centos-stream-10
             root: examples/baseline-and-role
-            artifact: vm-evidence-example-devops-centos10
-            image: localhost/example-devops-centos10:ci
+            artifact: vm-evidence-example-devops-centos-stream-10
+            image: localhost/example-devops-centos-stream-10:ci
     env:
       WS: ${{ matrix.workstation }}
       ROOT: ${{ matrix.root }}
@@ -263,9 +263,9 @@ jobs:
       # The example, not a shipped reference: its platform is shipped, and the
       # example is what exercises it. Its profiles keep AlmaLinux's own look, so
       # the boot check runs without --expect-splash (there is no DeskOS splash).
-      WS: example-core-almalinux-10
-      ROOT: examples/core-almalinux-10
-      IMAGE: localhost/example-core-almalinux-10:ci
+      WS: example-almalinux-10
+      ROOT: examples/almalinux-10
+      IMAGE: localhost/example-almalinux-10:ci
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -401,7 +401,7 @@ jobs:
         # comes from a declared APT source. The second is what proves the source
         # and its key against the vendor's own archive: `apt-get update` fails if
         # the deb822 fields are wrong or the signature is not verified.
-        workstation: [example-core-ubuntu-2604, example-ubuntu-vendor]
+        workstation: [example-ubuntu-2604, example-ubuntu-2604-vendor]
     env:
       WS: ${{ matrix.workstation }}
       IMAGE: localhost/deskos-core-ubuntu-2604:${{ matrix.workstation }}
@@ -416,7 +416,7 @@ jobs:
       - name: Render the Ubuntu build context
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render ./examples/core-ubuntu-2604 \
+          ./bin/deskosctl render ./examples/ubuntu-2604 \
             --workstation "$WS" --output ctx
           sha256sum ctx/plan.json ctx/generated-manifest.json
 

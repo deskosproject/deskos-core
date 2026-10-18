@@ -7,7 +7,7 @@
 logo and the remaining VM QA tiers are *proposals*.
 
 Evidence was gathered on 2026-09-28 from the built CentOS reference image
-(`localhost/deskos-core-centos10:freeze`), upstream sources and one
+(`localhost/deskos-core-centos-stream-10:freeze`), upstream sources and one
 disposable experiment, then on booted CS10 Core VMs; see
 [research-notes.md](../research-notes.md#visual-identity-and-boot-2026-09-28)
 ("Visual identity and boot"). **"Verified"** below means checked in the
@@ -15,7 +15,7 @@ image or in primary source; **"seen"** means observed on a booted screen.
 
 > [!NOTE]
 > Verified on CS10 unless stated. On RHEL 10.2, the retired factory host
-> booted `example-devops-rhel10` (Core plus the example organization)
+> booted `example-devops-rhel-10` (Core plus the example organization)
 > through the same boot and session checks.
 
 ## Goal
