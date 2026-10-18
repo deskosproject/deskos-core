@@ -139,8 +139,54 @@ func (c *Compiler) Plan(cat *compose.Catalog, workstation string) (*plan.Plan, e
 	if err := errs.Err(); err != nil {
 		return nil, err
 	}
+	if err := applyDownloads(pl, plSpec, p); err != nil {
+		return nil, err
+	}
 	if err := p.Normalize(); err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+// applyDownloads is what makes downloading a platform's fact instead of an
+// assumption of the backend. A plan that downloads anything -- a binary artifact or
+// a package file -- needs a base that can fetch, and a platform that leaves the
+// question unanswered fails composition; a platform whose base cannot fetch gets the
+// fetcher package added to the plan, with the provenance of the download that needed
+// it. The build would otherwise discover the gap as `curl: not found`, minutes in
+// (invariant 9, docs/adr/0019).
+func applyDownloads(pl *model.Resource, plSpec *core.PlatformSpec, p *plan.Plan) error {
+	var prov []model.Provenance
+	what := ""
+	switch {
+	case len(p.Artifact.Binaries) > 0:
+		what = p.Artifact.Binaries[0].Artifact
+		for _, b := range p.Artifact.Binaries {
+			prov = append(prov, b.Provenance...)
+		}
+	case len(p.Artifact.RpmFiles) > 0:
+		what = p.Artifact.RpmFiles[0].URL
+		for _, f := range p.Artifact.RpmFiles {
+			prov = append(prov, f.Provenance...)
+		}
+	default:
+		return nil
+	}
+	requested := ""
+	if len(prov) > 0 {
+		requested = "\n  requested by: " + prov[0].Describe()
+		if prov[0].Source != "" {
+			requested += " (" + prov[0].Source + ")"
+		}
+	}
+	d := plSpec.Downloads
+	if d == nil {
+		return fmt.Errorf("%s does not say whether its base can fetch a verified artifact, and this plan downloads %s%s",
+			pl.ID(), what, requested)
+	}
+	if d.BaseFetches {
+		return nil
+	}
+	p.AddPackage(d.Package, prov...)
+	return nil
 }

@@ -55,14 +55,29 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
+# Binary artifact deskos 0.12.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64'; \
+    echo '715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/deskos')")"; \
+    install -D -m 0755 "$tmp/download" '/usr/local/bin/deskos'; \
+    rm -rf "$tmp"
+
 # Binary artifact openshift-client 4.22.17 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
         -o "$tmp/download" 'https://mirror.openshift.com/pub/openshift-v4/clients/ocp/4.22.17/openshift-client-linux-amd64-rhel9-4.22.17.tar.gz'; \
     echo '87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     tar -xzf "$tmp/download" -C "$tmp" --no-same-owner -- 'oc'; \
     [ -f "$tmp"/'oc' ] && [ ! -L "$tmp"/'oc' ] && [ "$(stat -c %h "$tmp"/'oc')" = 1 ] || { echo 'archive member oc is not a regular file' >&2; exit 1; }; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/oc')")"; \
     install -D -m 0755 "$tmp"/'oc' '/usr/local/bin/oc'; \
     rm -rf "$tmp"
 

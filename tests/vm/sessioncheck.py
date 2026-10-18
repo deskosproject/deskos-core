@@ -44,6 +44,11 @@ MCELOG_JOURNAL_SIGNATURE = ("does not support this processor", "edac_mce_amd")
 # Every extension the composition turned on is asked about inside the session: a
 # decision that does not really load is a defect, not a silent no-op (docs/adr/0017).
 ENABLED_EXTENSIONS_PATH = "/var/lib/deskos-qa/enabled-extensions.keys"
+# The binaries the plan installs, one destination per line. What is asserted about them
+# is not that they exist but that their bytes are the ones the plan pinned: a
+# checksum-verified download is the whole claim, and the chain should be closed on a
+# booted machine and not only in the build (docs/adr/0018).
+BINARY_PATHS_PATH = "/var/lib/deskos-qa/binaries.keys"
 # The plan's dconf defaults are read back inside the session. `dconf read` reports
 # the effective value in the same GVariant text the plan stores (measured: uint32 0,
 # true, ['a', 'b'], @as [], 'a b'), so the plan's value is compared with what the
@@ -59,6 +64,7 @@ VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
 # invariant 8; docs/research-notes.md, "GNOME administration").
 DCONF_PROFILE_PATH = "/etc/dconf/profile/deskos-qa-defaults"
 DEFAULT_CHECK_PREFIX = "plan default "
+BINARY_CHECK_PREFIX = "plan binary "
 VENDOR_CHECK_PREFIX = "plan vendor default "
 # Sentinels for what the guest read; neither can be a GVariant text value, so they
 # are told apart from a value the key really has.
@@ -117,6 +123,37 @@ def extension_reads():
     )
 
 
+def binary_reads():
+    """The script fragment that hashes every binary the plan installs.
+
+    The declared checksum is what the image downloaded and verified at build time; this
+    reads the bytes that are really on the machine, so a binary the build never wrote,
+    or one replaced afterwards, is a difference rather than an assumption.
+    """
+    return (
+        "# Every binary the plan installs, hashed where it landed.\n"
+        f"mapfile -t plan_binaries < {BINARY_PATHS_PATH}\n"
+        'for i in "${!plan_binaries[@]}"; do\n'
+        '  b="${plan_binaries[$i]}"\n'
+        '  if [ -f "$b" ] && [ -x "$b" ]; then\n'
+        # An executable file whose bytes cannot be read is not a file that changed: it
+        # is a fact this machine would not give up, and the host separates it from a
+        # mismatch, the same way a session read that fails is reported with its reason.
+        '    h="$(sha256sum "$b" 2>/dev/null | cut -d" " -f1)"\n'
+        '    if [ -n "$h" ]; then echo "binary_$i=$h"; else echo "binary_$i=unreadable"; fi\n'
+        # The plan declares the mode too, so the guest reports it: a file with the right
+        # bytes and the wrong mode is not the file the plan says it installs. The reads
+        # follow a link, as the byte read does, so both describe the file that runs.
+        '    m="$(stat -Lc %a "$b" 2>/dev/null)"\n'
+        '    echo "binary_mode_$i=${m:-unreadable}"\n'
+        '  else\n'
+        '    echo "binary_$i=missing"\n'
+        '    echo "binary_mode_$i=missing"\n'
+        '  fi\n'
+        "done\n"
+    )
+
+
 def default_reads(image_database, vendor):
     """The script fragment that reads every default the plan declares.
 
@@ -167,7 +204,8 @@ def default_reads(image_database, vendor):
     )
 
 
-def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
+def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
+                   binaries=()):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -211,6 +249,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     extensions = extension_reads() if enabled_extensions else ""
+    binary_reads_fragment = binary_reads() if binaries else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
@@ -222,7 +261,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{extensions}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -310,7 +349,8 @@ def tmpfiles_arg(text):
     return text.replace("\\", "\\\\").replace("%", "%%").replace("\n", "\\n")
 
 
-def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
+def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
+                enabled_extensions=(), binaries=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -319,7 +359,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     ]
     creds = {}
     if mode == "session":
-        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions)
+        script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
+                                binaries)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -344,6 +385,11 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # 0755 directory; the session user is not root and must read it.
             tmpfiles.append(
                 f"f {DCONF_KEYS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(dconf_keys) + chr(10))}")
+        if binaries:
+            # The destinations of the binaries the plan installs, one per line.
+            tmpfiles.append(
+                f"f {BINARY_PATHS_PATH} 0644 root root - "
+                f"{tmpfiles_arg(chr(10).join(binaries) + chr(10))}")
         if enabled_extensions:
             # The extensions the plan enabled, one uuid per line.
             tmpfiles.append(
@@ -513,6 +559,34 @@ def dconf_value(plan, key):
     return None
 
 
+def plan_binaries(plan):
+    """The binaries the plan installs, in the order the plan lists them."""
+    return list(plan.get("artifact", {}).get("binaries") or [])
+
+
+def binary_summary(checks):
+    """The plan's binaries and how the run found them.
+
+    A binary the plan installs is a declaration like any other, so it gets its
+    assertion. What that assertion can be depends on what the plan pins: for a
+    single-file artifact the plan's checksum *is* the installed file's, while for an
+    archive it is the archive's, and the file inside it cannot be compared with it
+    here (the build verified that download; the archive is gone by the time a session
+    runs). Both are verified as far as they can be, and the report says which is
+    which instead of pretending they are the same claim.
+    """
+    bins = [c for c in checks if c["check"].startswith(BINARY_CHECK_PREFIX)]
+    strict = sum(1 for c in bins if c["coverage"]["image"] == "checked-bytes" and c["pass"])
+    install = sum(1 for c in bins if c["coverage"]["image"] == "install-only" and c["pass"])
+    # A read that did not happen counts whether or not the check could claim something
+    # else: an archive whose member could not be hashed is installed and verified as
+    # installed, and the read still has to appear here (the detail says which).
+    unreadable = sum(1 for c in bins if c.get("unread"))
+    return {"declared": len(bins), "checksum_verified": strict, "install_verified": install,
+            "unreadable": unreadable,
+            "failed": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
+
+
 def plan_vendor_defaults(plan):
     """The GSettings vendor defaults the plan declares, in the plan's order."""
     return list(plan.get("artifact", {}).get("gsettingsVendorDefaults") or [])
@@ -673,7 +747,10 @@ def default_coverage(checks):
     A default is counted as verified on an axis only when the value read there
     matched the plan: "tried to assert" is not the same as "verified".
     """
-    declared = [c for c in checks if "coverage" in c]
+    # Only the declared defaults: a binary carries a coverage of its own kind, and
+    # counting it here would report it as a default with an axis it does not have.
+    declared = [c for c in checks
+                if c.get("coverage", {}).get("source") in ("dconf", "gsettings override")]
     unverified = [{"check": c["check"], "axis": axis, "state": c["coverage"][axis], "detail": c["detail"]}
                   for c in declared for axis in ("image", "session")
                   if c["coverage"][axis] != "verified"]
@@ -692,16 +769,77 @@ def check_status(c):
 def evaluate(values, plan, journal="", skel_rels=()):
     checks = []
 
-    def check(name, ok, detail, skipped=False, coverage=None):
+    def check(name, ok, detail, skipped=False, coverage=None, unread=None):
         c = {"check": name, "pass": bool(ok), "skipped": bool(skipped), "detail": detail}
         if coverage is not None:
             c["coverage"] = coverage
+        # A read that did not happen, and what it was: a check can be verified on one
+        # axis and unmeasured on another, and the summary has to say so.
+        if unread:
+            c["unread"] = list(unread)
         checks.append(c)
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
           f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
+    # Every binary the plan installs must be there, executable, and -- when the plan
+    # pins the file itself -- the same bytes. For an archive the plan pins the
+    # archive's checksum, so the file inside it is verified as installed and the limit
+    # is stated rather than compared, which would report a difference that is not one.
+    for i, b in enumerate(plan_binaries(plan)):
+        name = BINARY_CHECK_PREFIX + b["destination"]
+        got = values.get(f"binary_{i}", "missing")
+        archived = b.get("archive", "none") != "none"
+        # The plan declares the mode, so it is asserted: a file with the right bytes and
+        # the wrong mode is not the file the plan installs. `stat` prints 755 where the
+        # plan writes 0755, so the leading zero is not a difference. A mode that could
+        # not be read is not a mode that differs: it is a read this machine would not
+        # give up, and it is reported as one instead of as a difference nobody measured.
+        declared_mode = b.get("mode") or ""
+        read_mode = values.get(f"binary_mode_{i}", "missing")
+        mode_read = read_mode not in ("missing", "unreadable")
+        mode_differs = mode_read and bool(declared_mode) and read_mode.lstrip("0") != declared_mode.lstrip("0")
+        mode_text = ""
+        if declared_mode:
+            if mode_differs:
+                mode_text = f"mode {read_mode}, the plan declares {declared_mode}"
+            elif mode_read:
+                mode_text = f"mode {read_mode}, as the plan declares"
+            else:
+                mode_text = f"its mode could not be read here; the plan declares {declared_mode}"
+        unread = []
+        if got == "unreadable":
+            unread.append("its bytes")
+        if declared_mode and not mode_read:
+            unread.append("its mode")
+        # An archive is claimed as installed and a single file by its bytes; a file
+        # whose bytes could not be read is claimed by neither, and is counted as a read
+        # that did not happen rather than as one that disagreed.
+        axis = "install-only" if archived else "checked-bytes"
+        coverage = {"source": "binary", "key": b["destination"], "image": axis, "session": axis}
+        if got == "missing":
+            check(name, False, f"{b['destination']} is not an executable regular file",
+                  coverage=coverage)
+        elif mode_differs:
+            check(name, False, f"{b['destination']} is installed with {mode_text}",
+                  coverage=coverage)
+        elif archived:
+            read = f" (sha256 {got[:12]}…)" if got != "unreadable" else " (its bytes could not be read here)"
+            check(name, True,
+                  f"installed and executable{read}, {mode_text}; the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
+                  skipped=bool(unread), unread=unread, coverage=coverage)
+        elif got == "unreadable":
+            check(name, True,
+                  f"{b['destination']} is installed and executable, {mode_text}; whether its bytes are the plan's is unreadable here",
+                  skipped=True, unread=unread,
+                  coverage=dict(coverage, image="unread", session="unread"))
+        elif got != b["sha256"]:
+            check(name, False, f"sha256 {got}, the plan pins {b['sha256']}",
+                  coverage=coverage)
+        else:
+            check(name, True, f"sha256 {got}, {mode_text}",
+                  skipped=bool(unread), unread=unread, coverage=coverage)
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -802,7 +940,8 @@ def main():
         extra_qemu=smbios_args(credentials(a.mode, a.seed_skel, a.app, skel_rels,
                                            [d["key"] for d in defaults], dconf_db,
                                            [[d["schema"], d["key"]] for d in vendor],
-                                           plan.get("artifact", {}).get("enabledExtensions") or [])),
+                                           plan.get("artifact", {}).get("enabledExtensions") or [],
+                                           [b["destination"] for b in plan_binaries(plan)])),
         until_serial=MARK_END, guest_powers_off=True,
     )
     try:
@@ -819,6 +958,7 @@ def main():
     if a.mode == "session":
         result["checks"] = evaluate(values, plan, journal, skel_rels)
         result["plan_defaults"] = default_coverage(result["checks"])
+        result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
         ok = summary["result"] == "pass" and all(c["pass"] for c in result["checks"])
     else:
@@ -837,6 +977,13 @@ def main():
                      f"{s['in_session']} verified in the session, {len(s['unverified'])} unverified reads")
         for c in s["unverified"]:
             lines.append(f"  - {c['check']} [{c['axis']}: {c['state']}] ({c['detail']})")
+    if "plan_binaries" in result:
+        b = result["plan_binaries"]
+        lines.append(f"- Plan binaries: {b['declared']} declared; {b['checksum_verified']} verified against the checksum the plan pins, "
+                     f"{b['install_verified']} verified as installed (the plan pins an archive)"
+                     + (f", {b['unreadable']} unreadable here" if b.get("unreadable") else ""))
+        for c in b["failed"]:
+            lines.append(f"  - {c['check']} ({c['detail']})")
     if "platform_diagnostics" in result:
         lines += diagnostics_md(result["platform_diagnostics"])
     lines += ["", "Journal excerpt: journal.txt. Frames: frames/ and summary.md."]

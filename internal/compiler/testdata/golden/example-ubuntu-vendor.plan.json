@@ -108,10 +108,39 @@
             "source": "core-ubuntu-2604/software/vendor-tools.yaml:25"
           }
         ]
+      },
+      {
+        "name": "curl",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/deskos",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos.yaml:1"
+          }
+        ]
       }
     ],
     "rpmFiles": [],
-    "binaries": [],
+    "binaries": [
+      {
+        "artifact": "deskos",
+        "version": "0.12.0",
+        "url": "https://github.com/deskosproject/deskos-core/releases/download/v0.12.0/deskos-v0.12.0-linux-amd64",
+        "sha256": "715419b664be5e9c1144f94306a985155dade72f613c83ca96150272a223b390",
+        "archive": "none",
+        "destination": "/usr/local/bin/deskos",
+        "mode": "0755",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/deskos",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos.yaml:1"
+          }
+        ]
+      }
+    ],
     "files": [],
     "trustAnchors": [],
     "desktopEntries": [],

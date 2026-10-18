@@ -420,7 +420,23 @@ Acquisition order:
 
 `BinaryArtifact` requires an exact version, an https URL that is not a
 floating location, a SHA-256 checksum, and installs only directly into
-`/usr/local/bin` with mode `0755` or `0555`.
+`/usr/local/bin` with mode `0755` or `0555`. The verification is part of the
+build: the containerfile fetches over https and fails on a checksum that does not
+match. That fetch uses `curl`, which **the platform's image must provide** — the EL
+and Fedora bases ship it because `dnf` needs it, and the Ubuntu base does not, so
+`Platform/ubuntu-2604` declares it (measured 2026-10-18). A platform that neither
+ships nor declares it fails at build with `/bin/sh: 1: curl: not found`, which is
+late: making it a composition error needs a typed statement of what a base provides,
+and that is not modeled yet.
+
+The destination has a platform difference of its own. The backend creates the
+directory the file lands in, resolving symlinks (`readlink -m`), because
+`install -D` cannot traverse a `/usr/local` that is a **dangling symlink**: Debian and
+Ubuntu ship `/usr/local -> ../var/usrlocal` and create that target at boot with a
+bootc tmpfiles rule, so it does not exist during the build (measured 2026-10-18 on the
+Ubuntu base, where `install -D ... /usr/local/bin/deskos` failed to create the
+directory). With the directory created where the file really lands, the same step
+works on both families.
 
 A single-file `BinaryArtifact` may declare a `desktopEntry`. The
 software lowerer turns it into a `DesktopEntry`, a `FileInstall` for its
@@ -721,11 +737,14 @@ reserved in the Plan and not implemented.
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **Published today: nothing.** The image goes to one repository per platform
-  (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …). Publishing is manual:
-  the `supply-chain` workflow (with `publish=true`) builds, scans, boots, then
-  pushes and signs `:<commit>` and promotes `:latest` by digest. No dispatch has run
-  yet. It is not published on every green `main`; pin a digest in production.
+- **Published today: the container image, per platform.** It goes to one
+  repository per platform (`quay.io/deskos/deskos-core-centos10`, `-almalinux10`,
+  `-ubuntu2604`), and the digests the last dispatch published, with the run that
+  produced them, are under
+  [Validation status](#validation-status) on this page. Publishing is manual: the
+  `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
+  and signs `:<commit>` and promotes `:latest` by digest. It is not published on
+  every green `main`; pin a digest in production.
 - **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
   storage, not on GitHub; until then they are built locally (see
   [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) or writes

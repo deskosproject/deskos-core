@@ -22,6 +22,10 @@ PLAN = {
             {"key": "/org/gnome/software/download-updates", "type": "b", "value": "false"},
         ]},
         "enabledExtensions": ["dash-to-dock@micxgx.gmail.com"],
+        "binaries": [
+            {"artifact": "deskos", "version": "0.12.0", "destination": "/usr/local/bin/deskos",
+             "sha256": "aa" * 32, "archive": "none", "mode": "0755"},
+        ],
         "gsettingsVendorDefaults": [
             {"schema": "org.gnome.desktop.background", "key": "picture-uri", "type": "s",
              "value": "'file:///usr/share/deskos/backgrounds/a.svg'", "setting": "appearance.wallpaper"},
@@ -48,6 +52,9 @@ def reported(plan):
         out[f"vendor_{i}"] = out[f"vendordb_{i}"] = d["value"]
     for i, _ in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
         out[f"extension_{i}"] = "Yes/ACTIVE"
+    for i, b in enumerate(sc.plan_binaries(plan)):
+        out[f"binary_{i}"] = b["sha256"]
+        out[f"binary_mode_{i}"] = b["mode"]
     return out
 
 
@@ -163,6 +170,21 @@ class TmpfilesTest(unittest.TestCase):
         c = sc.credentials("journal", enabled_extensions=["a@b"])
         self.assertNotIn(sc.ENABLED_EXTENSIONS_PATH, c["tmpfiles.extra"])
 
+    def test_session_credentials_install_the_binary_destinations(self):
+        # The destinations the plan installs travel as a file of their own; the guest
+        # hashes what it finds, and the host compares with the plan's checksum.
+        c = sc.credentials("session", binaries=["/usr/local/bin/deskos"])
+        lines = c["tmpfiles.extra"].splitlines()
+        keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
+        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/local/bin/deskos\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
+        self.assertIn("sha256sum", script)
+
+    def test_journal_credentials_ignore_the_binaries(self):
+        c = sc.credentials("journal", binaries=["/usr/local/bin/deskos"])
+        self.assertNotIn(sc.BINARY_PATHS_PATH, c["tmpfiles.extra"])
+
     def test_a_session_without_defaults_reads_none(self):
         c = sc.credentials("session")
         self.assertNotIn(sc.DCONF_KEYS_PATH, c["tmpfiles.extra"])
@@ -205,6 +227,121 @@ class ParseEvaluateTest(unittest.TestCase):
 
     def test_missing_results_fail(self):
         self.assertFalse(all(c["pass"] for c in sc.evaluate({"session_results": "missing"}, PLAN)))
+
+
+class PlanBinariesTest(unittest.TestCase):
+    def binary_check(self, values, destination="/usr/local/bin/deskos", plan=None):
+        if plan is None:
+            plan = PLAN
+        name = sc.BINARY_CHECK_PREFIX + destination
+        return next(c for c in sc.evaluate(values, plan) if c["check"] == name)
+
+    def test_the_binaries_the_plan_installs_are_asserted(self):
+        # A binary the plan installs is a declaration, so it gets an assertion: the
+        # bytes on the machine must be the ones the plan pinned, which is the whole
+        # claim of a checksum-verified download.
+        c = self.binary_check(GOOD)
+        self.assertTrue(c["pass"])
+        self.assertIn("as the plan declares", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(GOOD, PLAN))
+        self.assertEqual(summary["declared"], 1)
+        self.assertEqual(summary["checksum_verified"], 1)
+        self.assertEqual(summary["install_verified"], 0)
+        self.assertEqual(summary["failed"], [])
+
+    def test_a_binary_with_the_wrong_mode_fails(self):
+        # The mode is declared too, so it is asserted: the right bytes with the wrong
+        # mode is a file a user may not be able to run, which is not what the plan says
+        # it installs. `stat` prints 755 where the plan writes 0755.
+        for got in ("777", "644"):
+            with self.subTest(mode=got):
+                c = self.binary_check(dict(GOOD, binary_mode_0=got))
+                self.assertFalse(c["pass"])
+                self.assertIn("the plan declares 0755", c["detail"])
+        # The declared mode's leading zero is not a difference.
+        self.assertTrue(self.binary_check(dict(GOOD, binary_mode_0="755"))["pass"])
+
+    def test_a_binary_whose_bytes_differ_fails(self):
+        values = dict(GOOD, binary_0="bb" * 32)
+        c = self.binary_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("the plan pins", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        self.assertEqual(summary["checksum_verified"], 0)
+        self.assertEqual([u["check"] for u in summary["failed"]], [c["check"]])
+
+    def test_a_binary_from_an_archive_is_verified_as_installed(self):
+        # The plan pins the *archive's* checksum, not the file inside it, so the
+        # installed bytes cannot be compared with it. Comparing them anyway reported a
+        # difference that was not one, on the example workstation's own openshift-client
+        # (a tar.gz): found by the VM check on a real boot, not here.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["binaries"][0]["archive"] = "tar.gz"
+        c = self.binary_check(GOOD, plan=plan)
+        self.assertTrue(c["pass"])
+        self.assertIn("the plan pins the tar.gz archive's checksum", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(GOOD, plan))
+        self.assertEqual((summary["checksum_verified"], summary["install_verified"]), (0, 1))
+        # It is still asserted as installed: a file that is not there fails.
+        missing = dict(GOOD, binary_0="missing")
+        self.assertFalse(self.binary_check(missing, plan=plan)["pass"])
+
+    def test_a_binary_whose_bytes_cannot_be_read_is_reported_not_failed(self):
+        # The file is there and executable, so what the plan installs is on the machine;
+        # its bytes are a fact this machine would not give up. That is a read that did
+        # not happen, and calling it a difference would be a claim the run cannot make.
+        values = dict(GOOD, binary_0="unreadable")
+        c = self.binary_check(values)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("unreadable here", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        self.assertEqual(summary["unreadable"], 1)
+        self.assertEqual(summary["checksum_verified"], 0)
+        self.assertEqual(summary["failed"], [])
+        # An archive is claimed as installed either way: the plan pins the archive's
+        # checksum, so an unreadable member changes nothing about *that* claim -- and the
+        # read still has to be counted, or the summary would report the check as fully
+        # verified when a read never happened.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["binaries"][0]["archive"] = "tar.gz"
+        summary = sc.binary_summary(sc.evaluate(values, plan))
+        self.assertEqual((summary["install_verified"], summary["unreadable"]), (1, 1))
+        self.assertIn("could not be read here", self.binary_check(values, plan=plan)["detail"])
+
+    def test_a_mode_that_could_not_be_read_is_reported_not_failed(self):
+        # The same distinction for the mode: `stat` failing is a read that did not
+        # happen, not a mode that disagrees. Failing here would attribute a difference
+        # nobody measured.
+        values = dict(GOOD, binary_mode_0="unreadable")
+        c = self.binary_check(values)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("its mode could not be read here", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        # The bytes were compared and matched, so that claim stands.
+        self.assertEqual((summary["checksum_verified"], summary["unreadable"]), (1, 1))
+        # Both reads missing is still one binary with reads that did not happen.
+        both = sc.binary_summary(sc.evaluate(dict(GOOD, binary_0="unreadable", binary_mode_0="unreadable"), PLAN))
+        self.assertEqual((both["checksum_verified"], both["unreadable"]), (0, 1))
+
+    def test_the_binaries_are_not_counted_as_defaults(self):
+        # A binary has no image/session axis, so it must not appear in the defaults
+        # coverage: mixing them would report a default that does not exist.
+        cov = sc.default_coverage(sc.evaluate(GOOD, PLAN))
+        self.assertEqual(cov["declared"], len(sc.plan_defaults(PLAN)) + len(sc.plan_vendor_defaults(PLAN)))
+
+    def test_a_binary_that_is_not_there_fails(self):
+        values = dict(GOOD, binary_0="missing")
+        c = self.binary_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("is not an executable regular file", c["detail"])
+
+    def test_a_plan_without_binaries_asserts_none(self):
+        checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})
+        summary = sc.binary_summary(checks)
+        self.assertEqual(summary["declared"], 0)
+        self.assertTrue(all(c["pass"] for c in checks))
 
 
 class PlanDefaultsTest(unittest.TestCase):

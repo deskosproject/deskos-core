@@ -9,17 +9,19 @@ DeskOS compiles the same Core intent onto a platform's own bootc base
 publishes no bootc base may be added as an organization-owned base with a named
 owner and a declared tier ([ADR 0014](adr/0014-platform-base-ownership.md)) —
 Ubuntu is that case. Publishing goes to one repository per platform
-(`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, …); nothing has been
-published yet.
+(`quay.io/deskos/deskos-core-centos10`, `-almalinux10`, `-ubuntu2604`), and the
+three below that are published carry the digest and the run that verified them in
+[architecture.md](architecture.md#validation-status). RHEL is never published, and
+Fedora is not yet.
 
 ## Status
 
 | Platform | Base (owner) | Base pinned | Composes and renders | Image built | Booted and checked | Published image | System Flatpak |
 |---|---|---|---|---|---|---|---|
-| CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | none yet (destination `quay.io/deskos/deskos-core-centos10`) | Flatpak preinstall |
-| AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | none | `preinstall` via `rhel-family`; apps not verified |
+| CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos10`) | Flatpak preinstall |
+| AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Ubuntu 26.04 | `quay.io/deskos/deskos-ubuntu-base` (the DeskOS project, tier `organization`) | manifest, by digest | **validated** (golden test, CI) | **CI** | **CI**: GNOME; session check; first-boot check | none yet (destination `quay.io/deskos/deskos-core-ubuntu2604`) | **none** declared |
+| Ubuntu 26.04 | `quay.io/deskos/deskos-ubuntu-base` (the DeskOS project, tier `organization`) | manifest, by digest | **validated** (golden test, CI) | **CI** | **CI**: GNOME; session check; first-boot check | **published** (`quay.io/deskos/deskos-core-ubuntu2604`) | **none** declared |
 | Fedora 44 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-17 | not measured | none | Flatpak preinstall |
 
 "Composes and renders" means the workstation compiles to a deterministic plan and
@@ -29,12 +31,12 @@ two columns. Evidence, per claim, is in
 
 ## How to get a machine today
 
-### CentOS Stream 10 — build it, then install
+### CentOS Stream 10 — pull the image, then install
 
-Nothing is published yet, so what exists today is the image you build locally;
-when the first `publish=true` dispatch runs, it lands in
-`quay.io/deskos/deskos-core-centos10`. Make a QCOW2 (or an Anaconda ISO)
-from the image you built with `bootc-image-builder`:
+The image is published at `quay.io/deskos/deskos-core-centos10` as `:latest` and
+`:<commit>` by the gate's `publish=true` dispatch, with its digest and the run in
+[architecture.md](architecture.md#validation-status). Make a QCOW2 (or an
+Anaconda ISO) from it with `bootc-image-builder`:
 [install.md](install.md#centos-stream-10).
 
 ### RHEL 10 — build privately, never publish
@@ -43,7 +45,7 @@ An organization with RHEL subscriptions builds its own from the entitled base
 and keeps it inside the organization; the RHEL EULA forbids redistributing it.
 [install.md](install.md#rhel-10-private-builds-only).
 
-### AlmaLinux 10 — no published image; built and booted in CI
+### AlmaLinux 10 — a published image on an experimental base
 
 AlmaLinux is a public, subscription-free EL10 base, so a build needs no
 entitlement. CI builds and boots a derived AlmaLinux image
@@ -51,15 +53,16 @@ entitlement. CI builds and boots a derived AlmaLinux image
 it. That exercises the paths the example's profiles need — its package group, the
 Plymouth packages, the GNOME facts — not every capability a platform declares:
 the example declares no `FlatpakSet` or `TrustAnchor`, and does not test the base
-updater. The base is the vendor's, and it is **experimental**. DeskOS publishes no
-AlmaLinux image: to make your own, the render, build and QCOW2 steps are the same
-shape as CentOS Stream 10 ([install.md](install.md#almalinux-10)).
+updater. The image is published at `quay.io/deskos/deskos-core-almalinux10`, and
+**the base it derives from is the vendor's experimental one**: that is the caveat to
+weigh, not whether the image exists. Making your own is the same shape as CentOS
+Stream 10 ([install.md](install.md#almalinux-10)).
 
-### Ubuntu 26.04 — no published image and no DeskOS ISO; write a disk directly
+### Ubuntu 26.04 — a published image, no DeskOS ISO; write a disk directly
 
-DeskOS publishes no Ubuntu image and implements no installer ISO for it: there is
-no ISO path here, built or validated. What **is** validated is
-`bootc install to-disk`. The honest path for a reader who wants an installed
+The image is published at `quay.io/deskos/deskos-core-ubuntu2604`. DeskOS
+implements no installer ISO for Ubuntu: there is no ISO path here, built or
+validated. What **is** validated is `bootc install to-disk`. The honest path for a reader who wants an installed
 Ubuntu machine today:
 
 1. **Build the image** from a resource root (for example
@@ -80,9 +83,9 @@ Three things that are easy to conflate and must not be:
   private registry, or one you make public), never at the local layout and never
   at the Ubuntu base — pointing it at the base would replace your derivative with
   the base at the next update.
-- **Publishing the derivative is the operator's step, untested by CI.** DeskOS
-  publishes no Ubuntu image; a green CI run says nothing about a registry you
-  publish to.
+- **Publishing a derivative of your own is your step, and CI does not test it.**
+  The gate publishes DeskOS's own image, after the checks above; a green CI run
+  says nothing about a registry *you* publish to.
 
 See [install.md](install.md#ubuntu-2604) for the commands, and
 [operations.md](operations.md) for how the installed machine updates.

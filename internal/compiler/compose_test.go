@@ -69,6 +69,7 @@ spec:
   flatpak: {package: flatpak, preinstall: true}
   trust: {anchorsDir: /etc/pki/ca-trust/source/anchors, updateCommand: update-ca-trust}
   iconCache: {package: gtk-update-icon-cache, command: "gtk-update-icon-cache --force --quiet"}
+  downloads: {baseFetches: true}
 `
 
 func workstation(name string, profiles ...string) string {
