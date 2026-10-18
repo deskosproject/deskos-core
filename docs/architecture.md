@@ -317,20 +317,33 @@ account the upstream container image ships suppressing the wizard — is in
 
 - **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
   classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
-  wallpaper); `sessioncheck.py` confirms Dash to Dock active, favorites and
-  wallpaper as planned and Firefox running headless; the GDM login logo was seen
-  in a Core VM. No full E2E.
+  wallpaper), and `sessioncheck.py` on the instrumented boot. What the session check
+  asserts is the plan itself: **every dconf default the plan declares**, read twice
+  (the image's own database and what the session ends up with), **whether every
+  extension the composition turned on really loaded**, and **the bytes of every binary
+  the plan installs** against the checksum the plan pins. It also confirms favorites
+  and wallpaper as planned and Firefox running headless. On the reference workstation
+  that is 23 defaults, both reads verified, and the dock reported loaded
+  (`Yes/ACTIVE`). The GDM login logo was seen in a Core VM. No full E2E.
 - **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on RHEL 10.2,
   base `d13af792...`; lint passed with the three known warnings; all 75 layers of
   `0e65bf4b` scanned free of RHSM paths and the build host's entitlement serial,
   consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
   disk under nested KVM on the entitled factory VM (example wallpaper). Not in
   CI; no full E2E.
-- **Published images: none.** The single repository that held the published
-  CentOS Stream 10 image — `quay.io/deskos/deskos-core`, last run `37162282876` on
-  commit `8ab0cc9` — has been **withdrawn**, and the per-platform matrix that
-  replaces it has not been dispatched with `publish=true`. The first such dispatch
-  is what will make this line say otherwise.
+- **Published and signed images (verified 2026-10-18).** The old single repository
+  (`quay.io/deskos/deskos-core`, run `37162282876`, commit `8ab0cc9`) is withdrawn and
+  replaced by one repository per platform, published by the gate's `publish=true`
+  dispatch (run `39067812799`, commit `e21c4f7`):
+  `quay.io/deskos/deskos-core-centos10` at `sha256:39dff937…`,
+  `quay.io/deskos/deskos-core-almalinux10` at `sha256:f28062cc…` and
+  `quay.io/deskos/deskos-core-ubuntu2604` at `sha256:f1c40dd4…`, each with `:latest`
+  and the commit tag at the same digest. `cosign verify` with the workflow issuer and
+  this repository's identity passes on all three, with the SBOM, accepted-exception
+  and effective-exception attestations bound to that digest. The organization-owned
+  base `quay.io/deskos/deskos-ubuntu-base:26.04` (`sha256:ec5ce295…`) is published and
+  signed too, with a signing identity of its own rather than the CI one. RHEL-derived
+  images are never published (ADR 0014).
 - **Fedora 44, composed, rendered and built (2026-10-17).** The platform's facts
   were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:44`,
   pinned by digest), not modeled on another family: the comps environment dnf5
