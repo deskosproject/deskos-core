@@ -371,30 +371,55 @@ func TestFlatpakSetNeedsPreinstallAndThePlatformSaysSo(t *testing.T) {
 	mustFail(t, err, "does not support Flatpak preinstallation", "Platform/test-platform", "FlatpakSet/deskos-reference-apps")
 }
 
-// Ubuntu 26.04 offers no system Flatpak channel, and the composition says so: with
-// this platform, the Plan asks for no Flatpak package, no preinstall unit and no
-// Flatpak update timer. 26.04 publishes no `flatpak preinstall` and the base it
-// pins carries no third-party apt source, so the platform declares the gap instead
-// of pretending (invariant 9). What this test covers is the Plan; that the built
-// image carries no Flatpak is a separate measurement of the image, recorded in the
-// validation table of docs/architecture.md.
-func TestUbuntuDeclaresNoSystemFlatpakChannel(t *testing.T) {
+// A platform with no system Flatpak channel says so, and the composition believes it: no
+// Flatpak package, no preinstall unit, and no Flatpak update timer, even when the
+// workstation selects an update policy that schedules image updates. The Ubuntu platform was
+// the real case -- it publishes no `flatpak preinstall` and its base carries no third-party
+// apt source -- and that platform declares the gap in its own repository now (ADR 0020).
+// What is Core's, and what this covers, is the Plan; whether a built image carries Flatpak
+// is a measurement of that image, and the Ubuntu repository is where it is made.
+func TestAPlatformWithNoFlatpakChannelInstallsNone(t *testing.T) {
+	// The real case was the Ubuntu platform, which lives in its own repository now
+	// (ADR 0020). The property is Core's, though: a platform that declares no application
+	// channel must not pull one in, and a workstation on it must not enable a unit or
+	// schedule an update for something that does not exist there.
+	// Two platform facts, both required by the schema and both the real shape: an image
+	// update unit, which is what lets a policy be applied, and no Flatpak channel, which
+	// is how "no channel" is declared (no package, `preinstall: false`) -- what the Ubuntu
+	// platform said before it moved (ADR 0020).
+	platform := strings.Replace(debPlatform(t),
+		"  flatpak: {package: flatpak, preinstall: true}\n",
+		"  updates: {imageUpdateUnits: [bootc-fetch-apply-updates.timer]}\n  flatpak: {preinstall: false}\n", 1)
 	dir := fixture{
-		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: ubuntu-ws\nspec:\n  platformRef: ubuntu-2604\n  profiles: [deskos-core]\n",
+		"platform.yaml": platform,
+		"ws.yaml":       workstation("no-flatpak-ws", "core"),
+		// The policy matters: without one this test would only prove that a composition
+		// which asks for nothing gets nothing. With it, the plan has to schedule the image
+		// update Core's policy declares and still schedule nothing for Flatpak.
+		"p.yaml": profile("core", "foundation", "UpdatePolicy/core"),
+		"u.yaml": updatePolicy("core", "  image: {automatic: true, schedule: daily, requireACPower: true}\n"),
 	}.dir(t)
-	p := mustPlan(t, "ubuntu-ws", resourcesRoot, dir)
+	p := mustPlan(t, "no-flatpak-ws", dir)
 	if got := packages(p); slices.Contains(got, "flatpak") {
-		t.Errorf("packages = %v, want no Flatpak: Ubuntu declares no system Flatpak channel", got)
+		t.Errorf("packages = %v, want no Flatpak: the platform declares no system Flatpak channel", got)
 	}
 	for _, u := range p.Artifact.SystemdUnits {
 		if strings.Contains(u.Unit, "flatpak") {
-			t.Errorf("unit %s is enabled: the RHEL family's application channel is not Ubuntu's", u.Unit)
+			t.Errorf("unit %s is enabled: the RHEL family's application channel is not this platform's", u.Unit)
 		}
 	}
+	var imageScheduled bool
 	for _, s := range p.Artifact.ScheduledUpdates {
 		if s.Kind == plan.UpdateFlatpak {
-			t.Errorf("scheduled update %s: want none on Ubuntu", s.Service)
+			t.Errorf("scheduled update %s: want none where the platform has no channel", s.Service)
 		}
+		if s.Kind == plan.UpdateImage {
+			imageScheduled = true
+		}
+	}
+	if !imageScheduled {
+		t.Errorf("no image update is scheduled: a platform without a Flatpak channel still "+
+			"has Core's update policy, and the composition dropped it: %+v", p.Artifact.ScheduledUpdates)
 	}
 }
 

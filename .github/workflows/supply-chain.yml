@@ -79,12 +79,6 @@ jobs:
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true
-          - token: ubuntu-2604
-            workstation: deskos-core-ubuntu-2604
-            exceptions: tests/supply-chain/exceptions-ubuntu-2604.json
-            disk: bootc-install
-            diskfile: disk.raw
-            splash: false
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
       # Declared once, at the job level, so the assertion step and the boot check

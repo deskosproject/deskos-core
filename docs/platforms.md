@@ -8,9 +8,12 @@ DeskOS compiles the same Core intent onto a platform's own bootc base
 ([ADR 0004](adr/0004-core-is-platform-independent.md)). A platform whose vendor
 publishes no bootc base may be added as an organization-owned base with a named
 owner and a declared tier ([ADR 0014](adr/0014-platform-base-ownership.md)) —
-Ubuntu is that case. Publishing goes to one repository per platform
-(`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, `-ubuntu-2604`), and the
-three below that are published carry the digest and the run that verified them in
+Ubuntu 26.04 is that case, and it is built and published in a repository of its own,
+[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu), on a base
+the project owns ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). What this
+repository publishes goes to one repository per platform
+(`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`), and the two below that are
+published carry the digest and the run that verified them in
 [architecture.md](architecture.md#validation-status). RHEL is never published, and
 Fedora is not yet.
 
@@ -21,7 +24,6 @@ Fedora is not yet.
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Ubuntu 26.04 | `quay.io/deskos/deskos-ubuntu-base` (the DeskOS project, tier `organization`) | manifest, by digest | **validated** (golden test, CI) | **CI** | **CI**: GNOME; session check; first-boot check | **published** (`quay.io/deskos/deskos-core-ubuntu-2604`) | **none** declared |
 | Fedora 44 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-17 | not measured | none | Flatpak preinstall |
 
 `(vendor)` in the table means the base is the platform's own supplier's: Canonical for
@@ -65,37 +67,19 @@ updater. The image is published at `quay.io/deskos/deskos-core-almalinux-10`, an
 weigh, not whether the image exists. Making your own is the same shape as CentOS
 Stream 10 ([install.md](install.md#almalinux-10)).
 
-### Ubuntu 26.04 — a published image, no DeskOS ISO; write a disk directly
+### Ubuntu 26.04 — built and published in its own repository
 
-The image is published at `quay.io/deskos/deskos-core-ubuntu-2604`. DeskOS
-implements no installer ISO for Ubuntu: there is no ISO path here, built or
-validated. What **is** validated is `bootc install to-disk`. The honest path for a reader who wants an installed
-Ubuntu machine today:
+Ubuntu has no bootc base from its vendor, so the project owns one, and both the base and the
+workstation that builds on it live in a repository of their own:
+[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu), on base
+`deskosproject/deskos-ubuntu-bootc`. That repository documents how to build it, how to write
+a disk with `bootc install to-disk` — there is no Anaconda path on this platform, which is
+why it is not in this page's install steps — and what is worth testing
+([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
-1. **Build the image** from a resource root (for example
-   `examples/ubuntu-2604/`) and tag it with the reference your machines will
-   update from:
-   [install.md](install.md#ubuntu-2604).
-2. **Write a disk** with `bootc install to-disk` from a compressed OCI layout —
-   the recipe is proven in
-   [`tests/vm/README.md`](../tests/vm/README.md#building-a-test-disk).
-
-Three things that are easy to conflate and must not be:
-
-- **A lab disk is not a delivery.** The CI job writes a raw disk by installing
-  from a local OCI layout with **no `--target-imgref`**
-  (`.github/workflows/vm-bootcheck.yml`); that proves the image builds, installs
-  and boots, and nothing about where a machine updates from afterwards.
-- **A real install points `--target-imgref` at a derivative you publish** (a
-  private registry, or one you make public), never at the local layout and never
-  at the Ubuntu base — pointing it at the base would replace your derivative with
-  the base at the next update.
-- **Publishing a derivative of your own is your step, and CI does not test it.**
-  The gate publishes DeskOS's own image, after the checks above; a green CI run
-  says nothing about a registry *you* publish to.
-
-See [install.md](install.md#ubuntu-2604) for the commands, and
-[operations.md](operations.md) for how the installed machine updates.
+This repository still **composes and renders** a Debian-family workstation, and its tests
+say so. It no longer builds, boots or publishes one: the virtual machines, the publish leg
+and the platform's resources moved with it.
 
 ### Fedora 44 — no published image; build from the vendor's Silverblue base
 
@@ -126,7 +110,7 @@ workstation lives in the embedded Core, so every `deskosctl validate` run in
 `ci.yml` composes it, the Fedora golden pins its Containerfile, and
 `ci.yml` renders it. What CI does **not** do for Fedora is build or boot an image
 ([vm-bootcheck.yml](../.github/workflows/vm-bootcheck.yml) covers CentOS Stream
-10, AlmaLinux 10 and Ubuntu 26.04).
+10 and AlmaLinux 10).
 
 **Build evidence, measured 2026-10-17 on the pinned base.** Two images were built
 locally, both on Fedora 44 and both finishing that day: the reference workstation

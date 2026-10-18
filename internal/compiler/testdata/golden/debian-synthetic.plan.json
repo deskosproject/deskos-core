@@ -1,0 +1,111 @@
+{
+  "format": "plan.deskos.org/v1alpha1",
+  "workstation": {
+    "name": "debian-synthetic",
+    "source": "root/ws.yaml:1"
+  },
+  "platform": {
+    "name": "test-platform",
+    "displayName": "Test Platform",
+    "family": "test",
+    "release": "1",
+    "architectures": [
+      "x86_64"
+    ],
+    "packageManager": "deb",
+    "redistributable": true,
+    "requiresSubscription": false,
+    "source": "root/platform.yaml:1"
+  },
+  "profiles": [
+    {
+      "name": "core",
+      "layer": "foundation",
+      "source": "root/p.yaml:1"
+    }
+  ],
+  "artifact": {
+    "baseImage": {
+      "image": "example.org/test/bootc:1",
+      "ref": "example.org/test/bootc:1"
+    },
+    "labels": [
+      {
+        "name": "org.deskos.platform",
+        "value": "test-platform"
+      },
+      {
+        "name": "org.deskos.workstation",
+        "value": "debian-synthetic"
+      },
+      {
+        "name": "org.opencontainers.image.title",
+        "value": "debian-synthetic"
+      }
+    ],
+    "rpmRepositories": [],
+    "aptRepositories": [
+      {
+        "id": "vscode",
+        "displayName": "Visual Studio Code - Stable",
+        "baseURL": "https://packages.microsoft.com/repos/code",
+        "suite": "stable",
+        "components": [
+          "main"
+        ],
+        "architectures": [
+          "amd64"
+        ],
+        "gpgKeys": [
+          {
+            "name": "apt-key.asc",
+            "content": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n-----END PGP PUBLIC KEY BLOCK-----\n",
+            "sha256": "dd2491bcfd67bbe6a9bd6452583da53f1b04083dea117c73ab9fcb3ea96000c1"
+          }
+        ],
+        "provenance": [
+          {
+            "resource": "AptRepository/vscode",
+            "via": "PackageSet/org-packages",
+            "profile": "core",
+            "layer": "foundation",
+            "source": "root/apt.yaml:1"
+          }
+        ]
+      }
+    ],
+    "packageGroups": [],
+    "packages": [
+      {
+        "name": "code",
+        "provenance": [
+          {
+            "resource": "PackageSet/org-packages",
+            "profile": "core",
+            "layer": "foundation",
+            "source": "root/set.yaml:1"
+          }
+        ]
+      }
+    ],
+    "rpmFiles": [],
+    "binaries": [],
+    "files": [],
+    "trustAnchors": [],
+    "desktopEntries": [],
+    "iconCaches": [],
+    "gsettingsVendorDefaults": [],
+    "kernelArguments": [],
+    "systemdUnits": [],
+    "systemdMasks": [],
+    "scheduledUpdates": []
+  },
+  "provisioning": {
+    "flatpakRemotes": [],
+    "flatpakApplications": []
+  },
+  "enrollment": {},
+  "warnings": [
+    "base image example.org/test/bootc:1 is not pinned by digest; it resolves at build time"
+  ]
+}

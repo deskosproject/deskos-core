@@ -116,13 +116,17 @@ DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
 which a workstation selects only when its platform's base lets DeskOS write
 them (ADR 0016). The same Core composes onto `centos-stream-10`, `almalinux-10`,
-`rhel-10`, `fedora-44` and `ubuntu-2604`; a RHEL workstation starts from
+`rhel-10` and `fedora-44`; the Ubuntu platform composes it in its own repository
+([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)), on a base the project
+owns rather than its vendor. A RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
 DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
 RHEL 10, AlmaLinux 10 and Fedora 44 — produce the same Core content, and the
 Fedora 45 evaluation joins that comparison from its own example root, which is
-how an unreleased Fedora is checked without being offered. Ubuntu is not compared
-by that test, because its package manager is deb.
+how an unreleased Fedora is checked without being offered. A Debian-family platform is
+not compared by that test, because its package manager is deb: what pins the deb render
+here is the synthetic Debian golden in the compiler tests (`debian-synthetic`), which is
+built from a fixture rather than from a platform this repository ships.
 
 ## Composition
 
@@ -337,12 +341,16 @@ account the upstream container image ships suppressing the wizard — is in
   dispatch (run `39067812799`, commit `e21c4f7`):
   `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:39dff937…`,
   `quay.io/deskos/deskos-core-almalinux-10` at `sha256:f28062cc…` and
-  `quay.io/deskos/deskos-core-ubuntu-2604` at `sha256:f1c40dd4…`, each with `:latest`
+  `quay.io/deskos/deskos-core-ubuntu-2604` at `sha256:f1c40dd4…` — the last Ubuntu image
+  this repository published, and the platform moved to a repository of its own afterwards
+  ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)) — each with `:latest`
   and the commit tag at the same digest. `cosign verify` with the workflow issuer and
   this repository's identity passes on all three, with the SBOM, accepted-exception
   and effective-exception attestations bound to that digest. The organization-owned
   base `quay.io/deskos/deskos-ubuntu-base:26.04` (`sha256:ec5ce295…`) is published and
-  signed too, with a signing identity of its own rather than the CI one. RHEL-derived
+  signed too, with a signing identity of its own rather than the CI one. That repository is
+  `deskos-ubuntu-bootc` now, and the image it publishes is
+  `quay.io/deskos/deskos-ubuntu-bootc`. RHEL-derived
   images are never published (ADR 0014).
 - **Fedora 44, composed, rendered and built (2026-10-17).** The platform's facts
   were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:44`,
@@ -391,7 +399,8 @@ bit.** External inputs that can still change between builds:
 - the base image tag, unless `bootc.digest` is set — all five shipped Platforms
   pin a digest, as does the Fedora 45 evaluation root;
 - repository metadata and packages: RPM repositories on the EL and Fedora
-  platforms, APT sources on Ubuntu.
+  platforms, APT sources on a Debian-family one (the Ubuntu platform, in its own
+  repository).
 
 `BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
 SHA-256 and a signing key; and **RPM repository signing keys are local
@@ -423,8 +432,9 @@ floating location, a SHA-256 checksum, and installs only directly into
 `/usr/local/bin` with mode `0755` or `0555`. The verification is part of the
 build: the containerfile fetches over https and fails on a checksum that does not
 match. That fetch uses `curl`, which **the platform's image must provide** — the EL
-and Fedora bases ship it because `dnf` needs it, and the Ubuntu base does not, so
-`Platform/ubuntu-2604` declares it (measured 2026-10-18). A platform that neither
+and Fedora bases ship it because `dnf` needs it, and the Ubuntu base does not, so its
+platform declares it (measured 2026-10-18; that platform is in its own repository now,
+and the fact is Core's). A platform that neither
 ships nor declares it fails at build with `/bin/sh: 1: curl: not found`, which is
 late: making it a composition error needs a typed statement of what a base provides,
 and that is not modeled yet.
@@ -654,9 +664,8 @@ into the build context and a symlink out of the root is refused too.
 Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
 image-update unit. Where the base **enables** it, its service runs
 `bootc upgrade --apply`, which **reboots** whenever a new image is published.
-The reboot-on-publish path was checked end to end on CentOS Stream 10; AlmaLinux
-and Ubuntu are built and booted in CI, but that path is not rechecked there
-([platforms.md](platforms.md)).
+The reboot-on-publish path was checked end to end on CentOS Stream 10; AlmaLinux is
+built and booted in CI, but that path is not rechecked there ([platforms.md](platforms.md)).
 
 Whether the base enables that unit is the platform's own fact, and Fedora is the
 counter-example: its Silverblue base is measured to ship the unit **without
@@ -738,8 +747,8 @@ reserved in the Plan and not implemented.
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
 - **Published today: the container image, per platform.** It goes to one
-  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`,
-  `-ubuntu-2604`), and the digests the last dispatch published, with the run that
+  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`,
+  `-almalinux-10`), and the digests the last dispatch published, with the run that
   produced them, are under
   [Validation status](#validation-status) on this page. Publishing is manual: the
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
@@ -747,8 +756,9 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   every green `main`; pin a digest in production.
 - **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
   storage, not on GitHub; until then they are built locally (see
-  [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) or writes
-  a raw disk (`bootc install to-disk`, Ubuntu) only as test input.
+  [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) only as test
+  input; an Ubuntu disk is written with `bootc install to-disk` by that platform's own
+  repository.
 - **Planned:** promote the same digest through channels (candidate,
   canary, pilot, stable) without rebuilding. A mirror on
   `ghcr.io/deskosproject/deskos-core` is possible and not decided.
