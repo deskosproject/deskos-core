@@ -578,7 +578,10 @@ def binary_summary(checks):
     bins = [c for c in checks if c["check"].startswith(BINARY_CHECK_PREFIX)]
     strict = sum(1 for c in bins if c["coverage"]["image"] == "checked-bytes" and c["pass"])
     install = sum(1 for c in bins if c["coverage"]["image"] == "install-only" and c["pass"])
-    unreadable = sum(1 for c in bins if c["coverage"]["image"] == "unread")
+    # A read that did not happen counts whether or not the check could claim something
+    # else: an archive whose member could not be hashed is installed and verified as
+    # installed, and the read still has to appear here (the detail says which).
+    unreadable = sum(1 for c in bins if c.get("unread"))
     return {"declared": len(bins), "checksum_verified": strict, "install_verified": install,
             "unreadable": unreadable,
             "failed": [{"check": c["check"], "detail": c["detail"]} for c in bins if not c["pass"]]}
@@ -766,10 +769,14 @@ def check_status(c):
 def evaluate(values, plan, journal="", skel_rels=()):
     checks = []
 
-    def check(name, ok, detail, skipped=False, coverage=None):
+    def check(name, ok, detail, skipped=False, coverage=None, unread=None):
         c = {"check": name, "pass": bool(ok), "skipped": bool(skipped), "detail": detail}
         if coverage is not None:
             c["coverage"] = coverage
+        # A read that did not happen, and what it was: a check can be verified on one
+        # axis and unmeasured on another, and the summary has to say so.
+        if unread:
+            c["unread"] = list(unread)
         checks.append(c)
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
@@ -786,12 +793,26 @@ def evaluate(values, plan, journal="", skel_rels=()):
         archived = b.get("archive", "none") != "none"
         # The plan declares the mode, so it is asserted: a file with the right bytes and
         # the wrong mode is not the file the plan installs. `stat` prints 755 where the
-        # plan writes 0755, so the leading zero is not a difference.
+        # plan writes 0755, so the leading zero is not a difference. A mode that could
+        # not be read is not a mode that differs: it is a read this machine would not
+        # give up, and it is reported as one instead of as a difference nobody measured.
         declared_mode = b.get("mode") or ""
         read_mode = values.get(f"binary_mode_{i}", "missing")
-        mode_ok = not declared_mode or read_mode.lstrip("0") == declared_mode.lstrip("0")
-        mode_text = ("mode " + (read_mode or "not read") +
-                     (", as the plan declares" if mode_ok else f", the plan declares {declared_mode}"))
+        mode_read = read_mode not in ("missing", "unreadable")
+        mode_differs = mode_read and bool(declared_mode) and read_mode.lstrip("0") != declared_mode.lstrip("0")
+        mode_text = ""
+        if declared_mode:
+            if mode_differs:
+                mode_text = f"mode {read_mode}, the plan declares {declared_mode}"
+            elif mode_read:
+                mode_text = f"mode {read_mode}, as the plan declares"
+            else:
+                mode_text = f"its mode could not be read here; the plan declares {declared_mode}"
+        unread = []
+        if got == "unreadable":
+            unread.append("its bytes")
+        if declared_mode and not mode_read:
+            unread.append("its mode")
         # An archive is claimed as installed and a single file by its bytes; a file
         # whose bytes could not be read is claimed by neither, and is counted as a read
         # that did not happen rather than as one that disagreed.
@@ -800,24 +821,25 @@ def evaluate(values, plan, journal="", skel_rels=()):
         if got == "missing":
             check(name, False, f"{b['destination']} is not an executable regular file",
                   coverage=coverage)
-        elif not mode_ok:
+        elif mode_differs:
             check(name, False, f"{b['destination']} is installed with {mode_text}",
                   coverage=coverage)
         elif archived:
             read = f" (sha256 {got[:12]}…)" if got != "unreadable" else " (its bytes could not be read here)"
             check(name, True,
                   f"installed and executable{read}, {mode_text}; the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
-                  coverage=coverage)
+                  skipped=bool(unread), unread=unread, coverage=coverage)
         elif got == "unreadable":
             check(name, True,
                   f"{b['destination']} is installed and executable, {mode_text}; whether its bytes are the plan's is unreadable here",
-                  skipped=True,
+                  skipped=True, unread=unread,
                   coverage=dict(coverage, image="unread", session="unread"))
         elif got != b["sha256"]:
             check(name, False, f"sha256 {got}, the plan pins {b['sha256']}",
                   coverage=coverage)
         else:
-            check(name, True, f"sha256 {got} and {mode_text}", coverage=coverage)
+            check(name, True, f"sha256 {got}, {mode_text}",
+                  skipped=bool(unread), unread=unread, coverage=coverage)
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):

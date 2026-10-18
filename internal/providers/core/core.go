@@ -45,6 +45,9 @@ type PlatformSpec struct {
 	Flatpak             FlatpakPlatform      `json:"flatpak"`
 	Trust               *TrustPlatform       `json:"trust,omitempty"`
 	IconCache           *IconCachePlatform   `json:"iconCache,omitempty"`
+	// Downloads says whether the base can fetch a verified artifact, which the
+	// build does for every BinaryArtifact (docs/adr/0019).
+	Downloads *DownloadsPlatform `json:"downloads,omitempty"`
 }
 
 // BootcBase is the official bootc base image. Digest pins it when set.
@@ -163,6 +166,19 @@ type TrustPlatform struct {
 type IconCachePlatform struct {
 	Package string `json:"package"`
 	Command string `json:"command"`
+}
+
+// DownloadsPlatform says whether the platform's base can fetch a verified
+// artifact, and the package that provides the fetcher when it cannot. Downloading
+// is a build step, so a base that cannot fetch cannot build an image that contains
+// a BinaryArtifact; the composition says which platform gap that is instead of the
+// build failing on a missing command (docs/adr/0019). Neither name is Core's.
+type DownloadsPlatform struct {
+	// BaseFetches is whether the base ships the fetcher the build uses.
+	BaseFetches bool `json:"baseFetches"`
+	// Package provides that fetcher on a base that does not ship it, and is
+	// required there: the image must install it, or nothing can fetch.
+	Package string `json:"package,omitempty"`
 }
 
 // PackageGroup returns the named mapping.
@@ -395,6 +411,9 @@ func (platformProvider) Decode(res *model.Resource) error {
 		if !trustCmdRE.MatchString(t.UpdateCommand) {
 			errs.Add(model.Errorf(res, "trust.updateCommand %q must be a bare command name", t.UpdateCommand))
 		}
+	}
+	if d := s.Downloads; d != nil && !d.BaseFetches && !pkgRE.MatchString(d.Package) {
+		errs.Add(model.Errorf(res, "downloads.package %q is required when downloads.baseFetches is false: the base has nothing to fetch with, so the image must install it", d.Package))
 	}
 	res.Object = &s
 	return errs.Err()

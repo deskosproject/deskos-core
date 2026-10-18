@@ -258,10 +258,8 @@ class PlanBinariesTest(unittest.TestCase):
                 c = self.binary_check(dict(GOOD, binary_mode_0=got))
                 self.assertFalse(c["pass"])
                 self.assertIn("the plan declares 0755", c["detail"])
-        # The declared mode's leading zero is not a difference, and a mode that could
-        # not be read is a mode that was not read.
+        # The declared mode's leading zero is not a difference.
         self.assertTrue(self.binary_check(dict(GOOD, binary_mode_0="755"))["pass"])
-        self.assertFalse(self.binary_check(dict(GOOD, binary_mode_0="unreadable"))["pass"])
 
     def test_a_binary_whose_bytes_differ_fails(self):
         values = dict(GOOD, binary_0="bb" * 32)
@@ -302,12 +300,30 @@ class PlanBinariesTest(unittest.TestCase):
         self.assertEqual(summary["checksum_verified"], 0)
         self.assertEqual(summary["failed"], [])
         # An archive is claimed as installed either way: the plan pins the archive's
-        # checksum, so an unreadable member changes nothing about that claim.
+        # checksum, so an unreadable member changes nothing about *that* claim -- and the
+        # read still has to be counted, or the summary would report the check as fully
+        # verified when a read never happened.
         plan = json.loads(json.dumps(PLAN))
         plan["artifact"]["binaries"][0]["archive"] = "tar.gz"
         summary = sc.binary_summary(sc.evaluate(values, plan))
-        self.assertEqual((summary["install_verified"], summary["unreadable"]), (1, 0))
+        self.assertEqual((summary["install_verified"], summary["unreadable"]), (1, 1))
         self.assertIn("could not be read here", self.binary_check(values, plan=plan)["detail"])
+
+    def test_a_mode_that_could_not_be_read_is_reported_not_failed(self):
+        # The same distinction for the mode: `stat` failing is a read that did not
+        # happen, not a mode that disagrees. Failing here would attribute a difference
+        # nobody measured.
+        values = dict(GOOD, binary_mode_0="unreadable")
+        c = self.binary_check(values)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("its mode could not be read here", c["detail"])
+        summary = sc.binary_summary(sc.evaluate(values, PLAN))
+        # The bytes were compared and matched, so that claim stands.
+        self.assertEqual((summary["checksum_verified"], summary["unreadable"]), (1, 1))
+        # Both reads missing is still one binary with reads that did not happen.
+        both = sc.binary_summary(sc.evaluate(dict(GOOD, binary_0="unreadable", binary_mode_0="unreadable"), PLAN))
+        self.assertEqual((both["checksum_verified"], both["unreadable"]), (0, 1))
 
     def test_the_binaries_are_not_counted_as_defaults(self):
         # A binary has no image/session axis, so it must not appear in the defaults

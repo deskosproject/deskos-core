@@ -85,8 +85,7 @@
       {
         "name": "workstation",
         "members": [
-          "ubuntu-desktop-minimal",
-          "curl"
+          "ubuntu-desktop-minimal"
         ],
         "provenance": [
           {
@@ -107,6 +106,17 @@
             "profile": "example-ubuntu-vendor",
             "layer": "organization",
             "source": "core-ubuntu-2604/software/vendor-tools.yaml:25"
+          }
+        ]
+      },
+      {
+        "name": "curl",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/deskos",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/software/deskos.yaml:1"
           }
         ]
       }

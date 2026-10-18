@@ -589,6 +589,19 @@ var (
 	updateDelayRE = regexp.MustCompile(`^[1-9][0-9]*(min|h)$`)
 )
 
+// curlFetch is how the build downloads something it will verify afterwards, and it is
+// the same everywhere on purpose: a fetch that stalls or blips is the same failure
+// whether it brings a binary artifact or an rpm file, and two hand-copied flag lists
+// are two lists that drift. `--retry` retries transient failures and never a 404 or a
+// checksum that disagrees, because those are not transient; `--connect-timeout` and
+// `--speed-limit`/`--speed-time` bound the attempts that are not errors but waits, so
+// neither a host that never answers nor a server that accepts and goes quiet can hang a
+// build until the job's own timeout. Measured 2026-10-18 in the Ubuntu base: 30s for a
+// host that does not answer the handshake, 60s for a transfer under 1 KB/s.
+const curlFetch = "curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \\\n" +
+	"        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \\\n" +
+	"        --connect-timeout 30 --speed-limit 1000 --speed-time 60"
+
 // updateUnits renders the service and timer of one scheduled update. The
 // commands are fixed per kind and only stage or update; none reboots.
 func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
@@ -705,7 +718,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 			// A keyring per file trusts only that file's key and leaves the image's rpmdb keys unchanged.
 			rpmkeys := "rpmkeys --dbpath " + shq(path.Join(rpmFilesDir, "keyring-"+f.SHA256)) + " --define '_keyring rpmdb'"
 			pre = append(pre,
-				fmt.Sprintf("curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \\\n        -o %s %s", shq(rpm), shq(f.URL)),
+				fmt.Sprintf("%s \\\n        -o %s %s", curlFetch, shq(rpm), shq(f.URL)),
 				fmt.Sprintf("echo %s | sha256sum --check --strict --quiet -", shq(f.SHA256+"  "+rpm)),
 				fmt.Sprintf("%s --import %s", rpmkeys, shq(path.Join(rpmKeysImageDir, f.GPGKeySHA256+".asc"))),
 				// Without signature level, --checksig accepts an unsigned package whose digests match.
@@ -720,12 +733,10 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		first := group[0]
 		w("\n# Binary artifact %s %s (sha256-verified)\n", first.Artifact, first.Version)
 		w("RUN set -eu; \\\n    tmp=\"$(mktemp -d)\"; \\\n")
-		// The fetch retries transient failures: a build that a network blip kills is a
-		// build that had nothing wrong with it (measured 2026-10-18, an Ubuntu job lost
-		// its build to one). This does not soften anything: the checksum below still
-		// decides, and `--retry` does not retry a 404 or a checksum that does not match,
-		// because the failure those produce is not transient.
-		w("    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \\\n        -o \"$tmp/download\" %s; \\\n", shq(first.URL))
+		// The fetch retries transient failures and bounds the attempts that are not
+		// errors but waits; see curlFetch for what was measured and why it softens
+		// nothing (the checksum below still decides).
+		w("    %s \\\n        -o \"$tmp/download\" %s; \\\n", curlFetch, shq(first.URL))
 		w("    echo %s | sha256sum --check --strict --quiet -; \\\n", shq(first.SHA256+"  ")+`"$tmp/download"`)
 		for _, bin := range group {
 			src := `"$tmp/download"`

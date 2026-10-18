@@ -208,16 +208,20 @@ What that claim can be depends on **what the plan pins**, and there are two case
 The mode is asserted in both cases, because the plan declares it: the right bytes
 with the wrong mode is a file the user may not be able to run, which is not what the
 plan says it installs. `stat` prints `755` where the plan writes `0755`, so the
-leading zero is not a difference. Both reads follow a link, so a symlink to the
-installed file describes the file that runs; whether the destination is a link is
-not a declared fact, so it is not asserted.
+leading zero is not a difference. A mode that could not be read is not a mode that
+differs: it is a read that did not happen, reported as one. Both reads follow a link,
+so a symlink to the installed file describes the file that runs; whether the
+destination is a link is not a declared fact, so it is not asserted.
 
 `session.json` carries `plan_binaries` (`declared`, `checksum_verified`,
 `install_verified`, `unreadable`, and the ones that failed with their detail), and
-`session.md` prints the counts. A file that is there and executable but cannot be
-read is counted in `unreadable` and reported with that reason, not as a difference:
-the bytes are a fact the machine would not give up, which is not the same claim as
-bytes that disagree.
+`session.md` prints the counts. `unreadable` counts the binaries with a read this
+machine would not give up — the bytes, the mode, or both — and the detail says which:
+a check can be verified on one axis and unmeasured on another (an archive whose member
+could not be hashed is installed, and a file whose mode could not be read still has
+its bytes compared). That is a read that did not happen, which is not the same claim
+as a value that disagreed, and the summary says so instead of counting it as
+verified.
 
 ### Seeding the skeleton and showing the widgets
 
