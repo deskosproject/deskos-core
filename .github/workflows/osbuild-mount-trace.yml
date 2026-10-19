@@ -1,0 +1,84 @@
+name: osbuild-mount-trace
+
+# A diagnostic, not a test: it reproduces osbuild's failure on a kernel-7.0 runner
+# and records the syscall that fails, so a report upstream can name a mechanism
+# instead of guessing one. Nothing here asserts; the trace is the artifact.
+#
+# It runs on a branch and is never merged: `workflow_dispatch` only, no triggers.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # A public bootc image, so no subscription is needed to reproduce: the failure
+  # happens in osbuild, before the image matters.
+  IMAGE: quay.io/centos-bootc/centos-bootc:stream10
+  # The public builder, so the run needs no credentials either.
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+
+jobs:
+  trace:
+    strategy:
+      fail-fast: false
+      matrix:
+        # 26.04 is kernel 7.0 (expected to fail); 24.04 is 6.17 (expected to work).
+        runner: [ubuntu-26.04, ubuntu-24.04]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - name: What this host is
+        run: |
+          set -x
+          uname -a
+          cat /proc/version
+          . /etc/os-release && echo "$PRETTY_NAME"
+          podman --version
+          ls -l /sys/module/apparmor/parameters/enabled 2>/dev/null && cat /sys/module/apparmor/parameters/enabled || true
+          cat /sys/fs/selinux/enforce 2>/dev/null || echo "no selinux"
+
+      - name: Put the image in host storage
+        run: sudo podman pull "$IMAGE"
+
+      - name: Run bootc-image-builder under strace
+        # No `set -e`: the failure is the point, and the trace must survive it.
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          mkdir -p out/output
+          sudo podman run --rm --privileged \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            -v "$PWD/out:/out" \
+            --entrypoint /bin/bash \
+            "$BIB" -c '
+              set -x
+              dnf -y install strace >/dev/null 2>&1 || dnf -y install strace
+              # -f follows the mount(8) child; the paths and flags are what matter.
+              strace -f -tt -s 256 -o /out/bib.strace \
+                -e trace=mount,mount_setattr,open_tree,move_mount,openat,openat2,statx,chdir \
+                /usr/bin/bootc-image-builder build --type qcow2 "$1"
+            ' _ "$IMAGE" || echo "bootc-image-builder exited non-zero, as expected on the failing kernel"
+
+      - name: Keep the LSM and kernel messages
+        if: always()
+        run: |
+          sudo dmesg 2>/dev/null | grep -iE "apparmor|selinux|denied|mount" | tail -100 > out/dmesg.txt || true
+          sudo podman events --since 1h --stream=false > out/podman-events.txt 2>/dev/null || true
+
+      - name: Upload the trace
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: mount-trace-${{ matrix.runner }}
+          path: out/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Say what happened
+        if: always()
+        run: |
+          echo "### ${{ matrix.runner }}" >> "$GITHUB_STEP_SUMMARY"
+          grep -cE "EACCES|EPERM|EINVAL" out/bib.strace 2>/dev/null | sed 's/^/errors in the trace: /' >> "$GITHUB_STEP_SUMMARY" || true
+          grep -E "EACCES|EPERM" out/bib.strace 2>/dev/null | tail -5 >> "$GITHUB_STEP_SUMMARY" || true
