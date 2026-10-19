@@ -311,8 +311,8 @@ install it today — is [**platforms.md**](platforms.md). The evidence behind th
 claims is below.
 
 The RHEL column there is historical: the RHEL factory host was retired, and this
-repository no longer builds or boots RHEL or publishes a `deskos/rhel10` status.
-Composition and rendering for RHEL stay covered by the tests. The Ubuntu
+repository no longer builds or boots RHEL. Composition and rendering for RHEL stay
+covered by the tests. The Ubuntu
 root-cause story — GDM counting users through AccountsService, and the uid-1000
 account the upstream container image ships suppressing the wizard — is in
 [research notes](research-notes.md).
