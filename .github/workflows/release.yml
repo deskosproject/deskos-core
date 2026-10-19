@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   tag:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       prerelease: ${{ steps.semver.outputs.prerelease }}
     steps:
@@ -38,7 +38,7 @@ jobs:
 
   build:
     needs: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -96,7 +96,7 @@ jobs:
     # beside `ci`: the job reads needs.tag.outputs.prerelease to decide whether
     # this release may move :latest.
     needs: [tag, ci]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       # Keyless cosign: the workflow's OIDC identity.
@@ -201,7 +201,7 @@ jobs:
 
   release:
     needs: [tag, build, tool]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
