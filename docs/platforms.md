@@ -46,7 +46,7 @@ The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as `:lat
 `:<commit>` by the gate's `publish=true` dispatch, with its digest and the run in
 [architecture.md](architecture.md#validation-status). Make a QCOW2 (or an
 Anaconda ISO) from it with `bootc-image-builder`:
-[install.md](install.md#centos-stream-10).
+[install.md](install.md#install-a-published-image).
 
 ### RHEL 10 — build privately, never publish
 
@@ -65,7 +65,7 @@ the example declares no `FlatpakSet` or `TrustAnchor`, and does not test the bas
 updater. The image is published at `quay.io/deskos/deskos-core-almalinux-10`, and
 **the base it derives from is the vendor's experimental one**: that is the caveat to
 weigh, not whether the image exists. Making your own is the same shape as CentOS
-Stream 10 ([install.md](install.md#almalinux-10)).
+Stream 10 ([install.md](install.md#install-a-published-image)).
 
 ### Ubuntu 26.04 — built and published in its own repository
 

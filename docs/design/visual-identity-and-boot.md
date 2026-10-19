@@ -188,7 +188,7 @@ cnic / bnx2i" at boot, visible again briefly at shutdown. The dracut
 dracut-ng `main`) loads those offload drivers unconditionally.
 *Unresolved*; DeskOS does not disable hardware support to hide the
 warning (see
-[research-notes.md](../research-notes.md#kernel-warnings-cnic--bnx2i-at-boot-tracking)).
+[research-notes.md](../research-notes.md#kernel-warnings-cnic-bnx2i-at-boot-tracking)).
 
 ## VM QA
 

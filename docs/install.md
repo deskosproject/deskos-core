@@ -1,49 +1,32 @@
 # Installing DeskOS
 
-How to get a DeskOS **QCOW2 disk** or **installer ISO**, from a CentOS Stream 10
-image you build (or pull, once it is published), a private RHEL 10 build, an AlmaLinux 10
-build, or a Fedora 44 build. An Ubuntu disk is written with `bootc install to-disk`, and the
-repository that owns that platform documents it.
+Two paths, and you only need the first: **install a published image**, or
+**build your own** and then install that. Most people never need the second.
 
 > [!NOTE]
-> Downloadable QCOW2 and ISO images are not published yet; the container image
-> is. Create an EL or Fedora disk from it with
-> `bootc-image-builder`. An Ubuntu disk is written differently, and that platform's own
-> repository documents how. You need **Linux with rootful
-> Podman** and about **20 GB free**.
+> You need **Linux with rootful Podman** and about **20 GB free**. No
+> downloadable QCOW2 or ISO files are published — the **container images** are,
+> and `bootc-image-builder` turns one into a disk on your machine.
 
-## CentOS Stream 10
+## Install a published image
 
-DeskOS Core for CentOS Stream 10 is published at
-`quay.io/deskos/deskos-core-centos-stream-10`: pull it, or build it locally with
-`deskosctl render` and `podman build` (see the [README](../README.md)). The
-published `:latest` is the newest image that passed the boot and session checks.
-Publishing is manual (the `supply-chain` workflow with `publish=true`) and moves
-`:latest` and the `:<commit>` tag together; for production, pin the digest you
-verified — [architecture.md](architecture.md#validation-status) carries the one
-the last dispatch published.
+Two platforms publish an image that the gate built, scanned and booted:
 
-**1. Get the image, then make a QCOW2 disk** for a virtual machine. Pull the
-published image, or use the one you built locally — a `localhost/` reference,
-which is what the builder takes here:
+| Platform | Image |
+|---|---|
+| CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` |
 
-```bash
-# The path available today: the image you built, local to this host.
-image=localhost/deskos-core-centos-stream-10:test
+Each has `:latest` (the newest image that passed the boot and session checks) and
+a `:<commit>` tag, moved together by a manual `publish=true` dispatch. For
+anything beyond a lab, **pin the digest you verified**:
+[architecture.md](architecture.md#validation-status) carries the digest and the
+run that published it.
 
-mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
-    --security-opt label=type:unconfined_t \
-    -v ./output:/output \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
-    quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args \
-    --chown "$(id -u):$(id -g)" "$image"
-```
+### Write a QCOW2 disk
 
-Once the first `publish=true` dispatch runs, take the published image instead,
-and resolve `:latest` to a digest first so a publish between the pull and the
-build cannot change what you install:
+Resolve `:latest` to a digest first, so a publish between the pull and the build
+cannot change what you install:
 
 ```bash
 image=quay.io/deskos/deskos-core-centos-stream-10:latest
@@ -61,18 +44,16 @@ sudo podman run --rm -it --privileged --pull=missing \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
 
-> A `localhost/` image is **not an update source**: an installed machine updates
-> from the reference it was built from, so anything beyond a lab disk needs a
-> published reference those machines can reach.
-> The CI pins this builder by digest for reproducibility; `:latest` is the
-> same image today.
-
 The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 
-- **No user account is baked in:** GNOME Initial Setup creates the first
-  one at first boot.
+- **No user account is baked in:** GNOME Initial Setup creates the first one at
+  first boot.
 - `--no-default-kernel-args` keeps the image's own boot arguments (quiet
   graphical splash) instead of the builder's serial console.
+- The CI pins this builder by digest for reproducibility, and `:latest` has
+  already moved past it. To build exactly what CI built, replace the builder
+  reference with
+  `quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b`.
 
 > [!TIP]
 > For a larger root filesystem, mount a `config.toml`
@@ -85,43 +66,95 @@ The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 > minsize = "40 GiB"
 > ```
 
-**Or make an installer ISO:** use `--type anaconda-iso` with a kickstart
-in `config.toml`. The kickstart DeskOS needs is in
-[installer-iso.md](installer-iso.md), together with the warning that it
-**erases every disk**. Machines installed from it update from the image
-reference it was built from, so an ISO built from a `localhost/` image leaves them
-**without an update source**: publish your own reachable reference before handing
-out the ISO ([installer-iso.md](installer-iso.md)). Once DeskOS publishes, that
-reference is `quay.io/deskos/deskos-core-centos-stream-10:latest`: Core
-stages the new image daily, on AC power, and it applies at the next
-reboot (see [Updates](operations.md)).
+For AlmaLinux 10, use the same command with its image reference.
 
-## RHEL 10 (private builds only)
+### Or make an installer ISO
 
-> [!IMPORTANT]
-> DeskOS publishes by platform, one repository each. RHEL-based images,
-> disks and ISOs must **never be published**: the RHEL EULA forbids public
-> redistribution. An organization with RHEL subscriptions builds its own
-> and keeps the result inside the organization.
+> [!WARNING]
+> **An installer ISO erases every disk it is pointed at.** Read
+> [installer-iso.md](installer-iso.md) before you build one: it carries the
+> kickstart DeskOS needs and the warning in full.
 
-Build on a **registered RHEL 10 host** logged in to `registry.redhat.io`,
-as root (the build runs as root).
+Use `--type anaconda-iso` with that kickstart in `config.toml`.
+
+**The ISO bakes in the reference it is built from, and that is what the installed
+machine follows for every later `bootc upgrade`.** So build the ISO from a
+*floating* reference you control — `quay.io/deskos/deskos-core-centos-stream-10:latest`
+for a DeskOS image — and not from a digest: a digest reference never moves, and
+the machine would stop receiving updates. An ISO built from a `localhost/` image
+leaves the machine with **no update source** at all. Core stages the published
+image daily, on AC power, and it applies at the next reboot
+([Updates](operations.md)).
+
+## Build your own, then install it
+
+Everything below compiles an image yourself. It is the path for an organization
+that authors its own workstation, for RHEL (which DeskOS never publishes), and
+for anyone who wants to understand the whole pipeline. It needs **git**, because
+the example resources it renders come from a checkout.
 
 **1. Get `deskosctl`** from
-[GitHub Releases](https://github.com/deskosproject/deskos-core/releases).
-The version-less asset names track the latest release; use a `vX.Y.Z` name
-to pin one. No Go toolchain or git is needed:
+[GitHub Releases](https://github.com/deskosproject/deskos-core/releases). The
+version-less asset names track the latest release; use a `vX.Y.Z` name to pin
+one. No Go toolchain is needed:
 
 ```bash
+# The checkout, and the tool beside it, so every command below is relative.
+git clone https://github.com/deskosproject/deskos-core
+cd deskos-core
+
 base=https://github.com/deskosproject/deskos-core/releases/latest/download
-mkdir deskos && cd deskos
 curl -fL -O "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 ```
 
-**2. Declare a RHEL 10 workstation** in a resource root of your own, for
-example `my-org/workstations/core-rhel-10.yaml`:
+**2. Render and build.** Render a shipped example, or a resource root of your own,
+and build it:
+
+```bash
+./bin/deskosctl render ./examples/almalinux-10 \
+    --workstation example-almalinux-10 --output ./dist/alma
+sudo podman build -t localhost/deskos-alma:test ./dist/alma
+```
+
+**3. Write the disk** with the same `bootc-image-builder` command as above,
+passing your `localhost/` image:
+
+```bash
+image=localhost/deskos-alma:test
+
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" "$image"
+```
+
+> A `localhost/` image is **not an update source**: an installed machine updates
+> from the reference it was built from, so anything beyond a lab disk needs a
+> published reference those machines can reach.
+
+The complete pipeline, including the determinism guarantees and the CI flow, is
+in [development.md](development.md#build-the-image-yourself).
+
+## RHEL 10 (private builds only)
+
+RHEL 10 is never published **by DeskOS**: the EULA forbids redistributing it, so
+an organization with a subscription builds its own and pushes it only to a
+registry private to that organization.
+
+You need a **RHEL 10 host or build machine registered with your subscription and
+logged in to `registry.redhat.io`** — the base and the RHEL builder are entitled
+content — plus rootful Podman.
+
+**1. Get `deskosctl`** as in step 1 above.
+
+**2. Declare a RHEL 10 workstation** in a resource root of your own, for example
+`my-org/workstations/core-rhel-10.yaml`:
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
@@ -137,17 +170,13 @@ spec:
 ```
 
 > [!IMPORTANT]
-> `deskos-core` carries the packages and the update policy, and `deskos-gnome` carries
-> DeskOS's GNOME defaults (ADR 0016). A workstation that wants them selects both; one
-> whose platform ships its own desktop, like Ubuntu, selects only `deskos-core` and
-> keeps its vendor's desktop. If you pin a release and select `deskos-core` alone, you
-> stop inheriting the session lock, the idle timeout and the software-update policy
-> until you add the profile — that is the one breaking change of v0.12.0, and the
-> release notes repeat it.
+> `deskos-core` carries the packages and the update policy, and `deskos-gnome`
+> carries DeskOS's GNOME defaults (ADR 0016). A workstation that wants them
+> selects both; one whose platform ships its own desktop, like Ubuntu, selects
+> only `deskos-core` and keeps its vendor's desktop.
 
-**3. Render and build it.** Tag it with the reference your machines
-should update from, in a registry that is **private to your
-organization**:
+**3. Render and build it.** Tag it with the reference your machines should update
+from, in a registry that is **private to your organization**:
 
 ```bash
 ./bin/deskosctl render ./my-org \
@@ -156,7 +185,7 @@ sudo podman build -t registry.example.com/deskos/core-rhel-10:latest \
     ./dist/deskos-core-rhel-10
 ```
 
-**4. Make the QCOW2** (or the ISO, as above) with the **RHEL** builder:
+**4. Make the QCOW2** (or the ISO) with the **RHEL** builder:
 
 ```bash
 mkdir -p output
@@ -170,39 +199,18 @@ sudo podman run --rm -it --privileged --pull=missing \
     registry.example.com/deskos/core-rhel-10:latest
 ```
 
-In the image DeskOS builds and tests, every layer is free of the build
-host's subscription state (see [validation status](architecture.md#validation-status));
-a build you make is your own to check. The image, disks and ISOs are
-**still RHEL derivatives**: push them only to registries and storage that
-are private to your organization.
-
-## AlmaLinux 10
-
-AlmaLinux 10 is a public, subscription-free EL10 base — the AlmaLinux project's
-own, which that project labels experimental. The image is published at
-`quay.io/deskos/deskos-core-almalinux-10`, and CI builds and boots
-`example-almalinux-10` and runs the boot, session and first-boot checks on it,
-so the steps below are exercised. The platform's facts
-are EL10 conventions modeled on RHEL 10 ([platforms.md](platforms.md)).
-
-Get `deskosctl` as in step 1 of the RHEL section above, then render the shipped
-example from a checkout of this repository and build it:
-
-```bash
-./bin/deskosctl render ./examples/almalinux-10 \
-    --workstation example-almalinux-10 --output ./dist/alma
-sudo podman build -t localhost/deskos-alma:test ./dist/alma
-```
-
-Then write the QCOW2 with the public `bootc-image-builder`, as in the CentOS
-Stream 10 steps above.
+In the image DeskOS builds and tests, every layer is free of the build host's
+subscription state (see [validation status](architecture.md#validation-status));
+a build you make is your own to check. The image, disks and ISOs are **still RHEL
+derivatives**: push them only to registries and storage that are private to your
+organization.
 
 ## Fedora 44
 
 Fedora is a public, subscription-free base published by the Fedora Project
-itself, so a build needs no entitlement. DeskOS publishes no Fedora image. Get
-`deskosctl` as in step 1 of the RHEL section above, then build the shipped
-**reference workstation** from a checkout of this repository:
+itself, so a build needs no entitlement. **DeskOS publishes no Fedora image.**
+Get `deskosctl` as in step 1 above, then build the shipped reference workstation
+from a checkout of this repository:
 
 ```bash
 ./bin/deskosctl render \
@@ -210,10 +218,8 @@ itself, so a build needs no entitlement. DeskOS publishes no Fedora image. Get
 sudo podman build -t localhost/deskos-core-fedora-44:test ./dist/fedora-44
 ```
 
-`examples/fedora-44/` is the minimal example (Core and the family profile
-only). Then write the QCOW2 with the public `bootc-image-builder` as in the
-CentOS Stream 10 steps above, or `bootc install to-disk` from a compressed OCI
-layout, which is the recipe the Ubuntu platform documents in its own repository.
+`examples/fedora-44/` is the minimal example (Core and the family profile only).
+Then write the QCOW2 as above.
 
 If you publish it, give it its **own repository** —
 `quay.io/deskos/deskos-core-fedora-44` — and point the installed machine at that
@@ -231,17 +237,19 @@ a machine at `bootc upgrade` ([platforms.md](platforms.md)).
 > **Fedora 45 is not offered.** It was a prerelease when it was measured and its
 > base enables `updates-testing`, so DeskOS offers 44 only. The 45 evaluation is
 > kept as an example-only root that carries its **own** Platform resource —
-> [`examples/fedora-45/`](../examples/fedora-45/README.md) — with no
-> reference workstation and no image; its platform is a starting point for
-> whoever evaluates the next Fedora release, not something to install.
+> [`examples/fedora-45/`](../examples/fedora-45/README.md) — with no reference
+> workstation and no image; its platform is a starting point for whoever
+> evaluates the next Fedora release, not something to install.
 
 ## Ubuntu 26.04
 
-An Ubuntu disk is not built here any more: the platform, its base and its workstations live
-in [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu), and that
-repository carries the steps — the image, the compressed OCI layout, `bootc install to-disk`
-and the `--target-imgref` that decides what the machine updates from afterwards
+An Ubuntu disk is not built here any more: the platform, its base and its
+workstations live in
+[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
+and that repository carries the steps — the image, the compressed OCI layout,
+`bootc install to-disk` and the `--target-imgref` that decides what the machine
+updates from afterwards
 ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
-What this repository still does with a Debian-family platform is compose and render it, and
-the tests are what say so.
+What this repository still does with a Debian-family platform is compose and
+render it, and the tests are what say so.

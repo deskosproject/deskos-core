@@ -396,7 +396,7 @@ and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 **Compilation is deterministic; builds are not yet reproducible bit for
 bit.** External inputs that can still change between builds:
 
-- the base image tag, unless `bootc.digest` is set — all five shipped Platforms
+- the base image tag, unless `bootc.digest` is set — all four shipped Platforms
   pin a digest, as does the Fedora 45 evaluation root;
 - repository metadata and packages: RPM repositories on the EL and Fedora
   platforms, APT sources on a Debian-family one (the Ubuntu platform, in its own

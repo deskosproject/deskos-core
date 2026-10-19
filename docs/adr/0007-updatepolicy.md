@@ -86,9 +86,8 @@ needs a program that compares the value, which would be a script.
 
 ## Endpoint interface
 
-A future endpoint command (`deskos status`, `deskos update`,
-`deskos rollback`) relies on these names and files, which do not change
-within `v1alpha1`:
+The endpoint command (`deskos report`, `deskos check`, `deskos update`, ADR 0018)
+relies on these names and files, which do not change within `v1alpha1`:
 
 | Item | Name |
 |---|---|
