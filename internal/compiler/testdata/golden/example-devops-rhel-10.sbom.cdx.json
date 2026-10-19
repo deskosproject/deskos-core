@@ -23,11 +23,11 @@
     {
       "type": "application",
       "name": "deskos",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "6c050947c06aed9972d001f0307001d4b30f5e550998da715becf863063cda40"
+          "content": "eead05aebf12d8dc32d48e35865039fb1e6b021490eb3a66dafd811a204f9b47"
         }
       ],
       "properties": [

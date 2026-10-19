@@ -22,10 +22,10 @@ spec:
   # does not attest that the asset was built from this source tree, and the release
   # signs the deskosctl tool image, not this binary.
   #
-  version: 0.13.0
+  version: 0.14.0
   source:
-    url: https://github.com/deskosproject/deskos-core/releases/download/v0.13.0/deskos-v0.13.0-linux-amd64
-    sha256: 6c050947c06aed9972d001f0307001d4b30f5e550998da715becf863063cda40
+    url: https://github.com/deskosproject/deskos-core/releases/download/v0.14.0/deskos-v0.14.0-linux-amd64
+    sha256: eead05aebf12d8dc32d48e35865039fb1e6b021490eb3a66dafd811a204f9b47
   archive: none
   files:
     - destination: /usr/local/bin/deskos
