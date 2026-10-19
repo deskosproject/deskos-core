@@ -245,9 +245,6 @@ its own.
   (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The
   full SBOM is a 14-day workflow artifact; publish it to durable,
   digest-indexed storage. Test an OCI referrer in a real registry first.
-- **RHEL bootc-image-builder pin.** The factory pins
-  `…/bootc-image-builder@sha256:7f5baead…`, older than the current `10.2`
-  (`2185ac51…`); bump it and re-run the boot check before adopting.
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app
   or action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
