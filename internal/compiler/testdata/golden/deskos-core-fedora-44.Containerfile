@@ -3,7 +3,7 @@
 # Workstation: deskos-core-fedora-44
 # Platform:    fedora-44 (Fedora 44 (Silverblue))
 
-FROM quay.io/fedora/fedora-silverblue:44@sha256:ea1ab6628511e8e0ad2f8c1019b42217db7471100b0763f77c28c8e8673627bf
+FROM quay.io/fedora/fedora-silverblue:46@sha256:80a2ea6dd84612f26f015bb0cd2918573fa94584f2083ef62d1b515db175c431
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
