@@ -13,7 +13,7 @@ permissions:
 jobs:
   validate:
     # Cheap checks only: no image builds, registry logins or QEMU.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
