@@ -8,6 +8,10 @@ name: osbuild-mount-trace
 
 on:
   workflow_dispatch:
+  # Dispatch needs the file on the default branch; a push to this branch runs the
+  # copy that is on the branch, which keeps the diagnostic off main.
+  push:
+    branches: [diagnostics/osbuild-mount-trace]
 
 permissions:
   contents: read
