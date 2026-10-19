@@ -25,7 +25,7 @@ sudo podman build -t localhost/deskos-core-centos-stream-10:test ctx
 sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
-    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+    quay.io/centos-bootc/bootc-image-builder@sha256:e8df8c535ffe40b418e44dd55abd2c11f65602468661b34e0ea98a532a8e577c \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos-stream-10:test
 ```
 
