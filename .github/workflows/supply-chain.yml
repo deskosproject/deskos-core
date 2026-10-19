@@ -8,9 +8,9 @@ name: supply-chain
 # declared SBOM with `deskosctl sbom`, produces the installed SBOM with Syft,
 # scans it with Grype, compares the two for RPM coverage, then makes a QCOW2
 # from the same image and runs the boot and session checks on it. Only then does
-# it tag, push, sign and attest that one digest, and upload the evidence. RHEL
-# scanning runs on the entitled factory host, not here. See docs/supply-chain.md
-# and ADR 0010.
+# it tag, push, sign and attest that one digest, and upload the evidence. RHEL is
+# not built, scanned or published here at all: its build, scan and boot run in the
+# downstream organization's repository. See docs/supply-chain.md and ADR 0010.
 on:
   # The watch that notices when a vendor's base stops carrying the Criticals the
   # records accept, and when a new one appears. It cannot publish: publishing
