@@ -491,7 +491,8 @@ spec:
 - **`power.buttonAction`** is the hardware power button's action, from GNOME's own
   values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
-  through the Platform's application launcher (`gtk-launch` on EL10).- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
+  through the Platform's application launcher (`gtk-launch` on EL10).
+- **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
 ### `Theme`

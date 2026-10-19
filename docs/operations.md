@@ -1,9 +1,29 @@
 # Operating an installed machine
 
-How a DeskOS workstation updates, and how to inspect, apply and roll back
-that update with what the image ships today. `deskos`, the planned endpoint
-command (`status`, `update`, `rollback`), is not in the image yet; this page
-uses `bootc` and `systemctl`.
+How a DeskOS workstation updates, and how to inspect, apply and roll back that
+update with what the image ships. Every Core image carries `/usr/local/bin/deskos`
+(ADR 0018), so start there; `bootc` and `systemctl` are underneath it and remain
+the fallback.
+
+```bash
+deskos report        # what this machine was built from, read from the plan it carries
+deskos check         # compare the plan's declared scope with the machine, and say what it leaves out
+sudo deskos update   # update the image, after a guard that refuses only what is unsafe
+```
+
+`deskos` is the runtime companion to `deskosctl`: it reads the plan the image
+carries, so a machine can be asked what it was built from. It is **not** a
+controller and has no reconciliation loop (ADR 0001), and it deliberately has no
+`status` or `rollback` subcommand — `bootc` already owns those. The pin is
+`resources/software/deskos.yaml`, and it moves like any other pin: a release
+publishes the asset, and the pin is bumped to it deliberately.
+
+`update` runs `bootc upgrade` underneath, which changes the deployment the machine
+boots from, so it needs root. `report` and `check` only read and need none.
+
+`check` measures **what the artifact declares** — the files it installs and
+generates, the dconf defaults it sets — and prints its scope on every run. It is
+not an audit of everything the machine has become.
 
 ## How updates work
 
@@ -36,7 +56,7 @@ The staged image **applies at the next reboot**. An organization changes
 the schedule, or turns automation off, in its own `UpdatePolicy`
 (`image.automatic`, `image.schedule`, `image.requireACPower`, and the
 `flatpak` equivalents). With `automatic: false` the service is still
-written, but no timer, so an operator (or the future `deskos`) can run it
+written, but no timer, so an operator (or `deskos update`) can run it
 on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
 
 ## Inspect
@@ -104,29 +124,6 @@ A machine tracks the image reference it was installed from. To move it to a
 different one (a new registry, a pinned digest):
 
 ```bash
-sudo bootc switch registry.example.com/deskos/core-rhel10:latest
+sudo bootc switch registry.example.com/deskos/core-rhel-10:latest
 sudo reboot
 ```
-
-## On the machine: `deskos`
-
-`deskos` is the runtime companion to `deskosctl` (ADR 0018). The release ships it next
-to `deskosctl`, with the same checksum coverage, and **every Core image carries it**:
-Core declares a pinned `BinaryArtifact` for the release asset, so `/usr/local/bin/deskos`
-is on the machine and nobody has to install a tool to ask what it was built from
-(`/usr/local/bin`, because the model lets a `BinaryArtifact` write only there). The pin
-is `resources/software/deskos.yaml`, and it moves like any other pin: a release
-publishes an asset, and the pin is bumped to it deliberately.
-
-```bash
-deskos report        # what this machine was built from, read from the plan the image carries
-deskos check         # compare the plan's declared scope with this machine, and say what it leaves out
-deskos update        # update the image, after a guard that refuses only what is unsafe
-```
-
-It is not a reconciler: it changes the deployment the machine boots from and nothing
-else, it never touches a home, and it does not re-apply the plan. `deskos check` prints
-its scope on every run, because it measures what the artifact declares and not
-everything the machine has become. `status` and `rollback` are not part of it: the
-approved scope is those three commands, and `bootc status` and `bootc rollback` answer
-the other two questions in the meantime.

@@ -237,9 +237,9 @@ its own.
   home, [platforms.md](platforms.md), and the README states the
   `YAML → validate → compose → plan → Containerfile → image → disk` line. Still
   open: splitting `docs/resources.md` into
-  `resources/{core,software,desktop,system}.md`; a `troubleshooting.md`
-  (symptom → check → remedy) and a `migration.md` (v1alpha1 changes, e.g.
-  `gpgKeys` → `gpgKeyFiles`); a compatibility page; and a short glossary. Keep
+  `resources/{core,software,desktop,system}.md` and a `troubleshooting.md`
+  (symptom → check → remedy). Nothing here documents a migration between
+  versions: pre-1.0 there is no supported older version to migrate from. Keep
   `research-notes` a dated archive, not current status.
 - **Durable SBOM storage.** The publish attests the SBOM **by reference**
   (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The

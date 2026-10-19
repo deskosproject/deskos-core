@@ -74,10 +74,12 @@ may happen without weakening the rule that protects RHEL.
   is not a support tier.
 - The rule that protects RHEL is untouched, because it is stated as the general
   case rather than as a RHEL-specific exception.
-- **Out of scope here, and needing its own reviewed change:** Core currently
-  carries software and look choices that belong to a platform or to an
-  organization. `resources/desktop/deskos-core.yaml` sets `dock.enabled: true`,
-  a wallpaper, a login logo and favorites; `resources/software/deskos-core.yaml`
-  requires `firefox` and `flatpak`. Because composition unions sets and offers
-  no removal (ADR 0003), an organization cannot subtract them, so those choices
-  have to leave Core for the layering this ADR assumes to be meaningful.
+- **Out of scope here:** which software and look choices belong to a platform or
+  to an organization. Core's foundation no longer chooses them:
+  `resources/desktop/deskos-core.yaml` sets no `dock.enabled`, no wallpaper, no
+  login logo and no favorites — the look is selected separately by the
+  `deskos-look` profile — and `resources/software/deskos-core.yaml` carries the
+  package set without the desktop choices. Composition unions sets and offers no
+  removal (ADR 0003), so anything Core chose could not be subtracted by an
+  organization: that is why those choices left Core, and why the layering this
+  ADR assumes is now meaningful.
