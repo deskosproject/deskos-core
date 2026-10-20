@@ -108,6 +108,14 @@ func Build(p *plan.Plan) ([]byte, error) {
 				{Name: "deskos:destination", Value: x.Destination},
 			}})
 	}
+	for _, x := range a.Extensions {
+		add(Component{Type: "application", Name: x.UUID, Version: x.Version,
+			Hashes: []Hash{{Alg: "SHA-256", Content: x.SHA256}},
+			Properties: []Property{
+				{Name: "deskos:source", Value: "gnome-extension"},
+				{Name: "deskos:url", Value: x.URL},
+			}})
+	}
 	for _, x := range p.Provisioning.FlatpakApplications {
 		add(Component{Type: "application", Name: x.ID, Version: x.Branch,
 			Properties: []Property{

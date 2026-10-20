@@ -515,3 +515,82 @@ On the host, the unit's
     predates these diagnostics.
 - Local evidence, not part of the repository:
   `/tmp/deskos-mcediag-evidence-20260929/` and `/tmp/deskos-mcediag-report.md`.
+
+## Tray icons on GNOME (2026-10-20)
+
+AppIndicator and KStatusNotifierItem support is the only way GNOME 49+ shows tray
+icons for applications that still use them (Telegram, Steam, several Electron
+apps). Measured the same day, on the pinned bases:
+
+| Platform | `gnome-shell-extension-appindicator` |
+|---|---|
+| Fedora 45 | `66-1.fc45`, published **only in `updates-testing`** — the prerelease base enables that repository |
+| CentOS Stream 10 | absent from baseos, appstream, extras and extras-common |
+| AlmaLinux 10 | absent from baseos, appstream, extras and crb |
+| EPEL 10 | `61-1.el10_2`, Shell 45–49, but **uninstallable on CentOS Stream 10**: it requires `libappindicator-gtk3`, whose `libdbusmenu-glib.so.4`/`libdbusmenu-gtk3.so.4` come from **CRB** (enabled on AlmaLinux, disabled on CentOS Stream and not part of RHEL's supported set) |
+
+Consequences:
+
+- Fedora ships it: `Profile/fedora` references `GnomeProfile/deskos-tray`, which
+  enables `appindicatorsupport@rgcjonas.gmail.com`, and the platform catalog
+  installs Fedora's package.
+- EL10 does not ship it from its vendor repositories. Enabling EPEL is not enough
+  on CentOS Stream 10: the package's `libappindicator-gtk3` dependency needs
+  `libdbusmenu`, which is in CRB — enabled on AlmaLinux, disabled on CentOS Stream
+  and outside RHEL's supported set. Measured: the transaction resolves on AlmaLinux
+  10 and fails on CentOS Stream 10 with `nothing provides libdbusmenu-glib.so.4`.
+  A pinned `RpmFile` does not help either: it cannot satisfy a dependency the
+  enabled repositories do not carry. DeskOS therefore delivers upstream's v66 zip
+  as a pinned artifact, installed by the build after its sha256, UUID and Shell
+  version are checked ([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)).
+  The package name stays in `unavailablePackages`.
+- **BetterTrayIcons** (`nexaknight/BetterTrayIcons`, `BetterTrayIcons@nexaknight.com`)
+  is not an alternative we can ship: it replaces AppIndicator rather than
+  complementing it — its `metadata.json` declares
+  `appindicatorsupport@rgcjonas.gmail.com`, `ubuntu-appindicators@ubuntu.com` and
+  `trayIconsReloaded@selfmade.pl` as conflicts — it is GPL-3.0, Wayland only, and
+  it is distributed through extensions.gnome.org, not a distribution repository
+  (not packaged in Fedora 45's repositories on 2026-10-20). It stays a per-user
+  install.
+
+## EL10 compose repositories (2026-10-20)
+
+Bluefin LTS's `00-workarounds.sh` downloads the CentOS Stream compose repository
+(`cs.repo` from `centos-stream/containers/bootc`) so a build does not downgrade
+packages with strict NVR requirements. Measured on the pinned CentOS Stream 10
+and AlmaLinux 10 bases with the same transactions the rendered Containerfiles
+declare (`dnf group install --assumeno workstation-product-environment`, then
+`dnf install --assumeno firefox firewalld flatpak plymouth …`): **no downgrade
+was proposed** and no dependency failure appeared. Nothing is copied: an
+unpinned repository downloaded mid-build is outside the typed repository plan.
+If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
+documented platform gap, not a `cs.repo` fetch.
+
+## Fedora's rebuilt initramfs dropped ostree and bootc (2026-10-20)
+
+The first Fedora 45 boot checks never reached a graphical screen: the guest
+stopped in dracut's emergency shell, with a btrfs disk and again with ext4, so
+the root filesystem was never prepared and ACPI shutdown was ignored.
+
+The first hypothesis — a host-only initramfs — was **wrong**. Fedora already
+sets `hostonly=no` in `/usr/lib/dracut/dracut.conf.d/20-atomic-nohostonly.conf`,
+and passing `--no-hostonly` changed nothing. Measured instead: the base image's
+initramfs carries the ostree and composefs pieces (7 and 2 matches), while the
+initramfs the build regenerates carries **none** (0 and 0). The dracut modules
+explain it — `50ostree`'s `check()` returns 255, which means "include only when
+explicitly asked", and `51bootc`'s says in as many words *"We are never installed
+by default"*. CentOS Stream 10 includes them anyway (its check returns 0): a
+plain rebuild keeps 6 `ostree` matches and boots.
+
+The backend now passes `--add ostree --add bootc` for whichever modules the base
+carries, and the build asserts `ostree-prepare-root` inside every regenerated
+initramfs, so a base that stops including it fails here instead of at a user's
+first boot. `--no-hostonly` stays: an installable image should not be bound to
+the build host, even though it was not this bug. ext4 was not the problem either:
+with the modules back, the btrfs disk boots (run 39462806315, graphical screen in
+30 s).
+
+With the boot fixed, the first-boot check failed on a harness assumption, not on
+the image: Fedora names the wizard's loginctl session `gnome-initial-setup-2`
+(after its VT), and the check compared the session name exactly. It now accepts
+the suffixed name, and a unit test holds it.

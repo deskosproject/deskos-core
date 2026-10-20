@@ -144,15 +144,25 @@ Details in
   `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
   support -- and it moved to a repository of its own afterwards, which publishes and checks
   it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora is maintained
-  at the level of a build and no further for now: it composes, renders and builds, and
-  it has no boot check; the effort stays on the EL 10 path.
+  at the level of a build and a CI boot for now: it composes, renders, builds and boots
+  in `vm-bootcheck.yml`; the effort stays on the EL 10 path.
+- ~~**Fedora's rebuilt initramfs dropped ostree and bootc**~~ fixed: the
+  regenerated initramfs carried neither module (Fedora's `50ostree` says "only
+  when asked" and `51bootc` "never installed by default"), so the disk stopped in
+  dracut's emergency shell on btrfs and ext4 alike (measured 2026-10-20, runs
+  39436779300, 39448084854 and 39452191007). The backend now adds both modules
+  when the base carries them and asserts `ostree-prepare-root` in every
+  regenerated initramfs. The btrfs disk boots with that fix (run 39462806315:
+  graphical screen in 30 s, session and first-boot checks green). Published
+  CentOS and AlmaLinux images still carry the old initramfs until they are rebuilt
+  ([research-notes.md](research-notes.md#fedoras-rebuilt-initramfs-dropped-ostree-and-bootc-2026-10-20)).
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
-- Build and boot the Fedora 45 platform in CI: its facts are measured against
-  the pinned base and its image builds here, but no Fedora
-  disk has been booted, so it has no boot, session or first-boot evidence
-  ([platforms.md](platforms.md)).
+- ~~Build and boot the Fedora 45 platform in CI~~ done: `vm-bootcheck.yml` builds
+  `examples/fedora-45` and runs the boot, session and first-boot checks on the
+  QCOW2 ([platforms.md](platforms.md)). What remains is a published image, which
+  waits for the released compose, and hardware installation.
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

@@ -24,7 +24,7 @@ Fedora is not yet.
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-20 | not measured | none | Flatpak preinstall |
+| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session and first-boot checks | none | Flatpak preinstall |
 
 `(vendor)` in the table means the base is the platform's own supplier's: Canonical for
 Ubuntu, Red Hat for RHEL, the CentOS and AlmaLinux projects, the Fedora Project. Where it
@@ -97,7 +97,7 @@ packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
 [`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
 comment per fact. [install.md](install.md#fedora-45) has the commands.
 
-**The pin is a prerelease compose.** `:45` still resolves to `45.20261019.n.0`
+**The pin is a prerelease compose.** `:45` still resolves to `45.20261020.n.0`
 (os-release reads "Silverblue Prerelease"), measured 2026-10-20, and that base
 enables Fedora's `updates-testing` repository — Dash to Dock, for one, is published
 only there on this compose. The resource and the table say so; when the released
@@ -116,9 +116,14 @@ manual, human-gated step ([supply-chain.md](supply-chain.md)).
 Composition and rendering for this platform are covered by CI: the reference
 workstation lives in the embedded Core, so every `deskosctl validate` run in
 `ci.yml` composes it, the Fedora golden pins its Containerfile, and
-`ci.yml` renders it. What CI does **not** do for Fedora is build or boot an image
-([vm-bootcheck.yml](../.github/workflows/vm-bootcheck.yml) covers CentOS Stream
-10 and AlmaLinux 10).
+`ci.yml` renders it. `vm-bootcheck.yml` also builds `examples/fedora-45` and
+boots the resulting QCOW2 — boot check, instrumented session check (which reads
+back every dconf default in the plan) and first-boot check — on the same path as
+CentOS Stream 10 and AlmaLinux 10. That is Fedora's boot evidence: run
+`39462806315` booted a **btrfs** disk to a graphical screen in 30 s, the session
+check passed (tray extension loaded and serving the watcher) and the first-boot
+check confirmed the wizard. It is a QEMU guest, not hardware, and no Fedora image
+is published.
 
 **Build evidence, measured 2026-10-20 on the pinned base.** The reference
 workstation `deskos-core-fedora-45` was built locally that day (image
@@ -126,11 +131,30 @@ workstation `deskos-core-fedora-45` was built locally that day (image
 skipped, 2 warnings: `nonempty-run-tmp`, `var-tmpfiles`). The build rebuilds the
 initramfs for the kernel the image carries (7.2.11-300.fc45) and **fails unless**
 `plymouthd`, the DeskOS theme, its watermark and throbber frames and
-`Theme=deskos` are inside it, so it carries them. The image was not installed.
+`Theme=deskos` are inside it, so it carries them. That local image was not
+installed; CI's own build is the one that boots.
 
-What is **not** measured matters as much: **no Fedora disk has been booted**, so
-there is no boot, session or first-boot evidence for this platform, and nothing is
-published for it.
+What is **not** measured matters as much: **no Fedora image is published**, and
+no Fedora disk has been installed on hardware — the boot evidence is CI's QEMU
+guest, the same class of evidence the other platforms carry.
+
+Tray icons are part of this platform's desktop: `Profile/fedora` enables
+`appindicatorsupport@rgcjonas.gmail.com`, and the package is Fedora's
+`gnome-shell-extension-appindicator`. Fedora packages it. EL10 does **not** have a
+usable package: it is absent from the vendor repositories (measured on CentOS
+Stream 10 and AlmaLinux 10 on 2026-10-20: baseos, appstream, extras and CRB), and
+EPEL 10's `61-1.el10_2` requires `libappindicator-gtk3`, whose `libdbusmenu`
+dependency lives in CRB — enabled on AlmaLinux, disabled on CentOS Stream and
+outside RHEL's supported set. So the EL10 catalog names a **pinned upstream
+artifact** instead of a package, and the build verifies its sha256, its UUID and
+that it supports the image's GNOME Shell before installing it
+([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)). The
+package name stays in `unavailablePackages`: asking for the RPM still fails at
+composition, with the reason, while the profile gets the extension. [BetterTrayIcons](research-notes.md#tray-icons-on-gnome-2026-10-20) is not an
+alternative we can ship: it *replaces* AppIndicator (its metadata declares
+`appindicatorsupport@rgcjonas.gmail.com` as a conflict), it is GPL-3.0, Wayland
+only, and it is distributed through extensions.gnome.org rather than a
+distribution repository. It stays a per-user install for anyone who prefers it.
 
 Two properties of this platform are decisions, and they are visible in the table
 above rather than hidden:
@@ -141,7 +165,7 @@ above rather than hidden:
   as every other base pin is ([roadmap.md](roadmap.md)).
 - **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
   `resources/platforms/` carries a single Fedora platform and a machine's platform
-  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261019.n.0`
+  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261020.n.0`
   — and not of the name: when the released compose is published, the digest and the
   measurement comments move and the platform keeps its name, its workstation and
   its image repository.

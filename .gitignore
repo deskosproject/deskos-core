@@ -18,3 +18,7 @@
 # Python bytecode from the VM harness tests
 __pycache__/
 /tmp-ctx/
+
+# Go toolchain telemetry and build cache, written by the container used for tests.
+.config/
+.cache/

@@ -602,6 +602,13 @@ const curlFetch = "curl --fail --silent --show-error --location --proto '=https'
 	"        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \\\n" +
 	"        --connect-timeout 30 --speed-limit 1000 --speed-time 60"
 
+// extensionExtract is the fixed program that validates and extracts one GNOME
+// Shell extension archive. It runs before anything lands in the image: member
+// names, types and sizes are checked here, and so are the UUID and the Shell
+// version the archive claims to support (docs/adr/0021). It is core code, not a
+// resource field: no plan can supply a command.
+const extensionExtract = `import json,os,sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); out=sys.argv[2]; uuid=sys.argv[3]; major=sys.argv[4]; infos=z.infolist(); len(infos)<=2000 or sys.exit("extension archive has too many entries"); keys=[os.path.normpath(i.filename) for i in infos]; len(set(keys))==len(keys) or sys.exit("extension archive repeats a path"); all(not k.startswith("/") and k!=".." and not k.startswith("../") for k in keys) or sys.exit("unsafe path in extension archive"); all(((i.external_attr>>16)&0o170000) in (0,0o040000,0o100000) for i in infos) or sys.exit("non-regular entry in extension archive"); all(i.file_size<=20*1024*1024 for i in infos) or sys.exit("member too large in extension archive"); sum(i.file_size for i in infos)<=50*1024*1024 or sys.exit("extension archive is too large"); meta=json.loads(z.read("metadata.json")); meta.get("uuid")==uuid or sys.exit("extension archive uuid does not match "+uuid); major in (meta.get("shell-version") or []) or sys.exit("extension does not support GNOME Shell "+major+": it declares "+str(meta.get("shell-version"))); z.extractall(out)`
+
 // updateUnits renders the service and timer of one scheduled update. The
 // commands are fixed per kind and only stage or update; none reboots.
 func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
@@ -763,6 +770,24 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		w("    rm -rf \"$tmp\"\n")
 	}
 
+	for _, ext := range a.Extensions {
+		w("\n# GNOME extension %s %s (sha256-verified, docs/adr/0021)\n", ext.UUID, ext.Version)
+		w("RUN set -eu; \\\n    command -v gnome-shell > /dev/null || { echo 'no gnome-shell in the image: the extension cannot be installed' >&2; exit 1; }; \\\n")
+		w("    major=\"$(gnome-shell --version | awk '{print $3}' | cut -d. -f1)\"; \\\n")
+		w("    tmp=\"$(mktemp -d)\"; \\\n")
+		w("    %s \\\n        -o \"$tmp/extension.zip\" %s; \\\n", curlFetch, shq(ext.URL))
+		w("    echo %s | sha256sum --check --strict --quiet -; \\\n", shq(ext.SHA256+"  ")+`"$tmp/extension.zip"`)
+		w("    dest=%s; \\\n", shq("/usr/share/gnome-shell/extensions/"+ext.UUID))
+		w("    [ ! -e \"$dest\" ] && [ ! -L \"$dest\" ] || { echo \"$dest already exists in the image\" >&2; exit 1; }; \\\n")
+		w("    python3 -c %s \"$tmp/extension.zip\" \"$tmp/extract\" %s \"$major\"; \\\n", shq(extensionExtract), shq(ext.UUID))
+		w("    mkdir -p \"$(dirname \"$dest\")\"; \\\n")
+		w("    cp -R \"$tmp/extract\" \"$dest\"; \\\n")
+		w("    chmod -R u=rwX,go=rX \"$dest\"; \\\n")
+		w("    rm -f \"$dest/schemas/gschemas.compiled\"; \\\n")
+		w("    if compgen -G \"$dest/schemas/*.gschema.xml\" > /dev/null; then glib-compile-schemas \"$dest/schemas\"; fi; \\\n")
+		w("    rm -rf \"$tmp\"\n")
+	}
+
 	if len(a.TrustAnchors) > 0 {
 		// A package- or image-owned file is never replaced silently; a
 		// colliding name must fail the build instead.
@@ -845,10 +870,19 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	if ir := a.Initramfs; ir != nil {
 		w("\n# Initramfs: rebuilt for every kernel in the image, with %s\n", strings.Join(ir.DracutModules, ", "))
 		w("RUN set -eu; found=0; \\\n")
+		// Fedora's dracut does not include the ostree or bootc modules unless asked
+		// (50ostree's check returns 255 and 51bootc says it is never installed by
+		// default). Without them the image cannot prepare its ostree root and the
+		// disk stops in dracut's emergency shell (docs/research-notes.md). Ask for
+		// whichever the base carries; a base with neither is not a bootc base.
+		w("    mods=\"\"; \\\n")
+		w("    if [ -d /usr/lib/dracut/modules.d/50ostree ]; then mods=\"$mods --add ostree\"; fi; \\\n")
+		w("    if [ -d /usr/lib/dracut/modules.d/51bootc ]; then mods=\"$mods --add bootc\"; fi; \\\n")
 		w("    for kdir in /usr/lib/modules/*/; do \\\n")
 		w("        [ -e \"${kdir}vmlinuz\" ] || continue; \\\n")
 		w("        kver=\"$(basename \"$kdir\")\"; \\\n")
-		w("        env DRACUT_NO_XATTR=1 dracut --force \"${kdir}initramfs.img\" \"$kver\"; \\\n")
+		w("        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods \"${kdir}initramfs.img\" \"$kver\"; \\\n")
+		w("        lsinitrd \"${kdir}initramfs.img\" | grep -q 'ostree-prepare-root' || { echo \"ostree-prepare-root missing from initramfs of $kver\" >&2; exit 1; }; \\\n")
 		for _, m := range ir.DracutModules {
 			if m == "plymouth" {
 				w("        lsinitrd \"${kdir}initramfs.img\" | grep -q 'plymouthd' || { echo \"plymouth missing from initramfs of $kver\" >&2; exit 1; }; \\\n")

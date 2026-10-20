@@ -98,11 +98,25 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "package", "uuid"],
+                "required": ["name", "uuid"],
+                "oneOf": [
+                  { "required": ["package"] },
+                  { "required": ["source"] }
+                ],
                 "properties": {
                   "name": { "type": "string" },
                   "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
-                  "uuid": { "type": "string" }
+                  "uuid": { "type": "string" },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["version", "url", "sha256"],
+                    "properties": {
+                      "version": { "type": "string", "pattern": "^[0-9A-Za-z][0-9A-Za-z._+-]*$" },
+                      "url": { "$ref": "../../common/definitions.json#/$defs/httpsURL" },
+                      "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  }
                 }
               }
             },

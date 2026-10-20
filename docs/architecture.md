@@ -367,11 +367,13 @@ account the upstream container image ships suppressing the wizard — is in
   theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
   image carries them; `bootc container lint` passed 12 checks with 2 warnings
   (`nonempty-run-tmp`, `var-tmpfiles`). The pin is a **prerelease** compose of the
-  release (`45.20261019.n.0`, whose base enables `updates-testing`), and the
+  release (`45.20261020.n.0`, whose base enables `updates-testing`), and the
   platform is pinned to it rather than to a released compose
-  ([platforms.md](platforms.md)). **Not measured: any boot.** No Fedora disk has
-  been booted, so there is **no** GNOME, session or first-boot evidence for this
-  platform, and no published Fedora image.
+  ([platforms.md](platforms.md)). **Booted and checked in CI** (run 39462806315):
+  `vm-bootcheck.yml` builds `examples/fedora-45`, makes a btrfs QCOW2 and runs the
+  boot, instrumented session and first-boot checks; the graphical screen appeared
+  in 30 s and the session reported the tray extension active and its watcher
+  answering. That is a QEMU guest, not hardware, and no Fedora image is published.
 - **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no

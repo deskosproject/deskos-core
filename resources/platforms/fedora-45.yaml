@@ -20,7 +20,7 @@ spec:
   # only an organization's extra applications go to Flatpak (ADR 0005).
   #
   # Fedora 45 is the release this family ships, and it is pinned to a *prerelease*
-  # compose: os-release reads "45.20261019.n.0 (Silverblue Prerelease)" and the base
+  # compose: os-release reads "45.20261020.n.0 (Silverblue Prerelease)" and the base
   # enables Fedora's updates-testing repository — the repositories are read from
   # /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and `dnf5 repolist --enabled`
   # lists updates-testing. The compose was measured on 2026-10-20, Fedora 45's
@@ -36,13 +36,13 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/fedora/fedora-silverblue:45
-    # x86_64 manifest of the :45 index (index sha256:b2226c06...), built
-    # 2026-10-19T07:42:24Z as Fedora 45.20261019.n.0, ostree commit de81370e...,
-    # kernel 7.2.11-300.fc45.
+    # x86_64 manifest of the :45 index, built 2026-10-20T07:40:16Z as Fedora
+    # 45.20261020.n.0, ostree commit 1a4edb24..., kernel 7.2.11-300.fc45.
     # Fedora Silverblue's :45 compose moves **daily**: a pin here is a digest the
     # registry stops serving within a day or two, and the `validate` job reports
-    # exactly that. Re-pinned 2026-10-20, when Fedora 44 was retired.
-    digest: sha256:cfc753ac428a159442dd211c6c11bb9b966e59be1f9f38a21d013e0de342cceb
+    # exactly that. Re-pinned 2026-10-20, twice: when Fedora 44 was retired and
+    # again when the daily compose moved.
+    digest: sha256:9b06b1cf141b9d506c0bed60f7ff2349348d6dcba4f6a773e7e42afad74fb11a
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
@@ -82,6 +82,13 @@ spec:
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+      # Measured 2026-10-20 on this pin: gnome-shell-extension-appindicator 66-1.fc45
+      # is published only in updates-testing, which the prerelease base enables. When
+      # the released compose is pinned, confirm the package is in `updates` (or in the
+      # base) before keeping this entry.
+      - name: appindicator
+        package: gnome-shell-extension-appindicator
+        uuid: appindicatorsupport@rgcjonas.gmail.com
     # gnome-shell 51.0 keeps app folders from the dconf defaults.
     appFolders: true
     appLauncher:

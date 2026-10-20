@@ -3,7 +3,7 @@
 # Workstation: deskos-core-fedora-45
 # Platform:    fedora-45 (Fedora 45 (Silverblue, prerelease compose))
 
-FROM quay.io/fedora/fedora-silverblue:45@sha256:cfc753ac428a159442dd211c6c11bb9b966e59be1f9f38a21d013e0de342cceb
+FROM quay.io/fedora/fedora-silverblue:45@sha256:9b06b1cf141b9d506c0bed60f7ff2349348d6dcba4f6a773e7e42afad74fb11a
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
@@ -22,6 +22,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'firefox' \
         'firewalld' \
         'flatpak' \
+        'gnome-shell-extension-appindicator' \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
@@ -70,10 +71,14 @@ RUN set -eu; \
 
 # Initramfs: rebuilt for every kernel in the image, with plymouth
 RUN set -eu; found=0; \
+    mods=""; \
+    if [ -d /usr/lib/dracut/modules.d/50ostree ]; then mods="$mods --add ostree"; fi; \
+    if [ -d /usr/lib/dracut/modules.d/51bootc ]; then mods="$mods --add bootc"; fi; \
     for kdir in /usr/lib/modules/*/; do \
         [ -e "${kdir}vmlinuz" ] || continue; \
         kver="$(basename "$kdir")"; \
-        env DRACUT_NO_XATTR=1 dracut --force "${kdir}initramfs.img" "$kver"; \
+        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods "${kdir}initramfs.img" "$kver"; \
+        lsinitrd "${kdir}initramfs.img" | grep -q 'ostree-prepare-root' || { echo "ostree-prepare-root missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'plymouthd' || { echo "plymouth missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/deskos.plymouth' || { echo "/usr/share/plymouth/themes/deskos/deskos.plymouth missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/watermark.png' || { echo "/usr/share/plymouth/themes/deskos/watermark.png missing from initramfs of $kver" >&2; exit 1; }; \

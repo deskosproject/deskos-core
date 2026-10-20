@@ -1,0 +1,19 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-tray
+spec:
+  defaults:
+    # Tray icons: AppIndicator and KStatusNotifierItem support, from the platform's
+    # own catalog (resources/platforms/<platform>.yaml). The decision names the
+    # UUID; the platform catalog decides which package provides it, and a platform
+    # that does not declare it installs no package for it (ADR 0017).
+    #
+    # Referenced by Profile/fedora only for now: Fedora packages the extension,
+    # while EL10 does not (the platforms record that gap in `unavailablePackages`).
+    # When EL10 packages it, this profile moves to `deskos-gnome` and every
+    # workstation gets it.
+    shell:
+      extensions:
+        - uuid: appindicatorsupport@rgcjonas.gmail.com
+          enabled: true

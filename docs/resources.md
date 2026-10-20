@@ -477,10 +477,12 @@ spec:
   enabled. A profile never names a package, a schema or a dconf key: it says which
   extension and whether it runs, and the rest is not its business. Any UUID may be
   decided, the dock included: when the platform's own catalog declares the
-  extension, DeskOS installs the package it names; an extension the composition
-  brings itself is installed by the packages the composition declares, and a UUID
-  nobody provides shows up as a failed session check rather than as silence. The
-  plan always states the list it enables
+  extension, DeskOS installs the package it names — or, on a platform whose
+  repositories do not carry a usable one, the pinned artifact the catalog names
+  ([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)); an
+  extension the composition brings itself is installed by the packages the
+  composition declares, and a UUID nobody provides shows up as a failed session
+  check rather than as silence. The plan always states the list it enables
   ([ADR 0017](adr/0017-extensions-flatpak-remote-and-power-button.md)).
 - **`dock.*`** is the settings DeskOS models for Dash to Dock, and they apply only
   while its extension is enabled through `shell.extensions`. Configuring an

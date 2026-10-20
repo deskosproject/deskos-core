@@ -26,6 +26,8 @@ spec:
   unavailablePackages:
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support
+    - name: gnome-shell-extension-appindicator
+      reason: not packaged for EL10 — measured on CentOS Stream 10 (2026-10-20) absent from baseos, appstream, extras and CRB; EPEL 10 carries 61-1.el10_2, but its libappindicator-gtk3 dependency needs libdbusmenu from CRB, which this platform does not enable; asking for it fails here instead of mid-build, while the profile gets the pinned artifact (ADR 0021)
   displayManager: gdm.service
   gnome:
     dconfDatabase: distro
@@ -36,6 +38,18 @@ spec:
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+      # Not in RHEL 10s repositories as a usable package; the image delivers
+      # the pinned upstream release instead (docs/adr/0021).
+      - name: appindicator
+        uuid: appindicatorsupport@rgcjonas.gmail.com
+        source:
+          # Neither the vendor repositories nor EPEL can install this on CentOS
+          # Stream 10: EPEL's RPM needs libappindicator-gtk3, whose libdbusmenu
+          # dependency is in CRB (docs/adr/0021). Upstream's release is
+          # self-contained, and this is the exact artifact GNOME Extensions ships.
+          version: "66"
+          url: https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip
+          sha256: f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730
     # No appFolders: gnome-shell 49.4 replaces dconf-default app folders at first login (fixed in 49.5).
     # Starts an application by desktop file id (keyboard shortcuts).
     appLauncher:
