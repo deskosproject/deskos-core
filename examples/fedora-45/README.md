@@ -1,17 +1,9 @@
-# Example (evaluation): DeskOS Core on Fedora 45
+# Example: DeskOS Core on Fedora 45
 
-> [!WARNING]
-> **Not an offered platform.** Fedora 45 was a prerelease when it was measured
-> (2026-10-17) and its base enables Fedora's `updates-testing` repository. DeskOS
-> offers **Fedora 44** only (`resources/platforms/fedora-44.yaml`); this root is
-> the prerelease evaluation, it is not in the platform matrix of
-> [docs/platforms.md](../../docs/platforms.md), and it has no reference
-> workstation and no published image. No Fedora 45 image was built.
-
-The point of the root is to find out whether the next Fedora release composes with
-the same Fedora facts before anyone commits to it — so it carries **its own
-Platform resource** (`platforms/fedora-45.yaml`) instead of shipping one, and
-evaluating a release needs no change to what DeskOS offers:
+The minimal DeskOS Core composition on Fedora 45, on the Fedora Project's own
+desktop bootc base, Silverblue. It is a **separate resource root** that references
+the shipped `deskos-core` and `deskos-gnome` profiles and the shipped `fedora-45`
+Platform by name:
 
 ```bash
 deskosctl plan ./examples/fedora-45 \
@@ -20,19 +12,31 @@ deskosctl plan ./examples/fedora-45 \
 
 | Resource | Contents |
 |---|---|
-| `fedora-45` (platform, in this root) | Fedora 45 facts on the vendor's bootc desktop base `quay.io/fedora/fedora-silverblue:45`, pinned by digest |
+| `fedora-45` (platform) | shipped in `resources/platforms/`: Fedora facts on the vendor's bootc desktop base `quay.io/fedora/fedora-silverblue:45` |
 | `example-fedora-45` | the target: `fedora-45` + the `deskos-core` and `deskos-gnome` profiles |
 
-The facts are measured against the pinned base and are the ones `fedora-44.yaml`
-records, re-read on this release: the comps environment dnf5 resolves for the
-`workstation` group, Flatpak 1.18.4 with `flatpak preinstall`, GDM's
-`/etc/gdm/custom.conf`, the `distro` dconf database, `update-ca-trust`,
-`gtk-update-icon-cache` (gtk3 3.24.52), and the bootc units present but not
-enabled. What differs is the release: gnome-shell 51.0 (vs 50.6 on 44), Plymouth
-26.134.222 (vs 24.004.60), Dash to Dock 110 (vs 105).
+The base is published by the Fedora Project, so the platform follows ADR 0004's
+official-base rule and declares no organization owner or tier (see the platform
+resource). It is Silverblue and not the minimal `quay.io/fedora/fedora-bootc`
+because that base carries no GNOME, no GDM, no Flatpak and no Plymouth at all:
+the GNOME base stays distribution packages here, as it does on the EL platforms,
+and only an organization's extra applications go to Flatpak — which is the
+opposite of what a cloud-native desktop image such as Bluefin does with its own
+GNOME base applications.
+
+The platform is pinned to a **prerelease** compose of Fedora 45
+(`45.20261019.n.0`), whose base enables Fedora's `updates-testing` repository.
+`resources/platforms/fedora-45.yaml` records that, and the rest of the measured
+facts, against the pin.
+
+The image **builds**; see the build evidence in
+[platforms.md](../../docs/platforms.md). No Fedora disk has been **booted**, and
+there is no published Fedora image; the shipped reference workstation is
+`deskos-core-fedora-45`, and Fedora 44 is retired
+([roadmap.md](../../docs/roadmap.md)).
 
 **Naming.** The example is named after the Platform resource it references, as
 `example-almalinux-10` references `almalinux-10`; the shipped reference
-workstation is named after the image it becomes (`deskos-core-fedora-44`, like
+workstation is named after the image it becomes (`deskos-core-fedora-45`, like
 `deskos-core-centos-stream-10`). The Ubuntu platform follows the same rule in its own
 repository (`deskos-ubuntu` on `ubuntu-2604`).

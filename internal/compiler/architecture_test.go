@@ -128,9 +128,9 @@ func viewOf(p *plan.Plan) coreView {
 }
 
 // The same DeskOS Core semantics produce the same planned content on the RPM
-// platforms — CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora 44, plus the
-// Fedora 45 evaluation from its own example root — over exactly the fields viewOf
-// compares: package groups (name and members), packages, systemd units, dconf
+// platforms — CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora 45 — over exactly
+// the fields viewOf compares: package groups (name and members), packages, systemd
+// units, dconf
 // default keys, file paths with their checksums, and the default target.
 //
 // It does not compare the rest of the Plan, and a reader should not read it as
@@ -156,17 +156,13 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
 		"c.yaml": ws("core-alma", "almalinux-10"),
-		"d.yaml": ws("core-fedora-44", "fedora-44"),
-		"e.yaml": ws("core-fedora-45", "fedora-45"),
+		"d.yaml": ws("core-fedora", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	fedora44 := mustPlan(t, "core-fedora-44", resourcesRoot, dir)
-	// Fedora 45 is an evaluation, not a shipped platform, so its Platform resource
-	// comes from the example root that carries it.
-	fedora45 := mustPlan(t, "core-fedora-45", resourcesRoot, fedora45Root, dir)
-	for _, p := range []*plan.Plan{rhel, alma, fedora44, fedora45} {
+	fedora := mustPlan(t, "core-fedora", resourcesRoot, dir)
+	for _, p := range []*plan.Plan{rhel, alma, fedora} {
 		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
 		}
@@ -180,13 +176,11 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	if !strings.HasPrefix(alma.Artifact.BaseImage.Image, "quay.io/almalinuxorg/almalinux-bootc") {
 		t.Errorf("AlmaLinux base is %s, want the vendor's almalinux-bootc image", alma.Artifact.BaseImage.Image)
 	}
-	for name, p := range map[string]*plan.Plan{"fedora-44": fedora44, "fedora-45": fedora45} {
-		if !strings.HasPrefix(p.Artifact.BaseImage.Image, "quay.io/fedora/fedora-silverblue:") {
-			t.Errorf("%s base is %s, want the vendor's fedora-silverblue image", name, p.Artifact.BaseImage.Image)
-		}
+	if !strings.HasPrefix(fedora.Artifact.BaseImage.Image, "quay.io/fedora/fedora-silverblue:") {
+		t.Errorf("Fedora base is %s, want the vendor's fedora-silverblue image", fedora.Artifact.BaseImage.Image)
 	}
-	if fedora44.Artifact.BaseImage.Digest == fedora45.Artifact.BaseImage.Digest {
-		t.Error("the two Fedora releases pin the same base digest")
+	if fedora.Artifact.BaseImage.Digest == "" {
+		t.Error("the Fedora base is not pinned by digest")
 	}
 	// The Fedora facts that reach the Plan and are worth keeping: the group id
 	// DeskOS asks dnf for, which on Fedora is a comps *environment* resolved through
@@ -199,7 +193,7 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		}
 		return out
 	}
-	for _, p := range []*plan.Plan{fedora44, fedora45} {
+	for _, p := range []*plan.Plan{fedora} {
 		if got, want := viewOf(p).Groups, []string{"workstation=workstation-product-environment"}; !reflect.DeepEqual(got, want) {
 			t.Errorf("group mapping = %v, want %v", got, want)
 		}
@@ -216,7 +210,7 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 	dir := fixture{
 		"p.yaml":  profile("apps", "foundation", "FlatpakSet/deskos-reference-apps"),
-		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: fedora-ws\nspec:\n  platformRef: fedora-44\n  profiles: [apps]\n",
+		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: fedora-ws\nspec:\n  platformRef: fedora-45\n  profiles: [apps]\n",
 	}.dir(t)
 	p := mustPlan(t, "fedora-ws", resourcesRoot, dir)
 	if got := packages(p); !slices.Contains(got, "flatpak") {

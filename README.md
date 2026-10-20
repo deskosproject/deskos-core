@@ -55,7 +55,7 @@ table says what has actually been verified on each:
 | CentOS Stream 10 | vendor | **published image**, built and booted in CI |
 | AlmaLinux 10 | vendor (experimental) | **published image**, built and booted in CI |
 | RHEL 10 | vendor (entitled) | composes and renders here; **built and booted by the organization** — its build and boot were validated once on a retired host, and are not re-run here |
-| Fedora 44 | vendor | composes and builds; not booted here, no published image |
+| Fedora 45 | vendor | composes and builds; pinned to a prerelease compose, not booted here, no published image |
 
 Ubuntu 26.04 is not in this table. It has a base of its own and lives in
 [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
@@ -118,7 +118,7 @@ Then see what the repository already ships, and what the image will contain:
 ```console
 $ ./deskosctl validate
 ok: 3 workstation(s) compose cleanly: deskos-core-almalinux-10,
-    deskos-core-centos-stream-10, deskos-core-fedora-44
+    deskos-core-centos-stream-10, deskos-core-fedora-45
 
 $ ./deskosctl plan --workstation deskos-core-centos-stream-10
 WORKSTATION
@@ -169,7 +169,7 @@ flow, with the exact commands, is in
 
 | | |
 |---|---|
-| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; Fedora 44 |
+| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; Fedora 45 |
 | **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Choose a platform** | [**Platforms**](docs/platforms.md): the canonical matrix and what is verified on each |
 | **Author resources** | [**Resources**](docs/resources.md): every kind with an example |

@@ -69,20 +69,21 @@ each slice is reviewed on its own:
   (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
   pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10, RHEL 10 and Fedora 44; the Ubuntu base is pinned in its own
+  for CentOS Stream 10, RHEL 10 and Fedora 45; the Ubuntu base is pinned in its own
   repository.
-- **A second Fedora release — plan, not policy.** DeskOS offers **Fedora 44**
-  only: `:45` was a prerelease when it was measured and its base enables
-  `updates-testing`, so it stays an example-only evaluation
-  (`examples/fedora-45/`, its own Platform resource, no reference
-  workstation, no image, **not built**). *When* a second Fedora release is
-  supported, the plan is the current release plus the previous one: a platform
-  resource and a re-pinned digest each, a re-validation each, a **separate image
-  repository** each (`quay.io/deskos/deskos-core-fedora-44`, so a release cannot
-  change under a machine at `bootc upgrade`), and the older platform retired
-  then. Re-pinning and re-validation are **manual**, like every other base pin
-  ([platforms.md](platforms.md)). The trigger — how DeskOS learns a release is
-  out of prerelease and decides to carry two — is open.
+- **Fedora releases — one at a time, re-pinned by hand.** DeskOS ships
+  **Fedora 45** and **retired Fedora 44** rather than carrying both. The
+  `:45` tag still resolves to a prerelease compose (`45.20261019.n.0`, whose base
+  enables `updates-testing`), so the resource is pinned to that digest and
+  [platforms.md](platforms.md) says so; when the released compose appears, the
+  digest and the measurement comments are re-pinned in one reviewable change. If a
+  second Fedora release is ever carried, the shape is the current release plus the
+  previous one: a platform resource and a re-pinned digest each, a re-validation
+  each, and a **separate image repository** each
+  (`quay.io/deskos/deskos-core-fedora-45`, so a release cannot change under a
+  machine at `bootc upgrade`). Re-pinning and re-validation are **manual**, like
+  every other base pin ([platforms.md](platforms.md)). The trigger — how DeskOS
+  learns a release is out of prerelease and decides to carry two — is open.
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -142,13 +143,14 @@ Details in
   derivative, and where~~ decided: it does, as
   `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
   support -- and it moved to a repository of its own afterwards, which publishes and checks
-  it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora gets no investment
-  beyond an evaluation and is reviewed from time to time; the effort stays on the EL 10 path.
+  it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora is maintained
+  at the level of a build and no further for now: it composes, renders and builds, and
+  it has no boot check; the effort stays on the EL 10 path.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
-- Build and boot the Fedora 44 platform in CI: its facts are measured against
-  the pinned base and its image builds here (image `5b44f2829d1e`), but no Fedora
+- Build and boot the Fedora 45 platform in CI: its facts are measured against
+  the pinned base and its image builds here, but no Fedora
   disk has been booted, so it has no boot, session or first-boot evidence
   ([platforms.md](platforms.md)).
 - RHEL's Red Hat logo in the Activities button (see
