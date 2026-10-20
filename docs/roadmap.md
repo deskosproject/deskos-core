@@ -146,12 +146,14 @@ Details in
   it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora is maintained
   at the level of a build and a CI boot for now: it composes, renders, builds and boots
   in `vm-bootcheck.yml`; the effort stays on the EL 10 path.
-- **Fedora's initramfs and btrfs.** A Fedora disk built with `--rootfs btrfs`
-  drops to the dracut emergency shell on this image (measured 2026-10-20, run
-  39436779300), while ext4 boots; the likely cause is that the initramfs the
-  build regenerates carries no btrfs driver. Silverblue installs on btrfs by
-  default, so an install on btrfs is unverified until this is isolated
-  ([research-notes.md](research-notes.md#fedora-on-btrfs-the-rebuilt-initramfs-does-not-find-the-root-2026-10-20)).
+- ~~**Fedora's initramfs was host-only**~~ fixed: Fedora's dracut configuration
+  sets `hostonly="yes"`, so the initramfs the build regenerates inside the
+  container was tied to the build machine and the Fedora disk stopped in dracut's
+  emergency shell (measured 2026-10-20, runs 39436779300 and 39448084854, with
+  btrfs and ext4 alike). The backend now builds a generic initramfs
+  (`--no-hostonly`), which is what an installable artifact needs
+  ([research-notes.md](research-notes.md#fedoras-rebuilt-initramfs-was-host-only-2026-10-20)).
+  A btrfs disk is re-tested after CI confirms the boot on ext4.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.

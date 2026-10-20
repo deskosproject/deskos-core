@@ -126,7 +126,7 @@ RUN set -eu; found=0; \
     for kdir in /usr/lib/modules/*/; do \
         [ -e "${kdir}vmlinuz" ] || continue; \
         kver="$(basename "$kdir")"; \
-        env DRACUT_NO_XATTR=1 dracut --force "${kdir}initramfs.img" "$kver"; \
+        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly "${kdir}initramfs.img" "$kver"; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'plymouthd' || { echo "plymouth missing from initramfs of $kver" >&2; exit 1; }; \
         found=$((found + 1)); \
     done; \

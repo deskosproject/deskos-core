@@ -469,12 +469,10 @@ jobs:
           mkdir -p "$WORK/output"
           # --rootfs ext4: Fedora's image declares no default root filesystem, and
           # bootc-image-builder refuses with "missing required info: DefaultRootFs"
-          # without one (osbuild's bootc docs name Fedora as the case). ext4 and not
-          # btrfs: a btrfs disk made from this image dropped to the initramfs
-          # emergency shell (measured 2026-10-20, run 39436779300), because the
-          # initramfs the build regenerates does not carry the btrfs driver. That is
-          # a real gap for anyone installing on btrfs and it is tracked in
-          # docs/research-notes.md, not hidden by this flag.
+          # without one (osbuild's bootc docs name Fedora as the case). ext4, not
+          # btrfs, only to isolate variables: both filesystems failed here while the
+          # initramfs was host-only (docs/research-notes.md), and the btrfs disk is
+          # re-tested once this one boots.
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" \

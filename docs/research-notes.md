@@ -566,18 +566,22 @@ unpinned repository downloaded mid-build is outside the typed repository plan.
 If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
 documented platform gap, not a `cs.repo` fetch.
 
-## Fedora on btrfs: the rebuilt initramfs does not find the root (2026-10-20)
+## Fedora's rebuilt initramfs was host-only (2026-10-20)
 
-The first Fedora 45 boot check built its disk with
-`bootc-image-builder --rootfs btrfs` and never reached a graphical screen: the
-guest sat in dracut's emergency shell ("Entering emergency mode"), so the root
-filesystem could not be mounted, and ACPI shutdown was ignored. The disk and
-the image are otherwise the ones CI builds and the same image boots on ext4.
+The first Fedora 45 boot checks never reached a graphical screen. With a btrfs
+disk and again with ext4, the guest stopped in dracut's emergency shell
+("Entering emergency mode"), so the root filesystem could not be mounted, and
+ACPI shutdown was ignored.
 
-Working hypothesis, not yet isolated: the Containerfile regenerates the
-initramfs with `dracut --force` inside the build container, and that initramfs
-does not carry the btrfs driver, while the base image's own initramfs does.
-Silverblue installs on btrfs by default, so this is a gap for a real
-installation path, not only for the harness. The CI check now builds an ext4
-disk so it can verify the desktop; an install on btrfs stays unverified until
-the initramfs question is answered.
+Measured cause: Fedora's dracut configuration sets `hostonly="yes"` (it ships
+both `hostonly=no` and a later `hostonly="yes"`, and the later one wins), while
+CentOS Stream's says `hostonly=no`. The build regenerates the initramfs with
+`dracut --force` **inside the build container**, so on Fedora it produced an
+initramfs for the build machine rather than for the machine the image is
+installed on; the test VM is not that machine. CentOS Stream and AlmaLinux were
+unaffected because their configuration is already generic.
+
+The backend now passes `--no-hostonly`: an artifact is installed on hardware the
+build never saw, so a generic initramfs is the only correct one. It is larger,
+and that is the cost of an image that boots where it is installed. The btrfs
+disk is re-tested separately; ext4 was not the problem.

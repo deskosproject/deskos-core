@@ -872,7 +872,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		w("    for kdir in /usr/lib/modules/*/; do \\\n")
 		w("        [ -e \"${kdir}vmlinuz\" ] || continue; \\\n")
 		w("        kver=\"$(basename \"$kdir\")\"; \\\n")
-		w("        env DRACUT_NO_XATTR=1 dracut --force \"${kdir}initramfs.img\" \"$kver\"; \\\n")
+		w("        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly \"${kdir}initramfs.img\" \"$kver\"; \\\n")
 		for _, m := range ir.DracutModules {
 			if m == "plymouth" {
 				w("        lsinitrd \"${kdir}initramfs.img\" | grep -q 'plymouthd' || { echo \"plymouth missing from initramfs of $kver\" >&2; exit 1; }; \\\n")
