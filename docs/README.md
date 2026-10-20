@@ -49,7 +49,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | Page | What it is |
 |---|---|
 | [Platforms](platforms.md) | **The canonical matrix**: base owner, what is verified, and how to install each platform |
-| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, private RHEL builds, AlmaLinux and Fedora 44. An Ubuntu install is documented in that platform's own repository |
+| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, private RHEL builds, AlmaLinux and Fedora 45. An Ubuntu install is documented in that platform's own repository |
 | [Architecture](architecture.md) | The pipeline and boundary, the resource model, composition, the Plan, the Containerfile backend, and the evidence behind the claims |
 | [Resources](resources.md) | Every one of the fourteen kinds, with an example |
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |

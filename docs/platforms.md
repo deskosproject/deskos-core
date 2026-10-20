@@ -24,7 +24,7 @@ Fedora is not yet.
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 44 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-17 | not measured | none | Flatpak preinstall |
+| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-20 | not measured | none | Flatpak preinstall |
 
 `(vendor)` in the table means the base is the platform's own supplier's: Canonical for
 Ubuntu, Red Hat for RHEL, the CentOS and AlmaLinux projects, the Fedora Project. Where it
@@ -81,7 +81,7 @@ This repository still **composes and renders** a Debian-family workstation, and 
 say so. It no longer builds, boots or publishes one: the virtual machines, the publish leg
 and the platform's resources moved with it.
 
-### Fedora 44 — no published image; build from the vendor's Silverblue base
+### Fedora 45 — no published image; build from the vendor's Silverblue base
 
 Fedora is published by the Fedora Project, is subscription-free, and its bootc
 base is its own, so this platform needs no entitlement and no organization-owned
@@ -89,20 +89,28 @@ base: it follows ADR 0004's official-base rule on
 `quay.io/fedora/fedora-silverblue` — Fedora's *desktop* image, not the minimal
 `quay.io/fedora/fedora-bootc`, which carries no GNOME, no GDM, no Flatpak and no
 Plymouth at all (measured). The measured facts behind the platform —
-`workstation-product-environment` as the comps environment dnf5 resolves, Flatpak
-1.18.4 with `flatpak preinstall`, `/etc/pki/ca-trust/source/anchors` with
-`update-ca-trust`, `gtk-update-icon-cache`, the bootc update units, GDM's
+`workstation-product-environment` as the comps environment dnf5 resolves (347
+packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
+`/etc/pki/ca-trust/source/anchors` with `update-ca-trust`,
+`gtk-update-icon-cache`, the bootc update units (present, not enabled), GDM's
 `/etc/gdm/custom.conf` — are in
-[`resources/platforms/fedora-44.yaml`](../resources/platforms/fedora-44.yaml), one
-comment per fact. [install.md](install.md#fedora-44) has the commands.
+[`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
+comment per fact. [install.md](install.md#fedora-45) has the commands.
+
+**The pin is a prerelease compose.** `:45` still resolves to `45.20261019.n.0`
+(os-release reads "Silverblue Prerelease"), measured 2026-10-20, and that base
+enables Fedora's `updates-testing` repository — Dash to Dock, for one, is published
+only there on this compose. The resource and the table say so; when the released
+compose appears it is a re-pin, not a rewrite. Fedora 44 is retired rather than
+kept alongside ([roadmap.md](roadmap.md)).
 
 The artifact this platform would publish is the shipped **reference workstation**
-`deskos-core-fedora-44` ([`resources/workstations/`](../resources/workstations/)):
+`deskos-core-fedora-45` ([`resources/workstations/`](../resources/workstations/)):
 Core + `Profile/fedora` + the DeskOS look + the Flathub reference application,
-under **its own image repository** — `quay.io/deskos/deskos-core-fedora-44` — and
+under **its own image repository** — `quay.io/deskos/deskos-core-fedora-45` — and
 never a shared `:latest` tag, because a Fedora release must not be able to change
-under a machine at `bootc upgrade` ([roadmap.md](roadmap.md) holds the plan for a
-second Fedora release). Nothing is published for Fedora today: publishing is a
+under a machine at `bootc upgrade` ([roadmap.md](roadmap.md) says how a second
+release would be carried). Nothing is published for Fedora today: publishing is a
 manual, human-gated step ([supply-chain.md](supply-chain.md)).
 
 Composition and rendering for this platform are covered by CI: the reference
@@ -112,15 +120,13 @@ workstation lives in the embedded Core, so every `deskosctl validate` run in
 ([vm-bootcheck.yml](../.github/workflows/vm-bootcheck.yml) covers CentOS Stream
 10 and AlmaLinux 10).
 
-**Build evidence, measured 2026-10-17 on the pinned base.** Two images were built
-locally, both on Fedora 44 and both finishing that day: the reference workstation
-`deskos-core-fedora-44` (image `5b44f2829d1e`, 07:17 +0200) and the example
-`example-fedora-44` (image `c384826141cf`, 07:07 +0200). Each ran
-`bootc container lint` (12 checks passed, 1 skipped, 2 warnings:
-`nonempty-run-tmp`, `var-tmpfiles`) and each put the DeskOS Plymouth theme, with
-its frames, into the rebuilt initramfs. **No Fedora 45 image was built** — 45's
-numbers come from inspecting the pinned base and from
-`dnf group install --assumeno`, not from a build. Neither image was installed.
+**Build evidence, measured 2026-10-20 on the pinned base.** The reference
+workstation `deskos-core-fedora-45` was built locally that day (image
+`14cb6852ae33`, 7.6 GB) and ran `bootc container lint` (12 checks passed, 1
+skipped, 2 warnings: `nonempty-run-tmp`, `var-tmpfiles`). The build rebuilds the
+initramfs for the kernel the image carries (7.2.11-300.fc45) and **fails unless**
+`plymouthd`, the DeskOS theme, its watermark and throbber frames and
+`Theme=deskos` are inside it, so it carries them. The image was not installed.
 
 What is **not** measured matters as much: **no Fedora disk has been booted**, so
 there is no boot, session or first-boot evidence for this platform, and nothing is
@@ -130,14 +136,12 @@ Two properties of this platform are decisions, and they are visible in the table
 above rather than hidden:
 
 - **The release is in the resource, the image name and the support window.** A
-  second Fedora release is a new platform resource, a new re-pinned digest, a
+  new Fedora release is a new platform resource, a re-pinned digest, a
   re-validation and a new image repository; retirements and re-pins are **manual**,
   as every other base pin is ([roadmap.md](roadmap.md)).
-- **Fedora 45 is not offered.** When `:45` was measured it was a prerelease
-  (`45.20261016.n.0 (Silverblue Prerelease)`) whose base enables Fedora's
-  `updates-testing` repository, so DeskOS offers **44 only**. The 45 evaluation
-  stays as an example-only root with its own Platform resource,
-  [`examples/fedora-45/`](../examples/fedora-45/README.md): it is
-  deliberately absent from the table above, has no reference workstation and no
-  image, and exists to check the next release before anyone commits to it. It was
-  **not built**.
+- **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
+  `resources/platforms/` carries a single Fedora platform and a machine's platform
+  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261019.n.0`
+  — and not of the name: when the released compose is published, the digest and the
+  measurement comments move and the platform keeps its name, its workstation and
+  its image repository.

@@ -3,9 +3,7 @@ kind: Workstation
 metadata:
   name: example-fedora-45
 spec:
-  # The Fedora 45 *evaluation*, not an offered platform: the Platform resource it
-  # references lives in this root (examples/fedora-45/platforms/).
-  displayName: DeskOS Core (Fedora 45, prerelease evaluation)
+  displayName: DeskOS Core (Fedora 45)
   platformRef: fedora-45
   profiles:
     - deskos-core

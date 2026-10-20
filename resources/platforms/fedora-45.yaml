@@ -1,0 +1,152 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  name: fedora-45
+spec:
+  displayName: Fedora 45 (Silverblue, prerelease compose)
+  # The Fedora Project publishes this base itself (quay.io/fedora), so the platform
+  # follows ADR 0004's official-base rule and declares no organization owner or
+  # tier — like centos-stream-10 and almalinux-10.
+  #
+  # The base is Fedora's own desktop bootc image, Silverblue, and not the minimal
+  # quay.io/fedora/fedora-bootc. Measured on that minimal base (:44 and :45,
+  # 2026-10-17): no gnome-shell, no gdm, no gnome-initial-setup, no Flatpak, no
+  # Plymouth, no fedora-logos and no gtk-update-icon-cache — a DeskOS workstation on
+  # it would be a desktop DeskOS invented, not the one Fedora validates as its
+  # workstation. Silverblue carries all of them as distribution packages, and its
+  # GNOME base applications stay RPMs (measured in the image: gnome-shell 51.0, gdm
+  # 51.0, gnome-initial-setup 51.0, nautilus 51.0.1, gnome-software 51.0, firefox
+  # 157.0). That is the DeskOS rule: the GNOME base stays distribution packages, and
+  # only an organization's extra applications go to Flatpak (ADR 0005).
+  #
+  # Fedora 45 is the release this family ships, and it is pinned to a *prerelease*
+  # compose: os-release reads "45.20261019.n.0 (Silverblue Prerelease)" and the base
+  # enables Fedora's updates-testing repository — the repositories are read from
+  # /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and `dnf5 repolist --enabled`
+  # lists updates-testing. The compose was measured on 2026-10-20, Fedora 45's
+  # release date. When the released compose appears in the registry this resource is
+  # re-pinned to its digest: the resource is what decides which compose a build
+  # gets, and docs/platforms.md reports what was verified against that pin.
+  #
+  # Fedora 44 is retired rather than kept alongside: DeskOS ships one Fedora release
+  # at a time, and the previous one is not offered (docs/roadmap.md).
+  family: fedora
+  release: "45"
+  architectures: [x86_64]
+  packageManager: rpm
+  bootc:
+    image: quay.io/fedora/fedora-silverblue:45
+    # x86_64 manifest of the :45 index (index sha256:b2226c06...), built
+    # 2026-10-19T07:42:24Z as Fedora 45.20261019.n.0, ostree commit de81370e...,
+    # kernel 7.2.11-300.fc45.
+    # Fedora Silverblue's :45 compose moves **daily**: a pin here is a digest the
+    # registry stops serving within a day or two, and the `validate` job reports
+    # exactly that. Re-pinned 2026-10-20, when Fedora 44 was retired.
+    digest: sha256:cfc753ac428a159442dd211c6c11bb9b966e59be1f9f38a21d013e0de342cceb
+  distribution:
+    # Fedora's archive is freely redistributable and needs no subscription.
+    redistributable: true
+    requiresSubscription: false
+  packageGroups:
+    - name: workstation
+      # `workstation-product-environment` is a comps *environment* ("Fedora
+      # Workstation") that dnf5 resolves through `group install`; this base already
+      # carries the shell, so the transaction completes it with the workstation's own
+      # applications. Measured on this composition and its repositories: 347 packages
+      # installed, 15 upgraded, 15 replaced, 274 changing reason, 346 MiB inbound and
+      # 1 GiB extra — the same shape as on Fedora 44.
+      rpmGroups: [workstation-product-environment]
+      graphical: true
+      # No excludes: measured, Fedora's environment carries no setroubleshoot, the
+      # package the EL family excludes. Nothing is declared unavailable either —
+      # `virt-manager` (5.1.0 in this archive), which the EL10 platforms report as
+      # a gap because it sits in their disabled builder repository, installs from
+      # Fedora's own archive here.
+  displayManager: gdm.service
+  gnome:
+    # Measured: /etc/dconf/profile/user reads user, local, site and distro, and
+    # GDM's own profile (/usr/share/dconf/profile/gdm) reads user, gdm, local, site
+    # and distro plus /usr/share/gdm/greeter-dconf-defaults — the same distro slot
+    # DeskOS writes to.
+    dconfDatabase: distro
+    loginScreen: true
+    # Default of org.gnome.shell enabled-extensions on this base, measured in
+    # /usr/share/glib-2.0/schemas/org.gnome.shell.gschema.override:
+    # background-logo@fedorahosted.org (installed as
+    # gnome-shell-extension-background-logo).
+    enabledExtensions: [background-logo@fedorahosted.org]
+    extensions:
+      # Measured: gnome-shell-extension-dash-to-dock is not in the base and not part
+      # of the workstation environment; on this prerelease compose Fedora publishes
+      # it only in updates-testing (110-1.fc45), which the base enables anyway.
+      - name: dash-to-dock
+        package: gnome-shell-extension-dash-to-dock
+        uuid: dash-to-dock@micxgx.gmail.com
+    # gnome-shell 51.0 keeps app folders from the dconf defaults.
+    appFolders: true
+    appLauncher:
+      # Measured: /usr/bin/gtk-launch resolves through the usrmerge symlink
+      # /usr/sbin -> bin and is provided by gtk3 3.24.52.
+      package: gtk3
+      command: /usr/bin/gtk-launch
+  boot:
+    # Fedora's own graphical boot uses `rhgb quiet`; the image itself carries no
+    # /etc/default/grub, so this is Fedora's documented default for the family and
+    # not a reading of this base. DeskOS writes the arguments to
+    # /usr/lib/bootc/kargs.d/50-deskos.toml, which is measured to exist on this base
+    # and is Fedora's documented path for bootc kernel arguments, so they apply at
+    # install and on day 2. Whether a booted Fedora DeskOS disk draws the splash
+    # from these arguments is not measured.
+    #
+    # Measured while building Fedora 44, whose container build path is unchanged:
+    # rebuilding the initramfs in a container is noisy, not broken. dracut exits 0
+    # and the built initramfs carries plymouthd and the theme frames (asserted by the
+    # build itself), but it prints `dracut-install: ERROR: installing '/root'` —
+    # `/root` is a symlink to `var/roothome`, which an ostree image does not carry,
+    # and that target is created at deployment — plus xattr and firmware-copy errors
+    # the container filesystem refuses. It happens on the plain base as well, so it
+    # is not a consequence of the group mapping.
+    splashKernelArgument: rhgb
+    quietKernelArgument: quiet
+    # Measured: plymouth 26.134.222-6.fc45 with plymouth-scripts,
+    # plymouth-system-theme and plymouth-theme-spinner already in the base, and
+    # dracut's 45plymouth module. Fedora's own default Plymouth theme is bgrt, so a
+    # DeskOS splash replaces the vendor's rather than sitting on an empty one.
+    plymouthPackages: [plymouth, plymouth-scripts, plymouth-system-theme]
+    plymouthDracutModule: plymouth
+    # Measured in /usr/share/plymouth/themes/spinner (74 files):
+    # animation-0001..0036.png, throbber-0001..0030.png and watermark.png — the same
+    # two-step throbber frames DeskOS's own splash reuses on the EL family.
+    spinnerFrames:
+      package: plymouth-theme-spinner
+      imageDir: /usr/share/plymouth/themes/spinner
+  updates:
+    # Measured on this pin: bootc-fetch-apply-updates.service and its .timer are
+    # present and *neither is enabled* — /etc/systemd/system/timers.target.wants
+    # holds dnf-makecache, fstrim, logrotate, raid-check, rpm-ostree-countme and
+    # unbound-anchor only (unlike quay.io/fedora/fedora-bootc:45, where the timer is
+    # enabled). They are listed so that DeskOS's own staging timer stays the only
+    # update path if Fedora enables one: what DeskOS masks is the platform's units,
+    # never Core's.
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+  flatpak:
+    # Measured: Flatpak 1.18.4 with `flatpak preinstall`, /usr/share/flatpak/preinstall.d
+    # present and empty. The base also enables flatpak-add-fedora-repos.service, which
+    # adds Fedora's own OCI remote at first boot; DeskOS declares its own remote and
+    # does not remove Fedora's.
+    package: flatpak
+    preinstall: true
+  # Measured: /etc/pki/ca-trust/source/anchors exists and update-ca-trust is
+  # /usr/sbin/update-ca-trust.
+  trust:
+    anchorsDir: /etc/pki/ca-trust/source/anchors
+    updateCommand: update-ca-trust
+  iconCache:
+    # Measured: gtk-update-icon-cache 3.24.52 (gtk3) at /usr/bin/gtk-update-icon-cache.
+    package: gtk-update-icon-cache
+    command: gtk-update-icon-cache --force --quiet
+  downloads:
+    # Measured 2026-10-20 on this pin: it ships curl (8.21.0-6.fc45) at
+    # /usr/sbin/curl, so the build's verified download works as it is. The package
+    # manager needs it, which is why a base that installs anything has it.
+    baseFetches: true

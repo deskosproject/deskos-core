@@ -20,10 +20,10 @@ var update = flag.Bool("update", false, "rewrite golden files")
 const (
 	resourcesRoot = "../../resources"
 	exampleRoot   = "../../examples/organization-and-role"
-	// fedora45Root is the Fedora 45 evaluation. It carries its own Platform
-	// resource, because DeskOS ships Fedora 44 only: the next Fedora release is
-	// evaluated as an example before anyone commits to it.
-	fedora45Root = "../../examples/fedora-45"
+	// fedoraExampleRoot is the Fedora 45 example. It is a separate root that
+	// references the shipped fedora-45 Platform, like every other per-platform
+	// example.
+	fedoraExampleRoot = "../../examples/fedora-45"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -127,10 +127,10 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"deskos-core-almalinux-10", []string{resourcesRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		// Fedora 44's shipped reference workstation: it pins the rendered build
-		// context for the newest platform, so a change to the Fedora facts or to the
-		// backend shows up as a reviewable diff. ci.yml renders the same workstation.
-		{"deskos-core-fedora-44", []string{resourcesRoot}},
+		// Fedora's shipped reference workstation: it pins the rendered build context
+		// for the platform, so a change to the Fedora facts or to the backend shows up
+		// as a reviewable diff. ci.yml renders the same workstation.
+		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {
@@ -283,8 +283,8 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"example-devops-centos-stream-10", []string{resourcesRoot, exampleRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		{"deskos-core-fedora-44", []string{resourcesRoot}},
-		{"example-fedora-45", []string{resourcesRoot, fedora45Root}},
+		{"deskos-core-fedora-45", []string{resourcesRoot}},
+		{"example-fedora-45", []string{resourcesRoot, fedoraExampleRoot}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		files, err := containerfile.Render(p)

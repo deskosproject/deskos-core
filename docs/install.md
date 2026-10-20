@@ -193,7 +193,7 @@ sudo podman run --rm -it --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
-    registry.redhat.io/rhel10/bootc-image-builder@sha256:7f5baead2d4ac2a1035900ced31e4e7600fc98f69aa45ee5d05639bca028e00b \
+    registry.redhat.io/rhel10/bootc-image-builder@sha256:3087a30a2891cd63505b5585f7f154a4eaaa8221aa1afcd50ae80cbecfdc5f97 \
     build --type qcow2 --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     registry.example.com/deskos/core-rhel-10:latest
@@ -205,7 +205,7 @@ a build you make is your own to check. The image, disks and ISOs are **still RHE
 derivatives**: push them only to registries and storage that are private to your
 organization.
 
-## Fedora 44
+## Fedora 45
 
 Fedora is a public, subscription-free base published by the Fedora Project
 itself, so a build needs no entitlement. **DeskOS publishes no Fedora image.**
@@ -214,32 +214,32 @@ from a checkout of this repository:
 
 ```bash
 ./bin/deskosctl render \
-    --workstation deskos-core-fedora-44 --output ./dist/fedora-44
-sudo podman build -t localhost/deskos-core-fedora-44:test ./dist/fedora-44
+    --workstation deskos-core-fedora-45 --output ./dist/fedora-45
+sudo podman build -t localhost/deskos-core-fedora-45:test ./dist/fedora-45
 ```
 
-`examples/fedora-44/` is the minimal example (Core and the family profile only).
+`examples/fedora-45/` is the minimal example (Core and the family profile only).
 Then write the QCOW2 as above.
 
 If you publish it, give it its **own repository** —
-`quay.io/deskos/deskos-core-fedora-44` — and point the installed machine at that
+`quay.io/deskos/deskos-core-fedora-45` — and point the installed machine at that
 reference. A shared `:latest` repository would let a Fedora release change under
 a machine at `bootc upgrade` ([platforms.md](platforms.md)).
 
 > [!WARNING]
 > **This path is proposed, not measured, past the build.** The platform's facts
 > are measured against the pinned base (one comment per fact in
-> `resources/platforms/fedora-44.yaml`) and the image builds, but DeskOS has
+> `resources/platforms/fedora-45.yaml`) and the image builds, but DeskOS has
 > **not booted** a Fedora disk: there is no boot, session or first-boot evidence
 > for this platform. See [platforms.md](platforms.md).
 
 > [!NOTE]
-> **Fedora 45 is not offered.** It was a prerelease when it was measured and its
-> base enables `updates-testing`, so DeskOS offers 44 only. The 45 evaluation is
-> kept as an example-only root that carries its **own** Platform resource —
-> [`examples/fedora-45/`](../examples/fedora-45/README.md) — with no reference
-> workstation and no image; its platform is a starting point for whoever
-> evaluates the next Fedora release, not something to install.
+> **The pin is a prerelease compose.** The `:45` tag still resolves to
+> `45.20261019.n.0`, whose base enables Fedora's `updates-testing` repository, so
+> a build can take packages from testing. `resources/platforms/fedora-45.yaml`
+> says which compose the pin is and what was measured against it; the released
+> compose is re-pinned when it appears. Fedora 44 is retired: DeskOS ships one
+> Fedora release at a time ([roadmap.md](roadmap.md)).
 
 ## Ubuntu 26.04
 

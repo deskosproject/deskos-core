@@ -38,9 +38,8 @@ validate: build
 	$(BIN) validate ./examples/centos-stream-10
 	$(BIN) validate ./examples/almalinux-10
 	$(BIN) validate ./examples/rhel-10
-# Fedora 44 is an offered platform (resources/platforms/); Fedora 45 is an
-# example-only prerelease evaluation, not an offered platform.
-	$(BIN) validate ./examples/fedora-44
+# Fedora 45 is a shipped platform (resources/platforms/); the example root
+# references it by name like the other per-platform examples.
 	$(BIN) validate ./examples/fedora-45
 
 plan-centos: build

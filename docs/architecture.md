@@ -116,14 +116,12 @@ DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
 which a workstation selects only when its platform's base lets DeskOS write
 them (ADR 0016). The same Core composes onto `centos-stream-10`, `almalinux-10`,
-`rhel-10` and `fedora-44`; the Ubuntu platform composes it in its own repository
+`rhel-10` and `fedora-45`; the Ubuntu platform composes it in its own repository
 ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)), on a base the project
 owns rather than its vendor. A RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
 DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
-RHEL 10, AlmaLinux 10 and Fedora 44 — produce the same Core content, and the
-Fedora 45 evaluation joins that comparison from its own example root, which is
-how an unreleased Fedora is checked without being offered. A Debian-family platform is
+RHEL 10, AlmaLinux 10 and Fedora 45 — produce the same Core content. A Debian-family platform is
 not compared by that test, because its package manager is deb: what pins the deb render
 here is the synthetic Debian golden in the compiler tests (`debian-synthetic`), which is
 built from a fixture rather than from a platform this repository ships.
@@ -352,28 +350,28 @@ account the upstream container image ships suppressing the wizard — is in
   `deskos-ubuntu-bootc` now, and the image it publishes is
   `quay.io/deskos/deskos-ubuntu-bootc`. RHEL-derived
   images are never published (ADR 0014).
-- **Fedora 44, composed, rendered and built (2026-10-17).** The platform's facts
-  were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:44`,
+- **Fedora 45, composed, rendered and built (2026-10-20).** The platform's facts
+  were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:45`,
   pinned by digest), not modeled on another family: the comps environment dnf5
-  resolves for the `workstation` group, Flatpak 1.18.4 with `flatpak preinstall`
-  and `/usr/share/flatpak/preinstall.d`, GDM's `/etc/gdm/custom.conf` and the
-  `distro` dconf database, `/etc/pki/ca-trust/source/anchors` with
-  `update-ca-trust`, `gtk-update-icon-cache`, the bootc update units (present, not
-  enabled, unlike Fedora's minimal `fedora-bootc` base), and the Plymouth spinner
-  frames. `deskosctl validate` and `go test` cover composition and rendering, and
-  `ci.yml` renders the reference workstation. **Two images were built here, both
-  on 44**: the reference workstation `deskos-core-fedora-44` (image
-  `5b44f2829d1e`) and the example `example-fedora-44` (image
-  `c384826141cf`). The group transaction installed 395 packages (277 more marked
-  as group members, 341 MiB); the built image selects the DeskOS Plymouth theme
-  with the DeskOS frames inside the rebuilt initramfs; `bootc container lint`
-  passed 12 checks with 2 warnings (`nonempty-run-tmp`, `var-tmpfiles`). **No
-  Fedora 45 image was built**: its numbers come from inspecting the pinned
-  prerelease base and from `dnf -y group install --assumeno` (347 packages
-  installed, 15 upgrades), and 45 is an example-only evaluation, not an offered
-  platform ([platforms.md](platforms.md)). **Not measured: any boot.** No Fedora
-  disk has been booted, so there is **no** GNOME, session or first-boot evidence
-  for this platform, and no published Fedora image.
+  resolves for the `workstation` group (347 packages, 346 MiB), Flatpak 1.18.4 with
+  `flatpak preinstall` and `/usr/share/flatpak/preinstall.d`, GDM's
+  `/etc/gdm/custom.conf` and the `distro` dconf database,
+  `/etc/pki/ca-trust/source/anchors` with `update-ca-trust`,
+  `gtk-update-icon-cache`, the bootc update units (present, not enabled, unlike
+  Fedora's minimal `fedora-bootc` base), and the Plymouth spinner frames.
+  `deskosctl validate` and `go test` cover composition and rendering, and `ci.yml`
+  renders the reference workstation. **The image builds here**: the reference
+  workstation `deskos-core-fedora-45` built locally that day (image
+  `14cb6852ae33`, 7.6 GB). The build rebuilds the initramfs for the kernel the
+  image carries (7.2.11-300.fc45) and **fails unless** `plymouthd`, the DeskOS
+  theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
+  image carries them; `bootc container lint` passed 12 checks with 2 warnings
+  (`nonempty-run-tmp`, `var-tmpfiles`). The pin is a **prerelease** compose of the
+  release (`45.20261019.n.0`, whose base enables `updates-testing`), and the
+  platform is pinned to it rather than to a released compose
+  ([platforms.md](platforms.md)). **Not measured: any boot.** No Fedora disk has
+  been booted, so there is **no** GNOME, session or first-boot evidence for this
+  platform, and no published Fedora image.
 - **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
@@ -397,7 +395,7 @@ and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
 bit.** External inputs that can still change between builds:
 
 - the base image tag, unless `bootc.digest` is set — all four shipped Platforms
-  pin a digest, as does the Fedora 45 evaluation root;
+  pin a digest;
 - repository metadata and packages: RPM repositories on the EL and Fedora
   platforms, APT sources on a Debian-family one (the Ubuntu platform, in its own
   repository).
