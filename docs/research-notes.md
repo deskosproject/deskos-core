@@ -565,3 +565,19 @@ was proposed** and no dependency failure appeared. Nothing is copied: an
 unpinned repository downloaded mid-build is outside the typed repository plan.
 If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
 documented platform gap, not a `cs.repo` fetch.
+
+## Fedora on btrfs: the rebuilt initramfs does not find the root (2026-10-20)
+
+The first Fedora 45 boot check built its disk with
+`bootc-image-builder --rootfs btrfs` and never reached a graphical screen: the
+guest sat in dracut's emergency shell ("Entering emergency mode"), so the root
+filesystem could not be mounted, and ACPI shutdown was ignored. The disk and
+the image are otherwise the ones CI builds and the same image boots on ext4.
+
+Working hypothesis, not yet isolated: the Containerfile regenerates the
+initramfs with `dracut --force` inside the build container, and that initramfs
+does not carry the btrfs driver, while the base image's own initramfs does.
+Silverblue installs on btrfs by default, so this is a gap for a real
+installation path, not only for the harness. The CI check now builds an ext4
+disk so it can verify the desktop; an install on btrfs stays unverified until
+the initramfs question is answered.
