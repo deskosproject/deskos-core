@@ -358,11 +358,17 @@ func (l *lowering) lowerExtensions(locks []compose.Member) {
 			if ext, ok := pl.GnomeCatalogExtension(uuid); ok {
 				if ext.Source != nil {
 					// The platform's repositories do not carry it, so the image
-					// delivers the pinned artifact itself (docs/adr/0021).
+					// delivers the pinned artifact itself (docs/adr/0021). The
+					// provenance is both halves of the decision: the catalog entry
+					// that names the delivery, and the profile that enabled it.
+					prov := append([]model.Provenance{{
+						Resource: l.c.Platform.ID(),
+						Source:   l.c.Platform.Source.String(),
+					}}, s.Provenance...)
 					l.p.Artifact.Extensions = append(l.p.Artifact.Extensions, plan.ExtensionInstall{
 						UUID: ext.UUID, Version: ext.Source.Version,
 						URL: ext.Source.URL, SHA256: ext.Source.SHA256,
-						Provenance: s.Provenance,
+						Provenance: prov,
 					})
 				} else {
 					l.p.AddPackage(ext.Package, s.Provenance...)

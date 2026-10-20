@@ -128,27 +128,27 @@ def tray_probe():
 
     ``gnome-extensions info`` proves the shell loaded the extension; it does not
     prove the extension does anything. The AppIndicator extension owns
-    ``org.kde.StatusNotifierWatcher`` on the session bus, so this registers an item
-    and asks the watcher to list it back (docs/adr/0021). It still does not prove
-    that an icon is drawn for a real application; that is a pixel test this harness
-    does not make.
+    ``org.kde.StatusNotifierWatcher`` on the session bus, so this asks the service
+    to accept a registration. That is not the same as proving the item stays
+    registered — the caller is a short-lived gdbus process — and it is not a
+    promise that an icon is drawn for a real application; both are said plainly
+    in the check names and in ADR 0021.
     """
     return (
         "if gdbus introspect --session --dest org.kde.StatusNotifierWatcher "
         "--object-path /StatusNotifierWatcher > /dev/null 2>&1; then\n"
         '  echo "tray_watcher=present"\n'
-        "  gdbus call --session --dest org.kde.StatusNotifierWatcher "
+        "  if gdbus call --session --dest org.kde.StatusNotifierWatcher "
         "--object-path /StatusNotifierWatcher "
         "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
-        "/StatusNotifierItem > /dev/null 2>&1 || true\n"
-        "  items=$(gdbus call --session --dest org.kde.StatusNotifierWatcher "
-        "--object-path /StatusNotifierWatcher "
-        "--method org.freedesktop.DBus.Properties.Get "
-        "org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems 2>/dev/null)\n"
-        '  case "$items" in *StatusNotifierItem*) echo "tray_item=registered";; '
-        '*) echo "tray_item=missing";; esac\n'
+        "/StatusNotifierItem > /dev/null 2>&1; then\n"
+        '    echo "tray_register=accepted"\n'
+        "  else\n"
+        '    echo "tray_register=rejected"\n'
+        "  fi\n"
         "else\n"
         '  echo "tray_watcher=absent"\n'
+        '  echo "tray_register=skipped"\n'
         "fi\n"
     )
 
@@ -888,8 +888,10 @@ def evaluate(values, plan, journal="", skel_rels=()):
         # answers it (docs/adr/0021). An icon in the panel is still a pixel fact.
         check("tray watcher serves the session bus", values.get("tray_watcher") == "present",
               f"tray_watcher={values.get('tray_watcher')}")
-        check("tray watcher registers an item", values.get("tray_item") == "registered",
-              f"tray_item={values.get('tray_item')}")
+        # It accepts a registration; the caller is short-lived, so the property list
+        # is not evidence this harness can hold (ADR 0021).
+        check("tray watcher accepts a registration", values.get("tray_register") == "accepted",
+              f"tray_register={values.get('tray_register')}")
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")

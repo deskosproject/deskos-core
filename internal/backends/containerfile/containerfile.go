@@ -607,7 +607,7 @@ const curlFetch = "curl --fail --silent --show-error --location --proto '=https'
 // names, types and sizes are checked here, and so are the UUID and the Shell
 // version the archive claims to support (docs/adr/0021). It is core code, not a
 // resource field: no plan can supply a command.
-const extensionExtract = `import json,sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); infos=z.infolist(); assert len(infos)<=2000, "extension archive has too many entries"; names=[i.filename for i in infos]; assert len(names)==len(set(names)), "extension archive repeats an entry"; unsafe=[n for n in names if n.startswith("/") or ".." in n.split("/")]; assert not unsafe, "unsafe path in extension archive: "+str(unsafe[:3]); odd=[i.filename for i in infos if ((i.external_attr>>16)&0o170000) not in (0,0o040000,0o100000)]; assert not odd, "non-regular entry in extension archive: "+str(odd[:3]); big=[i.filename for i in infos if i.file_size>20*1024*1024]; assert not big, "member too large in extension archive: "+str(big[:3]); assert sum(i.file_size for i in infos)<=50*1024*1024, "extension archive is too large"; meta=json.loads(z.read("metadata.json")); assert meta.get("uuid")==sys.argv[3], "extension archive uuid "+str(meta.get("uuid"))+" does not match "+sys.argv[3]; assert sys.argv[4] in (meta.get("shell-version") or []), "extension does not support GNOME Shell "+sys.argv[4]+": it declares "+str(meta.get("shell-version")); z.extractall(sys.argv[2])`
+const extensionExtract = `import json,os,sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); out=sys.argv[2]; uuid=sys.argv[3]; major=sys.argv[4]; infos=z.infolist(); len(infos)<=2000 or sys.exit("extension archive has too many entries"); keys=[os.path.normpath(i.filename) for i in infos]; len(set(keys))==len(keys) or sys.exit("extension archive repeats a path"); all(not k.startswith("/") and k!=".." and not k.startswith("../") for k in keys) or sys.exit("unsafe path in extension archive"); all(((i.external_attr>>16)&0o170000) in (0,0o040000,0o100000) for i in infos) or sys.exit("non-regular entry in extension archive"); all(i.file_size<=20*1024*1024 for i in infos) or sys.exit("member too large in extension archive"); sum(i.file_size for i in infos)<=50*1024*1024 or sys.exit("extension archive is too large"); meta=json.loads(z.read("metadata.json")); meta.get("uuid")==uuid or sys.exit("extension archive uuid does not match "+uuid); major in (meta.get("shell-version") or []) or sys.exit("extension does not support GNOME Shell "+major+": it declares "+str(meta.get("shell-version"))); z.extractall(out)`
 
 // updateUnits renders the service and timer of one scheduled update. The
 // commands are fixed per kind and only stage or update; none reboots.
@@ -778,11 +778,12 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		w("    %s \\\n        -o \"$tmp/extension.zip\" %s; \\\n", curlFetch, shq(ext.URL))
 		w("    echo %s | sha256sum --check --strict --quiet -; \\\n", shq(ext.SHA256+"  ")+`"$tmp/extension.zip"`)
 		w("    dest=%s; \\\n", shq("/usr/share/gnome-shell/extensions/"+ext.UUID))
-		w("    [ ! -e \"$dest\" ] || { echo \"$dest already exists in the image\" >&2; exit 1; }; \\\n")
+		w("    [ ! -e \"$dest\" ] && [ ! -L \"$dest\" ] || { echo \"$dest already exists in the image\" >&2; exit 1; }; \\\n")
 		w("    python3 -c %s \"$tmp/extension.zip\" \"$tmp/extract\" %s \"$major\"; \\\n", shq(extensionExtract), shq(ext.UUID))
 		w("    mkdir -p \"$(dirname \"$dest\")\"; \\\n")
 		w("    cp -R \"$tmp/extract\" \"$dest\"; \\\n")
 		w("    chmod -R u=rwX,go=rX \"$dest\"; \\\n")
+		w("    rm -f \"$dest/schemas/gschemas.compiled\"; \\\n")
 		w("    if compgen -G \"$dest/schemas/*.gschema.xml\" > /dev/null; then glib-compile-schemas \"$dest/schemas\"; fi; \\\n")
 		w("    rm -rf \"$tmp\"\n")
 	}

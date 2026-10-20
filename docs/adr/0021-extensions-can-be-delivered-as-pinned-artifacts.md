@@ -79,9 +79,11 @@ whether the UUID loads.
 5. **The evidence is the load and the watcher, not a screenshot.** The session
    check asks `gnome-extensions` about every enabled UUID, and the behavior probe
    asserts that the session bus carries the extension's
-   `org.kde.StatusNotifierWatcher` service. That proves the extension runs and
-   answers; it does not prove that a particular application's icon is drawn, and
-   documentation says "loads and serves the watcher", not "works with every app".
+   `org.kde.StatusNotifierWatcher` service and that it **accepts a registration**.
+   That proves the extension runs and answers; the probe's caller is short-lived,
+   so it does not prove the item stays registered, and it does not prove that a
+   particular application's icon is drawn. Documentation says "loads and serves
+   the watcher", not "works with every app".
 
 ## Consequences
 
@@ -99,3 +101,8 @@ whether the UUID loads.
 - Refreshing the extension is a reviewable change to a version, a URL and a
   sha256. A GNOME release outside the zip's declared range fails the build here,
   with the two versions named, rather than at a user's first login.
+- Two changes the Fedora boot check forced are recorded outside this decision,
+  because they are about the initramfs and the test disk rather than the
+  extension: the backend now builds a generic initramfs (`dracut --no-hostonly`),
+  and the Fedora check builds an ext4 disk while the btrfs path is re-tested
+  ([research-notes.md](../research-notes.md#fedoras-rebuilt-initramfs-was-host-only-2026-10-20)).

@@ -232,6 +232,36 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	}
 }
 
+// Disabling the tray UUID delivers nothing, whatever the platform's catalog shape:
+// no package, no pinned artifact and no enabled default. The decision is a profile's
+// and the delivery is the platform's (docs/adr/0021); this is the inverse of the
+// delivery assertions above.
+func TestDisablingTheTrayExtensionDeliversNothing(t *testing.T) {
+	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
+	for _, platform := range []string{"centos-stream-10", "almalinux-10", "rhel-10", "fedora-45"} {
+		t.Run(platform, func(t *testing.T) {
+			dir := fixture{
+				"ws.yaml":  "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: ws\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome, off]\n",
+				"off.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Profile\nmetadata:\n  name: off\nspec:\n  layer: organization\n  resources:\n    - {kind: GnomeProfile, name: off-gnome}\n",
+				"g.yaml":   "apiVersion: desktop.deskos.org/v1alpha1\nkind: GnomeProfile\nmetadata:\n  name: off-gnome\nspec:\n  defaults:\n    shell:\n      extensions:\n        - {uuid: " + trayUUID + ", enabled: false}\n",
+			}.dir(t)
+			p := mustPlan(t, "ws", resourcesRoot, dir)
+			if slices.Contains(packages(p), "gnome-shell-extension-appindicator") {
+				t.Error("a disabled extension installs the package")
+			}
+			if len(p.Artifact.Extensions) != 0 {
+				t.Errorf("a disabled extension delivers %+v", p.Artifact.Extensions)
+			}
+			if slices.Contains(p.Artifact.EnabledExtensions, trayUUID) {
+				t.Error("a disabled extension is still listed as enabled")
+			}
+			if v, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); ok && strings.Contains(v, trayUUID) {
+				t.Errorf("a disabled extension is still in the default: %s", v)
+			}
+		})
+	}
+}
+
 // Fedora's base brings Flatpak with the preinstall mechanism, and the platform
 // says so: a FlatpakSet on Fedora compiles to the Flatpak package, the preinstall
 // unit and the application. This is the pair the Ubuntu test asserts the absence

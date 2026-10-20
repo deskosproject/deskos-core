@@ -369,11 +369,11 @@ account the upstream container image ships suppressing the wizard — is in
   (`nonempty-run-tmp`, `var-tmpfiles`). The pin is a **prerelease** compose of the
   release (`45.20261020.n.0`, whose base enables `updates-testing`), and the
   platform is pinned to it rather than to a released compose
-  ([platforms.md](platforms.md)). **Booted and checked in CI**: `vm-bootcheck.yml`
-  builds `examples/fedora-45`, makes a QCOW2 and runs the boot check, the
-  instrumented session check (every dconf default in the plan is read back from the
-  live session) and the first-boot check. That is a QEMU guest, not hardware, and
-  no Fedora image is published.
+  ([platforms.md](platforms.md)). **A boot check exists and is not yet green**:
+  `vm-bootcheck.yml` builds `examples/fedora-45`, makes a QCOW2 and runs the boot,
+  instrumented session and first-boot checks. Until that run passes, Fedora has
+  **no** boot evidence; when it does, it is a QEMU guest, not hardware, and no
+  Fedora image is published.
 - **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
