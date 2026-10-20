@@ -229,9 +229,10 @@ a machine at `bootc upgrade` ([platforms.md](platforms.md)).
 > [!WARNING]
 > **This path is proposed, not measured, past the build.** The platform's facts
 > are measured against the pinned base (one comment per fact in
-> `resources/platforms/fedora-45.yaml`) and the image builds, but DeskOS has
-> **not booted** a Fedora disk: there is no boot, session or first-boot evidence
-> for this platform. See [platforms.md](platforms.md).
+> `resources/platforms/fedora-45.yaml`) and the image builds; CI also boots a
+> QCOW2 of the example and runs the session and first-boot checks. What has **not**
+> happened is an installation on hardware: there is no published Fedora image and
+> no Fedora disk has been installed by a user. See [platforms.md](platforms.md).
 
 > [!NOTE]
 > **The pin is a prerelease compose.** The `:45` tag still resolves to

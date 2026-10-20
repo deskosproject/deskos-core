@@ -30,8 +30,9 @@ The platform is pinned to a **prerelease** compose of Fedora 45
 facts, against the pin.
 
 The image **builds**; see the build evidence in
-[platforms.md](../../docs/platforms.md). No Fedora disk has been **booted**, and
-there is no published Fedora image; the shipped reference workstation is
+[platforms.md](../../docs/platforms.md). CI builds a QCOW2 of the example and boots
+it — boot, session and first-boot checks — but no Fedora image is published, and no
+Fedora disk has been installed on hardware. The shipped reference workstation is
 `deskos-core-fedora-45`, and Fedora 44 is retired
 ([roadmap.md](../../docs/roadmap.md)).
 

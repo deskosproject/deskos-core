@@ -82,6 +82,13 @@ spec:
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+      # Measured 2026-10-20 on this pin: gnome-shell-extension-appindicator 66-1.fc45
+      # is published only in updates-testing, which the prerelease base enables. When
+      # the released compose is pinned, confirm the package is in `updates` (or in the
+      # base) before keeping this entry.
+      - name: appindicator
+        package: gnome-shell-extension-appindicator
+        uuid: appindicatorsupport@rgcjonas.gmail.com
     # gnome-shell 51.0 keeps app folders from the dconf defaults.
     appFolders: true
     appLauncher:

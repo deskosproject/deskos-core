@@ -22,6 +22,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'firefox' \
         'firewalld' \
         'flatpak' \
+        'gnome-shell-extension-appindicator' \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \

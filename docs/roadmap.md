@@ -144,15 +144,15 @@ Details in
   `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
   support -- and it moved to a repository of its own afterwards, which publishes and checks
   it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora is maintained
-  at the level of a build and no further for now: it composes, renders and builds, and
-  it has no boot check; the effort stays on the EL 10 path.
+  at the level of a build and a CI boot for now: it composes, renders, builds and boots
+  in `vm-bootcheck.yml`; the effort stays on the EL 10 path.
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
-- Build and boot the Fedora 45 platform in CI: its facts are measured against
-  the pinned base and its image builds here, but no Fedora
-  disk has been booted, so it has no boot, session or first-boot evidence
-  ([platforms.md](platforms.md)).
+- ~~Build and boot the Fedora 45 platform in CI~~ done: `vm-bootcheck.yml` builds
+  `examples/fedora-45` and runs the boot, session and first-boot checks on the
+  QCOW2 ([platforms.md](platforms.md)). What remains is a published image, which
+  waits for the released compose, and hardware installation.
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

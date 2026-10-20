@@ -26,6 +26,8 @@ spec:
   unavailablePackages:
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support
+    - name: gnome-shell-extension-appindicator
+      reason: not packaged for EL10 — measured on CentOS Stream 10 (2026-10-20) absent from baseos, appstream and extras, and EPEL 10 carries only the libappindicator/ayatana libraries, not the GNOME Shell extension; asking for it fails here instead of mid-build
   displayManager: gdm.service
   gnome:
     dconfDatabase: distro

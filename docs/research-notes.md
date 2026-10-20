@@ -515,3 +515,47 @@ On the host, the unit's
     predates these diagnostics.
 - Local evidence, not part of the repository:
   `/tmp/deskos-mcediag-evidence-20260929/` and `/tmp/deskos-mcediag-report.md`.
+
+## Tray icons on GNOME (2026-10-20)
+
+AppIndicator and KStatusNotifierItem support is the only way GNOME 49+ shows tray
+icons for applications that still use them (Telegram, Steam, several Electron
+apps). Measured the same day, on the pinned bases:
+
+| Platform | `gnome-shell-extension-appindicator` |
+|---|---|
+| Fedora 45 | `66-1.fc45`, published **only in `updates-testing`** — the prerelease base enables that repository |
+| CentOS Stream 10 | absent from baseos, appstream, extras and extras-common |
+| AlmaLinux 10 | absent from baseos, appstream, extras and crb |
+| Any EL10 with EPEL 10 | absent; EPEL 10 carries `libappindicator-gtk3` and `libayatana-appindicator-gtk3`, the libraries, not the Shell extension |
+
+Consequences:
+
+- Fedora ships it: `Profile/fedora` references `GnomeProfile/deskos-tray`, which
+  enables `appindicatorsupport@rgcjonas.gmail.com`, and the platform catalog
+  installs Fedora's package.
+- EL10 cannot, without vendoring an extension or carrying a package repository
+  DeskOS does not own. The platforms record the gap in `unavailablePackages`, so a
+  resource that asks for the package fails at composition with the reason instead
+  of mid-build.
+- **BetterTrayIcons** (`nexaknight/BetterTrayIcons`, `BetterTrayIcons@nexaknight.com`)
+  is not an alternative we can ship: it replaces AppIndicator rather than
+  complementing it — its `metadata.json` declares
+  `appindicatorsupport@rgcjonas.gmail.com`, `ubuntu-appindicators@ubuntu.com` and
+  `trayIconsReloaded@selfmade.pl` as conflicts — it is GPL-3.0, Wayland only, and
+  it is distributed through extensions.gnome.org, not a distribution repository
+  (not packaged in Fedora 45's repositories on 2026-10-20). It stays a per-user
+  install.
+
+## EL10 compose repositories (2026-10-20)
+
+Bluefin LTS's `00-workarounds.sh` downloads the CentOS Stream compose repository
+(`cs.repo` from `centos-stream/containers/bootc`) so a build does not downgrade
+packages with strict NVR requirements. Measured on the pinned CentOS Stream 10
+and AlmaLinux 10 bases with the same transactions the rendered Containerfiles
+declare (`dnf group install --assumeno workstation-product-environment`, then
+`dnf install --assumeno firefox firewalld flatpak plymouth …`): **no downgrade
+was proposed** and no dependency failure appeared. Nothing is copied: an
+unpinned repository downloaded mid-build is outside the typed repository plan.
+If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
+documented platform gap, not a `cs.repo` fetch.

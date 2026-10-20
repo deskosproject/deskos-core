@@ -24,7 +24,7 @@ Fedora is not yet.
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **local build**, 2026-10-20 | not measured | none | Flatpak preinstall |
+| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | none | Flatpak preinstall |
 
 `(vendor)` in the table means the base is the platform's own supplier's: Canonical for
 Ubuntu, Red Hat for RHEL, the CentOS and AlmaLinux projects, the Fedora Project. Where it
@@ -116,9 +116,10 @@ manual, human-gated step ([supply-chain.md](supply-chain.md)).
 Composition and rendering for this platform are covered by CI: the reference
 workstation lives in the embedded Core, so every `deskosctl validate` run in
 `ci.yml` composes it, the Fedora golden pins its Containerfile, and
-`ci.yml` renders it. What CI does **not** do for Fedora is build or boot an image
-([vm-bootcheck.yml](../.github/workflows/vm-bootcheck.yml) covers CentOS Stream
-10 and AlmaLinux 10).
+`ci.yml` renders it. `vm-bootcheck.yml` also builds `examples/fedora-45` and
+boots the resulting QCOW2 — boot check, instrumented session check (which reads
+back every dconf default in the plan) and first-boot check — on the same path as
+CentOS Stream 10 and AlmaLinux 10. That is the first Fedora boot evidence.
 
 **Build evidence, measured 2026-10-20 on the pinned base.** The reference
 workstation `deskos-core-fedora-45` was built locally that day (image
@@ -126,11 +127,25 @@ workstation `deskos-core-fedora-45` was built locally that day (image
 skipped, 2 warnings: `nonempty-run-tmp`, `var-tmpfiles`). The build rebuilds the
 initramfs for the kernel the image carries (7.2.11-300.fc45) and **fails unless**
 `plymouthd`, the DeskOS theme, its watermark and throbber frames and
-`Theme=deskos` are inside it, so it carries them. The image was not installed.
+`Theme=deskos` are inside it, so it carries them. That local image was not
+installed; CI's own build is the one that boots.
 
-What is **not** measured matters as much: **no Fedora disk has been booted**, so
-there is no boot, session or first-boot evidence for this platform, and nothing is
-published for it.
+What is **not** measured matters as much: **no Fedora image is published**, and
+no Fedora disk has been installed on hardware — the boot evidence is CI's QEMU
+guest, the same class of evidence the other platforms carry.
+
+Tray icons are part of this platform's desktop: `Profile/fedora` enables
+`appindicatorsupport@rgcjonas.gmail.com`, and the package is Fedora's
+`gnome-shell-extension-appindicator`. On EL10 the extension is **not packaged** —
+measured on CentOS Stream 10 and AlmaLinux 10 on 2026-10-20, absent from baseos,
+appstream, extras and CRB, and EPEL 10 carries only the libappindicator/ayatana
+libraries — so those platforms record it in `unavailablePackages` and the
+reference workstations there ship no tray. The EL10 answer is Red Hat packaging
+it, not a DeskOS fork. [BetterTrayIcons](research-notes.md#tray-icons-on-gnome-2026-10-20) is not an
+alternative we can ship: it *replaces* AppIndicator (its metadata declares
+`appindicatorsupport@rgcjonas.gmail.com` as a conflict), it is GPL-3.0, Wayland
+only, and it is distributed through extensions.gnome.org rather than a
+distribution repository. It stays a per-user install for anyone who prefers it.
 
 Two properties of this platform are decisions, and they are visible in the table
 above rather than hidden:

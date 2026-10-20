@@ -35,6 +35,9 @@ spec:
       # As on the rest of the family: mandatory in workstation-product, and its
       # first-login AVC notification is not wanted on a workstation.
       excludePackages: [setroubleshoot, setroubleshoot-plugins, setroubleshoot-server]
+  unavailablePackages:
+    - name: gnome-shell-extension-appindicator
+      reason: not packaged for EL10 — measured on this base (2026-10-20) absent from baseos, appstream, extras and CRB, and EPEL 10 carries only the libappindicator/ayatana libraries, not the GNOME Shell extension; asking for it fails here instead of mid-build
   displayManager: gdm.service
   gnome:
     dconfDatabase: distro
