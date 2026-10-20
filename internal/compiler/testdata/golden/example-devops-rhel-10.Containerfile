@@ -81,6 +81,43 @@ RUN set -eu; \
     install -D -m 0755 "$tmp"/'oc' '/usr/local/bin/oc'; \
     rm -rf "$tmp"
 
+# GNOME extension appindicatorsupport@rgcjonas.gmail.com 66 (sha256-verified, docs/adr/0021)
+RUN set -eu; \
+    command -v gnome-shell > /dev/null || { echo 'no gnome-shell in the image: the extension cannot be installed' >&2; exit 1; }; \
+    major="$(gnome-shell --version | awk '{print $3}' | cut -d. -f1)"; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/extension.zip" 'https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip'; \
+    echo 'f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730  '"$tmp/extension.zip" | sha256sum --check --strict --quiet -; \
+    dest='/usr/share/gnome-shell/extensions/appindicatorsupport@rgcjonas.gmail.com'; \
+    [ ! -e "$dest" ] || { echo "$dest already exists in the image" >&2; exit 1; }; \
+    python3 -c 'import json,sys,zipfile
+z=zipfile.ZipFile(sys.argv[1]); out=sys.argv[2]; uuid=sys.argv[3]; major=sys.argv[4]
+infos=z.infolist()
+if len(infos)>2000: raise SystemExit("extension archive has too many entries")
+names=set(); total=0
+for i in infos:
+    n=i.filename
+    if n in names: raise SystemExit("extension archive repeats entry "+n)
+    names.add(n)
+    if n.startswith("/") or ".." in n.split("/"): raise SystemExit("unsafe path in extension archive: "+n)
+    kind=(i.external_attr>>16)&0o170000
+    if kind not in (0,0o040000,0o100000): raise SystemExit("non-regular entry in extension archive: "+n)
+    if i.file_size>20*1024*1024: raise SystemExit("member too large in extension archive: "+n)
+    total+=i.file_size
+    if total>50*1024*1024: raise SystemExit("extension archive is too large")
+meta=json.loads(z.read("metadata.json"))
+if meta.get("uuid")!=uuid: raise SystemExit("extension archive uuid "+str(meta.get("uuid"))+" does not match "+uuid)
+if major not in (meta.get("shell-version") or []): raise SystemExit("extension does not support GNOME Shell "+major+": it declares "+str(meta.get("shell-version")))
+z.extractall(out)' "$tmp/extension.zip" "$tmp/extract" 'appindicatorsupport@rgcjonas.gmail.com' "$major"; \
+    mkdir -p "$(dirname "$dest")"; \
+    cp -R "$tmp/extract" "$dest"; \
+    chmod -R u=rwX,go=rX "$dest"; \
+    if compgen -G "$dest/schemas/*.gschema.xml" > /dev/null; then glib-compile-schemas "$dest/schemas"; fi; \
+    rm -rf "$tmp"
+
 # Trust anchors: the destination must not already exist
 RUN set -eu; \
     for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt'; do \

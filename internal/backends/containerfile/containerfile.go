@@ -602,6 +602,31 @@ const curlFetch = "curl --fail --silent --show-error --location --proto '=https'
 	"        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \\\n" +
 	"        --connect-timeout 30 --speed-limit 1000 --speed-time 60"
 
+// extensionExtract is the fixed program that validates and extracts one GNOME
+// Shell extension archive. It runs before anything lands in the image: member
+// names, types and sizes are checked here, and so are the UUID and the Shell
+// version the archive claims to support (docs/adr/0021). It is core code, not a
+// resource field: no plan can supply a command.
+const extensionExtract = `import json,sys,zipfile
+z=zipfile.ZipFile(sys.argv[1]); out=sys.argv[2]; uuid=sys.argv[3]; major=sys.argv[4]
+infos=z.infolist()
+if len(infos)>2000: raise SystemExit("extension archive has too many entries")
+names=set(); total=0
+for i in infos:
+    n=i.filename
+    if n in names: raise SystemExit("extension archive repeats entry "+n)
+    names.add(n)
+    if n.startswith("/") or ".." in n.split("/"): raise SystemExit("unsafe path in extension archive: "+n)
+    kind=(i.external_attr>>16)&0o170000
+    if kind not in (0,0o040000,0o100000): raise SystemExit("non-regular entry in extension archive: "+n)
+    if i.file_size>20*1024*1024: raise SystemExit("member too large in extension archive: "+n)
+    total+=i.file_size
+    if total>50*1024*1024: raise SystemExit("extension archive is too large")
+meta=json.loads(z.read("metadata.json"))
+if meta.get("uuid")!=uuid: raise SystemExit("extension archive uuid "+str(meta.get("uuid"))+" does not match "+uuid)
+if major not in (meta.get("shell-version") or []): raise SystemExit("extension does not support GNOME Shell "+major+": it declares "+str(meta.get("shell-version")))
+z.extractall(out)`
+
 // updateUnits renders the service and timer of one scheduled update. The
 // commands are fixed per kind and only stage or update; none reboots.
 func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
@@ -760,6 +785,23 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 			w("    mkdir -p \"$(readlink -m \"$(dirname %s)\")\"; \\\n", shq(bin.Destination))
 			w("    install -D -m %s %s %s; \\\n", bin.Mode, src, shq(bin.Destination))
 		}
+		w("    rm -rf \"$tmp\"\n")
+	}
+
+	for _, ext := range a.Extensions {
+		w("\n# GNOME extension %s %s (sha256-verified, docs/adr/0021)\n", ext.UUID, ext.Version)
+		w("RUN set -eu; \\\n    command -v gnome-shell > /dev/null || { echo 'no gnome-shell in the image: the extension cannot be installed' >&2; exit 1; }; \\\n")
+		w("    major=\"$(gnome-shell --version | awk '{print $3}' | cut -d. -f1)\"; \\\n")
+		w("    tmp=\"$(mktemp -d)\"; \\\n")
+		w("    %s \\\n        -o \"$tmp/extension.zip\" %s; \\\n", curlFetch, shq(ext.URL))
+		w("    echo %s | sha256sum --check --strict --quiet -; \\\n", shq(ext.SHA256+"  ")+`"$tmp/extension.zip"`)
+		w("    dest=%s; \\\n", shq("/usr/share/gnome-shell/extensions/"+ext.UUID))
+		w("    [ ! -e \"$dest\" ] || { echo \"$dest already exists in the image\" >&2; exit 1; }; \\\n")
+		w("    python3 -c %s \"$tmp/extension.zip\" \"$tmp/extract\" %s \"$major\"; \\\n", shq(extensionExtract), shq(ext.UUID))
+		w("    mkdir -p \"$(dirname \"$dest\")\"; \\\n")
+		w("    cp -R \"$tmp/extract\" \"$dest\"; \\\n")
+		w("    chmod -R u=rwX,go=rX \"$dest\"; \\\n")
+		w("    if compgen -G \"$dest/schemas/*.gschema.xml\" > /dev/null; then glib-compile-schemas \"$dest/schemas\"; fi; \\\n")
 		w("    rm -rf \"$tmp\"\n")
 	}
 

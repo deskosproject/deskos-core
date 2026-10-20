@@ -367,7 +367,7 @@ account the upstream container image ships suppressing the wizard — is in
   theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
   image carries them; `bootc container lint` passed 12 checks with 2 warnings
   (`nonempty-run-tmp`, `var-tmpfiles`). The pin is a **prerelease** compose of the
-  release (`45.20261019.n.0`, whose base enables `updates-testing`), and the
+  release (`45.20261020.n.0`, whose base enables `updates-testing`), and the
   platform is pinned to it rather than to a released compose
   ([platforms.md](platforms.md)). **Booted and checked in CI**: `vm-bootcheck.yml`
   builds `examples/fedora-45`, makes a QCOW2 and runs the boot check, the

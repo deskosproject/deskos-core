@@ -870,8 +870,9 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 		if !ok || strings.Contains(v, dashToDockUUID) {
 			t.Errorf("Core enables the dock: %q", v)
 		}
-		if v != "['background-logo@fedorahosted.org']" {
-			t.Errorf("Core writes enabled-extensions = %s, want the platform's own list", v)
+		// The tray extension is Core's (docs/adr/0021); the dock is not.
+		if v != "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com']" {
+			t.Errorf("Core writes enabled-extensions = %s, want the platform's own list plus the tray extension", v)
 		}
 		if hasDockPackage(p) {
 			t.Error("Core installs Dash to Dock")

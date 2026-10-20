@@ -8,5 +8,9 @@ spec:
   resources:
     - kind: GnomeProfile
       name: deskos-core
+    # Tray icons, on every workstation: Fedora delivers Fedora's package, EL10 the
+    # pinned upstream release, and each platform's catalog says which (ADR 0021).
+    - kind: GnomeProfile
+      name: deskos-tray
     # If a workstation also wants the DeskOS look, it adds the deskos-look
     # profile; if it wants only the GNOME defaults, this one is enough.

@@ -79,14 +79,18 @@ type Artifact struct {
 	// turn on, beyond whatever the platform already enables. The list is what the
 	// session check asks GNOME about: a decision that does not really load must be
 	// visible, not silent (docs/adr/0017).
-	EnabledExtensions []string               `json:"enabledExtensions,omitempty"`
-	KernelArguments   []KernelArgument       `json:"kernelArguments"`
-	Initramfs         *InitramfsRegeneration `json:"initramfs,omitempty"`
-	PlymouthTheme     *PlymouthTheme         `json:"plymouthTheme,omitempty"`
-	SystemdUnits      []SystemdEnable        `json:"systemdUnits"`
-	SystemdMasks      []SystemdMask          `json:"systemdMasks"`
-	ScheduledUpdates  []ScheduledUpdate      `json:"scheduledUpdates"`
-	DefaultTarget     *DefaultTarget         `json:"defaultTarget,omitempty"`
+	EnabledExtensions []string `json:"enabledExtensions,omitempty"`
+	// Extensions are the GNOME Shell extensions this image delivers itself, from a
+	// pinned artifact, because the platform's repositories do not carry them
+	// (docs/adr/0021). Extensions the platform packages arrive as Packages.
+	Extensions       []ExtensionInstall     `json:"extensions,omitempty"`
+	KernelArguments  []KernelArgument       `json:"kernelArguments"`
+	Initramfs        *InitramfsRegeneration `json:"initramfs,omitempty"`
+	PlymouthTheme    *PlymouthTheme         `json:"plymouthTheme,omitempty"`
+	SystemdUnits     []SystemdEnable        `json:"systemdUnits"`
+	SystemdMasks     []SystemdMask          `json:"systemdMasks"`
+	ScheduledUpdates []ScheduledUpdate      `json:"scheduledUpdates"`
+	DefaultTarget    *DefaultTarget         `json:"defaultTarget,omitempty"`
 }
 
 type BaseImage struct {
@@ -158,6 +162,17 @@ type RpmFileInstall struct {
 	GPGKey       string             `json:"gpgKey"`
 	GPGKeySHA256 string             `json:"gpgKeySHA256"`
 	Provenance   []model.Provenance `json:"provenance"`
+}
+
+// ExtensionInstall downloads a GNOME Shell extension release, verifies its
+// SHA-256 and installs it under /usr/share/gnome-shell/extensions/<uuid>
+// (docs/adr/0021).
+type ExtensionInstall struct {
+	UUID       string             `json:"uuid"`
+	Version    string             `json:"version"`
+	URL        string             `json:"url"`
+	SHA256     string             `json:"sha256"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 // VerifiedBinaryInstall downloads an artifact, verifies its SHA-256,
@@ -457,6 +472,16 @@ func (p *Plan) Normalize() error {
 			return fmt.Errorf("scheduled %s update is defined twice", u.Kind)
 		}
 		a.ScheduledUpdates[i].Provenance = uniq(a.ScheduledUpdates[i].Provenance)
+	}
+	sort.Slice(a.Extensions, func(i, j int) bool { return a.Extensions[i].UUID < a.Extensions[j].UUID })
+	for i := 1; i < len(a.Extensions); i++ {
+		x, y := a.Extensions[i-1], a.Extensions[i]
+		if x.UUID == y.UUID && (x.URL != y.URL || x.SHA256 != y.SHA256) {
+			return fmt.Errorf("extension %s is delivered twice with different sources", x.UUID)
+		}
+	}
+	for i := range a.Extensions {
+		a.Extensions[i].Provenance = uniq(a.Extensions[i].Provenance)
 	}
 	sort.Slice(a.RpmFiles, func(i, j int) bool { return a.RpmFiles[i].URL < a.RpmFiles[j].URL })
 	sort.Slice(a.Binaries, func(i, j int) bool { return a.Binaries[i].Destination < a.Binaries[j].Destination })

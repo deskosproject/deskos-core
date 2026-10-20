@@ -356,7 +356,17 @@ func (l *lowering) lowerExtensions(locks []compose.Member) {
 			// about: a UUID that does not really load must be visible.
 			l.p.Artifact.EnabledExtensions = append(l.p.Artifact.EnabledExtensions, uuid)
 			if ext, ok := pl.GnomeCatalogExtension(uuid); ok {
-				l.p.AddPackage(ext.Package, s.Provenance...)
+				if ext.Source != nil {
+					// The platform's repositories do not carry it, so the image
+					// delivers the pinned artifact itself (docs/adr/0021).
+					l.p.Artifact.Extensions = append(l.p.Artifact.Extensions, plan.ExtensionInstall{
+						UUID: ext.UUID, Version: ext.Source.Version,
+						URL: ext.Source.URL, SHA256: ext.Source.SHA256,
+						Provenance: s.Provenance,
+					})
+				} else {
+					l.p.AddPackage(ext.Package, s.Provenance...)
+				}
 			}
 		} else {
 			list = without(list, uuid)

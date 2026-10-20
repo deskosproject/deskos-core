@@ -169,6 +169,11 @@ func applyDownloads(pl *model.Resource, plSpec *core.PlatformSpec, p *plan.Plan)
 		for _, f := range p.Artifact.RpmFiles {
 			prov = append(prov, f.Provenance...)
 		}
+	case len(p.Artifact.Extensions) > 0:
+		what = p.Artifact.Extensions[0].URL
+		for _, e := range p.Artifact.Extensions {
+			prov = append(prov, e.Provenance...)
+		}
 	default:
 		return nil
 	}

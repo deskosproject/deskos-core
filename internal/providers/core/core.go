@@ -138,11 +138,22 @@ type AppLauncher struct {
 	Command string `json:"command"`
 }
 
-// GnomeExtension is a GNOME Shell extension shipped by the platform.
+// GnomeExtension is a GNOME Shell extension shipped by the platform. Exactly one
+// delivery is named: the platform's package, or a pinned artifact for a platform
+// whose repositories do not carry it.
 type GnomeExtension struct {
-	Name    string `json:"name"`
-	Package string `json:"package"`
-	UUID    string `json:"uuid"`
+	Name    string           `json:"name"`
+	Package string           `json:"package,omitempty"`
+	UUID    string           `json:"uuid"`
+	Source  *ExtensionSource `json:"source,omitempty"`
+}
+
+// ExtensionSource is a pinned GNOME Shell extension release: the artifact the
+// build downloads, verifies and installs.
+type ExtensionSource struct {
+	Version string `json:"version"`
+	URL     string `json:"url"`
+	SHA256  string `json:"sha256"`
 }
 
 // FlatpakPlatform describes the platform's Flatpak capabilities.
@@ -278,6 +289,9 @@ var (
 	uuidRE        = regexp.MustCompile(`^[A-Za-z0-9._@-]+$`)
 	pkgRE         = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
 	kargRE        = regexp.MustCompile(`^[a-z][a-z0-9_.-]*$`)
+	versionRE     = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]*$`)
+	sourceURLRE   = regexp.MustCompile(`^https://[^[:space:]]+$`)
+	sha256RE      = regexp.MustCompile(`^[0-9a-f]{64}$`)
 	plymouthDirRE = regexp.MustCompile(`^/usr/share/plymouth/themes/[a-z0-9][a-z0-9_.-]*$`)
 	trustDirRE    = regexp.MustCompile(`^/etc(/[A-Za-z0-9._-]*[A-Za-z0-9_-])+$`)
 	trustCmdRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
@@ -370,9 +384,30 @@ func (platformProvider) Decode(res *model.Resource) error {
 		case !model.ValidName(g.DconfDatabase):
 			errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is not a valid database name", g.DconfDatabase))
 		}
+		seenExtension := map[string]bool{}
 		for _, e := range g.Extensions {
-			if !uuidRE.MatchString(e.UUID) || !pkgRE.MatchString(e.Package) || e.Name == "" {
-				errs.Add(model.Errorf(res, "gnome extension %q: name, package and uuid are required", e.Name))
+			if !uuidRE.MatchString(e.UUID) || e.Name == "" {
+				errs.Add(model.Errorf(res, "gnome extension %q: name and uuid are required", e.Name))
+				continue
+			}
+			if seenExtension[e.UUID] {
+				errs.Add(model.Errorf(res, "gnome extension %q: uuid %q is catalogued twice", e.Name, e.UUID))
+			}
+			seenExtension[e.UUID] = true
+			switch {
+			case e.Package != "" && e.Source != nil:
+				errs.Add(model.Errorf(res, "gnome extension %q: name exactly one delivery, package or source, not both", e.Name))
+			case e.Package != "":
+				if !pkgRE.MatchString(e.Package) {
+					errs.Add(model.Errorf(res, "gnome extension %q: %q is not a package name", e.Name, e.Package))
+				}
+			case e.Source != nil:
+				src := e.Source
+				if !versionRE.MatchString(src.Version) || !sourceURLRE.MatchString(src.URL) || !sha256RE.MatchString(src.SHA256) {
+					errs.Add(model.Errorf(res, "gnome extension %q: source needs a version, an https url and a sha256:<64 hex> digest", e.Name))
+				}
+			default:
+				errs.Add(model.Errorf(res, "gnome extension %q: neither a package nor a source is named", e.Name))
 			}
 		}
 	}

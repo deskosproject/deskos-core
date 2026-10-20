@@ -162,9 +162,38 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
 	fedora := mustPlan(t, "core-fedora", resourcesRoot, dir)
+	// The tray extension is the one delivery that legitimately differs between
+	// platforms: Fedora's catalog names a package, EL10's names a pinned artifact
+	// because no repository carries a usable one (docs/adr/0021). Compare the rest
+	// of the package list, then assert each delivery exactly instead of hiding it.
+	withoutDelivery := func(v coreView) coreView {
+		out := v
+		out.Packages = nil
+		for _, name := range v.Packages {
+			if name != "gnome-shell-extension-appindicator" {
+				out.Packages = append(out.Packages, name)
+			}
+		}
+		return out
+	}
 	for _, p := range []*plan.Plan{rhel, alma, fedora} {
-		if !reflect.DeepEqual(viewOf(centos), viewOf(p)) {
+		if !reflect.DeepEqual(withoutDelivery(viewOf(centos)), withoutDelivery(viewOf(p))) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
+		}
+	}
+	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
+	if !slices.Contains(packages(fedora), "gnome-shell-extension-appindicator") {
+		t.Errorf("Fedora does not install the tray extension package: %v", packages(fedora))
+	}
+	if len(fedora.Artifact.Extensions) != 0 {
+		t.Errorf("Fedora delivers the tray extension as an artifact as well: %+v", fedora.Artifact.Extensions)
+	}
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma} {
+		if slices.Contains(packages(p), "gnome-shell-extension-appindicator") {
+			t.Errorf("%s installs the tray extension as a package", name)
+		}
+		if len(p.Artifact.Extensions) != 1 || p.Artifact.Extensions[0].UUID != trayUUID {
+			t.Errorf("%s delivers %+v, want one %s artifact", name, p.Artifact.Extensions, trayUUID)
 		}
 	}
 	if centos.Artifact.BaseImage.Image == rhel.Artifact.BaseImage.Image {

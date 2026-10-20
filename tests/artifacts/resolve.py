@@ -188,9 +188,9 @@ def check_plan(path, timeout, r, artifact_seconds=ARTIFACT_SECONDS, limit=MAX_BY
     r.lines.append(f"## {path}")
     art = plan.get("artifact", {})
 
-    for kind, key in (("binary", "binaries"), ("rpmFile", "rpmFiles")):
+    for kind, key in (("binary", "binaries"), ("rpmFile", "rpmFiles"), ("extension", "extensions")):
         for item in art.get(key) or []:
-            name = item.get("artifact") or item.get("url") or "?"
+            name = item.get("artifact") or item.get("uuid") or item.get("url") or "?"
             url, sha256 = item.get("url", ""), item.get("sha256", "")
             what = f"{kind} {name}"
             if not url:

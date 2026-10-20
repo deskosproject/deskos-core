@@ -527,17 +527,23 @@ apps). Measured the same day, on the pinned bases:
 | Fedora 45 | `66-1.fc45`, published **only in `updates-testing`** — the prerelease base enables that repository |
 | CentOS Stream 10 | absent from baseos, appstream, extras and extras-common |
 | AlmaLinux 10 | absent from baseos, appstream, extras and crb |
-| Any EL10 with EPEL 10 | absent; EPEL 10 carries `libappindicator-gtk3` and `libayatana-appindicator-gtk3`, the libraries, not the Shell extension |
+| EPEL 10 | `61-1.el10_2`, Shell 45–49, but **uninstallable on CentOS Stream 10**: it requires `libappindicator-gtk3`, whose `libdbusmenu-glib.so.4`/`libdbusmenu-gtk3.so.4` come from **CRB** (enabled on AlmaLinux, disabled on CentOS Stream and not part of RHEL's supported set) |
 
 Consequences:
 
 - Fedora ships it: `Profile/fedora` references `GnomeProfile/deskos-tray`, which
   enables `appindicatorsupport@rgcjonas.gmail.com`, and the platform catalog
   installs Fedora's package.
-- EL10 cannot, without vendoring an extension or carrying a package repository
-  DeskOS does not own. The platforms record the gap in `unavailablePackages`, so a
-  resource that asks for the package fails at composition with the reason instead
-  of mid-build.
+- EL10 does not ship it from its vendor repositories. Enabling EPEL is not enough
+  on CentOS Stream 10: the package's `libappindicator-gtk3` dependency needs
+  `libdbusmenu`, which is in CRB — enabled on AlmaLinux, disabled on CentOS Stream
+  and outside RHEL's supported set. Measured: the transaction resolves on AlmaLinux
+  10 and fails on CentOS Stream 10 with `nothing provides libdbusmenu-glib.so.4`.
+  A pinned `RpmFile` does not help either: it cannot satisfy a dependency the
+  enabled repositories do not carry. DeskOS therefore delivers upstream's v66 zip
+  as a pinned artifact, installed by the build after its sha256, UUID and Shell
+  version are checked ([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)).
+  The package name stays in `unavailablePackages`.
 - **BetterTrayIcons** (`nexaknight/BetterTrayIcons`, `BetterTrayIcons@nexaknight.com`)
   is not an alternative we can ship: it replaces AppIndicator rather than
   complementing it — its `metadata.json` declares

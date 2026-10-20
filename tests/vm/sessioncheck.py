@@ -123,6 +123,36 @@ def extension_reads():
     )
 
 
+def tray_probe():
+    """The appindicator extension's behaviour, read from the session bus.
+
+    ``gnome-extensions info`` proves the shell loaded the extension; it does not
+    prove the extension does anything. The AppIndicator extension owns
+    ``org.kde.StatusNotifierWatcher`` on the session bus, so this registers an item
+    and asks the watcher to list it back (docs/adr/0021). It still does not prove
+    that an icon is drawn for a real application; that is a pixel test this harness
+    does not make.
+    """
+    return (
+        "if gdbus introspect --session --dest org.kde.StatusNotifierWatcher "
+        "--object-path /StatusNotifierWatcher > /dev/null 2>&1; then\n"
+        '  echo "tray_watcher=present"\n'
+        "  gdbus call --session --dest org.kde.StatusNotifierWatcher "
+        "--object-path /StatusNotifierWatcher "
+        "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
+        "/StatusNotifierItem > /dev/null 2>&1 || true\n"
+        "  items=$(gdbus call --session --dest org.kde.StatusNotifierWatcher "
+        "--object-path /StatusNotifierWatcher "
+        "--method org.freedesktop.DBus.Properties.Get "
+        "org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems 2>/dev/null)\n"
+        '  case "$items" in *StatusNotifierItem*) echo "tray_item=registered";; '
+        '*) echo "tray_item=missing";; esac\n'
+        "else\n"
+        '  echo "tray_watcher=absent"\n'
+        "fi\n"
+    )
+
+
 def binary_reads():
     """The script fragment that hashes every binary the plan installs.
 
@@ -249,6 +279,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     extensions = extension_reads() if enabled_extensions else ""
+    tray = tray_probe() if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
@@ -261,7 +292,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{extensions}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -852,6 +883,13 @@ def evaluate(values, plan, journal="", skel_rels=()):
         got = values.get(f"extension_{i}", "missing")
         check(f"extension loads ({uuid})", got.split("/")[0] == "Yes" and got.split("/")[-1] in ("ACTIVE", "ENABLED"),
               f"Enabled/State={got}")
+    if "appindicatorsupport@rgcjonas.gmail.com" in (plan.get("artifact", {}).get("enabledExtensions") or []):
+        # Behaviour, not only load: the extension owns the StatusNotifierWatcher and
+        # answers it (docs/adr/0021). An icon in the panel is still a pixel fact.
+        check("tray watcher serves the session bus", values.get("tray_watcher") == "present",
+              f"tray_watcher={values.get('tray_watcher')}")
+        check("tray watcher registers an item", values.get("tray_item") == "registered",
+              f"tray_item={values.get('tray_item')}")
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")

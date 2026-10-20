@@ -371,12 +371,14 @@
         {
           "key": "/org/gnome/shell/enabled-extensions",
           "type": "as",
-          "value": "['background-logo@fedorahosted.org']",
+          "value": "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com']",
           "setting": "shell.extensions",
           "provenance": [
             {
-              "resource": "Platform/centos-stream-10",
-              "source": "resources/platforms/centos-stream-10.yaml:1"
+              "resource": "GnomeProfile/deskos-tray",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-tray.yaml:1"
             }
           ]
         },
@@ -439,6 +441,25 @@
             "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/desktop/deskos-look.yaml:1"
+          }
+        ]
+      }
+    ],
+    "enabledExtensions": [
+      "appindicatorsupport@rgcjonas.gmail.com"
+    ],
+    "extensions": [
+      {
+        "uuid": "appindicatorsupport@rgcjonas.gmail.com",
+        "version": "66",
+        "url": "https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip",
+        "sha256": "f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-tray",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-tray.yaml:1"
           }
         ]
       }

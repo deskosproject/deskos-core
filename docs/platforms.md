@@ -97,7 +97,7 @@ packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
 [`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
 comment per fact. [install.md](install.md#fedora-45) has the commands.
 
-**The pin is a prerelease compose.** `:45` still resolves to `45.20261019.n.0`
+**The pin is a prerelease compose.** `:45` still resolves to `45.20261020.n.0`
 (os-release reads "Silverblue Prerelease"), measured 2026-10-20, and that base
 enables Fedora's `updates-testing` repository — Dash to Dock, for one, is published
 only there on this compose. The resource and the table say so; when the released
@@ -136,12 +136,17 @@ guest, the same class of evidence the other platforms carry.
 
 Tray icons are part of this platform's desktop: `Profile/fedora` enables
 `appindicatorsupport@rgcjonas.gmail.com`, and the package is Fedora's
-`gnome-shell-extension-appindicator`. On EL10 the extension is **not packaged** —
-measured on CentOS Stream 10 and AlmaLinux 10 on 2026-10-20, absent from baseos,
-appstream, extras and CRB, and EPEL 10 carries only the libappindicator/ayatana
-libraries — so those platforms record it in `unavailablePackages` and the
-reference workstations there ship no tray. The EL10 answer is Red Hat packaging
-it, not a DeskOS fork. [BetterTrayIcons](research-notes.md#tray-icons-on-gnome-2026-10-20) is not an
+`gnome-shell-extension-appindicator`. Fedora packages it. EL10 does **not** have a
+usable package: it is absent from the vendor repositories (measured on CentOS
+Stream 10 and AlmaLinux 10 on 2026-10-20: baseos, appstream, extras and CRB), and
+EPEL 10's `61-1.el10_2` requires `libappindicator-gtk3`, whose `libdbusmenu`
+dependency lives in CRB — enabled on AlmaLinux, disabled on CentOS Stream and
+outside RHEL's supported set. So the EL10 catalog names a **pinned upstream
+artifact** instead of a package, and the build verifies its sha256, its UUID and
+that it supports the image's GNOME Shell before installing it
+([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)). The
+package name stays in `unavailablePackages`: asking for the RPM still fails at
+composition, with the reason, while the profile gets the extension. [BetterTrayIcons](research-notes.md#tray-icons-on-gnome-2026-10-20) is not an
 alternative we can ship: it *replaces* AppIndicator (its metadata declares
 `appindicatorsupport@rgcjonas.gmail.com` as a conflict), it is GPL-3.0, Wayland
 only, and it is distributed through extensions.gnome.org rather than a
@@ -156,7 +161,7 @@ above rather than hidden:
   as every other base pin is ([roadmap.md](roadmap.md)).
 - **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
   `resources/platforms/` carries a single Fedora platform and a machine's platform
-  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261019.n.0`
+  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261020.n.0`
   — and not of the name: when the released compose is published, the digest and the
   measurement comments move and the platform keeps its name, its workstation and
   its image repository.

@@ -22,6 +22,27 @@
   "components": [
     {
       "type": "application",
+      "name": "appindicatorsupport@rgcjonas.gmail.com",
+      "version": "66",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "gnome-extension"
+        },
+        {
+          "name": "deskos:url",
+          "value": "https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip"
+        }
+      ]
+    },
+    {
+      "type": "application",
       "name": "deskos",
       "version": "0.14.0",
       "hashes": [

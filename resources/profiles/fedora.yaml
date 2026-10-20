@@ -8,10 +8,6 @@ spec:
   resources:
     - kind: PackageSet
       name: fedora
-    # Tray icons. It lives in the family profile until EL10 packages the extension;
-    # the profile says why and where it moves then.
-    - kind: GnomeProfile
-      name: deskos-tray
     # Flatpak updates travel with the Flatpak channel: the family declares the
     # channel, so it also declares the consent to update it.
     - kind: UpdatePolicy
