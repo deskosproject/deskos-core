@@ -467,17 +467,16 @@ jobs:
         timeout-minutes: 30
         run: |
           mkdir -p "$WORK/output"
-          # --rootfs ext4: Fedora's image declares no default root filesystem, and
+          # --rootfs btrfs: Fedora's image declares no default root filesystem, and
           # bootc-image-builder refuses with "missing required info: DefaultRootFs"
-          # without one (osbuild's bootc docs name Fedora as the case). ext4, not
-          # btrfs, only to isolate variables: both filesystems failed here while the
-          # initramfs was host-only (docs/research-notes.md), and the btrfs disk is
-          # re-tested once this one boots.
+          # without one (osbuild's bootc docs name Fedora as the case). btrfs is what
+          # Silverblue installs on; ext4 was only used to isolate the initramfs bug
+          # (docs/research-notes.md), which is fixed.
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --rootfs ext4 --no-default-kernel-args \
+            "$BIB" build --type qcow2 --rootfs btrfs --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
           sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
