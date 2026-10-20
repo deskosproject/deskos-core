@@ -42,6 +42,11 @@ concurrency:
 env:
   # bootc-image-builder pinned to the digest used for local test disks (same
   # as vm-bootcheck.yml).
+  # Pinned to a specific build, not to :latest. The image :latest serves today
+  # (e8df8c53) no longer accepts --no-default-kernel-args, which is what makes the
+  # disk boot with the image's own kernel arguments instead of the builder's serial
+  # console, and it reports no build revision. Moving this pin means finding out
+  # what replaces that flag first.
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
   # The OCI archive, the QCOW2 and the test overlays live on the /mnt disk;
   # the root disk is small.
