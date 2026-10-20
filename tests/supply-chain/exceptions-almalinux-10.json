@@ -97,6 +97,49 @@
           "path": "/usr/sbin/ipp-usb"
         }
       ]
+    },
+    {
+      "id": "GO-2026-6770",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-20. Not a false positive: podman 5.8.2's Go module is compiled into /usr/bin/podman, quadlet and rootlessport, and DeskOS neither builds nor patches the vendor's binary, so the fix is the distribution's rebuild. A newer base was checked first and does not fix it yet: today's :10 and :latest both carry podman 5.8.2, and the fix is 5.8.8. The vulnerable path is `podman run` honouring an image annotation that disables sandboxing, so it is exercised when a user runs an untrusted image; DeskOS itself does not run untrusted images. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/sysroot/ostree/repo/objects/13/14920e574319fd3429f2a1e162747a2d85972723965720d3c3e59cb21b6cf9.file"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/sysroot/ostree/repo/objects/3a/229bd2ebdff7622ab60854048a2ce4c4ea716ebdf3eb82926e8f1ca52af91e.file"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/sysroot/ostree/repo/objects/7e/e4d86cc4f9a6c00c4464aafdf5042747921d5fca5ee4113cabc5245a5a3c78.file"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/usr/libexec/podman/quadlet"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
+          "path": "/usr/libexec/podman/rootlessport"
+        }
+      ]
     }
   ]
 }
