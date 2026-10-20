@@ -169,7 +169,12 @@ def evaluate(values, journal=""):
     # loginctl row. Checking name and seat separately would pass a wizard process
     # with no seat plus a *different* session that is seated.
     rows = [row.split() for row in values.get("sessions_raw", "").split("|")]
-    wizard_seated = any(len(f) >= 4 and f[2] == WIZARD and f[3].startswith("seat") for f in rows)
+    # GDM names the session after its VT on some platforms ("gnome-initial-setup-2"
+    # on Fedora 45, measured 2026-10-20); the name before the suffix is the wizard.
+    def is_wizard(name):
+        return name == WIZARD or name.startswith(WIZARD + "-")
+
+    wizard_seated = any(len(f) >= 4 and is_wizard(f[2]) and f[3].startswith("seat") for f in rows)
     check(checks, f"the wizard is the session that came up ({WIZARD} on a seat)",
           wizard_seated,
           f"user_sessions={values.get('user_sessions')!r} "

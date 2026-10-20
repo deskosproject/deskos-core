@@ -586,5 +586,9 @@ The backend now passes `--add ostree --add bootc` for whichever modules the base
 carries, and the build asserts `ostree-prepare-root` inside every regenerated
 initramfs, so a base that stops including it fails here instead of at a user's
 first boot. `--no-hostonly` stays: an installable image should not be bound to
-the build host, even though it was not this bug. The btrfs disk is re-tested
-after the ext4 run is green; ext4 was not the problem either.
+the build host, even though it was not this bug. ext4 was not the problem either.
+
+With the boot fixed, the first-boot check failed on a harness assumption, not on
+the image: Fedora names the wizard's loginctl session `gnome-initial-setup-2`
+(after its VT), and the check compared the session name exactly. It now accepts
+the suffixed name, and a unit test holds it.

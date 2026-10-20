@@ -48,6 +48,13 @@ class EvaluateTest(unittest.TestCase):
                            sessions_raw=" 1 972 gnome-initial-setup|c1 100 gdm seat0"))
         self.assertFalse(got[f"the wizard is the session that came up ({fb.WIZARD} on a seat)"])
 
+    def test_a_session_named_after_its_vt_is_still_the_wizard(self):
+        # Fedora 45 reports "gnome-initial-setup-2" (docs/research-notes.md).
+        got = results(dict(GOOD, user_sessions="gnome-initial-setup-2",
+                           sessions_raw=" 2 60579 gnome-initial-setup-2|"
+                                        "c2 60579 gnome-initial-setup-2 seat0"))
+        self.assertTrue(got[f"the wizard is the session that came up ({fb.WIZARD} on a seat)"])
+
     def test_contradictory_failed_unit_probes_fail(self):
         # "no service failed" while the full list names a failed service: the two
         # probes disagree, and an inconsistent report is not a pass.
