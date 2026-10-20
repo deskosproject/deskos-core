@@ -566,22 +566,25 @@ unpinned repository downloaded mid-build is outside the typed repository plan.
 If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
 documented platform gap, not a `cs.repo` fetch.
 
-## Fedora's rebuilt initramfs was host-only (2026-10-20)
+## Fedora's rebuilt initramfs dropped ostree and bootc (2026-10-20)
 
-The first Fedora 45 boot checks never reached a graphical screen. With a btrfs
-disk and again with ext4, the guest stopped in dracut's emergency shell
-("Entering emergency mode"), so the root filesystem could not be mounted, and
-ACPI shutdown was ignored.
+The first Fedora 45 boot checks never reached a graphical screen: the guest
+stopped in dracut's emergency shell, with a btrfs disk and again with ext4, so
+the root filesystem was never prepared and ACPI shutdown was ignored.
 
-Measured cause: Fedora's dracut configuration sets `hostonly="yes"` (it ships
-both `hostonly=no` and a later `hostonly="yes"`, and the later one wins), while
-CentOS Stream's says `hostonly=no`. The build regenerates the initramfs with
-`dracut --force` **inside the build container**, so on Fedora it produced an
-initramfs for the build machine rather than for the machine the image is
-installed on; the test VM is not that machine. CentOS Stream and AlmaLinux were
-unaffected because their configuration is already generic.
+The first hypothesis — a host-only initramfs — was **wrong**. Fedora already
+sets `hostonly=no` in `/usr/lib/dracut/dracut.conf.d/20-atomic-nohostonly.conf`,
+and passing `--no-hostonly` changed nothing. Measured instead: the base image's
+initramfs carries the ostree and composefs pieces (7 and 2 matches), while the
+initramfs the build regenerates carries **none** (0 and 0). The dracut modules
+explain it — `50ostree`'s `check()` returns 255, which means "include only when
+explicitly asked", and `51bootc`'s says in as many words *"We are never installed
+by default"*. CentOS Stream 10 includes them anyway (its check returns 0): a
+plain rebuild keeps 6 `ostree` matches and boots.
 
-The backend now passes `--no-hostonly`: an artifact is installed on hardware the
-build never saw, so a generic initramfs is the only correct one. It is larger,
-and that is the cost of an image that boots where it is installed. The btrfs
-disk is re-tested separately; ext4 was not the problem.
+The backend now passes `--add ostree --add bootc` for whichever modules the base
+carries, and the build asserts `ostree-prepare-root` inside every regenerated
+initramfs, so a base that stops including it fails here instead of at a user's
+first boot. `--no-hostonly` stays: an installable image should not be bound to
+the build host, even though it was not this bug. The btrfs disk is re-tested
+after the ext4 run is green; ext4 was not the problem either.

@@ -124,10 +124,14 @@ RUN tmp="$(mktemp -d)" \
 
 # Initramfs: rebuilt for every kernel in the image, with plymouth
 RUN set -eu; found=0; \
+    mods=""; \
+    if [ -d /usr/lib/dracut/modules.d/50ostree ]; then mods="$mods --add ostree"; fi; \
+    if [ -d /usr/lib/dracut/modules.d/51bootc ]; then mods="$mods --add bootc"; fi; \
     for kdir in /usr/lib/modules/*/; do \
         [ -e "${kdir}vmlinuz" ] || continue; \
         kver="$(basename "$kdir")"; \
-        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly "${kdir}initramfs.img" "$kver"; \
+        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods "${kdir}initramfs.img" "$kver"; \
+        lsinitrd "${kdir}initramfs.img" | grep -q 'ostree-prepare-root' || { echo "ostree-prepare-root missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'plymouthd' || { echo "plymouth missing from initramfs of $kver" >&2; exit 1; }; \
         found=$((found + 1)); \
     done; \

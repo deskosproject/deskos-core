@@ -870,10 +870,19 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	if ir := a.Initramfs; ir != nil {
 		w("\n# Initramfs: rebuilt for every kernel in the image, with %s\n", strings.Join(ir.DracutModules, ", "))
 		w("RUN set -eu; found=0; \\\n")
+		// Fedora's dracut does not include the ostree or bootc modules unless asked
+		// (50ostree's check returns 255 and 51bootc says it is never installed by
+		// default). Without them the image cannot prepare its ostree root and the
+		// disk stops in dracut's emergency shell (docs/research-notes.md). Ask for
+		// whichever the base carries; a base with neither is not a bootc base.
+		w("    mods=\"\"; \\\n")
+		w("    if [ -d /usr/lib/dracut/modules.d/50ostree ]; then mods=\"$mods --add ostree\"; fi; \\\n")
+		w("    if [ -d /usr/lib/dracut/modules.d/51bootc ]; then mods=\"$mods --add bootc\"; fi; \\\n")
 		w("    for kdir in /usr/lib/modules/*/; do \\\n")
 		w("        [ -e \"${kdir}vmlinuz\" ] || continue; \\\n")
 		w("        kver=\"$(basename \"$kdir\")\"; \\\n")
-		w("        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly \"${kdir}initramfs.img\" \"$kver\"; \\\n")
+		w("        env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods \"${kdir}initramfs.img\" \"$kver\"; \\\n")
+		w("        lsinitrd \"${kdir}initramfs.img\" | grep -q 'ostree-prepare-root' || { echo \"ostree-prepare-root missing from initramfs of $kver\" >&2; exit 1; }; \\\n")
 		for _, m := range ir.DracutModules {
 			if m == "plymouth" {
 				w("        lsinitrd \"${kdir}initramfs.img\" | grep -q 'plymouthd' || { echo \"plymouth missing from initramfs of $kver\" >&2; exit 1; }; \\\n")
