@@ -103,7 +103,7 @@ jobs:
           ./bin/deskosctl render --workstation ${{ matrix.workstation }} --output ctx
           ./bin/deskosctl sbom --workstation ${{ matrix.workstation }} --output declared.sbom.cdx.json
 
-      - name: The publishable image has no unchecked repository
+      - name: Refuse to publish an image with an unchecked repository
         # Publication policy (kept out of `deskosctl validate`, which stays a
         # model check): a repository whose GPG check is disabled cannot back a
         # published image.
@@ -384,7 +384,7 @@ jobs:
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: What the record no longer needs, and what it still does
+      - name: The acceptance record against what this scan accepted
         # The acceptance records name Criticals that belong to the vendor's base,
         # and the vendors fix them by rebuilding. Nothing tells us when that
         # happens: the pin check only confirms a digest still exists, and a golden
