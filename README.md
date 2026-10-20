@@ -55,7 +55,7 @@ table says what has actually been verified on each:
 | CentOS Stream 10 | vendor | **published image**, built and booted in CI |
 | AlmaLinux 10 | vendor (experimental) | **published image**, built and booted in CI |
 | RHEL 10 | vendor (entitled) | composes and renders here; **built and booted by the organization** — its build and boot were validated once on a retired host, and are not re-run here |
-| Fedora 45 | vendor | composes and builds; boot check in CI, not yet green; pinned to a prerelease compose, no published image |
+| Fedora 45 | vendor | composes, builds and boots in CI (btrfs disk; GNOME session and first boot checked); pinned to a prerelease compose, no published image |
 
 Ubuntu 26.04 is not in this table. It has a base of its own and lives in
 [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),

@@ -24,7 +24,7 @@ Fedora is not yet.
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor, **experimental**) | x86_64 manifest, by digest | **validated** (CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | `preinstall` via `rhel-family`; apps not verified |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | boot check in CI, not yet green | none | Flatpak preinstall |
+| Fedora 45 | `quay.io/fedora/fedora-silverblue` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session and first-boot checks | none | Flatpak preinstall |
 
 `(vendor)` in the table means the base is the platform's own supplier's: Canonical for
 Ubuntu, Red Hat for RHEL, the CentOS and AlmaLinux projects, the Fedora Project. Where it
@@ -119,9 +119,11 @@ workstation lives in the embedded Core, so every `deskosctl validate` run in
 `ci.yml` renders it. `vm-bootcheck.yml` also builds `examples/fedora-45` and
 boots the resulting QCOW2 — boot check, instrumented session check (which reads
 back every dconf default in the plan) and first-boot check — on the same path as
-CentOS Stream 10 and AlmaLinux 10. That is the check that will produce Fedora's
-first boot evidence; until it is green, Fedora has none, and this page does not
-claim otherwise.
+CentOS Stream 10 and AlmaLinux 10. That is Fedora's boot evidence: run
+`39462806315` booted a **btrfs** disk to a graphical screen in 30 s, the session
+check passed (tray extension loaded and serving the watcher) and the first-boot
+check confirmed the wizard. It is a QEMU guest, not hardware, and no Fedora image
+is published.
 
 **Build evidence, measured 2026-10-20 on the pinned base.** The reference
 workstation `deskos-core-fedora-45` was built locally that day (image

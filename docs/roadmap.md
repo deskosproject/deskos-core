@@ -152,7 +152,9 @@ Details in
   dracut's emergency shell on btrfs and ext4 alike (measured 2026-10-20, runs
   39436779300, 39448084854 and 39452191007). The backend now adds both modules
   when the base carries them and asserts `ostree-prepare-root` in every
-  regenerated initramfs. A btrfs disk is re-tested after the ext4 run is green
+  regenerated initramfs. The btrfs disk boots with that fix (run 39462806315:
+  graphical screen in 30 s, session and first-boot checks green). Published
+  CentOS and AlmaLinux images still carry the old initramfs until they are rebuilt
   ([research-notes.md](research-notes.md#fedoras-rebuilt-initramfs-dropped-ostree-and-bootc-2026-10-20)).
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but

@@ -31,9 +31,9 @@ facts, against the pin.
 
 The image **builds**; see the build evidence in
 [platforms.md](../../docs/platforms.md). CI builds a QCOW2 of the example and boots
-it — boot, session and first-boot checks — though that run is not yet green, so
-there is no Fedora boot evidence to claim; no Fedora image is published, and no
-Fedora disk has been installed on hardware. The shipped reference workstation is
+it — boot, session and first-boot checks — on a btrfs disk, and that run is green
+(run 39462806315); no Fedora image is published, and no Fedora disk has been
+installed on hardware. The shipped reference workstation is
 `deskos-core-fedora-45`, and Fedora 44 is retired
 ([roadmap.md](../../docs/roadmap.md)).
 
