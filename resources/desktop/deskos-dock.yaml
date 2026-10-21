@@ -1,0 +1,18 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-dock
+spec:
+  defaults:
+    # Dash to Dock with the same presentation on every flavor. The platform
+    # catalog decides which package provides the extension (ADR 0017); the
+    # favorites stay a workstation decision and are not set here.
+    shell:
+      extensions:
+        - uuid: dash-to-dock@micxgx.gmail.com
+          enabled: true
+    dock:
+      position: bottom
+      behavior: intellihide
+      iconSize: 40
+      showTrash: false

@@ -97,12 +97,14 @@ packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
 [`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
 comment per fact. [install.md](install.md#fedora-45) has the commands.
 
-**The pin is a prerelease compose.** `:45` still resolves to `45.20261020.n.0`
-(os-release reads "Silverblue Prerelease"), measured 2026-10-20, and that base
-enables Fedora's `updates-testing` repository — Dash to Dock, for one, is published
-only there on this compose. The resource and the table say so; when the released
-compose appears it is a re-pin, not a rewrite. Fedora 44 is retired rather than
-kept alongside ([roadmap.md](roadmap.md)).
+**The pin is the released compose.** `:45` resolves to `45.20261021.n.0`
+(os-release reads "Silverblue"), measured 2026-10-21. That base enables `fedora`,
+`updates`, `updates-archive` and Fedora's openh264 repository, not
+`updates-testing`: the vendor's Dash to Dock 105 and its appindicator 64-2 stop at
+GNOME Shell 50, while the image ships 51. The platform therefore delivers the
+pinned upstream dash-to-dock v110 and appindicator v66, both of which declare 51,
+instead of the packages. Fedora 44 is retired rather than kept alongside
+([roadmap.md](roadmap.md)).
 
 The artifact this platform would publish is the shipped **reference workstation**
 `deskos-core-fedora-45` ([`resources/workstations/`](../resources/workstations/)):
@@ -139,17 +141,19 @@ no Fedora disk has been installed on hardware — the boot evidence is CI's QEMU
 guest, the same class of evidence the other platforms carry.
 
 Tray icons are part of this platform's desktop: `Profile/fedora` enables
-`appindicatorsupport@rgcjonas.gmail.com`, and the package is Fedora's
-`gnome-shell-extension-appindicator`. Fedora packages it. EL10 does **not** have a
-usable package: it is absent from the vendor repositories (measured on CentOS
-Stream 10 and AlmaLinux 10 on 2026-10-20: baseos, appstream, extras and CRB), and
-EPEL 10's `61-1.el10_2` requires `libappindicator-gtk3`, whose `libdbusmenu`
-dependency lives in CRB — enabled on AlmaLinux, disabled on CentOS Stream and
-outside RHEL's supported set. So the EL10 catalog names a **pinned upstream
-artifact** instead of a package, and the build verifies its sha256, its UUID and
-that it supports the image's GNOME Shell before installing it
-([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)). The
-package name stays in `unavailablePackages`: asking for the RPM still fails at
+`appindicatorsupport@rgcjonas.gmail.com`. The released Fedora compose's `updates`
+carries `gnome-shell-extension-appindicator` 64-2, whose metadata declares GNOME
+Shell 45–50 and leaves the extension out of date on this image's GNOME Shell 51, so
+the catalog names a **pinned upstream artifact** instead of the package. EL10 does
+**not** have a usable package either: it is absent from the vendor repositories
+(measured on CentOS Stream 10 and AlmaLinux 10 on 2026-10-20: baseos, appstream,
+extras and CRB), and EPEL 10's `61-1.el10_2` requires `libappindicator-gtk3`, whose
+`libdbusmenu` dependency lives in CRB — enabled on AlmaLinux, disabled on CentOS
+Stream and outside RHEL's supported set. So every catalog names a **pinned upstream
+artifact**, and the build verifies its sha256, its UUID and that it supports the
+image's GNOME Shell before installing it
+([ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md)). On EL10
+the package name stays in `unavailablePackages`: asking for the RPM still fails at
 composition, with the reason, while the profile gets the extension. [BetterTrayIcons](research-notes.md#tray-icons-on-gnome-2026-10-20) is not an
 alternative we can ship: it *replaces* AppIndicator (its metadata declares
 `appindicatorsupport@rgcjonas.gmail.com` as a conflict), it is GPL-3.0, Wayland
@@ -165,7 +169,7 @@ above rather than hidden:
   as every other base pin is ([roadmap.md](roadmap.md)).
 - **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
   `resources/platforms/` carries a single Fedora platform and a machine's platform
-  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261020.n.0`
-  — and not of the name: when the released compose is published, the digest and the
-  measurement comments move and the platform keeps its name, its workstation and
+  is unambiguous. The compose is a property of the **pin** — `45.20261021.n.0`
+  — and not of the name: a re-pin moves the digest and the
+  measurement comments and the platform keeps its name, its workstation and
   its image repository.

@@ -61,11 +61,16 @@ compiler stays the only thing that decides what an artifact is.
 ### How it gets onto a machine
 
 `deskos` is a **pinned `BinaryArtifact` in Core's foundation**, the same shape a flavor
-uses for any verified binary, so every Core image installs `/usr/local/bin/deskos` from
+uses for any verified binary, so every Core image installs `/usr/bin/deskos` from
 a published release asset with its checksum, and the pin can be watched and bumped
-deliberately like a base image's digest. (`/usr/local/bin`, not `/usr/bin`: the model
-lets a `BinaryArtifact` write only there, because `/usr/bin` belongs to the image and
-its packages.) Two alternatives were considered and rejected:
+deliberately like a base image's digest. The companion is the one binary the schema
+lets a `BinaryArtifact` place in `/usr/bin`; every other one stays under
+`/usr/local/bin`, because `/usr/bin` belongs to the image and its packages. The
+exception is deliberate: `sudo` searches `/usr/bin` through its `secure_path` and does
+not search `/usr/local/bin`, and `sudo deskos update` has to work without a full path.
+The path is fixed by the schema, not chosen by a resource, so no organization can put
+an arbitrary binary there. (Amended 2026-10-21; the original text required
+`/usr/local/bin`.) Two alternatives were considered and rejected:
 
 - committing a built binary into the repository would put a build artifact in git and
   let it drift from the source it was built from;
@@ -75,7 +80,7 @@ its packages.) Two alternatives were considered and rejected:
 A pinned asset has to exist before a pin can point at it. v0.12.0 is the first release
 that publishes it, and the pin landed with it: `resources/software/deskos.yaml` names
 that asset and its checksum, and `deskos-core` references it, so every Core image
-installs `/usr/local/bin/deskos` and a machine can be asked what it was built from
+installs `/usr/bin/deskos` and a machine can be asked what it was built from
 without anyone installing a tool first. The binary is also part of the declared SBOM,
 because it is an input of the image like any other.
 

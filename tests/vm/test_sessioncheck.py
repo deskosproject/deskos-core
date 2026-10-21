@@ -23,7 +23,7 @@ PLAN = {
         ]},
         "enabledExtensions": ["dash-to-dock@micxgx.gmail.com"],
         "binaries": [
-            {"artifact": "deskos", "version": "0.12.0", "destination": "/usr/local/bin/deskos",
+            {"artifact": "deskos", "version": "0.12.0", "destination": "/usr/bin/deskos",
              "sha256": "aa" * 32, "archive": "none", "mode": "0755"},
         ],
         "gsettingsVendorDefaults": [
@@ -179,16 +179,16 @@ class TmpfilesTest(unittest.TestCase):
     def test_session_credentials_install_the_binary_destinations(self):
         # The destinations the plan installs travel as a file of their own; the guest
         # hashes what it finds, and the host compares with the plan's checksum.
-        c = sc.credentials("session", binaries=["/usr/local/bin/deskos"])
+        c = sc.credentials("session", binaries=["/usr/bin/deskos"])
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
-        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/local/bin/deskos\n")
+        self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/bin/deskos\n")
         script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
         self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
         self.assertIn("sha256sum", script)
 
     def test_journal_credentials_ignore_the_binaries(self):
-        c = sc.credentials("journal", binaries=["/usr/local/bin/deskos"])
+        c = sc.credentials("journal", binaries=["/usr/bin/deskos"])
         self.assertNotIn(sc.BINARY_PATHS_PATH, c["tmpfiles.extra"])
 
     def test_a_session_without_defaults_reads_none(self):
@@ -236,7 +236,7 @@ class ParseEvaluateTest(unittest.TestCase):
 
 
 class PlanBinariesTest(unittest.TestCase):
-    def binary_check(self, values, destination="/usr/local/bin/deskos", plan=None):
+    def binary_check(self, values, destination="/usr/bin/deskos", plan=None):
         if plan is None:
             plan = PLAN
         name = sc.BINARY_CHECK_PREFIX + destination

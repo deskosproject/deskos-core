@@ -150,7 +150,7 @@ func viewOf(p *plan.Plan) coreView {
 // share a base fails here. Ubuntu is not compared: its package manager is deb.
 func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
-		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome]\n"
+		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome, deskos-dock]\n"
 	}
 	dir := fixture{
 		"a.yaml": ws("core-centos", "centos-stream-10"),
@@ -162,10 +162,10 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
 	fedora := mustPlan(t, "core-fedora", resourcesRoot, dir)
-	// The tray extension is the one delivery that legitimately differs between
-	// platforms: Fedora's catalog names a package, EL10's names a pinned artifact
-	// because no repository carries a usable one (docs/adr/0021). Compare the rest
-	// of the package list, then assert each delivery exactly instead of hiding it.
+	// The tray extension is delivered as the pinned v66 artifact on every platform:
+	// Fedora used the distro package until the released compose's package (64-2)
+	// stopped declaring GNOME Shell 51 (docs/adr/0021). Compare the rest of the
+	// package list, then assert the delivery exactly instead of hiding it.
 	withoutDelivery := func(v coreView) coreView {
 		out := v
 		out.Packages = nil
@@ -182,18 +182,18 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		}
 	}
 	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
-	if !slices.Contains(packages(fedora), "gnome-shell-extension-appindicator") {
-		t.Errorf("Fedora does not install the tray extension package: %v", packages(fedora))
-	}
-	if len(fedora.Artifact.Extensions) != 0 {
-		t.Errorf("Fedora delivers the tray extension as an artifact as well: %+v", fedora.Artifact.Extensions)
-	}
-	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma} {
-		if slices.Contains(packages(p), "gnome-shell-extension-appindicator") {
-			t.Errorf("%s installs the tray extension as a package", name)
+	const dockUUID = "dash-to-dock@micxgx.gmail.com"
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma, "fedora-45": fedora} {
+		if slices.Contains(packages(p), "gnome-shell-extension-appindicator") ||
+			slices.Contains(packages(p), "gnome-shell-extension-dash-to-dock") {
+			t.Errorf("%s installs a DeskOS extension as a package", name)
 		}
-		if len(p.Artifact.Extensions) != 1 || p.Artifact.Extensions[0].UUID != trayUUID {
-			t.Errorf("%s delivers %+v, want one %s artifact", name, p.Artifact.Extensions, trayUUID)
+		got := map[string]bool{}
+		for _, e := range p.Artifact.Extensions {
+			got[e.UUID] = true
+		}
+		if len(p.Artifact.Extensions) != 2 || !got[trayUUID] || !got[dockUUID] {
+			t.Errorf("%s delivers %+v, want the tray and dock artifacts", name, p.Artifact.Extensions)
 		}
 	}
 	if centos.Artifact.BaseImage.Image == rhel.Artifact.BaseImage.Image {
@@ -521,7 +521,7 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Fatalf("DeskOS Core declares %d binary artifact(s); it carries exactly its own runtime tool",
 			len(p.Artifact.Binaries))
 	}
-	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/local/bin/deskos" ||
+	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/bin/deskos" ||
 		!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
 		t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
 			b.Artifact, b.Destination, b.URL)

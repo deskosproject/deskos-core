@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-dock
+spec:
+  layer: foundation
+  description: Dash to Dock and DeskOS's dock defaults, shared by every RPM-family workstation.
+  resources:
+    - kind: GnomeProfile
+      name: deskos-dock
