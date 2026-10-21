@@ -13,7 +13,8 @@ configuration step and no user involvement.
 
 None of the eleven kinds can hold this intent. `PackageSet` installs
 packages; `BinaryArtifact` is restricted to executables in
-`/usr/local/bin`; `FileInstall` exists only as lowered IR and is not a
+`/usr/local/bin` (with the named exception of the runtime companion at
+`/usr/bin/deskos`, ADR 0018); `FileInstall` exists only as lowered IR and is not a
 public kind. On EL10 the trust store is populated by copying a PEM
 certificate into `/etc/pki/ca-trust/source/anchors/` and running
 `update-ca-trust`, which regenerates `/etc/pki/ca-trust/extracted/`.

@@ -31,11 +31,8 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'cockpit' \
         'cockpit-machines' \
         'code' \
-        'firefox' \
-        'firewalld' \
         'flatpak' \
         'git' \
-        'gnome-shell-extension-dash-to-dock' \
         'google-chrome-stable' \
         'google-noto-sans-fonts' \
         'google-noto-sans-mono-fonts' \
@@ -63,8 +60,8 @@ RUN set -eu; \
         --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
         -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.14.0/deskos-v0.14.0-linux-amd64'; \
     echo 'eead05aebf12d8dc32d48e35865039fb1e6b021490eb3a66dafd811a204f9b47  '"$tmp/download" | sha256sum --check --strict --quiet -; \
-    mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/deskos')")"; \
-    install -D -m 0755 "$tmp/download" '/usr/local/bin/deskos'; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/bin/deskos')")"; \
+    install -D -m 0755 "$tmp/download" '/usr/bin/deskos'; \
     rm -rf "$tmp"
 
 # Binary artifact openshift-client 4.22.17 (sha256-verified)
@@ -101,6 +98,26 @@ RUN set -eu; \
     if compgen -G "$dest/schemas/*.gschema.xml" > /dev/null; then glib-compile-schemas "$dest/schemas"; fi; \
     rm -rf "$tmp"
 
+# GNOME extension dash-to-dock@micxgx.gmail.com 110 (sha256-verified, docs/adr/0021)
+RUN set -eu; \
+    command -v gnome-shell > /dev/null || { echo 'no gnome-shell in the image: the extension cannot be installed' >&2; exit 1; }; \
+    major="$(gnome-shell --version | awk '{print $3}' | cut -d. -f1)"; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/extension.zip" 'https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip'; \
+    echo '3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2  '"$tmp/extension.zip" | sha256sum --check --strict --quiet -; \
+    dest='/usr/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com'; \
+    [ ! -e "$dest" ] && [ ! -L "$dest" ] || { echo "$dest already exists in the image" >&2; exit 1; }; \
+    python3 -c 'import json,os,sys,zipfile; z=zipfile.ZipFile(sys.argv[1]); out=sys.argv[2]; uuid=sys.argv[3]; major=sys.argv[4]; infos=z.infolist(); len(infos)<=2000 or sys.exit("extension archive has too many entries"); keys=[os.path.normpath(i.filename) for i in infos]; len(set(keys))==len(keys) or sys.exit("extension archive repeats a path"); all(not k.startswith("/") and k!=".." and not k.startswith("../") for k in keys) or sys.exit("unsafe path in extension archive"); all(((i.external_attr>>16)&0o170000) in (0,0o040000,0o100000) for i in infos) or sys.exit("non-regular entry in extension archive"); all(i.file_size<=20*1024*1024 for i in infos) or sys.exit("member too large in extension archive"); sum(i.file_size for i in infos)<=50*1024*1024 or sys.exit("extension archive is too large"); meta=json.loads(z.read("metadata.json")); meta.get("uuid")==uuid or sys.exit("extension archive uuid does not match "+uuid); major in (meta.get("shell-version") or []) or sys.exit("extension does not support GNOME Shell "+major+": it declares "+str(meta.get("shell-version"))); z.extractall(out)' "$tmp/extension.zip" "$tmp/extract" 'dash-to-dock@micxgx.gmail.com' "$major"; \
+    mkdir -p "$(dirname "$dest")"; \
+    cp -R "$tmp/extract" "$dest"; \
+    chmod -R u=rwX,go=rX "$dest"; \
+    rm -f "$dest/schemas/gschemas.compiled"; \
+    if compgen -G "$dest/schemas/*.gschema.xml" > /dev/null; then glib-compile-schemas "$dest/schemas"; fi; \
+    rm -rf "$tmp"
+
 # Trust anchors: the destination must not already exist
 RUN set -eu; \
     for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt'; do \
@@ -118,7 +135,7 @@ RUN tmp="$(mktemp -d)" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
     && 'update-ca-trust' \
-    && systemctl enable 'cockpit.socket' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'firewalld.service' 'gdm.service' \
+    && systemctl enable 'cockpit.socket' 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'
 

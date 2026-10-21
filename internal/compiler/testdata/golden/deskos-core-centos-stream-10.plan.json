@@ -25,6 +25,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-dock",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-dock.yaml:1"
+    },
+    {
       "name": "deskos-gnome",
       "layer": "foundation",
       "source": "resources/profiles/deskos-gnome.yaml:1"
@@ -38,6 +43,11 @@
       "name": "deskos-reference-apps",
       "layer": "foundation",
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
+    },
+    {
+      "name": "firefox",
+      "layer": "foundation",
+      "source": "resources/profiles/firefox.yaml:1"
     },
     {
       "name": "rhel-family",
@@ -90,28 +100,6 @@
     ],
     "packages": [
       {
-        "name": "firefox",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
-          }
-        ]
-      },
-      {
-        "name": "firewalld",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "flatpak",
         "provenance": [
           {
@@ -126,6 +114,19 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           },
           {
             "resource": "PackageSet/rhel-family",
@@ -194,7 +195,7 @@
         "url": "https://github.com/deskosproject/deskos-core/releases/download/v0.14.0/deskos-v0.14.0-linux-amd64",
         "sha256": "eead05aebf12d8dc32d48e35865039fb1e6b021490eb3a66dafd811a204f9b47",
         "archive": "none",
-        "destination": "/usr/local/bin/deskos",
+        "destination": "/usr/bin/deskos",
         "mode": "0755",
         "provenance": [
           {
@@ -371,7 +372,7 @@
         {
           "key": "/org/gnome/shell/enabled-extensions",
           "type": "as",
-          "value": "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com']",
+          "value": "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com', 'dash-to-dock@micxgx.gmail.com']",
           "setting": "shell.extensions",
           "provenance": [
             {
@@ -379,6 +380,96 @@
               "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-tray.yaml:1"
+            },
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/autohide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size",
+          "type": "i",
+          "value": "40",
+          "setting": "dock.iconSize",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-fixed",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-position",
+          "type": "s",
+          "value": "'BOTTOM'",
+          "setting": "dock.position",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/intellihide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/show-trash",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.showTrash",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
             }
           ]
         },
@@ -446,7 +537,8 @@
       }
     ],
     "enabledExtensions": [
-      "appindicatorsupport@rgcjonas.gmail.com"
+      "appindicatorsupport@rgcjonas.gmail.com",
+      "dash-to-dock@micxgx.gmail.com"
     ],
     "extensions": [
       {
@@ -464,6 +556,24 @@
             "profile": "deskos-gnome",
             "layer": "foundation",
             "source": "resources/desktop/deskos-tray.yaml:1"
+          }
+        ]
+      },
+      {
+        "uuid": "dash-to-dock@micxgx.gmail.com",
+        "version": "110",
+        "url": "https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip",
+        "sha256": "3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2",
+        "provenance": [
+          {
+            "resource": "Platform/centos-stream-10",
+            "source": "resources/platforms/centos-stream-10.yaml:1"
+          },
+          {
+            "resource": "GnomeProfile/deskos-dock",
+            "profile": "deskos-dock",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-dock.yaml:1"
           }
         ]
       }
@@ -537,6 +647,12 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           }
         ]
       },
@@ -559,17 +675,6 @@
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/system/deskos-core-updates.yaml:1"
-          }
-        ]
-      },
-      {
-        "unit": "firewalld.service",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
@@ -674,6 +779,13 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
           }
         ]
       }
@@ -690,6 +802,20 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      },
+      {
+        "id": "org.mozilla.firefox",
+        "branch": "stable",
+        "remote": "flathub",
+        "collectionID": "org.flathub.Stable",
+        "provenance": [
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           }
         ]
       }

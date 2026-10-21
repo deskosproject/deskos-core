@@ -12,3 +12,6 @@ spec:
     # RHEL 10 keeps its own wallpaper and its own splash; it only needs the boot
     # to stop printing text.
     - deskos-boot
+    - firefox
+    - deskos-dock
+    - deskos-reference-apps

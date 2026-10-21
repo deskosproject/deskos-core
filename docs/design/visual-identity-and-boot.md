@@ -42,7 +42,7 @@ the distribution's logo packages are never replaced or falsified.
 | Graphical vs text splash | Plymouth shows the graphical splash only with `rhgb`, `splash`, `splash=silent` or `plymouth.graphical`; `single`, `splash=verbose` force details; ESC toggles details (`src/main.c`) | verified in source |
 | Quiet boot | `/usr/lib/bootc/kargs.d/*.toml` (`kargs = [...]`); base image ships none; bootc applies kargs.d at install and applies the kargs.d diff on each update, keeping machine-local args (`bootc_kargs.rs`, `install.rs`, docs) | verified in source/docs; `quiet` makes systemd `show_status` default to `error` (systemd(1)) |
 | Rollback | initramfs and kargs.d are image content; each deployment has its own boot entry | inferred, not tested |
-| Dock | `gnome-shell-extension-dash-to-dock` is an optional package of the `gnome-desktop` comps group (not installed by it); DeskOS installs and enables it only when a profile decides to enable its extension | verified in the CS10 group and images; active in the CS10 instrumented session check |
+| Dock | `gnome-shell-extension-dash-to-dock` is delivered as the pinned upstream v110 artifact (GNOME Shell 45–51); DeskOS installs and enables it only when a profile selects `deskos-dock`, which the reference workstations do | verified in the CS10 group and images; active in the CS10 instrumented session check |
 
 ## Decisions
 

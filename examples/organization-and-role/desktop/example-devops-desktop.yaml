@@ -7,7 +7,6 @@ spec:
     shell:
       favorites:
         - google-chrome.desktop
-        - firefox.desktop
         - org.gnome.Nautilus.desktop
         - org.gnome.Ptyxis.desktop
         - com.microsoft.VSCode.desktop
