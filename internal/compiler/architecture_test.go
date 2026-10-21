@@ -162,10 +162,10 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
 	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
 	fedora := mustPlan(t, "core-fedora", resourcesRoot, dir)
-	// The tray extension is the one delivery that legitimately differs between
-	// platforms: Fedora's catalog names a package, EL10's names a pinned artifact
-	// because no repository carries a usable one (docs/adr/0021). Compare the rest
-	// of the package list, then assert each delivery exactly instead of hiding it.
+	// The tray extension is delivered as the pinned v66 artifact on every platform:
+	// Fedora used the distro package until the released compose's package (64-2)
+	// stopped declaring GNOME Shell 51 (docs/adr/0021). Compare the rest of the
+	// package list, then assert the delivery exactly instead of hiding it.
 	withoutDelivery := func(v coreView) coreView {
 		out := v
 		out.Packages = nil
@@ -182,13 +182,7 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		}
 	}
 	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
-	if !slices.Contains(packages(fedora), "gnome-shell-extension-appindicator") {
-		t.Errorf("Fedora does not install the tray extension package: %v", packages(fedora))
-	}
-	if len(fedora.Artifact.Extensions) != 0 {
-		t.Errorf("Fedora delivers the tray extension as an artifact as well: %+v", fedora.Artifact.Extensions)
-	}
-	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma} {
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma, "fedora-45": fedora} {
 		if slices.Contains(packages(p), "gnome-shell-extension-appindicator") {
 			t.Errorf("%s installs the tray extension as a package", name)
 		}

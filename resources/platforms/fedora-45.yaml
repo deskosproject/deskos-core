@@ -3,7 +3,7 @@ kind: Platform
 metadata:
   name: fedora-45
 spec:
-  displayName: Fedora 45 (Silverblue, prerelease compose)
+  displayName: Fedora 45 (Silverblue)
   # The Fedora Project publishes this base itself (quay.io/fedora), so the platform
   # follows ADR 0004's official-base rule and declares no organization owner or
   # tier — like centos-stream-10 and almalinux-10.
@@ -19,14 +19,14 @@ spec:
   # 157.0). That is the DeskOS rule: the GNOME base stays distribution packages, and
   # only an organization's extra applications go to Flatpak (ADR 0005).
   #
-  # Fedora 45 is the release this family ships, and it is pinned to a *prerelease*
-  # compose: os-release reads "45.20261020.n.0 (Silverblue Prerelease)" and the base
-  # enables Fedora's updates-testing repository — the repositories are read from
-  # /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and `dnf5 repolist --enabled`
-  # lists updates-testing. The compose was measured on 2026-10-20, Fedora 45's
-  # release date. When the released compose appears in the registry this resource is
-  # re-pinned to its digest: the resource is what decides which compose a build
-  # gets, and docs/platforms.md reports what was verified against that pin.
+  # Fedora 45 is the release this family ships, and it is pinned to the released
+  # compose: os-release reads "45.20261021.n.0 (Silverblue)", and the base enables
+  # `fedora`, `updates`, `updates-archive` and Fedora's openh264 repository — the
+  # repositories are read from /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and
+  # `dnf5 repolist --enabled` lists exactly those. It does not enable
+  # `updates-testing`. Measured on 2026-10-21. The resource is what decides which
+  # compose a build gets, and docs/platforms.md reports what was verified against
+  # that pin.
   #
   # Fedora 44 is retired rather than kept alongside: DeskOS ships one Fedora release
   # at a time, and the previous one is not offered (docs/roadmap.md).
@@ -36,13 +36,13 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/fedora/fedora-silverblue:45
-    # x86_64 manifest of the :45 index, built 2026-10-20T07:40:16Z as Fedora
-    # 45.20261020.n.0, ostree commit 1a4edb24..., kernel 7.2.11-300.fc45.
+    # x86_64 manifest of the :45 index, built 2026-10-21T07:46:50Z as Fedora
+    # 45.20261021.n.0, ostree commit ccd2c044..., kernel 7.2.11-300.fc45.
     # Fedora Silverblue's :45 compose moves **daily**: a pin here is a digest the
     # registry stops serving within a day or two, and the `validate` job reports
-    # exactly that. Re-pinned 2026-10-20, twice: when Fedora 44 was retired and
-    # again when the daily compose moved.
-    digest: sha256:9b06b1cf141b9d506c0bed60f7ff2349348d6dcba4f6a773e7e42afad74fb11a
+    # exactly that. Re-pinned 2026-10-21 to the released compose; the previous
+    # digest (45.20261020.n.0) is no longer served.
+    digest: sha256:67e68468673b87e2b716dcd101ceab298dcc1680b19975cfdfc0389975b47c7a
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
@@ -76,19 +76,22 @@ spec:
     # gnome-shell-extension-background-logo).
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
-      # Measured: gnome-shell-extension-dash-to-dock is not in the base and not part
-      # of the workstation environment; on this prerelease compose Fedora publishes
-      # it only in updates-testing (110-1.fc45), which the base enables anyway.
+      # Measured on this pin: gnome-shell-extension-dash-to-dock 105-2.fc45 is in
+      # `fedora`, which the base enables.
       - name: dash-to-dock
         package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
-      # Measured 2026-10-20 on this pin: gnome-shell-extension-appindicator 66-1.fc45
-      # is published only in updates-testing, which the prerelease base enables. When
-      # the released compose is pinned, confirm the package is in `updates` (or in the
-      # base) before keeping this entry.
+      # Measured on this pin: `updates` carries gnome-shell-extension-appindicator
+      # 64-2.fc45, whose metadata declares GNOME Shell 45–50; the image ships GNOME
+      # Shell 51, so the shell reports it out of date and the tray stays absent.
+      # Upstream's v66 release declares 51 and is the self-contained artifact CentOS
+      # Stream 10 and AlmaLinux 10 use (docs/adr/0021).
       - name: appindicator
-        package: gnome-shell-extension-appindicator
         uuid: appindicatorsupport@rgcjonas.gmail.com
+        source:
+          version: "66"
+          url: https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip
+          sha256: f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730
     # gnome-shell 51.0 keeps app folders from the dconf defaults.
     appFolders: true
     appLauncher:
