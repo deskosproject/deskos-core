@@ -46,8 +46,14 @@ spec:
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - name: dash-to-dock
-        package: gnome-shell-extension-dash-to-dock
         uuid: dash-to-dock@micxgx.gmail.com
+        source:
+          # Upstream v110 declares GNOME Shell 45–51. The vendor packages stop
+          # earlier (Fedora's 105 at 50, EL10's build at 49), so one pinned
+          # artifact keeps the same extension on every flavor (docs/adr/0021).
+          version: "110"
+          url: https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip
+          sha256: 3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2
       # Not in AlmaLinux 10s repositories as a usable package; the image delivers
       # the pinned upstream release instead (docs/adr/0021).
       - name: appindicator

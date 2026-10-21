@@ -25,6 +25,11 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-dock",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-dock.yaml:1"
+    },
+    {
       "name": "deskos-gnome",
       "layer": "foundation",
       "source": "resources/profiles/deskos-gnome.yaml:1"
@@ -367,7 +372,7 @@
         {
           "key": "/org/gnome/shell/enabled-extensions",
           "type": "as",
-          "value": "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com']",
+          "value": "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com', 'dash-to-dock@micxgx.gmail.com']",
           "setting": "shell.extensions",
           "provenance": [
             {
@@ -375,6 +380,96 @@
               "profile": "deskos-gnome",
               "layer": "foundation",
               "source": "resources/desktop/deskos-tray.yaml:1"
+            },
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/autohide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dash-max-icon-size",
+          "type": "i",
+          "value": "40",
+          "setting": "dock.iconSize",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-fixed",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/dock-position",
+          "type": "s",
+          "value": "'BOTTOM'",
+          "setting": "dock.position",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/intellihide",
+          "type": "b",
+          "value": "true",
+          "setting": "dock.behavior",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/shell/extensions/dash-to-dock/show-trash",
+          "type": "b",
+          "value": "false",
+          "setting": "dock.showTrash",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-dock",
+              "profile": "deskos-dock",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-dock.yaml:1"
             }
           ]
         },
@@ -442,7 +537,8 @@
       }
     ],
     "enabledExtensions": [
-      "appindicatorsupport@rgcjonas.gmail.com"
+      "appindicatorsupport@rgcjonas.gmail.com",
+      "dash-to-dock@micxgx.gmail.com"
     ],
     "extensions": [
       {
@@ -460,6 +556,24 @@
             "profile": "deskos-gnome",
             "layer": "foundation",
             "source": "resources/desktop/deskos-tray.yaml:1"
+          }
+        ]
+      },
+      {
+        "uuid": "dash-to-dock@micxgx.gmail.com",
+        "version": "110",
+        "url": "https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip",
+        "sha256": "3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2",
+        "provenance": [
+          {
+            "resource": "Platform/centos-stream-10",
+            "source": "resources/platforms/centos-stream-10.yaml:1"
+          },
+          {
+            "resource": "GnomeProfile/deskos-dock",
+            "profile": "deskos-dock",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-dock.yaml:1"
           }
         ]
       }

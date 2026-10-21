@@ -30,9 +30,19 @@
       "source": "resources/profiles/deskos-core.yaml:1"
     },
     {
+      "name": "deskos-dock",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-dock.yaml:1"
+    },
+    {
       "name": "deskos-gnome",
       "layer": "foundation",
       "source": "resources/profiles/deskos-gnome.yaml:1"
+    },
+    {
+      "name": "deskos-reference-apps",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-reference-apps.yaml:1"
     },
     {
       "name": "firefox",
@@ -239,6 +249,19 @@
         "provenance": [
           {
             "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
             "via": "FlatpakSet/firefox",
             "profile": "firefox",
             "layer": "foundation",
@@ -272,17 +295,6 @@
             "profile": "example-devops",
             "layer": "role",
             "source": "organization-and-role/software/example-devops.yaml:1"
-          }
-        ]
-      },
-      {
-        "name": "gnome-shell-extension-dash-to-dock",
-        "provenance": [
-          {
-            "resource": "GnomeProfile/example-desktop",
-            "profile": "example-organization",
-            "layer": "organization",
-            "source": "organization-and-role/desktop/example-desktop.yaml:1"
           }
         ]
       },
@@ -1030,6 +1042,24 @@
             "source": "resources/desktop/deskos-tray.yaml:1"
           }
         ]
+      },
+      {
+        "uuid": "dash-to-dock@micxgx.gmail.com",
+        "version": "110",
+        "url": "https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip",
+        "sha256": "3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2",
+        "provenance": [
+          {
+            "resource": "Platform/rhel-10",
+            "source": "resources/platforms/rhel-10.yaml:1"
+          },
+          {
+            "resource": "GnomeProfile/example-desktop",
+            "profile": "example-organization",
+            "layer": "organization",
+            "source": "organization-and-role/desktop/example-desktop.yaml:1"
+          }
+        ]
       }
     ],
     "kernelArguments": [
@@ -1086,6 +1116,12 @@
       {
         "unit": "deskos-flatpak-preinstall.service",
         "provenance": [
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
           {
             "resource": "FlatpakSet/firefox",
             "profile": "firefox",
@@ -1213,6 +1249,13 @@
         "provenance": [
           {
             "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
             "via": "FlatpakSet/firefox",
             "profile": "firefox",
             "layer": "foundation",
@@ -1222,6 +1265,20 @@
       }
     ],
     "flatpakApplications": [
+      {
+        "id": "io.github.kolunmi.Bazaar",
+        "branch": "stable",
+        "remote": "flathub",
+        "collectionID": "org.flathub.Stable",
+        "provenance": [
+          {
+            "resource": "FlatpakSet/deskos-reference-apps",
+            "profile": "deskos-reference-apps",
+            "layer": "foundation",
+            "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      },
       {
         "id": "org.mozilla.firefox",
         "branch": "stable",

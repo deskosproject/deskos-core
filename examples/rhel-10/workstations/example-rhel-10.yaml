@@ -13,3 +13,5 @@ spec:
     # to stop printing text.
     - deskos-boot
     - firefox
+    - deskos-dock
+    - deskos-reference-apps

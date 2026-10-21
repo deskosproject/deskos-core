@@ -43,6 +43,27 @@
     },
     {
       "type": "application",
+      "name": "dash-to-dock@micxgx.gmail.com",
+      "version": "110",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "gnome-extension"
+        },
+        {
+          "name": "deskos:url",
+          "value": "https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip"
+        }
+      ]
+    },
+    {
+      "type": "application",
       "name": "deskos",
       "version": "0.14.0",
       "hashes": [
@@ -59,6 +80,21 @@
         {
           "name": "deskos:destination",
           "value": "/usr/bin/deskos"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "io.github.kolunmi.Bazaar",
+      "version": "stable",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "flatpak"
+        },
+        {
+          "name": "deskos:remote",
+          "value": "flathub"
         }
       ]
     },
@@ -171,16 +207,6 @@
     {
       "type": "library",
       "name": "git",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "gnome-shell-extension-dash-to-dock",
       "properties": [
         {
           "name": "deskos:source",

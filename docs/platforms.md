@@ -100,10 +100,10 @@ comment per fact. [install.md](install.md#fedora-45) has the commands.
 **The pin is the released compose.** `:45` resolves to `45.20261021.n.0`
 (os-release reads "Silverblue"), measured 2026-10-21. That base enables `fedora`,
 `updates`, `updates-archive` and Fedora's openh264 repository, not
-`updates-testing`: Dash to Dock 105-2 is in `fedora`, and
-gnome-shell-extension-appindicator 64-2 in `updates` declares only GNOME Shell
-45–50, so the platform delivers the pinned upstream v66 release instead (it
-declares 51). Fedora 44 is retired rather than kept alongside
+`updates-testing`: the vendor's Dash to Dock 105 and its appindicator 64-2 stop at
+GNOME Shell 50, while the image ships 51. The platform therefore delivers the
+pinned upstream dash-to-dock v110 and appindicator v66, both of which declare 51,
+instead of the packages. Fedora 44 is retired rather than kept alongside
 ([roadmap.md](roadmap.md)).
 
 The artifact this platform would publish is the shipped **reference workstation**

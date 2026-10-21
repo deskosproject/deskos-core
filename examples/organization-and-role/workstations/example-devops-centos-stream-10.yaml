@@ -14,3 +14,5 @@ spec:
     - example-organization
     - example-devops
     - firefox
+    - deskos-dock
+    - deskos-reference-apps

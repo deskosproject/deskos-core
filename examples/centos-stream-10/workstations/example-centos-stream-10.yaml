@@ -11,3 +11,5 @@ spec:
     - rhel-family
     - deskos-look
     - firefox
+    - deskos-dock
+    - deskos-reference-apps
