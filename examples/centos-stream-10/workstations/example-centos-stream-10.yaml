@@ -10,3 +10,4 @@ spec:
     - deskos-gnome
     - rhel-family
     - deskos-look
+    - firefox

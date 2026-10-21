@@ -40,6 +40,11 @@
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
     },
     {
+      "name": "firefox",
+      "layer": "foundation",
+      "source": "resources/profiles/firefox.yaml:1"
+    },
+    {
       "name": "rhel-family",
       "layer": "foundation",
       "source": "resources/profiles/rhel-family.yaml:1"
@@ -90,17 +95,6 @@
     ],
     "packages": [
       {
-        "name": "firefox",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "firewalld",
         "provenance": [
           {
@@ -126,6 +120,19 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           },
           {
             "resource": "PackageSet/rhel-family",
@@ -537,6 +544,12 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          },
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           }
         ]
       },
@@ -674,6 +687,13 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/flathub.yaml:1"
+          },
+          {
+            "resource": "FlatpakRemote/flathub",
+            "via": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/flathub.yaml:1"
           }
         ]
       }
@@ -690,6 +710,20 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
+          }
+        ]
+      },
+      {
+        "id": "org.mozilla.firefox",
+        "branch": "stable",
+        "remote": "flathub",
+        "collectionID": "org.flathub.Stable",
+        "provenance": [
+          {
+            "resource": "FlatpakSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
           }
         ]
       }

@@ -3,14 +3,14 @@ kind: PackageSet
 metadata:
   name: rhel-family
 spec:
-  # The RHEL family's own choices: the browser it ships, the firewall it manages
-  # and the application channel it supports. These are platform facts, not
-  # foundation ones.
+  # The RHEL family's own choices: the firewall it manages and the application
+  # channel it supports. These are platform facts, not foundation ones.
   #
   # They used to sit in the deskos-core PackageSet, where no organization could
   # take them back: composition unions sets and offers no removal (ADR 0003), so a
   # foundation that names them forces them on every platform. An Ubuntu
-  # workstation does not want firewalld, and its firefox is a stub for a snap.
+  # workstation does not want firewalld. Firefox is a Flatpak on every flavor
+  # (Profile/firefox), so no family set carries its RPM.
   # ADR 0014 asks for these to leave the common foundation.
   #
   # firewalld belongs here and not in the foundation because it is the family's own
@@ -18,7 +18,6 @@ spec:
   # nor the Ubuntu base ships it, so this family installs it deliberately and
   # enables it. A platform that wants no firewall simply does not take this profile.
   packages:
-    - firefox
     - firewalld
     - flatpak
   enableUnits:

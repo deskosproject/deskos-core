@@ -84,6 +84,21 @@
       ]
     },
     {
+      "type": "application",
+      "name": "org.mozilla.firefox",
+      "version": "stable",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "flatpak"
+        },
+        {
+          "name": "deskos:remote",
+          "value": "flathub"
+        }
+      ]
+    },
+    {
       "type": "data",
       "name": "example-root-ca",
       "hashes": [
@@ -136,16 +151,6 @@
     {
       "type": "library",
       "name": "code",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "firefox",
       "properties": [
         {
           "name": "deskos:source",
