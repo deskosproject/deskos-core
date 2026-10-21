@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: firefox
+spec:
+  layer: foundation
+  description: Firefox from Flathub. DeskOS delivers it as a Flatpak on every flavor, never as an RPM.
+  resources:
+    - kind: FlatpakSet
+      name: firefox

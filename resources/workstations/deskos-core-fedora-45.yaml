@@ -11,3 +11,5 @@ spec:
     - fedora
     - deskos-look
     - deskos-reference-apps
+    - firefox
+    - deskos-dock

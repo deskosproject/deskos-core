@@ -130,6 +130,10 @@ func update(args []string, out, errOut io.Writer) int {
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
+	if !*dryRun && os.Geteuid() != 0 {
+		fmt.Fprintln(errOut, "deskos update: needs root to ask bootc to upgrade; run `sudo deskos update`")
+		return 1
+	}
 	conditions := evidence.Guard(sys)
 	conditions = append(conditions, evidence.ReportedConditions(p)...)
 	fmt.Fprint(out, "Before updating\n")

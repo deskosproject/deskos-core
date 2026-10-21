@@ -1,7 +1,7 @@
 # Operating an installed machine
 
 How a DeskOS workstation updates, and how to inspect, apply and roll back that
-update with what the image ships. Every Core image carries `/usr/local/bin/deskos`
+update with what the image ships. Every Core image carries `/usr/bin/deskos`
 (ADR 0018), so start there; `bootc` and `systemctl` are underneath it and remain
 the fallback.
 

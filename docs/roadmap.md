@@ -34,8 +34,9 @@ each slice is reviewed on its own:
    Core VM.
 2. `appearance.loginLogo` for GDM. **Implemented**, with the DeskOS
    lockup; seen in a CS10 Core VM. Dock semantics (masking,
-   `dock.showTrash`) **implemented**; Core enables Dash to Dock by
-   default, active in the CS10 instrumented session check. A session
+   `dock.showTrash`) **implemented**; the reference workstations select
+   `Profile/deskos-dock`, and the dock is active in the CS10 instrumented
+   session check. A session
    `desktopLogo` (background-logo extension) is separate and *not
    started*.
 3. Decide where boot intent lives. **Decided:** `BootProfile`

@@ -11,3 +11,6 @@ spec:
     - rhel-family
     # Like RHEL 10: AlmaLinux's own wallpaper and splash stay, only the text goes.
     - deskos-boot
+    - firefox
+    - deskos-dock
+    - deskos-reference-apps
