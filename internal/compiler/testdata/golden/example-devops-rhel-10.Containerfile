@@ -31,7 +31,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'cockpit' \
         'cockpit-machines' \
         'code' \
-        'firewalld' \
         'flatpak' \
         'git' \
         'gnome-shell-extension-dash-to-dock' \
@@ -117,7 +116,7 @@ RUN tmp="$(mktemp -d)" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
     && 'update-ca-trust' \
-    && systemctl enable 'cockpit.socket' 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'firewalld.service' 'gdm.service' \
+    && systemctl enable 'cockpit.socket' 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'
 

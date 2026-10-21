@@ -22,7 +22,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
-        'firewalld' \
         'flatpak' \
         'plymouth' \
         'plymouth-scripts' \
@@ -73,7 +72,7 @@ RUN tmp="$(mktemp -d)" \
     && rm -rf "$tmp" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
-    && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'firewalld.service' 'gdm.service' \
+    && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'
 

@@ -95,17 +95,6 @@
     ],
     "packages": [
       {
-        "name": "firewalld",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "flatpak",
         "provenance": [
           {
@@ -572,17 +561,6 @@
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/system/deskos-core-updates.yaml:1"
-          }
-        ]
-      },
-      {
-        "unit": "firewalld.service",
-        "provenance": [
-          {
-            "resource": "PackageSet/rhel-family",
-            "profile": "rhel-family",
-            "layer": "foundation",
-            "source": "resources/software/rhel-family.yaml:1"
           }
         ]
       },
