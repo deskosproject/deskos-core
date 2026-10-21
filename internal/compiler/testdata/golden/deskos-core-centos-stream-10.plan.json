@@ -356,6 +356,20 @@
           ]
         },
         {
+          "key": "/org/gnome/desktop/wm/preferences/button-layout",
+          "type": "s",
+          "value": "':minimize,maximize,close'",
+          "setting": "windows.buttons",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-look",
+              "profile": "deskos-look",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-look.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/login-screen/logo",
           "type": "s",
           "value": "'/usr/share/deskos/branding/deskos-login-logo.svg'",
