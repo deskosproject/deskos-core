@@ -97,7 +97,7 @@ packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
 [`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
 comment per fact. [install.md](install.md#fedora-45) has the commands.
 
-**The pin is a prerelease compose.** `:45` still resolves to `45.20261020.n.0`
+**The pin is a prerelease compose.** `:45` still resolves to `45.20261021.n.0`
 (os-release reads "Silverblue Prerelease"), measured 2026-10-20, and that base
 enables Fedora's `updates-testing` repository — Dash to Dock, for one, is published
 only there on this compose. The resource and the table say so; when the released
@@ -165,7 +165,7 @@ above rather than hidden:
   as every other base pin is ([roadmap.md](roadmap.md)).
 - **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
   `resources/platforms/` carries a single Fedora platform and a machine's platform
-  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261020.n.0`
+  is unambiguous. The *prerelease* is a property of the **pin** — `45.20261021.n.0`
   — and not of the name: when the released compose is published, the digest and the
   measurement comments move and the platform keeps its name, its workstation and
   its image repository.
