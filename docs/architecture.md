@@ -366,10 +366,9 @@ account the upstream container image ships suppressing the wizard — is in
   image carries (7.2.11-300.fc45) and **fails unless** `plymouthd`, the DeskOS
   theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
   image carries them; `bootc container lint` passed 12 checks with 2 warnings
-  (`nonempty-run-tmp`, `var-tmpfiles`). The pin is a **prerelease** compose of the
-  release (`45.20261021.n.0`, whose base enables `updates-testing`), and the
-  platform is pinned to it rather than to a released compose
-  ([platforms.md](platforms.md)). **Booted and checked in CI** (run 39462806315):
+  (`nonempty-run-tmp`, `var-tmpfiles`). The pin is the released compose
+  (`45.20261021.n.0`, os-release reads "Silverblue"), and the platform follows
+  that pin ([platforms.md](platforms.md)). **Booted and checked in CI** (run 39462806315):
   `vm-bootcheck.yml` builds `examples/fedora-45`, makes a btrfs QCOW2 and runs the
   boot, instrumented session and first-boot checks; the graphical screen appeared
   in 30 s and the session reported the tray extension active and its watcher
@@ -444,7 +443,7 @@ directory the file lands in, resolving symlinks (`readlink -m`), because
 `install -D` cannot traverse a `/usr/local` that is a **dangling symlink**: Debian and
 Ubuntu ship `/usr/local -> ../var/usrlocal` and create that target at boot with a
 bootc tmpfiles rule, so it does not exist during the build (measured 2026-10-18 on the
-Ubuntu base, where `install -D ... /usr/local/bin/deskos` failed to create the
+Ubuntu base, where `install -D` into `/usr/local/bin` failed to create the
 directory). With the directory created where the file really lands, the same step
 works on both families.
 
@@ -558,10 +557,10 @@ behind the image while users can still update Flatpak applications.
 
 **Terminal shortcut.** `GnomeProfile.defaults.keyboard.terminal` names a
 `.desktop` id bound to Ctrl+Alt+T (EL10 has no native terminal key and no
-default-terminal launcher outside EPEL). **Not modeled:** the
-AppIndicator extension is packaged only in EPEL, so no Platform declares
-it; GNOME Initial Setup shows its third-party repositories page only
-when `fedora-third-party` is installed, which EL10 does not ship. See
+default-terminal launcher outside EPEL). **Not modeled:** the GNOME Initial Setup
+third-party repositories page, which appears only when `fedora-third-party` is
+installed, and EL10 does not ship it. The AppIndicator extension is not in the
+vendor repositories either; Platforms deliver it as a pinned artifact, above. See
 [research notes](research-notes.md#gnome-user-settings-2026-10-04).
 
 **Login screen.** `appearance.loginLogo` sets the GDM login-screen logo;

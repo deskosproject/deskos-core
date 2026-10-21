@@ -842,9 +842,9 @@ func TestDockSemantics(t *testing.T) {
 	})
 }
 
-// Core sets no dock and no favorites: the shell layout is the platform's look and
-// feel, or an organization's choice. An organization that wants Dash to Dock
-// enables it from its own layer, and then its options apply.
+// Core's default sets no dock and no favorites: the shell layout is a workstation's
+// choice. The reference workstations select the deskos-dock profile; an organization
+// can also enable Dash to Dock from its own layer, and then its options apply.
 func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 	dockKeys := func(p *plan.Plan) []string {
 		var out []string
@@ -856,29 +856,49 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 		return out
 	}
 	const orgWorkstation = "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: org-ws\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, deskos-reference-apps, org]\n"
-	hasDockPackage := func(p *plan.Plan) bool {
-		return strings.Contains(strings.Join(packages(p), " "), "gnome-shell-extension-dash-to-dock")
+	hasDock := func(p *plan.Plan) bool {
+		if strings.Contains(strings.Join(packages(p), " "), "gnome-shell-extension-dash-to-dock") {
+			return true
+		}
+		for _, e := range p.Artifact.Extensions {
+			if e.UUID == dashToDockUUID {
+				return true
+			}
+		}
+		return false
 	}
-	t.Run("core", func(t *testing.T) {
-		p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
+	t.Run("core default", func(t *testing.T) {
+		const coreDefault = "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: core-default\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, deskos-gnome, rhel-family, deskos-look, deskos-reference-apps, firefox]\n"
+		dir := fixture{"ws.yaml": coreDefault}.dir(t)
+		p := mustPlan(t, "core-default", resourcesRoot, dir)
 		if v, ok := dconf(p, "/org/gnome/shell/favorite-apps"); ok {
 			t.Errorf("Core writes favorite-apps = %s", v)
 		}
-		// The plan states the extensions it enables, and that list is the platform's
-		// own: no dock.
+		// The default plan states the platform's extensions plus the tray one: no dock.
 		v, ok := dconf(p, "/org/gnome/shell/enabled-extensions")
 		if !ok || strings.Contains(v, dashToDockUUID) {
 			t.Errorf("Core enables the dock: %q", v)
 		}
-		// The tray extension is Core's (docs/adr/0021); the dock is not.
 		if v != "['background-logo@fedorahosted.org', 'appindicatorsupport@rgcjonas.gmail.com']" {
 			t.Errorf("Core writes enabled-extensions = %s, want the platform's own list plus the tray extension", v)
 		}
-		if hasDockPackage(p) {
-			t.Error("Core installs Dash to Dock")
+		if hasDock(p) {
+			t.Error("Core installs Dash to Dock by default")
 		}
 		if k := dockKeys(p); len(k) != 0 {
 			t.Errorf("Core sets dock options %q", k)
+		}
+	})
+	t.Run("reference workstation selects the dock", func(t *testing.T) {
+		p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
+		if !hasDock(p) {
+			t.Fatal("the reference workstation does not install Dash to Dock")
+		}
+		if v, ok := dconf(p, "/org/gnome/shell/enabled-extensions"); !ok || !strings.Contains(v, dashToDockUUID) {
+			t.Errorf("the reference workstation does not enable the dock: %q", v)
+		}
+		if k := dockKeys(p); len(k) == 0 {
+			t.Error("the reference workstation sets no dock options")
 		}
 	})
 	t.Run("organization enables the dock itself", func(t *testing.T) {
@@ -890,7 +910,7 @@ func TestCoreSetsNoDockOrFavorites(t *testing.T) {
 			"ws.yaml": orgWorkstation,
 		}.dir(t)
 		p := mustPlan(t, "org-ws", resourcesRoot, org)
-		if !hasDockPackage(p) {
+		if !hasDock(p) {
 			t.Error("the organization's dock is not installed")
 		}
 		if v, _ := dconf(p, "/org/gnome/shell/extensions/dash-to-dock/dock-position"); v != "'BOTTOM'" {

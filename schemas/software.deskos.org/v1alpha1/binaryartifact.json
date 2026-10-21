@@ -37,7 +37,11 @@
             "required": ["destination"],
             "properties": {
               "path": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
-              "destination": { "type": "string", "pattern": "^/usr/local/bin/[A-Za-z0-9][A-Za-z0-9._+-]*$" },
+              "destination": {
+                "type": "string",
+                "pattern": "^(/usr/local/bin/[A-Za-z0-9][A-Za-z0-9._+-]*|/usr/bin/deskos)$",
+                "description": "A binary lands under /usr/local/bin, which belongs to no package. The one exception is the runtime companion at /usr/bin/deskos, named here so sudo's secure_path finds it (ADR 0018)."
+              },
               "mode": { "enum": ["0755", "0555"] }
             }
           }

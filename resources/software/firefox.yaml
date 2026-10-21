@@ -1,0 +1,12 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: firefox
+spec:
+  # Firefox is a Flatpak on every DeskOS flavor. RHEL 10 publishes no Firefox RPM,
+  # and the Flathub build updates independently of the image; the RPM package sets
+  # no longer carry it.
+  remote: flathub
+  applications:
+    - id: org.mozilla.firefox
+      branch: stable

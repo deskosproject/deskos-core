@@ -568,6 +568,12 @@ func preinstallFile(a plan.FlatpakPreinstall) []byte {
 // preinstallUnit runs upstream `flatpak preinstall` once per boot. Ordering it
 // after multi-user.target stops that target from waiting on network-online for
 // it, Type=exec avoids waiting for downloads, and GDM is not ordered after it.
+//
+// A first boot whose pull was interrupted can leave a non-deployed ref that
+// `flatpak preinstall` does not refresh; it fails with "Couldn't find file
+// object" on every later attempt. `flatpak repair` removes that ref before the
+// attempt, so the next boot (or a manual restart) recovers. There is still no
+// restart loop: a machine with no network does not retry forever.
 func preinstallUnit() []byte {
 	return []byte(generatedHeader + `[Unit]
 Description=Install operating system Flatpaks declared in preinstall.d
@@ -577,6 +583,7 @@ After=network-online.target multi-user.target
 
 [Service]
 Type=exec
+ExecStartPre=-/usr/bin/flatpak repair --system
 ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
 
 [Install]
@@ -761,7 +768,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 			// that is a dangling symlink: Debian and Ubuntu ship
 			// `/usr/local -> ../var/usrlocal`, and that target is created at boot by a
 			// bootc tmpfiles rule rather than by the base image (measured 2026-10-18 on
-			// the Ubuntu base, whose `install -D ... /usr/local/bin/deskos` failed with
+			// the Ubuntu base, whose `install -D ... /usr/local/bin/<binary>` failed with
 			// "cannot create directory"). `readlink -m` canonicalises without requiring
 			// existence, so the directory is created where the file will really land.
 			w("    mkdir -p \"$(readlink -m \"$(dirname %s)\")\"; \\\n", shq(bin.Destination))

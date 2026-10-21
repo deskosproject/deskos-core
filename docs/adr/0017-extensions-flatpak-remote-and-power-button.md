@@ -63,7 +63,7 @@ session timeout the same decision covers already exists
    (`dock.position`, `dock.behavior`, `dock.iconSize`, `dock.showTrash`) apply only
    while that decision is true. The platform's catalog entry for `dash-to-dock` is
    what names the UUID whose decision gates those settings, and what installs the
-   package. A higher-layer `false` masks lower-layer dock settings (a warning); dock
+   package or pinned artifact. A higher-layer `false` masks lower-layer dock settings (a warning); dock
    settings with no enabling decision, or at or above the disabling layer, are errors.
 7. On a platform that declares `gnome.keepsVendorDefaults` (ADR 0016), this field
    follows the same rule as every other GNOME setting: nothing is written, and a
