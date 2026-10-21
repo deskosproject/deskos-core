@@ -167,7 +167,7 @@ func TestCheckSaysItDoesNotReadTheBinariesItInstalls(t *testing.T) {
 	p := parsePlan(t, planText(t, nil))
 	p.Artifact.Binaries = append(p.Artifact.Binaries, plan.VerifiedBinaryInstall{
 		Artifact: "deskos", Version: "0.12.0", Archive: "none",
-		SHA256: hash("deskos"), Destination: "/usr/local/bin/deskos", Mode: "0755"})
+		SHA256: hash("deskos"), Destination: "/usr/bin/deskos", Mode: "0755"})
 	joined := strings.Join(evidence.DeclaredScope(p).NotChecked, "\n")
 	if !strings.Contains(joined, "the bytes of the binaries the plan installs (1)") {
 		t.Errorf("scope does not say the binaries are left out:\n%s", joined)

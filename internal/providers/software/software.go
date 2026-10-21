@@ -508,8 +508,13 @@ type BinaryInstall struct {
 	Mode        string `json:"mode"`
 }
 
-// BinaryDir is the only directory BinaryArtifact may install into.
-const BinaryDir = "/usr/local/bin"
+// BinaryDir is where BinaryArtifact installs executables; it belongs to no package.
+// CompanionPath is the one exception: sudo searches /usr/bin through secure_path and
+// does not search /usr/local/bin, so the runtime companion lands there (ADR 0018).
+const (
+	BinaryDir     = "/usr/local/bin"
+	CompanionPath = "/usr/bin/deskos"
+)
 
 var floatingVersions = map[string]bool{"latest": true, "stable": true, "current": true, "nightly": true, "master": true, "main": true}
 
@@ -554,7 +559,7 @@ func (binaryArtifact) Decode(res *model.Resource) error {
 	for i := range s.Files {
 		f := &s.Files[i]
 		if !safeDestination(f.Destination) {
-			errs.Add(model.Errorf(res, "destination %q is not allowed: executables may only be installed directly in %s", f.Destination, BinaryDir))
+			errs.Add(model.Errorf(res, "destination %q is not allowed: executables may only be installed directly in %s, or the runtime companion at %s", f.Destination, BinaryDir, CompanionPath))
 		}
 		if seen[f.Destination] {
 			errs.Add(model.Errorf(res, "destination %q is used twice", f.Destination))
@@ -581,6 +586,9 @@ func safeMember(p string) bool {
 }
 
 func safeDestination(d string) bool {
+	if d == CompanionPath {
+		return true
+	}
 	return path.Clean(d) == d && path.Dir(d) == BinaryDir && commandRE.MatchString(path.Base(d))
 }
 

@@ -444,7 +444,7 @@ directory the file lands in, resolving symlinks (`readlink -m`), because
 `install -D` cannot traverse a `/usr/local` that is a **dangling symlink**: Debian and
 Ubuntu ship `/usr/local -> ../var/usrlocal` and create that target at boot with a
 bootc tmpfiles rule, so it does not exist during the build (measured 2026-10-18 on the
-Ubuntu base, where `install -D ... /usr/local/bin/deskos` failed to create the
+Ubuntu base, where `install -D` into `/usr/local/bin` failed to create the
 directory). With the directory created where the file really lands, the same step
 works on both families.
 

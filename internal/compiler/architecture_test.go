@@ -521,7 +521,7 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Fatalf("DeskOS Core declares %d binary artifact(s); it carries exactly its own runtime tool",
 			len(p.Artifact.Binaries))
 	}
-	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/local/bin/deskos" ||
+	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/bin/deskos" ||
 		!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
 		t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
 			b.Artifact, b.Destination, b.URL)

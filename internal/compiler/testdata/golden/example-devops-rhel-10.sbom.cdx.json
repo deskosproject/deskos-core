@@ -58,7 +58,7 @@
         },
         {
           "name": "deskos:destination",
-          "value": "/usr/local/bin/deskos"
+          "value": "/usr/bin/deskos"
         }
       ]
     },

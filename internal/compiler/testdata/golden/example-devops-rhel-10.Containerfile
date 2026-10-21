@@ -63,8 +63,8 @@ RUN set -eu; \
         --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
         -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.14.0/deskos-v0.14.0-linux-amd64'; \
     echo 'eead05aebf12d8dc32d48e35865039fb1e6b021490eb3a66dafd811a204f9b47  '"$tmp/download" | sha256sum --check --strict --quiet -; \
-    mkdir -p "$(readlink -m "$(dirname '/usr/local/bin/deskos')")"; \
-    install -D -m 0755 "$tmp/download" '/usr/local/bin/deskos'; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/bin/deskos')")"; \
+    install -D -m 0755 "$tmp/download" '/usr/bin/deskos'; \
     rm -rf "$tmp"
 
 # Binary artifact openshift-client 4.22.17 (sha256-verified)
