@@ -62,8 +62,9 @@ grype "$image" -o json > cves.json
 
 ## CI job
 
-`.github/workflows/supply-chain.yml` (manual, `workflow_dispatch`) builds
-one image per platform from a checkout — one matrix leg per publishable
+`.github/workflows/supply-chain.yml` runs on a weekly schedule and on
+`workflow_dispatch`; only a dispatch with `publish=true` on `main` publishes.
+It builds one image per platform from a checkout — one matrix leg per publishable
 workstation reference, each with its own exceptions record and destination
 repository — and runs the steps above:
 it writes the declared SBOM, produces `installed.sbom.cdx.json` with Syft
@@ -73,6 +74,20 @@ bills with `tests/supply-chain/compare.py`, and uploads all evidence. The
 two evidence passes are pinned to `tests/supply-chain/grype-raw.yaml`
 (`ignore: []`), so `grype.txt` and `cves.json` always show everything;
 only the gate applies the exceptions.
+
+A scheduled run has no dispatch inputs, so the gate uses the explicit
+`FAIL_ON` fallback of `critical`. That is the same baseline as a manual
+dispatch's default; the weekly watch cannot silently weaken it.
+
+### Evidence retained for a failed gate
+
+The workflow keeps the local image ID, the OCI archive checksum, the disk
+checksum, and the full `bootcheck`, `session`, `firstboot` and
+`journal-failed-boot` directories for 14 days. That includes each frame,
+`serial.log`, `qemu.log` and the structured summaries; QCOW2 files are
+excluded from the artifact because the checksums identify them. A retry is
+visible beside the first attempt rather than replacing it. The artifact is
+therefore evidence of what ran, not only a green summary.
 
 `compare.py` gates **RPM packages**: every declared `deskos:source=rpm`
 component must appear, by name, in the installed SBOM. Binaries, RPM
