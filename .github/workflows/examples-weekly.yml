@@ -49,7 +49,7 @@ jobs:
             platform: platforms/fedora-45.yaml
             rootfs: btrfs
     env:
-      EXAMPLE_ROOT: ${{ env.WORK }}/example-root
+      EXAMPLE_ROOT: /mnt/deskos-work/example-root
       IMAGE: localhost/${{ matrix.workstation }}:ci
     steps:
       - uses: actions/checkout@v7
@@ -167,10 +167,10 @@ jobs:
         with:
           name: vm-evidence-example-${{ matrix.token }}
           path: |
-            ${{ env.WORK }}/evidence
-            ${{ env.WORK }}/bootcheck
-            ${{ env.WORK }}/session
-            ${{ env.WORK }}/firstboot
-            !${{ env.WORK }}/**/*.qcow2
+            /mnt/deskos-work/evidence
+            /mnt/deskos-work/bootcheck
+            /mnt/deskos-work/session
+            /mnt/deskos-work/firstboot
+            !/mnt/deskos-work/**/*.qcow2
           retention-days: 14
           if-no-files-found: warn
