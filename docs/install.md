@@ -4,9 +4,11 @@ Two paths, and you only need the first: **install a published image**, or
 **build your own** and then install that. Most people never need the second.
 
 > [!NOTE]
-> You need **Linux with rootful Podman** and about **20 GB free**. No
-> downloadable QCOW2 or ISO files are published — the **container images** are,
-> and `bootc-image-builder` turns one into a disk on your machine.
+> You need **Linux with rootful Podman** and about **20 GB free**. The
+> **container images** are published, and `bootc-image-builder` turns one into a
+> disk on your machine. A **CentOS Stream 10 preview ISO** is also published at
+> <https://download.deskos.org/>; verify its `SHA256SUMS` before booting it. No
+> QCOW2, RHEL, AlmaLinux or Fedora ISO is published.
 
 ## Install a published image
 
