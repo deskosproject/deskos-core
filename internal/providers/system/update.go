@@ -3,6 +3,8 @@ package system
 import (
 	"fmt"
 	"strconv"
+	"time"
+	_ "time/tzdata"
 
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/model"
@@ -18,6 +20,8 @@ var DomainUpdate = compose.Domain{ID: "update-setting", Label: "update setting"}
 const (
 	ImageUpdateService   = "deskos-image-update.service"
 	ImageUpdateTimer     = "deskos-image-update.timer"
+	ImageApplyService    = "deskos-image-apply.service"
+	ImageApplyTimer      = "deskos-image-apply.timer"
 	FlatpakUpdateService = "deskos-flatpak-update.service"
 	FlatpakUpdateTimer   = "deskos-flatpak-update.timer"
 )
@@ -33,10 +37,30 @@ type UpdatePolicySpec struct {
 
 // AutomaticUpdate is the policy of one update area.
 type AutomaticUpdate struct {
-	Automatic      *bool  `json:"automatic,omitempty"`
-	Schedule       string `json:"schedule,omitempty"`
-	RequireACPower *bool  `json:"requireACPower,omitempty"`
+	Automatic      *bool        `json:"automatic,omitempty"`
+	Schedule       string       `json:"schedule,omitempty"`
+	RequireACPower *bool        `json:"requireACPower,omitempty"`
+	Apply          *ApplyPolicy `json:"apply,omitempty"`
 }
+
+// ApplyPolicy is the explicit consent to apply an image and reboot. It is
+// valid only for the image area and only inside a requested window or at an
+// exact local time.
+type ApplyPolicy struct {
+	Enabled  bool         `json:"enabled"`
+	Days     []string     `json:"days,omitempty"`
+	At       string       `json:"at,omitempty"`
+	Window   *ApplyWindow `json:"window,omitempty"`
+	Timezone string       `json:"timezone,omitempty"`
+}
+
+// ApplyWindow is the interval in which an apply may start.
+type ApplyWindow struct {
+	Start    string `json:"start"`
+	Duration string `json:"duration"`
+}
+
+var weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
 
 // updateArea is one updatable part of the workstation.
 type updateArea struct {
@@ -68,15 +92,110 @@ func (updatePolicy) Decode(res *model.Resource) error {
 		if u == nil {
 			continue
 		}
-		if u.Automatic == nil && u.Schedule == "" && u.RequireACPower == nil {
-			errs.Add(model.Errorf(res, "%s: set at least one of automatic, schedule or requireACPower", name))
+		if u.Automatic == nil && u.Schedule == "" && u.RequireACPower == nil && u.Apply == nil {
+			options := "automatic, schedule or requireACPower"
+			if name == "image" {
+				options += " or apply"
+			}
+			errs.Add(model.Errorf(res, "%s: set at least one of %s", name, options))
 		}
 		if u.Schedule != "" && u.Schedule != "daily" && u.Schedule != "weekly" {
 			errs.Add(model.Errorf(res, "%s.schedule must be daily or weekly, got %q", name, u.Schedule))
 		}
+		if u.Apply != nil {
+			if name != "image" {
+				errs.Add(model.Errorf(res, "%s.apply is only valid for image updates", name))
+			} else {
+				for _, msg := range validateApply(u.Apply) {
+					errs.Add(model.Errorf(res, "%s", msg))
+				}
+			}
+		}
 	}
 	res.Object = &s
 	return errs.Err()
+}
+
+// validateApply checks the fields the schema cannot express: the relationship
+// between enabled, days, and exactly one of at or window.
+func validateApply(a *ApplyPolicy) []string {
+	var errs []string
+	if !a.Enabled {
+		if len(a.Days) > 0 || a.At != "" || a.Window != nil || a.Timezone != "" {
+			errs = append(errs, "apply.enabled is false; remove days, at, window and timezone")
+		}
+		return errs
+	}
+	if len(a.Days) == 0 {
+		errs = append(errs, "apply.days is required when apply.enabled is true")
+	}
+	seen := map[string]bool{}
+	for _, day := range a.Days {
+		if !containsString(weekdays, day) {
+			errs = append(errs, fmt.Sprintf("apply.days: unknown day %q (expected %s)", day, joinWords(weekdays)))
+		}
+		if seen[day] {
+			errs = append(errs, fmt.Sprintf("apply.days: %q is listed twice", day))
+		}
+		seen[day] = true
+	}
+	if (a.At == "") == (a.Window == nil) {
+		errs = append(errs, "apply: set exactly one of at or window")
+	}
+	if a.At != "" {
+		if err := validateClock(a.At); err != nil {
+			errs = append(errs, "apply.at: "+err.Error())
+		}
+	}
+	if a.Window != nil {
+		if err := validateClock(a.Window.Start); err != nil {
+			errs = append(errs, "apply.window.start: "+err.Error())
+		} else {
+			start, _ := time.Parse("15:04", a.Window.Start)
+			d, err := time.ParseDuration(a.Window.Duration)
+			if err != nil || d <= 0 || d%time.Minute != 0 {
+				errs = append(errs, fmt.Sprintf("apply.window.duration: %q is not a positive whole-minute duration", a.Window.Duration))
+			} else if start.Hour()*60+start.Minute()+int(d/time.Minute) > 24*60 {
+				errs = append(errs, "apply.window: the window must end on the same day")
+			}
+		}
+	}
+	if a.Timezone != "" {
+		if _, err := time.LoadLocation(a.Timezone); err != nil {
+			errs = append(errs, fmt.Sprintf("apply.timezone: unknown time zone %q", a.Timezone))
+		}
+	}
+	return errs
+}
+
+func validateClock(s string) error {
+	if len(s) != 5 || s[2] != ':' {
+		return fmt.Errorf("%q is not HH:MM", s)
+	}
+	if _, err := time.Parse("15:04", s); err != nil {
+		return fmt.Errorf("%q is not HH:MM", s)
+	}
+	return nil
+}
+
+func containsString(list []string, s string) bool {
+	for _, x := range list {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func joinWords(list []string) string {
+	out := ""
+	for i, s := range list {
+		if i > 0 {
+			out += ", "
+		}
+		out += s
+	}
+	return out
 }
 
 func (updatePolicy) Contribute(res *model.Resource, sc *compose.Scope) error {
@@ -98,6 +217,22 @@ func (updatePolicy) Contribute(res *model.Resource, sc *compose.Scope) error {
 		if u.RequireACPower != nil {
 			sc.SetScalar(DomainUpdate, a.key("requireACPower"), *u.RequireACPower, strconv.FormatBool(*u.RequireACPower))
 		}
+		if u.Apply != nil {
+			sc.SetScalar(DomainUpdate, a.key("apply.enabled"), u.Apply.Enabled, strconv.FormatBool(u.Apply.Enabled))
+			if len(u.Apply.Days) > 0 {
+				sc.SetScalar(DomainUpdate, a.key("apply.days"), u.Apply.Days, joinWords(u.Apply.Days))
+			}
+			if u.Apply.At != "" {
+				sc.SetScalar(DomainUpdate, a.key("apply.at"), u.Apply.At, u.Apply.At)
+			}
+			if u.Apply.Window != nil {
+				sc.SetScalar(DomainUpdate, a.key("apply.window.start"), u.Apply.Window.Start, u.Apply.Window.Start)
+				sc.SetScalar(DomainUpdate, a.key("apply.window.duration"), u.Apply.Window.Duration, u.Apply.Window.Duration)
+			}
+			if u.Apply.Timezone != "" {
+				sc.SetScalar(DomainUpdate, a.key("apply.timezone"), u.Apply.Timezone, u.Apply.Timezone)
+			}
+		}
 	}
 	return nil
 }
@@ -115,7 +250,11 @@ func lowerUpdates(c *compose.Composition, p *plan.Plan) error {
 func lowerUpdateArea(c *compose.Composition, p *plan.Plan, a updateArea) error {
 	auto, hasAuto := c.Result.Scalar(DomainUpdate, a.key("automatic"))
 	var options []compose.Scalar
-	for _, f := range []string{"schedule", "requireACPower"} {
+	for _, f := range []string{
+		"schedule", "requireACPower",
+		"apply.enabled", "apply.days", "apply.at",
+		"apply.window.start", "apply.window.duration", "apply.timezone",
+	} {
 		if s, ok := c.Result.Scalar(DomainUpdate, a.key(f)); ok {
 			options = append(options, s)
 		}
@@ -171,6 +310,11 @@ func lowerUpdateArea(c *compose.Composition, p *plan.Plan, a updateArea) error {
 		})
 		return nil
 	}
+	if a.kind == plan.UpdateImage {
+		if err := lowerImageApply(c, p, a, true); err != nil {
+			return err
+		}
+	}
 	sched, ok := c.Result.Scalar(DomainUpdate, a.key("schedule"))
 	if !ok {
 		return fmt.Errorf("%s is required when %s is true\n  set by: %s", a.key("schedule"), auto.Key, describe(auto.Provenance))
@@ -188,5 +332,88 @@ func lowerUpdateArea(c *compose.Composition, p *plan.Plan, a updateArea) error {
 		RequireACPower: requireAC, Provenance: prov,
 	})
 	p.EnableUnit(a.timer, prov...)
+	return nil
+}
+
+// lowerImageApply adds the separate apply timer. It is independent of the
+// staging timer: the image is still downloaded daily, and this timer is the
+// only place where --apply (and therefore a reboot) is allowed.
+func lowerImageApply(c *compose.Composition, p *plan.Plan, a updateArea, automatic bool) error {
+	apply, hasApply := c.Result.Scalar(DomainUpdate, a.key("apply.enabled"))
+	fields := []string{
+		a.key("apply.days"), a.key("apply.at"),
+		a.key("apply.window.start"), a.key("apply.window.duration"), a.key("apply.timezone"),
+	}
+	if !hasApply {
+		for _, key := range fields {
+			if s, ok := c.Result.Scalar(DomainUpdate, key); ok {
+				return fmt.Errorf("%s requires %s, which no UpdatePolicy sets\n  set by: %s",
+					key, a.key("apply.enabled"), describe(s.Provenance))
+			}
+		}
+		return nil
+	}
+	if !apply.Value.(bool) {
+		for _, key := range fields {
+			if s, ok := c.Result.Scalar(DomainUpdate, key); ok {
+				if s.Layer < apply.Layer {
+					p.Warnings = append(p.Warnings, fmt.Sprintf("%s from %s layer is masked: %s is false at %s layer (%s)",
+						key, s.Layer, a.key("apply.enabled"), apply.Layer, describeShort(apply.Provenance)))
+					continue
+				}
+				return fmt.Errorf("%s is set at %s layer but %s is false at %s layer\n  set by: %s\n  disabled by: %s",
+					key, s.Layer, a.key("apply.enabled"), apply.Layer, describe(s.Provenance), describe(apply.Provenance))
+			}
+		}
+		return nil
+	}
+	if !automatic {
+		return fmt.Errorf("%s requires %s to be true\n  set by: %s", a.key("apply.enabled"), a.key("automatic"), describe(apply.Provenance))
+	}
+	days, ok := c.Result.Scalar(DomainUpdate, a.key("apply.days"))
+	if !ok {
+		return fmt.Errorf("%s is required when %s is true\n  set by: %s", a.key("apply.days"), a.key("apply.enabled"), describe(apply.Provenance))
+	}
+	at, hasAt := c.Result.Scalar(DomainUpdate, a.key("apply.at"))
+	start, hasStart := c.Result.Scalar(DomainUpdate, a.key("apply.window.start"))
+	duration, hasDuration := c.Result.Scalar(DomainUpdate, a.key("apply.window.duration"))
+	if hasAt == (hasStart || hasDuration) {
+		return fmt.Errorf("%s: set exactly one of %s or %s\n  set by: %s",
+			a.key("apply.enabled"), a.key("apply.at"), a.key("apply.window.start"), describe(apply.Provenance))
+	}
+	if hasStart != hasDuration {
+		return fmt.Errorf("%s and %s must be set together\n  set by: %s",
+			a.key("apply.window.start"), a.key("apply.window.duration"), describe(apply.Provenance))
+	}
+	prov := append([]model.Provenance(nil), apply.Provenance...)
+	prov = append(prov, days.Provenance...)
+	if hasAt {
+		prov = append(prov, at.Provenance...)
+	}
+	if hasStart {
+		prov = append(prov, start.Provenance...)
+		prov = append(prov, duration.Provenance...)
+	}
+	if tz, ok := c.Result.Scalar(DomainUpdate, a.key("apply.timezone")); ok {
+		prov = append(prov, tz.Provenance...)
+	}
+	requireAC := false
+	if ac, ok := c.Result.Scalar(DomainUpdate, a.key("requireACPower")); ok {
+		requireAC = ac.Value.(bool)
+	}
+	u := plan.ScheduledUpdate{
+		Kind: plan.UpdateImageApply, Service: ImageApplyService, Timer: ImageApplyTimer,
+		Days: days.Value.([]string), RequireACPower: requireAC, Provenance: prov,
+	}
+	if hasAt {
+		u.At = at.Value.(string)
+	} else {
+		u.Window = &plan.UpdateWindow{Start: start.Value.(string), Duration: duration.Value.(string)}
+	}
+	if tz, ok := c.Result.Scalar(DomainUpdate, a.key("apply.timezone")); ok {
+		u.Timezone = tz.Value.(string)
+	}
+	p.Artifact.ScheduledUpdates = append(p.Artifact.ScheduledUpdates, u)
+	p.EnableUnit(ImageApplyTimer, prov...)
 	return nil
 }

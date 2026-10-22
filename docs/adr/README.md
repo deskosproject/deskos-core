@@ -32,3 +32,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0020: Ubuntu lives in its own repository](0020-ubuntu-lives-in-its-own-repository.md) | accepted |
 | [0021: An extension the platform's repositories do not carry as a pinned artifact](0021-extensions-can-be-delivered-as-pinned-artifacts.md) | accepted |
 | [0022: Removing packages a platform must not carry](0022-removing-packages-a-platform-must-not-carry.md) | accepted |
+| [0023: Scheduled image apply is an explicit, time-bound opt-in](0023-scheduled-apply-window.md) | accepted |

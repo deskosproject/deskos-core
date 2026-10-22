@@ -33,6 +33,12 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         a safe update and reports the rest. It is not a reconciler, and it does not
         touch what a user changed.
 
+  deskos window --days mon,wed --at 03:00 [--grace 5m] [--timezone TZ]
+  deskos window --days mon,wed --start 03:00 --duration 2h [--timezone TZ]
+        Exit 0 only when the current local time is inside the requested scheduled
+        apply window. Generated units use it as an ExecCondition so a timer that
+        fires after suspend cannot become a surprise reboot.
+
   deskos version
 `
 
@@ -56,6 +62,8 @@ func run(args []string, out, errOut io.Writer) int {
 		return check(args[1:], out, errOut)
 	case "update":
 		return update(args[1:], out, errOut)
+	case "window":
+		return window(args[1:], out, errOut)
 	default:
 		fmt.Fprintf(errOut, "deskos: unknown command %q\n\n%s", args[0], usageText)
 		return 2

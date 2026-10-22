@@ -650,7 +650,8 @@ DeskOS declares the update unit on every shipped platform, so masking it leaves
 DeskOS's own staging timer the only update path.
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
-`schedule: daily|weekly` and `requireACPower`) lowers to:
+`schedule: daily|weekly` and `requireACPower`; `image` additionally has an
+optional `apply` window) lowers to:
 
 - for any `image.automatic`: masks of the Platform's
   `updates.imageUpdateUnits` (`systemctl mask`, links to `/dev/null` in
@@ -662,18 +663,32 @@ DeskOS's own staging timer the only update path.
 |---|---|
 | `deskos-image-update.service` | `/usr/bin/bootc upgrade --quiet` |
 | `deskos-flatpak-update.service` | `/usr/bin/flatpak update --system --noninteractive --assumeyes` |
+| `deskos-image-apply.service` (opt-in) | `deskos window` guard, then `/usr/bin/bootc upgrade --apply --quiet` |
 
 `bootc upgrade` without `--apply` downloads the image and stages it;
 `ostree-finalize-staged.service` applies it at the next shutdown or
-reboot the user makes. **No generated unit reboots**, and a test rejects
-`--apply`, `--soft-reboot` and `--download-only` in any rendered file.
+reboot the user makes. **No generated unit reboots unless an organization
+sets `image.apply.enabled: true`.** A test rejects `--apply`,
+`--soft-reboot` and `--download-only` in every rendered Core and example
+image; the apply unit is covered by its own test.
 
 Timers use `OnCalendar=daily` or `weekly`, `RandomizedDelaySec=2h` and
-`Persistent=true` (a missed run starts after the next boot).
+`Persistent=true` (a missed run starts after the next boot) for staging.
 `requireACPower` adds `ConditionACPower=true` to the service: on battery
 the run is skipped, not failed, until the next scheduled time. Desktops
 and VMs without a known AC connector count as on AC power. Services want
 and follow `network-online.target`; the timers add no boot ordering.
+
+An `image.apply` policy ([ADR 0023](adr/0023-scheduled-apply-window.md)) adds the
+separate `deskos-image-apply.timer` and `.service`. The timer uses the requested
+`days` plus `at` or a `window.start`
+and `window.duration`, an optional IANA `timezone`, `AccuracySec=1min` and
+`Persistent=false`. A window also adds `RandomizedDelaySec` equal to its
+duration. The service runs `/usr/bin/deskos window` as an `ExecCondition`
+before `bootc upgrade --apply --quiet`; a calendar event that elapses while
+the machine is suspended is therefore skipped when it is outside the local
+day/time interval. Exact `at` allows five minutes of grace. The timer never
+catches up a missed window.
 
 Core sets the **image** updates daily, on AC power only; system Flatpak updates
 are the EL family's policy (`rhel-family`), not the foundation's. An
