@@ -36,15 +36,14 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 | `deskos-image-update.timer` → `deskos-image-update.service` | `bootc upgrade --quiet` | downloads the next image and **stages** it |
 | `deskos-flatpak-update.timer` → `deskos-flatpak-update.service` | `flatpak update --system --noninteractive --assumeyes` | updates system Flatpak apps and runtimes |
 
-> **Platform scope.** Everything `bootc` here is on every platform. The Flatpak
-> half exists only where the image declares a system Flatpak channel — the EL
-> family's `PackageSet/rhel-family` and the Fedora family's `PackageSet/fedora`
-> provide one, and DeskOS Core adds neither the package nor the unit without one
-> of those profiles; an organization can still declare them itself. A platform that
-> declares no channel fails composition for a `FlatpakSet` rather than pretending
-> (the Ubuntu platform declared none, and lives in its own repository now), and on
-> AlmaLinux the Flatpak preinstall path is **declared**, not exercised by the CI
-> example ([platforms.md](platforms.md)).
+> **Platform scope.** Everything `bootc` here is on every shipped platform. The
+> Flatpak half exists only where the image declares a system Flatpak channel: the
+> EL family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither
+> the package nor the unit without a profile that selects it; an organization can
+> still declare them itself. A platform that declares no channel fails composition
+> for a `FlatpakSet` rather than pretending. The parked AlmaLinux and Fedora
+> examples are not part of the shipped support statement
+> ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base

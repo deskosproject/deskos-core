@@ -57,7 +57,7 @@ against a Core tree you pass, and `deskosctl core export DIR` writes it out.
 
 A concrete build target: **one platform plus profiles**. Profile order is
 *not* precedence. It compiles into a workstation **image**; `Workstation`
-is the composition kind — the machine you author — not a Fedora edition.
+is the composition kind — the machine you author — not a distribution edition.
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
@@ -120,7 +120,7 @@ Facts about an OS target: its bootc base image, **its package manager** (`rpm` o
 `deb`), its package-group mapping, GNOME, boot, image update and Flatpak
 capabilities, **whether its base can fetch a verified artifact**, and its
 redistribution constraints. DeskOS ships `centos-stream-10`,
-`almalinux-10`, `rhel-10` and `fedora-45` in
+`rhel-10` in
 [`resources/platforms/`](../resources/platforms/); the canonical status of each,
 and how to install it, is [platforms.md](platforms.md). A platform that is only
 being *evaluated* is not shipped: it carries its own `Platform` resource inside
@@ -671,13 +671,10 @@ project.
 - The public reference workstation uses **CentOS Stream 10**.
 - Organizations that require **RHEL** compile the same Core semantics
   directly onto the official RHEL 10 bootc base.
-- **AlmaLinux 10** composes the same Core on the AlmaLinux project's own
-  bootc base, which the project labels experimental.
-- **Fedora 45** composes the same Core on the Fedora Project's own bootc
-  desktop base, Silverblue, with the Fedora family's own software
-  (`Profile/fedora`) rather than the RHEL family's. It is pinned to a prerelease
-  compose of the release; [platforms.md](platforms.md) says what was verified
-  against that pin.
+- **AlmaLinux 10** and **Fedora 45** compose the same Core in example roots,
+  not shipped platforms. They are built and booted by the weekly example check
+  without being published; see
+  [parked-platforms.md](parked-platforms.md).
 - **Ubuntu 26.04** composes the same Core in a repository of its own, on a base
   owned by the Project DeskOS and without the RHEL family's software
   ([ADR 0014](adr/0014-platform-base-ownership.md), [ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).

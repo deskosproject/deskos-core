@@ -35,7 +35,7 @@ reconcile deployed endpoint state.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published; and AlmaLinux 10, published at quay.io/deskos/deskos-core-almalinux-10 on the base its vendor labels experimental. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -115,13 +115,14 @@ Examples of every kind are in
 DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
 which a workstation selects only when its platform's base lets DeskOS write
-them (ADR 0016). The same Core composes onto `centos-stream-10`, `almalinux-10`,
-`rhel-10` and `fedora-45`; the Ubuntu platform composes it in its own repository
+them (ADR 0016). The same Core composes onto the shipped `centos-stream-10` and `rhel-10`; the
+parked AlmaLinux and Fedora examples compose it from their own roots. The Ubuntu
+platform composes it in its own repository
 ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)), on a base the project
 owns rather than its vendor. A RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
 DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
-RHEL 10, AlmaLinux 10 and Fedora 45 — produce the same Core content. A Debian-family platform is
+CentOS Stream 10 and RHEL 10 — produce the same Core content. A Debian-family platform is
 not compared by that test, because its package manager is deb: what pins the deb render
 here is the synthetic Debian golden in the compiler tests (`debian-synthetic`), which is
 built from a fixture rather than from a platform this repository ships.
@@ -336,46 +337,21 @@ account the upstream container image ships suppressing the wizard — is in
   consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
   disk under nested KVM on the entitled factory VM (example wallpaper). Not in
   CI; no full E2E.
-- **Published and signed images (verified 2026-10-18).** The old single repository
+- **Published and signed image (verified 2026-10-18).** The old single repository
   (`quay.io/deskos/deskos-core`, run `37162282876`, commit `8ab0cc9`) is withdrawn and
-  replaced by one repository per platform, published by the gate's `publish=true`
+  replaced by one repository per shipped platform, published by the gate's `publish=true`
   dispatch (run `39067812799`, commit `e21c4f7`):
-  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:39dff937…`,
-  `quay.io/deskos/deskos-core-almalinux-10` at `sha256:f28062cc…` and
-  `quay.io/deskos/deskos-core-ubuntu-2604` at `sha256:f1c40dd4…` — the last Ubuntu image
-  this repository published, and the platform moved to a repository of its own afterwards
-  ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)) — each with `:latest`
+  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:39dff937…`, with `:latest`
   and the commit tag at the same digest. `cosign verify` with the workflow issuer and
-  this repository's identity passes on all three, with the SBOM, accepted-exception
-  and effective-exception attestations bound to that digest. The organization-owned
-  base `quay.io/deskos/deskos-ubuntu-base:26.04` (`sha256:ec5ce295…`) is published and
-  signed too, with a signing identity of its own rather than the CI one. That repository is
-  `deskos-ubuntu-bootc` now, and the image it publishes is
-  `quay.io/deskos/deskos-ubuntu-bootc`. RHEL-derived
-  images are never published (ADR 0014).
-- **Fedora 45, composed, rendered and built (2026-10-20).** The platform's facts
-  were **read off the pinned base** (`quay.io/fedora/fedora-silverblue:45`,
-  pinned by digest), not modeled on another family: the comps environment dnf5
-  resolves for the `workstation` group (347 packages, 346 MiB), Flatpak 1.18.4 with
-  `flatpak preinstall` and `/usr/share/flatpak/preinstall.d`, GDM's
-  `/etc/gdm/custom.conf` and the `distro` dconf database,
-  `/etc/pki/ca-trust/source/anchors` with `update-ca-trust`,
-  `gtk-update-icon-cache`, the bootc update units (present, not enabled, unlike
-  Fedora's minimal `fedora-bootc` base), and the Plymouth spinner frames.
-  `deskosctl validate` and `go test` cover composition and rendering, and `ci.yml`
-  renders the reference workstation. **The image builds here**: the reference
-  workstation `deskos-core-fedora-45` built locally that day (image
-  `14cb6852ae33`, 7.6 GB). The build rebuilds the initramfs for the kernel the
-  image carries (7.2.11-300.fc45) and **fails unless** `plymouthd`, the DeskOS
-  theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
-  image carries them; `bootc container lint` passed 12 checks with 2 warnings
-  (`nonempty-run-tmp`, `var-tmpfiles`). The pin is the released compose
-  (`45.20261021.n.0`, os-release reads "Silverblue"), and the platform follows
-  that pin ([platforms.md](platforms.md)). **Booted and checked in CI** (run 39462806315):
-  `vm-bootcheck.yml` builds `examples/fedora-45`, makes a btrfs QCOW2 and runs the
-  boot, instrumented session and first-boot checks; the graphical screen appeared
-  in 30 s and the session reported the tray extension active and its watcher
-  answering. That is a QEMU guest, not hardware, and no Fedora image is published.
+  this repository's identity passes, with the SBOM, accepted-exception and
+  effective-exception attestations bound to that digest. RHEL-derived images are never
+  published (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
+  Fedora are parked examples and publish nothing.
+- **Parked AlmaLinux and Fedora examples.** Their self-contained roots compose and
+  render in CI, and `examples-weekly.yml` builds and boots them weekly without
+  publishing. They are not shipped platforms and have no image repository; see
+  [parked-platforms.md](parked-platforms.md). Historical measurements remain in the
+  example Platform resources, not in the shipped platform matrix.
 - **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
   `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
@@ -666,15 +642,12 @@ into the build context and a symlink out of the root is refused too.
 Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
 image-update unit. Where the base **enables** it, its service runs
 `bootc upgrade --apply`, which **reboots** whenever a new image is published.
-The reboot-on-publish path was checked end to end on CentOS Stream 10; AlmaLinux is
-built and booted in CI, but that path is not rechecked there ([platforms.md](platforms.md)).
+The reboot-on-publish path was checked end to end on CentOS Stream 10. RHEL is
+built and booted by the organization, which owns that validation. The parked
+examples are checked weekly but are not shipped platforms.
 
-Whether the base enables that unit is the platform's own fact, and Fedora is the
-counter-example: its Silverblue base is measured to ship the unit **without
-enabling it**, while Fedora's minimal `fedora-bootc` base does enable it — one
-more reason the Fedora platform is built on Silverblue. DeskOS declares the unit
-either way, so that masking it leaves DeskOS's own staging timer the only update
-path.
+DeskOS declares the update unit on every shipped platform, so masking it leaves
+DeskOS's own staging timer the only update path.
 
 `UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
 `schedule: daily|weekly` and `requireACPower`) lowers to:
@@ -748,9 +721,9 @@ reserved in the Plan and not implemented.
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **Published today: the container image, per platform.** It goes to one
-  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`,
-  `-almalinux-10`), and the digests the last dispatch published, with the run that
+- **Published today: the container image, per shipped platform.** It goes to one
+  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`), and the
+  digests the last dispatch published, with the run that
   produced them, are under
   [Validation status](#validation-status) on this page. Publishing is manual: the
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
@@ -759,9 +732,9 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 - **A CentOS Stream 10 preview ISO** is published at
   <https://download.deskos.org/>. It is built from a published image, not from
   the current `main`, and it is a preview rather than a supported channel; the
-  checksum is published beside it. QCOW2 files, AlmaLinux/Fedora ISOs and RHEL
-  ISOs are not published: RHEL stays private, and the other installer media are
-  built locally (see [install.md](install.md)). The CI builds a QCOW2 (the EL
+  checksum is published beside it. QCOW2 files and RHEL ISOs are not published:
+  RHEL stays private, and the pinned example roots are built locally for testing
+  (see [parked-platforms.md](parked-platforms.md)). The CI builds a QCOW2 (the EL
   platforms) only as test input; an Ubuntu disk is written with
   `bootc install to-disk` by that platform's own repository.
 - **Planned:** promote the same digest through channels (candidate,

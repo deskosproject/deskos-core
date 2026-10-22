@@ -131,14 +131,8 @@ jobs:
             ./bin/deskosctl render --no-core ./resources ./examples/organization-and-role --workstation "$ws" --output "dist/c/$ws"
             ./bin/deskosctl render --no-core ./examples/organization-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
           done
-          # The AlmaLinux example renders too: its platform is shipped.
+          # The parked examples still render from their self-contained roots.
           ./bin/deskosctl render ./examples/almalinux-10 --workstation example-almalinux-10 --output dist/alma
-          # The AlmaLinux reference workstation renders too: it is what the
-          # publish path builds, and its Containerfile is pinned by a golden.
-          ./bin/deskosctl render --workstation deskos-core-almalinux-10 --output dist/alma-ref
-          # The Fedora reference workstation renders: its platform is shipped and its
-          # Containerfile is pinned by a golden, so a Fedora fact that stops rendering
-          # fails here rather than in a build nobody runs on a pull request.
-          ./bin/deskosctl render --workstation deskos-core-fedora-45 --output dist/fedora-45
+          ./bin/deskosctl render ./examples/fedora-45 --workstation example-fedora-45 --output dist/fedora-45
           diff -r dist/a dist/b
           diff -r dist/a dist/c

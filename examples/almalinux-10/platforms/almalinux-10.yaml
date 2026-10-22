@@ -3,27 +3,32 @@ kind: Platform
 metadata:
   name: almalinux-10
 spec:
-  displayName: AlmaLinux 10
+  displayName: AlmaLinux 10 (example only)
+  # EXAMPLE ONLY. AlmaLinux 10 is not a shipped DeskOS platform and is not in
+  # the published platform matrix. Its Platform lives here so composition and
+  # rendering stay exercised without carrying a second experimental EL10 image
+  # in CI and release. To re-promote it, mirror the base digest at a stable
+  # reference and follow docs/parked-platforms.md.
   # The vendor here is the AlmaLinux project, which publishes this base itself, so
   # the platform follows ADR 0004's official-base rule and declares no
   # organization owner or tier — like centos-stream-10 and rhel-10. The vendor
-  # labels the base experimental. CI builds and boots this platform's image (the
-  # example), which exercises the paths that image needs; the facts below remain
-  # EL10 conventions modeled on rhel-10, and this is not a support statement
-  # (invariant 10).
+  # labels the base experimental. The example is what exercises its paths; the
+  # facts below remain EL10 conventions modeled on rhel-10, and this is not a
+  # support statement (invariant 10).
   family: almalinux
   release: "10"
   architectures: [x86_64]
   packageManager: rpm
   bootc:
     image: quay.io/almalinuxorg/almalinux-bootc:10
-    # x86_64 manifest of the :10 index, 2026-10-17 (the base as served that day).
+    # x86_64 manifest of the :10 index, 2026-10-22 (the base as served that day).
     # Moved from the 2026-10-14 manifest: the vulnerability gate found Criticals in
     # Go modules compiled into binaries this base ships (podman, skopeo, toolbox,
     # ipp-usb), and a newer base is the fix that accepts nothing. The next scan says
     # whether it was enough; whatever remains goes on the record, with a reason.
-    # The vendor's bootc images are experimental; move this deliberately.
-    digest: sha256:e99bb7fbd7155e1ce45bd99077f3ae0dbe9a13ce9abf0951765f9b0e4470a2b4
+    # The vendor's bootc images are experimental; move this deliberately. The
+    # example is not built by CI, so this pin is documentation until promotion.
+    digest: sha256:61e7963066ef53e6c729826117ddfb1e2afc5fce8ceb591b5992a7d1d6e36878
   distribution:
     # AlmaLinux's archive is freely redistributable and needs no subscription.
     redistributable: true

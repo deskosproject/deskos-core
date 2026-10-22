@@ -20,10 +20,10 @@ var update = flag.Bool("update", false, "rewrite golden files")
 const (
 	resourcesRoot = "../../resources"
 	exampleRoot   = "../../examples/organization-and-role"
-	// fedoraExampleRoot is the Fedora 45 example. It is a separate root that
-	// references the shipped fedora-45 Platform, like every other per-platform
-	// example.
+	// Fedora and AlmaLinux are example-only. Their Platforms live in these roots,
+	// so the examples stay self-contained and can be promoted later.
 	fedoraExampleRoot = "../../examples/fedora-45"
+	almaExampleRoot   = "../../examples/almalinux-10"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -125,12 +125,11 @@ func TestGoldenContainerfiles(t *testing.T) {
 		roots []string
 	}{
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
-		{"deskos-core-almalinux-10", []string{resourcesRoot}},
+		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		// Fedora's shipped reference workstation: it pins the rendered build context
-		// for the platform, so a change to the Fedora facts or to the backend shows up
-		// as a reviewable diff. ci.yml renders the same workstation.
-		{"deskos-core-fedora-45", []string{resourcesRoot}},
+		// The example-only platforms keep their rendered build contexts pinned too.
+		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
+		{"example-fedora-45", []string{resourcesRoot, fedoraExampleRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {
@@ -271,10 +270,11 @@ func TestRenderRefusesForeignDirectory(t *testing.T) {
 // RHSM directories are tmpfs, and the generated redhat.repo is removed in the
 // same RUN. Declared vendor repository files stay in the build context.
 //
-// The Fedora rows are here because this is the backend's shape for *any* RPM
+// The Fedora example is here because this is the backend's shape for *any* RPM
 // platform, not a RHEL one: a Fedora base has no subscription-manager at all, so
 // the test asserts that the same transaction carries the same hygiene rather than
-// claiming Fedora has RHSM state to keep out.
+// claiming Fedora has RHSM state to keep out. Fedora is example-only; it is not
+// part of the published platform set.
 func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 	for _, tc := range []struct {
 		ws    string
@@ -283,7 +283,7 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"example-devops-centos-stream-10", []string{resourcesRoot, exampleRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		{"deskos-core-fedora-45", []string{resourcesRoot}},
+		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
 		{"example-fedora-45", []string{resourcesRoot, fedoraExampleRoot}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)

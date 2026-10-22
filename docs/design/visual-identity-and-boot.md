@@ -192,9 +192,9 @@ warning (see
 
 ## VM QA
 
-Implemented in `tests/vm/` (CentOS Stream 10 and AlmaLinux 10 in CI with the session
-check; the Ubuntu platform in its own repository, which vendors the same harness; RHEL
-on the retired factory host):
+Implemented in `tests/vm/` (CentOS Stream 10 in CI with the session check; the
+parked AlmaLinux/Fedora examples in the weekly workflow; the Ubuntu platform in its
+own repository, which vendors the same harness; RHEL on the retired factory host):
 Tier A without reference matching
 (`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
 systemd credentials over SMBIOS and a serial report, no SSH or qecore);

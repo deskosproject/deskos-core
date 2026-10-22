@@ -12,7 +12,7 @@ different things.
 
 | Directory | Kinds it holds | What is in it |
 |---|---|---|
-| [`platforms/`](platforms/) | `Platform` | One per platform DeskOS ships: `centos-stream-10`, `almalinux-10`, `rhel-10`, `fedora-45`. The Ubuntu platform is in its own repository (ADR 0020). Every platform-specific name and fact lives here and nowhere else: package groups, boot splash, the base image by digest, and whether the base can fetch a verified artifact |
+| [`platforms/`](platforms/) | `Platform` | One per platform DeskOS ships: `centos-stream-10` and `rhel-10`. The Ubuntu platform is in its own repository (ADR 0020); AlmaLinux and Fedora live in their example roots. Every platform-specific name and fact lives here and nowhere else: package groups, boot splash, the base image by digest, and whether the base can fetch a verified artifact |
 | [`profiles/`](profiles/) | `Profile` | The layers: `deskos-core` (the foundation), `deskos-gnome` (the desktop defaults), `deskos-look` (wallpaper, login logo, boot splash), `deskos-reference-apps`, `deskos-boot`, and the family ones (`rhel-family`, `fedora`) |
 | [`workstations/`](workstations/) | `Workstation` | The reference workstations, `deskos-core-<platform>`: what a reader is meant to take. No RHEL one, because RHEL-derived images are never published |
 | [`desktop/`](desktop/) | `GnomeProfile` | GNOME settings: `deskos-core` (the session basics) and `deskos-look` (the appearance) |

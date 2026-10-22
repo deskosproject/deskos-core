@@ -11,14 +11,8 @@ name: vm-bootcheck
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
-# For AlmaLinux 10 the same path builds the platform's example, whose platform is
-# shipped, into a QCOW2 and boots it; the example keeps AlmaLinux's own look, so
-# the boot check runs without --expect-splash.
-#
-# For Fedora 45 the same path builds examples/fedora-45 and boots it. Its example
-# keeps Fedora's own wallpaper and splash (the desksos-boot profile changes the
-# text only), so the boot check runs without --expect-splash. This is Fedora's
-# boot evidence: the image is not published and the pin is a prerelease compose.
+# The AlmaLinux and Fedora examples are not built here: they are parked examples,
+# not published platforms. Their roots still validate and render in ci.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
 # the raw disk are test input and are not uploaded; the only publish path is
@@ -74,13 +68,11 @@ env:
 jobs:
   changes:
     # A platform pin or a platform resource only concerns that platform. Shared
-    # Core code and resources concern all of them. Without this, a one-line
-    # Fedora re-pin builds four images.
+    # Core code and resources concern all of them. The parked examples are not
+    # image legs.
     runs-on: ubuntu-24.04
     outputs:
       centos: ${{ steps.which.outputs.centos }}
-      almalinux: ${{ steps.which.outputs.almalinux }}
-      fedora: ${{ steps.which.outputs.fedora }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -91,8 +83,6 @@ jobs:
           set -eu
           all() {
             echo "centos=true" >> "$GITHUB_OUTPUT"
-            echo "almalinux=true" >> "$GITHUB_OUTPUT"
-            echo "fedora=true" >> "$GITHUB_OUTPUT"
           }
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             all; exit 0
@@ -103,8 +93,6 @@ jobs:
             all; exit 0
           fi
           printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/(centos-stream-10|organization-and-role)/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"
-          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/almalinux-10\.yaml|resources/workstations/deskos-core-almalinux-10\.yaml|examples/almalinux-10/)' && echo "almalinux=true" >> "$GITHUB_OUTPUT" || echo "almalinux=false" >> "$GITHUB_OUTPUT"
-          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/fedora-45\.yaml|resources/workstations/deskos-core-fedora-45\.yaml|resources/profiles/fedora\.yaml|resources/software/fedora\.yaml|examples/fedora-45/)' && echo "fedora=true" >> "$GITHUB_OUTPUT" || echo "fedora=false" >> "$GITHUB_OUTPUT"
 
   core-centos-stream-10:
     needs: changes
@@ -292,273 +280,6 @@ jobs:
             ${{ env.WORK }}/session
             ${{ env.WORK }}/firstboot
             ${{ env.WORK }}/journal-failed-boot
-            !${{ env.WORK }}/**/*.qcow2
-          retention-days: 14
-          if-no-files-found: warn
-
-  core-almalinux-10:
-    needs: changes
-    if: needs.changes.outputs.almalinux == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 150
-    env:
-      # The example, not a shipped reference: its platform is shipped, and the
-      # example is what exercises it. Its profiles keep AlmaLinux's own look, so
-      # the boot check runs without --expect-splash (there is no DeskOS splash).
-      WS: example-almalinux-10
-      ROOT: examples/almalinux-10
-      IMAGE: localhost/example-almalinux-10:ci
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-
-      - name: Render the build context
-        run: |
-          go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render "$ROOT" --workstation "$WS" --output ctx
-          sha256sum ctx/plan.json ctx/generated-manifest.json
-
-      - name: Put container storage and outputs on /mnt
-        run: |
-          df -h / /mnt
-          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
-          sudo mount --bind /mnt/containers /var/lib/containers
-          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
-          sudo chown "$(id -u):$(id -g)" "$WORK"
-          # The runner image ships a default CNI conflist while the CNI plugin binaries
-          # are not installed, and this podman uses netavark: nothing here creates a CNI
-          # network, and podman warns on every run that it cannot validate a file it does
-          # not read. Removing it keeps a warning in these logs worth reading.
-          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
-
-      - name: Enable KVM for the runner user
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
-
-      - name: Install QEMU and OVMF
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
-
-      - name: Pull the base and the builder, with retries
-        run: |
-          # quay.io's CDN returned an EOF in the middle of a layer while this was being
-          # written (2026-10-18), and losing a build of this length to a pull that had
-          # nothing wrong with it is losing the work of the whole job. The retry is
-          # explicit and bounded, and the build below runs with --pull=never: what it
-          # uses is what arrived, so a failure there is a real one.
-          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
-          for ref in "$base" "$BIB"; do
-            ok=0
-            for i in 1 2 3 4 5; do
-              if sudo podman pull "$ref"; then ok=1; break; fi
-              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
-              sleep 20
-            done
-            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
-          done
-
-      - name: Build the image
-        timeout-minutes: 40
-        run: sudo podman build --pull=never -t "$IMAGE" ctx
-
-      - name: Record image evidence
-        run: |
-          mkdir -p "$WORK/evidence"
-          cp ctx/plan.json ctx/generated-manifest.json "$WORK/evidence/"
-          grep '^FROM ' ctx/Containerfile > "$WORK/evidence/base.txt"
-          sudo podman image inspect "$IMAGE" --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' | tee "$WORK/evidence/image.txt"
-          sudo podman run --rm --network=none "$IMAGE" rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort > "$WORK/evidence/rpm-qa.txt"
-          cat "$WORK/evidence/base.txt"
-
-      - name: Build a QCOW2 without the builder's kernel arguments
-        timeout-minutes: 30
-        run: |
-          mkdir -p "$WORK/output"
-          sudo podman run --rm --privileged --pull=never \
-            --security-opt label=type:unconfined_t \
-            -v "$WORK/output:/output" \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --no-default-kernel-args \
-            --chown "$(id -u):$(id -g)" "$IMAGE"
-          qemu-img check "$WORK/output/qcow2/disk.qcow2"
-          sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
-
-      - name: Boot check (unmodified disk)
-        timeout-minutes: 20
-        run: |
-          # No --expect-splash: the example keeps AlmaLinux's own look. The check
-          # classifies pixels, not the splash's identity, so the assertion is the
-          # stable graphical screen; AlmaLinux's own splash is not verified here.
-          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
-
-      - name: Session check (instrumented boot)
-        timeout-minutes: 25
-        run: |
-          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
-            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
-
-      - name: First-boot check (is the wizard the session, can an account log in)
-        timeout-minutes: 25
-        run: |
-          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/firstboot" --boot-timeout 900
-
-      - name: Summary
-        if: always()
-        run: |
-          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" \
-                   "$WORK/firstboot/firstboot.md"; do
-            if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
-          done
-
-      - name: Upload boot check evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: vm-evidence-core-almalinux-10
-          path: |
-            ${{ env.WORK }}/evidence
-            ${{ env.WORK }}/bootcheck
-            ${{ env.WORK }}/session
-            ${{ env.WORK }}/firstboot
-            !${{ env.WORK }}/**/*.qcow2
-          retention-days: 14
-          if-no-files-found: warn
-
-  core-fedora-45:
-    needs: changes
-    if: needs.changes.outputs.fedora == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 150
-    env:
-      # The example, not a shipped reference: the platform is shipped and the
-      # example is what exercises it. Its profiles keep Fedora's own wallpaper and
-      # splash, so the boot check runs without --expect-splash.
-      WS: example-fedora-45
-      ROOT: examples/fedora-45
-      IMAGE: localhost/example-fedora-45:ci
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-
-      - name: Render the build context
-        run: |
-          go build -o bin/deskosctl ./cmd/deskosctl
-          ./bin/deskosctl render "$ROOT" --workstation "$WS" --output ctx
-          sha256sum ctx/plan.json ctx/generated-manifest.json
-
-      - name: Put container storage and outputs on /mnt
-        run: |
-          df -h / /mnt
-          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
-          sudo mount --bind /mnt/containers /var/lib/containers
-          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
-          sudo chown "$(id -u):$(id -g)" "$WORK"
-          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
-
-      - name: Enable KVM for the runner user
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
-
-      - name: Install QEMU and OVMF
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
-
-      - name: Pull the base and the builder, with retries
-        run: |
-          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
-          for ref in "$base" "$BIB"; do
-            ok=0
-            for i in 1 2 3 4 5; do
-              if sudo podman pull "$ref"; then ok=1; break; fi
-              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
-              sleep 20
-            done
-            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
-          done
-
-      - name: Build the image
-        timeout-minutes: 40
-        run: sudo podman build --pull=never -t "$IMAGE" ctx
-
-      - name: Record image evidence
-        run: |
-          mkdir -p "$WORK/evidence"
-          cp ctx/plan.json ctx/generated-manifest.json "$WORK/evidence/"
-          grep '^FROM ' ctx/Containerfile > "$WORK/evidence/base.txt"
-          sudo podman image inspect "$IMAGE" --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' | tee "$WORK/evidence/image.txt"
-          sudo podman run --rm --network=none "$IMAGE" rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' | sort > "$WORK/evidence/rpm-qa.txt"
-          cat "$WORK/evidence/base.txt"
-
-      - name: Build a QCOW2 without the builder's kernel arguments
-        timeout-minutes: 30
-        run: |
-          mkdir -p "$WORK/output"
-          # --rootfs btrfs: Fedora's image declares no default root filesystem, and
-          # bootc-image-builder refuses with "missing required info: DefaultRootFs"
-          # without one (osbuild's bootc docs name Fedora as the case). btrfs is what
-          # Silverblue installs on; ext4 was only used to isolate the initramfs bug
-          # (docs/research-notes.md), which is fixed.
-          sudo podman run --rm --privileged --pull=never \
-            --security-opt label=type:unconfined_t \
-            -v "$WORK/output:/output" \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --rootfs btrfs --no-default-kernel-args \
-            --chown "$(id -u):$(id -g)" "$IMAGE"
-          qemu-img check "$WORK/output/qcow2/disk.qcow2"
-          sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
-
-      - name: Boot check (unmodified disk)
-        timeout-minutes: 20
-        run: |
-          # No --expect-splash: the example keeps Fedora's own look, and the check
-          # classifies pixels rather than the splash's identity.
-          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/bootcheck" --hash-disk --boot-timeout 420 --shutdown-timeout 120
-
-      - name: Session check (instrumented boot)
-        timeout-minutes: 25
-        run: |
-          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
-            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
-
-      - name: First-boot check (is the wizard the session, can an account log in)
-        timeout-minutes: 25
-        run: |
-          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
-            --out "$WORK/firstboot" --boot-timeout 900
-
-      - name: Summary
-        if: always()
-        run: |
-          for f in "$WORK/bootcheck/summary.md" "$WORK/session/session.md" \
-                   "$WORK/firstboot/firstboot.md"; do
-            if [ -f "$f" ]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
-          done
-
-      - name: Upload boot check evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: vm-evidence-core-fedora-45
-          path: |
-            ${{ env.WORK }}/evidence
-            ${{ env.WORK }}/bootcheck
-            ${{ env.WORK }}/session
-            ${{ env.WORK }}/firstboot
             !${{ env.WORK }}/**/*.qcow2
           retention-days: 14
           if-no-files-found: warn

@@ -17,8 +17,7 @@ organization.
   build-host identity, `bootcheck.py` and `sessioncheck.py` passed on its
   QCOW2 in the factory VM. The RHEL factory host was retired; the RHEL build
   now runs in a downstream organization's repository on GitHub-hosted
-  runners, and this repository builds CentOS Stream 10 and AlmaLinux 10, not
-  RHEL. Ubuntu 26.04 is built in a repository of its own
+  runners, and this repository builds CentOS Stream 10, not RHEL. Ubuntu 26.04 is built in a repository of its own
   ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 - RHEL's flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked
   with a private workstation that declares Flathub apps.
@@ -53,8 +52,7 @@ each slice is reviewed on its own:
 
 - **CI build:** `vm-bootcheck.yml` builds the CentOS Stream 10 workstations
   (Core and the organization example) into QCOW2 disks and runs the boot,
-  session and first-boot checks on them. It also builds and boots the AlmaLinux 10
-  example. Until the platform moved ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md))
+  session and first-boot checks on them. Until the platform moved ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md))
   it built the two Ubuntu 26.04 workstations into raw disks (`bootc install to-disk`) and ran
   the boot and first-boot checks, not the session check; its own repository does all three
   now. It runs on pull requests and on
@@ -63,28 +61,19 @@ each slice is reviewed on its own:
 - **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
   `main`, builds, scans and boots each platform's image and then pushes and
   signs it to that platform's repository
-  (`quay.io/deskos/deskos-core-centos-stream-10`, `-almalinux-10`, …) as `:latest` and
-  `:<commit>`. CentOS Stream 10 and AlmaLinux 10 today, with the
+  (`quay.io/deskos/deskos-core-centos-stream-10`) as `:latest` and
+  `:<commit>`. CentOS Stream 10 today, with the
   digests and the run in [architecture.md](architecture.md#validation-status), and
   the older single repository
   (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
   pure check.
-- **Pinned base:** digest-pinned base image, updated deliberately. Done
-  for CentOS Stream 10, RHEL 10 and Fedora 45; the Ubuntu base is pinned in its own
-  repository.
-- **Fedora releases — one at a time, re-pinned by hand.** DeskOS ships
-  **Fedora 45** and **retired Fedora 44** rather than carrying both. The
-  `:45` tag still resolves to a prerelease compose (`45.20261019.n.0`, whose base
-  enables `updates-testing`), so the resource is pinned to that digest and
-  [platforms.md](platforms.md) says so; when the released compose appears, the
-  digest and the measurement comments are re-pinned in one reviewable change. If a
-  second Fedora release is ever carried, the shape is the current release plus the
-  previous one: a platform resource and a re-pinned digest each, a re-validation
-  each, and a **separate image repository** each
-  (`quay.io/deskos/deskos-core-fedora-45`, so a release cannot change under a
-  machine at `bootc upgrade`). Re-pinning and re-validation are **manual**, like
-  every other base pin ([platforms.md](platforms.md)). The trigger — how DeskOS
-  learns a release is out of prerelease and decides to carry two — is open.
+- **Pinned base:** digest-pinned base image, updated deliberately. Done for
+  CentOS Stream 10 and RHEL 10; the Ubuntu base is pinned in its own repository.
+- **Parked AlmaLinux and Fedora examples.** Neither is a shipped platform. Their
+  self-contained roots compose and render in CI, and `examples-weekly.yml` builds
+  and boots them weekly without publishing. Re-promotion requires a durable base
+  (for Fedora, a mirrored digest in DeskOS Quay) and the checklist in
+  [parked-platforms.md](parked-platforms.md).
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -94,7 +83,7 @@ Details in
 [`docs/design/visual-identity-and-boot.md`](design/visual-identity-and-boot.md)
 ("VM QA").
 
-**Existing for CentOS Stream 10 and AlmaLinux 10**
+**Existing for CentOS Stream 10**
 ([`tests/vm/`](../tests/vm/README.md)):
 
 - **Tier A, unmodified artifact:** `bootcheck.py` boots the exact test disk —
@@ -135,18 +124,17 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
-- ~~Build and boot the AlmaLinux 10 platform in CI~~ done: `core-almalinux-10` in
-  `vm-bootcheck.yml` builds and boots `example-almalinux-10` with the boot,
-  session and first-boot checks ([platforms.md](platforms.md)).
+- **Parked AlmaLinux and Fedora examples:** their image builds move to the
+  weekly `examples-weekly.yml` check, with no publication. This is not a support
+  promise; [parked-platforms.md](parked-platforms.md) records the re-promotion
+  path.
 - ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs
   `sessioncheck.py` on the Ubuntu disk beside the boot and first-boot checks
   ([platforms.md](platforms.md)). ~~Whether DeskOS publishes the Ubuntu
   derivative, and where~~ decided: it does, as
   `quay.io/deskos/deskos-core-ubuntu-2604`, for a person who asked for Ubuntu
   support -- and it moved to a repository of its own afterwards, which publishes and checks
-  it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). Fedora is maintained
-  at the level of a build and a CI boot for now: it composes, renders, builds and boots
-  in `vm-bootcheck.yml`; the effort stays on the EL 10 path.
+  it ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 - ~~**Fedora's rebuilt initramfs dropped ostree and bootc**~~ fixed: the
   regenerated initramfs carried neither module (Fedora's `50ostree` says "only
   when asked" and `51bootc` "never installed by default"), so the disk stopped in
@@ -154,16 +142,15 @@ Details in
   39436779300, 39448084854 and 39452191007). The backend now adds both modules
   when the base carries them and asserts `ostree-prepare-root` in every
   regenerated initramfs. The btrfs disk boots with that fix (run 39462806315:
-  graphical screen in 30 s, session and first-boot checks green). Published
-  CentOS and AlmaLinux images still carry the old initramfs until they are rebuilt
+  graphical screen in 30 s, session and first-boot checks green). The published
+  CentOS image was rebuilt after the fix
   ([research-notes.md](research-notes.md#fedoras-rebuilt-initramfs-dropped-ostree-and-bootc-2026-10-20)).
 - The **splash race**: on one disk, a first boot showed text for the whole boot
   and a second drew the splash; the retry in `vm-bootcheck.yml` absorbs it but
   not always, so `main` can go red on its own. Cause still unexplained.
-- ~~Build and boot the Fedora 45 platform in CI~~ done: `vm-bootcheck.yml` builds
-  `examples/fedora-45` and runs the boot, session and first-boot checks on the
-  QCOW2 ([platforms.md](platforms.md)). What remains is a published image, which
-  waits for the released compose, and hardware installation.
+- **Fedora example:** the weekly examples workflow builds and boots it from the
+  current Fedora tag. A published Fedora platform waits for a mirrored base and
+  the promotion checklist in [parked-platforms.md](parked-platforms.md).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

@@ -1,0 +1,176 @@
+name: examples-weekly
+
+# Weekly smoke test for the parked platform examples.
+#
+# AlmaLinux 10 and Fedora 45 are examples, not shipped platforms: nothing here
+# publishes an image, signs one, or touches a registry. The job builds each
+# example from its vendor's *current* tag, writes a disposable QCOW2, boots it,
+# and runs the same boot, session and first-boot checks as the shipped platform.
+#
+# The committed example keeps its pinned digest for reference and promotion. The
+# weekly job copies the root to a temporary directory and replaces its digest
+# with the one the vendor serves today, so a weekly run tests the latest GNOME /
+# base and does not fail merely because an old digest was garbage-collected.
+on:
+  schedule:
+    # Wednesday 06:00 UTC, after the vendors' weekly rebuilds.
+    - cron: '0 6 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: examples-weekly
+  cancel-in-progress: false
+
+env:
+  WORK: /mnt/deskos-work
+  # The same builder pin as vm-bootcheck.yml; it is the one that accepts
+  # --no-default-kernel-args and boots with the image's own kernel arguments.
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+
+jobs:
+  example:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - token: almalinux-10
+            workstation: example-almalinux-10
+            root: examples/almalinux-10
+            platform: platforms/almalinux-10.yaml
+            rootfs: xfs
+          - token: fedora-45
+            workstation: example-fedora-45
+            root: examples/fedora-45
+            platform: platforms/fedora-45.yaml
+            rootfs: btrfs
+    env:
+      EXAMPLE_ROOT: ${{ env.WORK }}/example-root
+      IMAGE: localhost/${{ matrix.workstation }}:ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install skopeo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends skopeo
+
+      - name: Build deskosctl
+        run: go build -o bin/deskosctl ./cmd/deskosctl
+
+      - name: Copy the example and move it to the vendor's current digest
+        run: |
+          set -eu
+          rm -rf "$EXAMPLE_ROOT"
+          mkdir -p "$EXAMPLE_ROOT"
+          cp -a "${{ matrix.root }}/." "$EXAMPLE_ROOT/"
+          platform="$EXAMPLE_ROOT/${{ matrix.platform }}"
+          base="$(awk '/^  bootc:/{f=1} f && /^    image:/{print $2; exit}' "$platform")"
+          [ -n "$base" ]
+          digest="$(skopeo inspect --format '{{.Digest}}' "docker://$base")"
+          python3 - "$platform" "$digest" <<'PY'
+          import re
+          import sys
+
+          path, digest = sys.argv[1], sys.argv[2]
+          text = open(path).read()
+          updated, count = re.subn(
+              r"(?m)^    digest: sha256:[0-9a-f]{64}$",
+              "    digest: " + digest,
+              text,
+          )
+          if count != 1:
+              raise SystemExit("expected exactly one digest line in " + path)
+          open(path, "w").write(updated)
+          PY
+          echo "tracking $base@$digest"
+
+      - name: Render the build context
+        run: |
+          ./bin/deskosctl render "$EXAMPLE_ROOT" \
+            --workstation "${{ matrix.workstation }}" --output ctx
+          mkdir -p "$WORK/evidence"
+          cp ctx/plan.json "$WORK/evidence/plan.json"
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get install -y -qq --no-install-recommends \
+            qemu-system-x86 qemu-utils ovmf
+
+      - name: Pull the base and the builder, with retries
+        run: |
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref after 5 attempts" >&2; exit 1; }
+          done
+
+      - name: Build the image
+        timeout-minutes: 40
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
+
+      - name: Build a QCOW2 without the builder's kernel arguments
+        timeout-minutes: 30
+        run: |
+          mkdir -p "$WORK/output" "$WORK/evidence"
+          sudo podman run --rm --privileged --pull=never \
+            --security-opt label=type:unconfined_t \
+            -v "$WORK/output:/output" \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --rootfs "${{ matrix.rootfs }}" \
+            --no-default-kernel-args --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
+          sha256sum "$WORK/output/qcow2/disk.qcow2" | tee "$WORK/evidence/qcow2.sha256"
+
+      - name: Boot check (unmodified disk)
+        timeout-minutes: 20
+        run: |
+          python3 tests/vm/bootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/bootcheck" --hash-disk --boot-timeout 900 --shutdown-timeout 120
+
+      - name: Session check (instrumented boot)
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
+            --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
+
+      - name: First-boot check
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
+            --out "$WORK/firstboot" --boot-timeout 900
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vm-evidence-example-${{ matrix.token }}
+          path: |
+            ${{ env.WORK }}/evidence
+            ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/session
+            ${{ env.WORK }}/firstboot
+            !${{ env.WORK }}/**/*.qcow2
+          retention-days: 14
+          if-no-files-found: warn

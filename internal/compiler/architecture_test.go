@@ -130,10 +130,9 @@ func viewOf(p *plan.Plan) coreView {
 	return v
 }
 
-// The same DeskOS Core semantics produce the same planned content on the RPM
-// platforms — CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora 45 — over exactly
-// the fields viewOf compares: package groups (name and members), packages, systemd
-// units, dconf
+// The same DeskOS Core semantics produce the same planned content on the shipped
+// RPM platforms — CentOS Stream 10 and RHEL 10 — over exactly the fields viewOf
+// compares: package groups (name and members), packages, systemd units, dconf
 // default keys, file paths with their checksums, and the default target.
 //
 // It does not compare the rest of the Plan, and a reader should not read it as
@@ -145,12 +144,9 @@ func viewOf(p *plan.Plan) coreView {
 // where they differ — see TestFedoraDeclaresASystemFlatpakChannel and the mask
 // and group assertions below.
 //
-// Fedora is here because it is an RPM platform whose group mapping and update
-// units are the same names as the EL10 family's (measured: Fedora's comps resolves
-// `workstation-product-environment` and its base ships
-// bootc-fetch-apply-updates.timer/.service). What keeps it honest is that the test
-// asserts the *base* differs per platform, so an accident that made two platforms
-// share a base fails here. Ubuntu is not compared: its package manager is deb.
+// The examples (AlmaLinux and Fedora) are not part of this shipped-platform
+// comparison; they have their own roots and golden renders. Ubuntu is not
+// compared: its package manager is deb.
 func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome, deskos-dock]\n"
@@ -158,17 +154,12 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	dir := fixture{
 		"a.yaml": ws("core-centos", "centos-stream-10"),
 		"b.yaml": ws("core-rhel", "rhel-10"),
-		"c.yaml": ws("core-alma", "almalinux-10"),
-		"d.yaml": ws("core-fedora", "fedora-45"),
 	}.dir(t)
 	centos := mustPlan(t, "core-centos", resourcesRoot, dir)
 	rhel := mustPlan(t, "core-rhel", resourcesRoot, dir)
-	alma := mustPlan(t, "core-alma", resourcesRoot, dir)
-	fedora := mustPlan(t, "core-fedora", resourcesRoot, dir)
-	// The tray extension is delivered as the pinned v66 artifact on every platform:
-	// Fedora used the distro package until the released compose's package (64-2)
-	// stopped declaring GNOME Shell 51 (docs/adr/0021). Compare the rest of the
-	// package list, then assert the delivery exactly instead of hiding it.
+	// The tray extension is delivered as the pinned v66 artifact on every shipped
+	// platform. Compare the rest of the package list, then assert the delivery
+	// exactly instead of hiding it.
 	withoutDelivery := func(v coreView) coreView {
 		out := v
 		out.Packages = nil
@@ -179,14 +170,14 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 		}
 		return out
 	}
-	for _, p := range []*plan.Plan{rhel, alma, fedora} {
+	for _, p := range []*plan.Plan{rhel} {
 		if !reflect.DeepEqual(withoutDelivery(viewOf(centos)), withoutDelivery(viewOf(p))) {
 			t.Fatalf("DeskOS Core differs from CentOS Stream 10:\ncentos %+v\nother  %+v", viewOf(centos), viewOf(p))
 		}
 	}
 	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
 	const dockUUID = "dash-to-dock@micxgx.gmail.com"
-	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma, "fedora-45": fedora} {
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel} {
 		if slices.Contains(packages(p), "gnome-shell-extension-appindicator") ||
 			slices.Contains(packages(p), "gnome-shell-extension-dash-to-dock") {
 			t.Errorf("%s installs a DeskOS extension as a package", name)
@@ -205,38 +196,10 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	if !strings.HasPrefix(rhel.Artifact.BaseImage.Image, "registry.redhat.io/rhel10/rhel-bootc") {
 		t.Errorf("RHEL base is %s, want the official rhel-bootc image", rhel.Artifact.BaseImage.Image)
 	}
-	if !strings.HasPrefix(alma.Artifact.BaseImage.Image, "quay.io/almalinuxorg/almalinux-bootc") {
-		t.Errorf("AlmaLinux base is %s, want the vendor's almalinux-bootc image", alma.Artifact.BaseImage.Image)
-	}
-	if !strings.HasPrefix(fedora.Artifact.BaseImage.Image, "quay.io/fedora/fedora-silverblue:") {
-		t.Errorf("Fedora base is %s, want the vendor's fedora-silverblue image", fedora.Artifact.BaseImage.Image)
-	}
-	if fedora.Artifact.BaseImage.Digest == "" {
-		t.Error("the Fedora base is not pinned by digest")
-	}
 	wantRemoved := []string{"gnome-software", "gnome-software-rpm-ostree"}
-	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma, "fedora-45": fedora} {
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel} {
 		if got := viewOf(p).Removed; !reflect.DeepEqual(got, wantRemoved) {
 			t.Errorf("%s removes %v, want %v", name, got, wantRemoved)
-		}
-	}
-	// The Fedora facts that reach the Plan and are worth keeping: the group id
-	// DeskOS asks dnf for, which on Fedora is a comps *environment* resolved through
-	// `group install`, and the bootc units it masks so its own staging timer is the
-	// only update path. viewOf reads enabled units, so the masks are read here.
-	masked := func(p *plan.Plan) []string {
-		var out []string
-		for _, m := range p.Artifact.SystemdMasks {
-			out = append(out, m.Unit)
-		}
-		return out
-	}
-	for _, p := range []*plan.Plan{fedora} {
-		if got, want := viewOf(p).Groups, []string{"workstation=workstation-product-environment"}; !reflect.DeepEqual(got, want) {
-			t.Errorf("group mapping = %v, want %v", got, want)
-		}
-		if got, want := masked(p), []string{"bootc-fetch-apply-updates.service", "bootc-fetch-apply-updates.timer"}; !reflect.DeepEqual(got, want) {
-			t.Errorf("masked units = %v, want %v", got, want)
 		}
 	}
 }
@@ -247,7 +210,7 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 // delivery assertions above.
 func TestDisablingTheTrayExtensionDeliversNothing(t *testing.T) {
 	const trayUUID = "appindicatorsupport@rgcjonas.gmail.com"
-	for _, platform := range []string{"centos-stream-10", "almalinux-10", "rhel-10", "fedora-45"} {
+	for _, platform := range []string{"centos-stream-10", "rhel-10"} {
 		t.Run(platform, func(t *testing.T) {
 			dir := fixture{
 				"ws.yaml":  "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: ws\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome, off]\n",
@@ -280,7 +243,7 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 		"p.yaml":  profile("apps", "foundation", "FlatpakSet/deskos-reference-apps"),
 		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: fedora-ws\nspec:\n  platformRef: fedora-45\n  profiles: [apps]\n",
 	}.dir(t)
-	p := mustPlan(t, "fedora-ws", resourcesRoot, dir)
+	p := mustPlan(t, "fedora-ws", resourcesRoot, fedoraExampleRoot, dir)
 	if got := packages(p); !slices.Contains(got, "flatpak") {
 		t.Errorf("packages = %v, want Flatpak: the Fedora platform declares the channel", got)
 	}
