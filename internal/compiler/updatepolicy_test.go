@@ -189,6 +189,154 @@ func TestUpdatePolicyComposition(t *testing.T) {
 	})
 }
 
+func TestUpdatePolicyApplyValidation(t *testing.T) {
+	c := newCompiler(t)
+	for name, body := range map[string]string{
+		"exact":  "  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday], at: '03:00', timezone: Europe/Madrid}}\n",
+		"window": "  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday, wednesday], window: {start: '03:00', duration: 2h}}}\n",
+		"off":    "  image: {automatic: true, schedule: daily, apply: {enabled: false}}\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := c.Load([]string{fixture{"u.yaml": updatePolicy("u", body)}.dir(t)}); err != nil {
+				t.Fatalf("valid apply policy rejected: %v", err)
+			}
+		})
+	}
+	for name, tc := range map[string]struct{ body, want string }{
+		"both modes":      {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday], at: '03:00', window: {start: '03:00', duration: 2h}}}\n", "apply: set exactly one of at or window"},
+		"no days":         {"  image: {automatic: true, schedule: daily, apply: {enabled: true, at: '03:00'}}\n", "apply.days is required"},
+		"no mode":         {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday]}}\n", "apply: set exactly one of at or window"},
+		"bad time":        {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday], at: '3:00'}}\n", "schema validation failed"},
+		"bad duration":    {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday], window: {start: '03:00', duration: 2h30}}}\n", "schema validation failed"},
+		"bad timezone":    {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [sunday], at: '03:00', timezone: Mars/Olympus}}\n", "apply.timezone: unknown time zone"},
+		"unknown day":     {"  image: {automatic: true, schedule: daily, apply: {enabled: true, days: [moonday], at: '03:00'}}\n", "schema validation failed"},
+		"off with fields": {"  image: {automatic: true, schedule: daily, apply: {enabled: false, days: [sunday]}}\n", "apply.enabled is false"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := c.Load([]string{fixture{"u.yaml": updatePolicy("u", tc.body)}.dir(t)})
+			mustFail(t, err, tc.want)
+		})
+	}
+}
+
+func TestUpdatePolicyApplyTypedValidation(t *testing.T) {
+	c := newCompiler(t)
+	for name, tc := range map[string]struct{ spec, want string }{
+		"no days": {
+			`{"image":{"automatic":true,"schedule":"daily","apply":{"enabled":true,"at":"03:00"}}}`,
+			"apply.days is required when apply.enabled is true",
+		},
+		"both modes": {
+			`{"image":{"automatic":true,"schedule":"daily","apply":{"enabled":true,"days":["sunday"],"at":"03:00","window":{"start":"03:00","duration":"2h"}}}}`,
+			"apply: set exactly one of at or window",
+		},
+		"bad timezone": {
+			`{"image":{"automatic":true,"schedule":"daily","apply":{"enabled":true,"days":["sunday"],"at":"03:00","timezone":"Mars/Olympus"}}}`,
+			"apply.timezone: unknown time zone",
+		},
+		"flatpak apply": {
+			`{"flatpak":{"automatic":true,"schedule":"daily","apply":{"enabled":true,"days":["sunday"],"at":"03:00"}}}`,
+			"flatpak.apply is only valid for image updates",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			res := rawResource("system.deskos.org/v1alpha1", "UpdatePolicy", "x", tc.spec)
+			p, err := c.Registry.Lookup(res.GVK())
+			if err != nil {
+				t.Fatal(err)
+			}
+			mustFail(t, p.Decode(res), tc.want)
+		})
+	}
+}
+
+func TestUpdatePolicyApplyLowering(t *testing.T) {
+	dir := updateFiles.with(fixture{
+		"ws.yaml":    workstation("ws", "core", "org"),
+		"org.yaml":   profile("org", "organization", "UpdatePolicy/org"),
+		"u-org.yaml": updatePolicy("org", "  image: {apply: {enabled: true, days: [sunday], at: '03:00', timezone: Europe/Madrid}}\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	u, ok := scheduled(p, plan.UpdateImageApply)
+	if !ok {
+		t.Fatal("image apply was not scheduled")
+	}
+	if u.Service != "deskos-image-apply.service" || u.Timer != "deskos-image-apply.timer" ||
+		u.At != "03:00" || len(u.Days) != 1 || u.Days[0] != "sunday" || u.Timezone != "Europe/Madrid" {
+		t.Errorf("apply update = %+v", u)
+	}
+	if got := units(p); !strings.Contains(got, "deskos-image-apply.timer") {
+		t.Errorf("enabled units = %q", got)
+	}
+
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := string(fileData(t, files, "rootfs/usr/lib/systemd/system/deskos-image-apply.service"))
+	for _, want := range []string{
+		"ExecCondition=/usr/bin/deskos window --days sun --at 03:00 --grace 5m --timezone Europe/Madrid",
+		"ExecStart=/usr/bin/bootc upgrade --apply --quiet",
+	} {
+		if !strings.Contains(svc, want) {
+			t.Errorf("apply service lacks %q:\n%s", want, svc)
+		}
+	}
+	timer := string(fileData(t, files, "rootfs/usr/lib/systemd/system/deskos-image-apply.timer"))
+	for _, want := range []string{
+		"OnCalendar=Sun *-*-* 03:00:00 Europe/Madrid",
+		"AccuracySec=1min",
+		"Persistent=false",
+	} {
+		if !strings.Contains(timer, want) {
+			t.Errorf("apply timer lacks %q:\n%s", want, timer)
+		}
+	}
+	if strings.Contains(timer, "RandomizedDelaySec") {
+		t.Errorf("exact apply timer has a randomized delay:\n%s", timer)
+	}
+}
+
+func TestUpdatePolicyApplyWindowLowering(t *testing.T) {
+	dir := updateFiles.with(fixture{
+		"ws.yaml":    workstation("ws", "core", "org"),
+		"org.yaml":   profile("org", "organization", "UpdatePolicy/org"),
+		"u-org.yaml": updatePolicy("org", "  image: {apply: {enabled: true, days: [sunday, wednesday], window: {start: '03:00', duration: 2h}}}\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	u, _ := scheduled(p, plan.UpdateImageApply)
+	if u.Window == nil || u.Window.Start != "03:00" || u.Window.Duration != "2h" {
+		t.Fatalf("apply window = %+v", u)
+	}
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := string(fileData(t, files, "rootfs/usr/lib/systemd/system/deskos-image-apply.service"))
+	if !strings.Contains(svc, "ExecCondition=/usr/bin/deskos window --days wed,sun --start 03:00 --duration 2h") {
+		t.Errorf("apply service has the wrong window command:\n%s", svc)
+	}
+	timer := string(fileData(t, files, "rootfs/usr/lib/systemd/system/deskos-image-apply.timer"))
+	for _, want := range []string{
+		"OnCalendar=Wed,Sun *-*-* 03:00:00",
+		"RandomizedDelaySec=2h",
+		"Persistent=false",
+	} {
+		if !strings.Contains(timer, want) {
+			t.Errorf("apply timer lacks %q:\n%s", want, timer)
+		}
+	}
+}
+
+func TestUpdatePolicyApplyNeedsAutomatic(t *testing.T) {
+	_, err := planOf(t, "ws", updateFiles.with(fixture{
+		"ws.yaml":    workstation("ws", "org"),
+		"org.yaml":   profile("org", "organization", "UpdatePolicy/org"),
+		"u-org.yaml": updatePolicy("org", "  image: {apply: {enabled: true, days: [sunday], at: '03:00'}}\n"),
+	}).dir(t))
+	mustFail(t, err, "update.image.apply.enabled requires update.image.automatic, which no UpdatePolicy sets", "UpdatePolicy/org")
+}
+
 // The generated units only stage the image or update Flatpaks: the content
 // is fixed, and nothing that reboots or applies is ever rendered.
 func TestUpdatePolicyUnits(t *testing.T) {

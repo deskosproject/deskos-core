@@ -27,14 +27,17 @@ not an audit of everything the machine has become.
 
 ## How updates work
 
-A DeskOS image **stages** its next version; it never reboots your session on
-its own. The image carries two services and their timers, on the schedule
-the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
+A DeskOS image **stages** its next version. By default it never reboots your
+session on its own. An organization can opt in to a scheduled apply and reboot
+with `image.apply`; that is an explicit maintenance decision, not the default.
+The image carries two base services and their timers, on the schedule the
+effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 
 | Unit | Runs | Effect |
 |---|---|---|
 | `deskos-image-update.timer` → `deskos-image-update.service` | `bootc upgrade --quiet` | downloads the next image and **stages** it |
 | `deskos-flatpak-update.timer` → `deskos-flatpak-update.service` | `flatpak update --system --noninteractive --assumeyes` | updates system Flatpak apps and runtimes |
+| `deskos-image-apply.timer` → `deskos-image-apply.service` (opt-in) | `deskos window`, then `bootc upgrade --apply --quiet` | applies the staged image and **reboots** inside the declared time |
 
 > **Platform scope.** Everything `bootc` here is on every shipped platform. The
 > Flatpak half exists only where the image declares a system Flatpak channel: the
@@ -57,6 +60,16 @@ the schedule, or turns automation off, in its own `UpdatePolicy`
 `flatpak` equivalents). With `automatic: false` the service is still
 written, but no timer, so an operator (or `deskos update`) can run it
 on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
+
+An organization that enables `image.apply` accepts scheduled reboots. The
+apply timer is not persistent: if the machine is off during the window, it
+waits for the next one. The service first runs `deskos window`, which checks
+the local weekday and `at`/window (and optional IANA timezone), so a timer
+that fires after suspend outside the interval does nothing. An exact `at`
+allows five minutes of grace; a `window` allows its full duration. There is no
+active-session check in this version: the window is the maintenance contract.
+Inspect the apply units with `systemctl list-timers 'deskos-*'` and
+`journalctl -u deskos-image-apply.service`.
 
 ## Inspect
 

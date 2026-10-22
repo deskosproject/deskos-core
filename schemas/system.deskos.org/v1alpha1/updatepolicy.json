@@ -14,7 +14,7 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
-        "image": { "$ref": "#/$defs/automaticUpdate" },
+        "image": { "$ref": "#/$defs/imageUpdate" },
         "flatpak": { "$ref": "#/$defs/automaticUpdate" }
       }
     }
@@ -28,6 +28,45 @@
         "automatic": { "type": "boolean" },
         "schedule": { "enum": ["daily", "weekly"] },
         "requireACPower": { "type": "boolean" }
+      }
+    },
+    "imageUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "automatic": { "type": "boolean" },
+        "schedule": { "enum": ["daily", "weekly"] },
+        "requireACPower": { "type": "boolean" },
+        "apply": { "$ref": "#/$defs/applyPolicy" }
+      }
+    },
+    "applyPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "days": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": [
+            "monday", "tuesday", "wednesday", "thursday",
+            "friday", "saturday", "sunday"
+          ] }
+        },
+        "at": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" },
+        "window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "duration"],
+          "properties": {
+            "start": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" },
+            "duration": { "type": "string", "pattern": "^([0-9]+(h|m))+$" }
+          }
+        },
+        "timezone": { "type": "string", "pattern": "^[A-Za-z0-9_+./-]+$" }
       }
     }
   }

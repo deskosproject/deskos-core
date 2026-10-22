@@ -130,11 +130,24 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, u := range a.SystemdMasks {
 		pf("    %s\t%s\n", u.Unit, origins(u.Provenance))
 	}
-	section(w, "Scheduled updates (never reboot)", len(a.ScheduledUpdates))
+	section(w, "Scheduled updates", len(a.ScheduledUpdates))
 	for _, u := range a.ScheduledUpdates {
 		ac := ""
 		if u.RequireACPower {
 			ac = ", on AC power only"
+		}
+		if u.Kind == plan.UpdateImageApply {
+			when := "at " + u.At
+			if u.Window != nil {
+				when = "window " + u.Window.Start + " for " + u.Window.Duration
+			}
+			tz := ""
+			if u.Timezone != "" {
+				tz = " " + u.Timezone
+			}
+			pf("    %s\t%s %s%s%s; reboots\t%s\t%s\n",
+				u.Kind, strings.Join(u.Days, ","), when, tz, ac, u.Timer, origins(u.Provenance))
+			continue
 		}
 		pf("    %s\t%s, random delay %s%s, %s\t%s\n", u.Kind, u.Schedule, u.RandomizedDelay, ac, u.Timer, origins(u.Provenance))
 	}

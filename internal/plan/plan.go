@@ -343,20 +343,34 @@ type SystemdMask struct {
 
 // Update kinds; the backend maps each to one fixed command.
 const (
-	UpdateImage   = "image"
-	UpdateFlatpak = "flatpak"
+	UpdateImage      = "image"
+	UpdateFlatpak    = "flatpak"
+	UpdateImageApply = "image-apply"
 )
 
 // ScheduledUpdate is an unattended update run by a generated service from a
-// generated, enabled timer. It never restarts or reboots the machine.
+// generated, enabled timer. A stage update never restarts or reboots the
+// machine; UpdateImageApply is the explicit opt-in that does.
 type ScheduledUpdate struct {
-	Kind            string             `json:"kind"`
-	Service         string             `json:"service"`
-	Timer           string             `json:"timer"`
-	Schedule        string             `json:"schedule"`
-	RandomizedDelay string             `json:"randomizedDelay"`
-	RequireACPower  bool               `json:"requireACPower"`
-	Provenance      []model.Provenance `json:"provenance"`
+	Kind            string `json:"kind"`
+	Service         string `json:"service"`
+	Timer           string `json:"timer"`
+	Schedule        string `json:"schedule,omitempty"`
+	RandomizedDelay string `json:"randomizedDelay,omitempty"`
+	RequireACPower  bool   `json:"requireACPower,omitempty"`
+	// Apply fields are set only by UpdateImageApply. Days and At/Window are
+	// semantic: the backend owns the systemd calendar syntax.
+	Days       []string           `json:"days,omitempty"`
+	At         string             `json:"at,omitempty"`
+	Window     *UpdateWindow      `json:"window,omitempty"`
+	Timezone   string             `json:"timezone,omitempty"`
+	Provenance []model.Provenance `json:"provenance"`
+}
+
+// UpdateWindow is the time during which a scheduled apply may start.
+type UpdateWindow struct {
+	Start    string `json:"start"`
+	Duration string `json:"duration"`
 }
 
 type DefaultTarget struct {

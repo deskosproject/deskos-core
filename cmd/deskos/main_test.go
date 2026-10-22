@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The command is exercised with --root, so nothing here needs a bootc machine.
@@ -143,5 +144,40 @@ func TestUsageAndVersion(t *testing.T) {
 	}
 	if code, out, _ := runCLI(t, "help"); code != 0 || !strings.Contains(out, "deskos report") {
 		t.Errorf("help: exit %d, %q", code, out)
+	}
+}
+
+func TestWindowCommand(t *testing.T) {
+	now := time.Now()
+	day := strings.ToLower(now.Weekday().String()[:3])
+	if code, _, errOut := runCLI(t, "window", "--days", day, "--at", now.Format("15:04"), "--grace", "1h"); code != 0 {
+		t.Errorf("exact window at now: exit %d, %s", code, errOut)
+	}
+	if code, _, _ := runCLI(t, "window", "--days", day, "--at", now.Add(12*time.Hour).Format("15:04"), "--grace", "1m"); code != 1 {
+		t.Errorf("exact window far away: exit %d, want 1", code)
+	}
+	if now.Hour() != 0 { // the window helper deliberately stays inside one calendar day
+		if code, _, errOut := runCLI(t, "window", "--days", day, "--start", now.Add(-time.Minute).Format("15:04"), "--duration", "2h"); code != 0 {
+			t.Errorf("window around now: exit %d, %s", code, errOut)
+		}
+	}
+	if code, _, _ := runCLI(t, "window", "--days", day, "--start", now.Add(12*time.Hour).Format("15:04"), "--duration", "1h"); code != 1 {
+		t.Errorf("window far away: exit %d, want 1", code)
+	}
+	for _, args := range [][]string{
+		{"window"},
+		{"window", "--days", "moonday", "--at", "03:00"},
+		{"window", "--days", "mon", "--at", "3:00"},
+		{"window", "--days", "mon", "--at", "03:00", "--start", "03:00", "--duration", "2h"},
+		{"window", "--days", "mon", "--at", "03:00", "--grace", "-1m"},
+	} {
+		if code, _, _ := runCLI(t, args...); code != 2 {
+			t.Errorf("%v: exit %d, want 2", args, code)
+		}
+	}
+	utc := time.Now().UTC()
+	utcDay := strings.ToLower(utc.Weekday().String()[:3])
+	if code, _, errOut := runCLI(t, "window", "--days", utcDay, "--at", utc.Format("15:04"), "--grace", "1h", "--timezone", "UTC"); code != 0 {
+		t.Errorf("UTC window at now: exit %d, %s", code, errOut)
 	}
 }

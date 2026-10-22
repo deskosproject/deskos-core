@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/deskosproject/deskos-core/internal/model"
 	"github.com/deskosproject/deskos-core/internal/plan"
@@ -622,6 +623,9 @@ const extensionExtract = `import json,os,sys,zipfile; z=zipfile.ZipFile(sys.argv
 // updateUnits renders the service and timer of one scheduled update. The
 // commands are fixed per kind and only stage or update; none reboots.
 func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
+	if u.Kind == plan.UpdateImageApply {
+		return applyUnits(u)
+	}
 	var desc, doc, exec, cond string
 	switch u.Kind {
 	case plan.UpdateImage:
@@ -674,6 +678,125 @@ func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 		"[Install]\n" +
 		"WantedBy=timers.target\n")
 	return service, timer, nil
+}
+
+// applyUnits renders the explicit apply timer. The service runs the fixed
+// --apply command only after deskos has confirmed that the current local time
+// still falls inside the requested day and window; a missed calendar event
+// after suspend must not become a surprise reboot at wake-up.
+func applyUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
+	if !updateUnitRE.MatchString(u.Service) || !strings.HasSuffix(u.Service, ".service") {
+		return nil, nil, fmt.Errorf("scheduled apply: invalid service name %q", u.Service)
+	}
+	if !updateUnitRE.MatchString(u.Timer) || !strings.HasSuffix(u.Timer, ".timer") {
+		return nil, nil, fmt.Errorf("scheduled apply: invalid timer name %q", u.Timer)
+	}
+	if len(u.Days) == 0 {
+		return nil, nil, fmt.Errorf("scheduled apply: no days")
+	}
+	days, err := systemdDays(u.Days)
+	if err != nil {
+		return nil, nil, err
+	}
+	dayList := strings.Join(days, ",")
+	start := u.At
+	window := ""
+	if u.Window != nil {
+		start = u.Window.Start
+		window = u.Window.Duration
+		if _, err := time.ParseDuration(window); err != nil {
+			return nil, nil, fmt.Errorf("scheduled apply: invalid window duration %q", window)
+		}
+	}
+	if u.At == "" && u.Window == nil {
+		return nil, nil, fmt.Errorf("scheduled apply: neither at nor window")
+	}
+	if u.At != "" && u.Window != nil {
+		return nil, nil, fmt.Errorf("scheduled apply: both at and window")
+	}
+	if _, err := time.Parse("15:04", start); err != nil {
+		return nil, nil, fmt.Errorf("scheduled apply: invalid start %q", start)
+	}
+	if u.Timezone != "" {
+		if _, err := time.LoadLocation(u.Timezone); err != nil {
+			return nil, nil, fmt.Errorf("scheduled apply: unknown time zone %q", u.Timezone)
+		}
+	}
+	cond := "ConditionPathExists=/run/ostree-booted\n"
+	if u.RequireACPower {
+		cond += "ConditionACPower=true\n"
+	}
+	condition := "/usr/bin/deskos window --days " + shortenDays(days)
+	if u.At != "" {
+		condition += " --at " + u.At + " --grace 5m"
+	} else {
+		condition += " --start " + start + " --duration " + window
+	}
+	if u.Timezone != "" {
+		condition += " --timezone " + u.Timezone
+	}
+	service = []byte(generatedHeader + "[Unit]\n" +
+		"Description=Apply the scheduled DeskOS image and reboot\n" +
+		"Documentation=man:bootc-upgrade(8)\n" +
+		cond +
+		"Wants=network-online.target\n" +
+		"After=network-online.target\n\n" +
+		"[Service]\n" +
+		"Type=oneshot\n" +
+		"ExecCondition=" + condition + "\n" +
+		"ExecStart=/usr/bin/bootc upgrade --apply --quiet\n")
+	timer = []byte(generatedHeader + "[Unit]\n" +
+		"Description=Apply the scheduled DeskOS image and reboot\n" +
+		"Documentation=man:bootc-upgrade(8)\n\n" +
+		"[Timer]\n" +
+		"OnCalendar=" + dayList + " *-*-* " + start + ":00")
+	if u.Timezone != "" {
+		timer = append(timer, []byte(" "+u.Timezone)...)
+	}
+	timer = append(timer, []byte("\nAccuracySec=1min\n")...)
+	if window != "" {
+		timer = append(timer, []byte("RandomizedDelaySec="+window+"\n")...)
+	}
+	timer = append(timer, []byte("Persistent=false\n"+
+		"Unit="+u.Service+"\n\n"+
+		"[Install]\n"+
+		"WantedBy=timers.target\n")...)
+	return service, timer, nil
+}
+
+// systemdDays returns the canonical Mon..Sun list used by OnCalendar.
+func systemdDays(days []string) ([]string, error) {
+	order := []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+	short := map[string]string{
+		"monday": "Mon", "tuesday": "Tue", "wednesday": "Wed",
+		"thursday": "Thu", "friday": "Fri", "saturday": "Sat", "sunday": "Sun",
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, day := range order {
+		for _, requested := range days {
+			if requested != day {
+				continue
+			}
+			if seen[day] {
+				return nil, fmt.Errorf("scheduled apply: day %q is listed twice", day)
+			}
+			seen[day] = true
+			out = append(out, short[day])
+		}
+	}
+	if len(out) != len(days) {
+		return nil, fmt.Errorf("scheduled apply: unknown day in %v", days)
+	}
+	return out, nil
+}
+
+func shortenDays(days []string) string {
+	out := make([]string, len(days))
+	for i, day := range days {
+		out[i] = strings.ToLower(day[:3])
+	}
+	return strings.Join(out, ",")
 }
 
 func boolInt(b bool) int {
