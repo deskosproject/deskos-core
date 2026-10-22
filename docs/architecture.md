@@ -753,11 +753,14 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
   and signs `:<commit>` and promotes `:latest` by digest. It is not published on
   every green `main`; pin a digest in production.
-- **Not yet published:** QCOW2 and ISO, to go on S3-compatible object
-  storage, not on GitHub; until then they are built locally (see
-  [install.md](install.md)). The CI builds a QCOW2 (the EL platforms) only as test
-  input; an Ubuntu disk is written with `bootc install to-disk` by that platform's own
-  repository.
+- **A CentOS Stream 10 preview ISO** is published at
+  <https://download.deskos.org/>. It is built from a published image, not from
+  the current `main`, and it is a preview rather than a supported channel; the
+  checksum is published beside it. QCOW2 files, AlmaLinux/Fedora ISOs and RHEL
+  ISOs are not published: RHEL stays private, and the other installer media are
+  built locally (see [install.md](install.md)). The CI builds a QCOW2 (the EL
+  platforms) only as test input; an Ubuntu disk is written with
+  `bootc install to-disk` by that platform's own repository.
 - **Planned:** promote the same digest through channels (candidate,
   canary, pilot, stable) without rebuilding. A mirror on
   `ghcr.io/deskosproject/deskos-core` is possible and not decided.

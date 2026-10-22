@@ -40,7 +40,9 @@ Write `config.toml`:
 ```toml
 [customizations.installer.kickstart]
 contents = """
-text --non-interactive
+# Graphical Anaconda, still fully answered by this kickstart. Use
+# `text --non-interactive` instead on a headless build host.
+graphical --non-interactive
 lang en_US.UTF-8
 keyboard us
 timezone UTC --utc
@@ -65,6 +67,10 @@ reboot
 - `xconfig --startxonboot`: without an explicit target Anaconda sets
   `multi-user.target`, and the installed workstation boots to a text
   login.
+- `graphical --non-interactive` keeps every answer automatic but runs
+  Anaconda's graphical UI. `--non-interactive` stops instead of prompting if
+  an answer is missing; use `text --non-interactive` on a host with no
+  display. Either way, the kickstart erases every disk it sees.
 - bootc-image-builder adds the `ostreecontainer` line itself.
 
 ### 3. Build the ISO
@@ -84,10 +90,12 @@ The ISO is `output/bootiso/install.iso`.
 
 ## RHEL
 
-The same steps apply to a RHEL workstation (*untested*) on an entitled
-host logged in to `registry.redhat.io`, with
+This repository does not build RHEL. The same steps apply in a downstream
+organization's repository on an entitled host logged in to
+`registry.redhat.io`, with
 `registry.redhat.io/rhel10/bootc-image-builder` instead of the CentOS
-builder.
+builder. The DayTwo organization has built and installed a private RHEL 10
+ISO in KVM; that evidence belongs to its repository.
 
 > [!IMPORTANT]
 > RHEL ISOs **must never be published**: keep them inside the
@@ -95,11 +103,10 @@ builder.
 
 ## Validation status
 
-CentOS Stream 10 Core at commit `6d95f25`, with this kickstart and the
-pinned builder: the 2.9 GB ISO **installed unattended** to a blank 40 GB
-virtio disk in QEMU/UEFI in 4.5 minutes, and `tests/vm/bootcheck.py` on
-the installed disk passed (DeskOS splash, then GNOME Initial Setup over
-the DeskOS wallpaper).
+The CentOS Stream 10 preview ISO at <https://download.deskos.org/> was
+installed and booted in KVM: DeskOS splash, then GNOME Initial Setup over
+the DeskOS wallpaper. It is a preview built from a published image, not
+from the current `main`; verify the checksum published beside it.
 
-**Not tested:** bare metal, BIOS boot, RHEL ISOs, and updates through the
-`bootc switch` reference.
+**Not tested here:** bare metal, BIOS boot, RHEL ISOs (downstream), and
+updates through the `bootc switch` reference.
