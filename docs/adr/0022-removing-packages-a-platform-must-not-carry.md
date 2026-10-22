@@ -51,9 +51,12 @@ installation intent and composition has no subtraction (ADR 0003).
    - The build checks each name with `rpm -q`; names that are not installed are
      skipped, not treated as an error. This is required for a package that is
      present on one vendor base and absent on another.
-   - Installed names are passed to `dnf -y remove`. The backend does not use
-     `--nodeps`, `--allowerasing`, `--force` or an ignore-broken transaction:
-     a removal that cannot complete fails the build.
+   - Installed names are passed to `dnf -y remove --noautoremove`. The backend
+     does not use `--nodeps`, `--allowerasing`, `--force` or an ignore-broken
+     transaction: a removal that cannot complete fails the build. It also does
+     not autoremove dependencies: the first AlmaLinux 10 run removed `flatpak`
+     as an unused dependency of GNOME Software, and the next boot failed because
+     the image's Flatpak preinstall unit had no `/usr/bin/flatpak`.
    - After the transaction the build checks `rpm -q` again and fails if a named
      package is still installed. DNF's exit status alone is not the evidence
      that the image is clean.
@@ -91,6 +94,11 @@ installation intent and composition has no subtraction (ADR 0003).
   package fails the build rather than shipping a half-functional image. The
   affected platform's boot and session checks are the evidence that the image is
   still usable; a unit test alone cannot prove a desktop.
+- Removal without autoremove can leave dependencies that are no longer needed.
+  That is deliberate: a dependency may be explicitly installed by the
+  composition (as `flatpak` is) and removing it would break the image. The
+  installed SBOM records what remains; cleanup of genuinely unused dependencies
+  is a separate, tested concern.
 - The declared SBOM remains a list of installs. The installed SBOM is the
   authoritative record of what is present, and it will no longer list the removed
   packages.
