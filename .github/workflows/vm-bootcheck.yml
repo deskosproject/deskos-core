@@ -72,7 +72,43 @@ env:
   # would have to keep in step with.
 
 jobs:
+  changes:
+    # A platform pin or a platform resource only concerns that platform. Shared
+    # Core code and resources concern all of them. Without this, a one-line
+    # Fedora re-pin builds four images.
+    runs-on: ubuntu-24.04
+    outputs:
+      centos: ${{ steps.which.outputs.centos }}
+      almalinux: ${{ steps.which.outputs.almalinux }}
+      fedora: ${{ steps.which.outputs.fedora }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Which legs this change needs
+        id: which
+        run: |
+          set -eu
+          all() {
+            echo "centos=true" >> "$GITHUB_OUTPUT"
+            echo "almalinux=true" >> "$GITHUB_OUTPUT"
+            echo "fedora=true" >> "$GITHUB_OUTPUT"
+          }
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            all; exit 0
+          fi
+          changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
+          # Shared code, shared Core resources, or the harness itself: every leg.
+          if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/vm-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/profiles/deskos-|resources/software/deskos-)'; then
+            all; exit 0
+          fi
+          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/(centos-stream-10|organization-and-role)/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/almalinux-10\.yaml|resources/workstations/deskos-core-almalinux-10\.yaml|examples/almalinux-10/)' && echo "almalinux=true" >> "$GITHUB_OUTPUT" || echo "almalinux=false" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/fedora-45\.yaml|resources/workstations/deskos-core-fedora-45\.yaml|resources/profiles/fedora\.yaml|resources/software/fedora\.yaml|examples/fedora-45/)' && echo "fedora=true" >> "$GITHUB_OUTPUT" || echo "fedora=false" >> "$GITHUB_OUTPUT"
+
   core-centos-stream-10:
+    needs: changes
+    if: needs.changes.outputs.centos == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     strategy:
@@ -261,6 +297,8 @@ jobs:
           if-no-files-found: warn
 
   core-almalinux-10:
+    needs: changes
+    if: needs.changes.outputs.almalinux == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
@@ -395,6 +433,8 @@ jobs:
           if-no-files-found: warn
 
   core-fedora-45:
+    needs: changes
+    if: needs.changes.outputs.fedora == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     env:
