@@ -62,6 +62,10 @@ spec:
       # `virt-manager` (5.1.0 in this archive), which the EL10 platforms report as
       # a gap because it sits in their disabled builder repository, installs from
       # Fedora's own archive here.
+  # This base already carries both; a group exclusion would not remove them.
+  # Bazaar is the workstation's application store, so the build removes GNOME
+  # Software and proves it is gone (docs/adr/0022).
+  removePackages: [gnome-software, gnome-software-rpm-ostree]
   displayManager: gdm.service
   gnome:
     # Measured: /etc/dconf/profile/user reads user, local, site and distro, and

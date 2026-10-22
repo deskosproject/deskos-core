@@ -174,7 +174,8 @@ it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `AptRepository`,
   `RpmGroupInstall`
-  (with `excludePackages`), `RpmInstall`, `RpmFileInstall`, `VerifiedBinaryInstall`,
+  (with `excludePackages`), `RpmInstall`, `PackageRemove`, `RpmFileInstall`,
+  `VerifiedBinaryInstall`,
   `FileInstall`, `GeneratedFile`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
   `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
   `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
@@ -215,18 +216,20 @@ The Containerfile, in order:
    against its own key in a temporary rpm keyring (an unsigned package or
    another key fails the build), and installs them in one package
    transaction; the image's rpm keyring is not changed;
-5. one verified download per binary artifact;
-6. copies `rootfs/`;
-7. checks the DeskOS GSettings override with
+5. removes every `Platform.removePackages` name that is installed, then
+   fails if one remains; an absent name is a no-op (ADR 0022);
+6. one verified download per binary artifact;
+7. copies `rootfs/`;
+8. checks the DeskOS GSettings override with
    `glib-compile-schemas --strict` against the installed schemas, then
    compiles them without `--strict`, as the packages do;
-8. runs `dconf update`, regenerates the hicolor icon cache when the
+9. runs `dconf update`, regenerates the hicolor icon cache when the
    image installs desktop entry icons, regenerates the platform trust
    store when the image places trust anchors, enables and masks units and
    sets the default target;
-9. installs the Plymouth theme and rebuilds the initramfs when boot intent
-   needs them (see [Boot](#boot));
-10. cleans package caches and ends with `bootc container lint`.
+10. installs the Plymouth theme and rebuilds the initramfs when boot intent
+    needs them (see [Boot](#boot));
+11. cleans package caches and ends with `bootc container lint`.
 
 Every generated command comes from a typed operation; values are
 validated upstream and quoted again. The plan is also installed as

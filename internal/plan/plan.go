@@ -59,22 +59,26 @@ type Profile struct {
 
 // Artifact is image-owned content.
 type Artifact struct {
-	BaseImage       BaseImage                `json:"baseImage"`
-	Labels          []Label                  `json:"labels"`
-	RpmRepositories []RpmRepository          `json:"rpmRepositories"`
-	AptRepositories []AptRepository          `json:"aptRepositories"`
-	PackageGroups   []PackageGroupInstall    `json:"packageGroups"`
-	Packages        []PackageInstall         `json:"packages"`
-	RpmFiles        []RpmFileInstall         `json:"rpmFiles"`
-	Binaries        []VerifiedBinaryInstall  `json:"binaries"`
-	Files           []FileInstall            `json:"files"`
-	GeneratedFiles  []GeneratedFile          `json:"generatedFiles,omitempty"`
-	TrustAnchors    []TrustAnchorInstall     `json:"trustAnchors"`
-	TrustStore      *TrustStoreUpdate        `json:"trustStore,omitempty"`
-	DesktopEntries  []DesktopEntry           `json:"desktopEntries"`
-	IconCaches      []IconCacheUpdate        `json:"iconCaches"`
-	Dconf           *DconfDatabase           `json:"dconf,omitempty"`
-	GSettings       []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
+	BaseImage       BaseImage             `json:"baseImage"`
+	Labels          []Label               `json:"labels"`
+	RpmRepositories []RpmRepository       `json:"rpmRepositories"`
+	AptRepositories []AptRepository       `json:"aptRepositories"`
+	PackageGroups   []PackageGroupInstall `json:"packageGroups"`
+	Packages        []PackageInstall      `json:"packages"`
+	// RemovePackages are negative package operations: the build removes them
+	// after installing groups and packages, then proves they are absent
+	// (docs/adr/0022).
+	RemovePackages []PackageRemove          `json:"removePackages,omitempty"`
+	RpmFiles       []RpmFileInstall         `json:"rpmFiles"`
+	Binaries       []VerifiedBinaryInstall  `json:"binaries"`
+	Files          []FileInstall            `json:"files"`
+	GeneratedFiles []GeneratedFile          `json:"generatedFiles,omitempty"`
+	TrustAnchors   []TrustAnchorInstall     `json:"trustAnchors"`
+	TrustStore     *TrustStoreUpdate        `json:"trustStore,omitempty"`
+	DesktopEntries []DesktopEntry           `json:"desktopEntries"`
+	IconCaches     []IconCacheUpdate        `json:"iconCaches"`
+	Dconf          *DconfDatabase           `json:"dconf,omitempty"`
+	GSettings      []GSettingsVendorDefault `json:"gsettingsVendorDefaults"`
 	// EnabledExtensions are the GNOME Shell extensions the composition decided to
 	// turn on, beyond whatever the platform already enables. The list is what the
 	// session check asks GNOME about: a decision that does not really load must be
@@ -146,6 +150,13 @@ type PackageGroupInstall struct {
 	Members         []string           `json:"members"`
 	ExcludePackages []string           `json:"excludePackages,omitempty"`
 	Provenance      []model.Provenance `json:"provenance"`
+}
+
+// PackageRemove is one package the platform must not carry. The removal runs
+// after the install transactions and is proved by the build (docs/adr/0022).
+type PackageRemove struct {
+	Name       string             `json:"name"`
+	Provenance []model.Provenance `json:"provenance"`
 }
 
 type PackageInstall struct {
@@ -453,6 +464,8 @@ func (p *Plan) Normalize() error {
 	for i := range a.PackageGroups {
 		a.PackageGroups[i].ExcludePackages = sortedUnique(a.PackageGroups[i].ExcludePackages)
 	}
+	a.RemovePackages = mergeByName(a.RemovePackages, func(x PackageRemove) string { return x.Name },
+		func(x *PackageRemove) *[]model.Provenance { return &x.Provenance })
 	a.Packages = mergeByName(a.Packages, func(x PackageInstall) string { return x.Name },
 		func(x *PackageInstall) *[]model.Provenance { return &x.Provenance })
 	a.SystemdUnits = mergeByName(a.SystemdUnits, func(x SystemdEnable) string { return x.Unit },

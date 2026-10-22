@@ -154,6 +154,21 @@ download that needed it ([ADR 0019](adr/0019-a-platform-says-whether-its-base-ca
 What the backend fetches *with* stays Core's own choice: the platform states that a
 base can satisfy it, not a command line to run.
 
+A platform can also declare **packages the image must not carry**:
+
+```yaml
+spec:
+  removePackages: [gnome-software, gnome-software-rpm-ostree]
+```
+
+This is different from a package group's `excludePackages`: an exclusion only
+prevents that group transaction from installing a member, and cannot remove a
+package the base already carries. The build removes `removePackages` after every
+install transaction, skips names that are not installed, and fails if a named
+package is still present. A composition that explicitly installs one of these
+packages is a contradiction and fails. The operation is RPM-only in v1alpha1
+([ADR 0022](adr/0022-removing-packages-a-platform-must-not-carry.md)).
+
 ### `PackageSet`
 
 Packages, RPM groups (named by the Platform) and units to enable:

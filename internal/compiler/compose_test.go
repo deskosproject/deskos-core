@@ -1335,6 +1335,88 @@ func TestPackageGroupExcludePackagesTypedValidationWithoutSchema(t *testing.T) {
 	mustFail(t, prov.Decode(res), `package "ok" is excluded twice`, `invalid excluded package "bad name"`)
 }
 
+func TestPlatformRemovePackages(t *testing.T) {
+	platform := func(remove string) string {
+		return strings.Replace(platformYAML, "  packageGroups:\n",
+			"  removePackages: ["+remove+"]\n  packageGroups:\n", 1)
+	}
+	fx := fixture{
+		"platform.yaml": platform("gnome-software, gnome-software-rpm-ostree"),
+		"ws.yaml":       workstation("ws", "core"),
+		"core.yaml":     profile("core", "foundation", "PackageSet/a"),
+		"a.yaml":        packageSet("a", "git"),
+	}
+	p := mustPlan(t, "ws", fx.dir(t))
+	var got []string
+	for _, rm := range p.Artifact.RemovePackages {
+		got = append(got, rm.Name)
+		if len(rm.Provenance) != 1 || rm.Provenance[0].Resource != "Platform/test-platform" {
+			t.Errorf("removePackages provenance = %+v, want Platform/test-platform", rm.Provenance)
+		}
+	}
+	if want := []string{"gnome-software", "gnome-software-rpm-ostree"}; !slices.Equal(got, want) {
+		t.Errorf("removePackages in the plan = %v, want %v", got, want)
+	}
+
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cf := string(fileData(t, files, containerfile.ContainerfilePath))
+	if strings.Count(cf, "dnf -y remove") != 1 {
+		t.Errorf("Containerfile has %d dnf remove commands, want one:\n%s", strings.Count(cf, "dnf -y remove"), cf)
+	}
+	for _, want := range []string{
+		"# Packages the platform must not carry",
+		`rpm -q "$pkg" > /dev/null 2>&1`,
+		`if [ -n "$installed" ]; then dnf -y remove $installed || exit 1; fi`,
+		"package $pkg is still installed after removal",
+		"'gnome-software'",
+		"'gnome-software-rpm-ostree'",
+	} {
+		if !strings.Contains(cf, want) {
+			t.Errorf("Containerfile lacks %q", want)
+		}
+	}
+	if strings.Index(cf, "dnf -y group install") > strings.Index(cf, "Packages the platform must not carry") {
+		t.Error("package removal runs before the group transaction")
+	}
+
+	// A package the platform removes cannot also be explicitly installed by the
+	// composition: that is contradictory intent, not a package-group member that
+	// happens to be in the group.
+	fx["a.yaml"] = packageSet("a", "gnome-software")
+	_, err = planOf(t, "ws", fx.dir(t))
+	mustFail(t, err, `package "gnome-software" is removed by Platform/test-platform and installed by the composition`)
+
+	// An absent name is a no-op, not an error: the same Platform declaration is
+	// used on vendor bases that do and do not carry the package.
+	fx["a.yaml"] = packageSet("a", "git")
+	p = mustPlan(t, "ws", fx.dir(t))
+	if len(p.Artifact.RemovePackages) != 2 {
+		t.Fatalf("removePackages = %+v, want two entries", p.Artifact.RemovePackages)
+	}
+}
+
+func TestPlatformRemovePackagesTypedValidationWithoutSchema(t *testing.T) {
+	c := newCompiler(t)
+	doc := `{"displayName":"T","family":"t","release":"1","architectures":["x86_64"],"bootc":{"image":"example.org/t:1"},
+"distribution":{"redistributable":true,"requiresSubscription":false},"displayManager":"gdm.service",
+"removePackages":["ok","ok","bad name"]}`
+	res := rawResource("core.deskos.org/v1alpha1", "Platform", "t", doc)
+	prov, err := c.Registry.Lookup(res.GVK())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustFail(t, prov.Decode(res), `package "ok" is removed twice`, `invalid removed package "bad name"`)
+
+	doc = `{"displayName":"T","family":"t","release":"1","architectures":["x86_64"],"bootc":{"image":"example.org/t:1"},
+"distribution":{"redistributable":true,"requiresSubscription":false},"displayManager":"gdm.service",
+"packageManager":"deb","removePackages":["ok"]}`
+	res = rawResource("core.deskos.org/v1alpha1", "Platform", "t", doc)
+	mustFail(t, prov.Decode(res), "removePackages is an RPM operation")
+}
+
 func fileData(t *testing.T, files []containerfile.File, path string) []byte {
 	t.Helper()
 	for _, f := range files {

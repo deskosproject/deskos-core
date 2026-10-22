@@ -187,6 +187,26 @@
         ]
       }
     ],
+    "removePackages": [
+      {
+        "name": "gnome-software",
+        "provenance": [
+          {
+            "resource": "Platform/centos-stream-10",
+            "source": "resources/platforms/centos-stream-10.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "gnome-software-rpm-ostree",
+        "provenance": [
+          {
+            "resource": "Platform/centos-stream-10",
+            "source": "resources/platforms/centos-stream-10.yaml:1"
+          }
+        ]
+      }
+    ],
     "rpmFiles": [],
     "binaries": [
       {

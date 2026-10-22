@@ -68,6 +68,9 @@ func Render(p *plan.Plan) ([]File, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(p.Artifact.RemovePackages) > 0 && mgr.remove == "" {
+		return nil, fmt.Errorf("platform %s package manager %s has no tested package-removal path", p.Platform.Name, p.Platform.PackageManager)
+	}
 	planJSON, err := p.JSON()
 	if err != nil {
 		return nil, err
@@ -743,6 +746,11 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		pkgTransaction(w, mgr, pre, mgr.install, args, "rm -rf "+rpmFilesDir)
 	}
 
+	if len(a.RemovePackages) > 0 {
+		w("\n# Packages the platform must not carry\n")
+		pkgTransaction(w, mgr, nil, removeCommand(mgr, a.RemovePackages), nil)
+	}
+
 	for _, group := range groupBinaries(a.Binaries) {
 		first := group[0]
 		w("\n# Binary artifact %s %s (sha256-verified)\n", first.Artifact, first.Version)
@@ -956,6 +964,9 @@ type pkgManager struct {
 	install string
 	// groupInstall is the command that installs a package-group mapping.
 	groupInstall string
+	// remove is the command that removes named packages, when the manager has
+	// a tested removal path. RPM platforms use it for Platform.removePackages.
+	remove string
 	// excludes reports whether the manager can exclude a group member.
 	excludes bool
 	// clean removes what one transaction left behind.
@@ -972,6 +983,7 @@ func managerFacts(mgr string) (pkgManager, error) {
 		return pkgManager{
 			install:      "dnf -y install",
 			groupInstall: "dnf -y group install",
+			remove:       "dnf -y remove",
 			excludes:     true,
 			clean:        "dnf clean all",
 			caches:       "/var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /var/log/hawkey.log",
@@ -1013,6 +1025,21 @@ func groupArgs(mgr pkgManager, groups []plan.PackageGroupInstall) []string {
 		args = append(args, "--exclude="+x)
 	}
 	return append(args, ids...)
+}
+
+// removeCommand removes the named packages only when they are installed, then
+// proves they are gone. A platform may carry a package on one vendor base and
+// not another, so an absent name is a no-op rather than a failed build; a name
+// that survives the transaction is a failed build (docs/adr/0022).
+func removeCommand(mgr pkgManager, packages []plan.PackageRemove) string {
+	names := make([]string, 0, len(packages))
+	for _, p := range packages {
+		names = append(names, shq(p.Name))
+	}
+	list := strings.Join(names, " ")
+	return fmt.Sprintf(
+		`installed=""; for pkg in %s; do rpm -q "$pkg" > /dev/null 2>&1 && installed="$installed $pkg"; done; if [ -n "$installed" ]; then %s $installed || exit 1; fi; for pkg in %s; do if rpm -q "$pkg" > /dev/null 2>&1; then echo "package $pkg is still installed after removal" >&2; exit 1; fi; done`,
+		list, mgr.remove, list)
 }
 
 // pkgTransaction emits one package transaction. The platform's package manager

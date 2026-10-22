@@ -58,6 +58,16 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		p.EnableUnit(pl.DisplayManager, graphical...)
 	}
 
+	// A negative package fact belongs to the platform, so its provenance is the
+	// Platform resource rather than a profile. The backend removes these after
+	// the installs and proves they are absent (docs/adr/0022).
+	platformProv := []model.Provenance{{Resource: c.Platform.ID(), Source: c.Platform.Source.String()}}
+	for _, name := range pl.RemovePackages {
+		p.Artifact.RemovePackages = append(p.Artifact.RemovePackages, plan.PackageRemove{
+			Name: name, Provenance: platformProv,
+		})
+	}
+
 	for _, m := range r.Set(DomainPackages) {
 		if reason, ok := pl.Unavailable(m.Name); ok {
 			errs.Add(fmt.Errorf("package %q is not available on %s: %s\n  requested by: %s",

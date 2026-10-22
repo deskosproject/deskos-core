@@ -30,6 +30,14 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
+# Packages the platform must not carry
+RUN --mount=type=tmpfs,target=/var/lib/rhsm \
+    --mount=type=tmpfs,target=/var/log/rhsm \
+    if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
+    && installed=""; for pkg in 'gnome-software' 'gnome-software-rpm-ostree'; do rpm -q "$pkg" > /dev/null 2>&1 && installed="$installed $pkg"; done; if [ -n "$installed" ]; then dnf -y remove $installed || exit 1; fi; for pkg in 'gnome-software' 'gnome-software-rpm-ostree'; do if rpm -q "$pkg" > /dev/null 2>&1; then echo "package $pkg is still installed after removal" >&2; exit 1; fi; done \
+    && dnf clean all \
+    && rm -f /etc/yum.repos.d/redhat.repo
+
 # Binary artifact deskos 0.14.0 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
