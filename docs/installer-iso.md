@@ -47,7 +47,7 @@ timezone UTC --utc
 zerombr
 clearpart --all --initlabel --disklabel=gpt
 autopart --noswap --type=lvm
-network --bootproto=dhcp --device=link --activate --onboot=on
+network --bootproto=dhcp --device=link --activate --onboot=on --hostname=deskos
 rootpw --lock
 xconfig --startxonboot
 reboot
