@@ -115,8 +115,11 @@ def extension_reads():
         '  if [ -z "$info" ]; then\n'
         '    echo "extension_$i=missing"\n'
         '  else\n'
-        '    e=$(printf %s "$info" | grep -o "Enabled: [A-Za-z]*" | cut -d" " -f2)\n'
-        '    s=$(printf %s "$info" | grep -o "State: [A-Z]*" | cut -d" " -f2)\n'
+        # `gnome-extensions info` can print more than one State line. Keep the
+        # last one, as GNOME's own output does, rather than emitting a value
+        # with a newline that the host parser cannot read.
+        '    e=$(printf %s "$info" | awk \'/^[[:space:]]*Enabled:/ { enabled=$NF } END { print enabled }\')\n'
+        '    s=$(printf %s "$info" | awk \'/^[[:space:]]*State:/ { state=$NF } END { print state }\')\n'
         '    echo "extension_$i=$e/$s"\n'
         '  fi\n'
         "done\n"

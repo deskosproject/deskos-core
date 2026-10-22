@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 
@@ -159,6 +160,25 @@ class TmpfilesTest(unittest.TestCase):
         self.assertNotIn(sc.VENDOR_KEYS_PATH, c["tmpfiles.extra"])
         self.assertNotIn(sc.DCONF_PROFILE_PATH, c["tmpfiles.extra"])
         self.assertNotIn("dconf read", c["tmpfiles.extra"])
+
+    def test_extension_reads_keeps_the_last_state_line(self):
+        # `gnome-extensions info` can print more than one State line; the host
+        # parser needs the last one, and must not turn it into a newline.
+        with tempfile.TemporaryDirectory() as d:
+            enabled = os.path.join(d, "enabled.keys")
+            with open(enabled, "w") as f:
+                f.write("a@b\n")
+            exe = os.path.join(d, "gnome-extensions")
+            with open(exe, "w") as f:
+                f.write("#!/bin/sh\nprintf 'Enabled: Yes\\nState: ACTIVE\\nState: ERROR\\n'\n")
+            os.chmod(exe, 0o755)
+            env = dict(os.environ)
+            env["PATH"] = d + os.pathsep + env.get("PATH", "")
+            script = sc.extension_reads().replace(sc.ENABLED_EXTENSIONS_PATH, enabled)
+            result = subprocess.run(
+                ["bash", "-c", script], text=True, capture_output=True, check=True, env=env
+            )
+            self.assertEqual(result.stdout.strip(), "extension_0=Yes/ERROR")
 
     def test_session_credentials_install_the_enabled_extensions(self):
         # The extensions the plan enabled travel as a file of their own, and the guest
