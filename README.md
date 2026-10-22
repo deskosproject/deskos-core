@@ -19,13 +19,27 @@ resources, and DeskOS turns them into a bootable operating-system image — buil
 scanned, and, where the platform allows it, signed and published like any other
 artifact.
 
-```text
-YAML → validate → compose → plan → Containerfile → bootc image → disk
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published; and AlmaLinux 10, published at quay.io/deskos/deskos-core-almalinux-10 on the base its vendor labels experimental. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="docs/images/deskos-flow-light.svg" width="900">
+  </picture>
+</p>
 
 Most people should never run that pipeline by hand: **two platforms publish a
 finished image you can install today.** The rest of this page starts there, and
 leaves the compiler for whoever wants to understand everything.
+
+Composition is where the layers meet: sets union, keyed definitions must match,
+and a scalar takes the highest layer — never the last file read. The plan keeps
+the provenance of every value.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-composition-dark.svg">
+    <img alt="DeskOS composition: layers foundation, organization, role and workstation with explicit precedence; set, keyed and scalar composition classes; example where the organization's 5m screen blank overrides Core's 10m; the Plan keeps the provenance of every value" src="docs/images/deskos-composition-light.svg" width="900">
+  </picture>
+</p>
 
 ## Use it
 
