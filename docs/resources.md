@@ -164,9 +164,10 @@ spec:
 This is different from a package group's `excludePackages`: an exclusion only
 prevents that group transaction from installing a member, and cannot remove a
 package the base already carries. The build removes `removePackages` after every
-install transaction, skips names that are not installed, and fails if a named
-package is still present. A composition that explicitly installs one of these
-packages is a contradiction and fails. The operation is RPM-only in v1alpha1
+install transaction, skips names that are not installed, does not autoremove
+dependencies, and fails if a named package is still present. A composition that
+explicitly installs one of these packages is a contradiction and fails. The
+operation is RPM-only in v1alpha1
 ([ADR 0022](adr/0022-removing-packages-a-platform-must-not-carry.md)).
 
 ### `PackageSet`

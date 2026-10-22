@@ -1369,7 +1369,7 @@ func TestPlatformRemovePackages(t *testing.T) {
 	for _, want := range []string{
 		"# Packages the platform must not carry",
 		`rpm -q "$pkg" > /dev/null 2>&1`,
-		`if [ -n "$installed" ]; then dnf -y remove $installed || exit 1; fi`,
+		`if [ -n "$installed" ]; then dnf -y remove --noautoremove $installed || exit 1; fi`,
 		"package $pkg is still installed after removal",
 		"'gnome-software'",
 		"'gnome-software-rpm-ostree'",

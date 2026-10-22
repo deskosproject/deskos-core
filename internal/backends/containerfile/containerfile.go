@@ -983,11 +983,14 @@ func managerFacts(mgr string) (pkgManager, error) {
 		return pkgManager{
 			install:      "dnf -y install",
 			groupInstall: "dnf -y group install",
-			remove:       "dnf -y remove",
-			excludes:     true,
-			clean:        "dnf clean all",
-			caches:       "/var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /var/log/hawkey.log",
-			rhsm:         true,
+			// --noautoremove: the named package goes; its dependencies stay.
+			// Autoremove removed flatpak as an "unused" dependency of GNOME
+			// Software on AlmaLinux 10 and broke flatpak preinstall at boot.
+			remove:   "dnf -y remove --noautoremove",
+			excludes: true,
+			clean:    "dnf clean all",
+			caches:   "/var/cache/dnf /var/cache/libdnf5 /var/lib/dnf/repos /var/log/dnf* /var/log/hawkey.log",
+			rhsm:     true,
 		}, nil
 	case model.PackageManagerDeb:
 		return pkgManager{
