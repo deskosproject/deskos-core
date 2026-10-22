@@ -61,7 +61,7 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
 
 Avoid unnecessary secondary labels and descriptions. Let the design do the explaining.
 
-## Requires Ricardo's explicit approval
+## Requires maintainer approval
 
 - Publishing or pushing images, tags or commits, and creating releases.
 - Changing the license (Apache-2.0).
