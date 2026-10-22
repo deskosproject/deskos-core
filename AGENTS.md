@@ -57,6 +57,10 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
     Agents never self-merge, never push to `main`, never touch signing,
     secrets, releases or registries, and never weaken a check to go green.
 
+## Design
+
+Avoid unnecessary secondary labels and descriptions. Let the design do the explaining.
+
 ## Requires Ricardo's explicit approval
 
 - Publishing or pushing images, tags or commits, and creating releases.
