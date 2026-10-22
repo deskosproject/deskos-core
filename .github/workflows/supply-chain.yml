@@ -91,6 +91,10 @@ jobs:
       # boolean to the string 'true' is never true and would silently drop the
       # splash expectation from every leg.
       SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
+      # A scheduled run has no workflow_dispatch inputs. Without a fallback,
+      # `inputs.fail-on` is empty and Grype can run with no severity threshold;
+      # the weekly watch would then silently weaken the Critical baseline.
+      FAIL_ON: ${{ inputs.fail-on || 'critical' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
@@ -156,10 +160,18 @@ jobs:
         timeout-minutes: 40
         run: sudo podman build --pull=never -t "$IMAGE" ctx
 
+      - name: Record the tested image identity
+        run: |
+          mkdir -p "$WORK/evidence"
+          sudo podman image inspect "$IMAGE" \
+            --format 'id={{.Id}} digest={{.Digest}} created={{.Created}}' \
+            | tee "$WORK/evidence/image-built.txt"
+
       - name: Export the image to an OCI archive
         run: |
           sudo podman save --format oci-archive -o "$WORK/image.tar" "$IMAGE"
           sudo chown "$(id -u):$(id -g)" "$WORK/image.tar"
+          sha256sum "$WORK/image.tar" | tee "$WORK/evidence/image.tar.sha256"
           ls -lh "$WORK/image.tar"
 
       - name: Install Syft and Grype (pinned)
@@ -208,7 +220,7 @@ jobs:
           grype "oci-archive:$WORK/image.tar" \
             --config "$WORK/gate.grype.yaml" \
             --vex tests/supply-chain/vex.openvex.json \
-            --fail-on "${{ inputs.fail-on }}" -o table > /dev/null
+            --fail-on "$FAIL_ON" -o table > /dev/null
 
       - name: Compare declared and installed SBOMs
         run: python3 tests/supply-chain/compare.py declared.sbom.cdx.json installed.sbom.cdx.json
@@ -241,6 +253,11 @@ jobs:
             "$IMAGE" bootc install to-disk --via-loopback "/output/${{ matrix.diskfile }}" \
             --source-imgref oci:/src-oci:test \
             --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
+
+      - name: Record the tested disk identity
+        run: |
+          test -f "$WORK/${{ matrix.diskfile }}"
+          sha256sum "$WORK/${{ matrix.diskfile }}" | tee "$WORK/evidence/disk.sha256"
 
       - name: Assert the leg's declared disk and splash facts
         run: |
@@ -438,12 +455,15 @@ jobs:
             sbom-reference.json
             ctx/plan.json
             ctx/generated-manifest.json
+            ${{ env.WORK }}/evidence
             ${{ env.WORK }}/gate.grype.yaml
             ${{ env.WORK }}/effective-exceptions.json
             ${{ env.WORK }}/image.txt
-            ${{ env.WORK }}/bootcheck/summary.md
-            ${{ env.WORK }}/session/session.md
-            ${{ env.WORK }}/firstboot/firstboot.md
+            ${{ env.WORK }}/bootcheck
+            ${{ env.WORK }}/session
+            ${{ env.WORK }}/firstboot
+            ${{ env.WORK }}/journal-failed-boot
+            !${{ env.WORK }}/**/*.qcow2
             latest-digest.txt
           retention-days: 14
           if-no-files-found: warn
