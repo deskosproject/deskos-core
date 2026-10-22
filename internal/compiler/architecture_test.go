@@ -96,8 +96,8 @@ func TestUnknownFieldsRejectedBySchemaAndTypes(t *testing.T) {
 // holds *enabled* units; a mask lives in the Plan's SystemdMasks and is asserted
 // where a platform differs, not compared here.
 type coreView struct {
-	Groups, Packages, Units, Dconf, Files []string
-	Target                                string
+	Groups, Packages, Removed, Units, Dconf, Files []string
+	Target                                         string
 }
 
 func viewOf(p *plan.Plan) coreView {
@@ -107,6 +107,9 @@ func viewOf(p *plan.Plan) coreView {
 	}
 	for _, x := range p.Artifact.Packages {
 		v.Packages = append(v.Packages, x.Name)
+	}
+	for _, x := range p.Artifact.RemovePackages {
+		v.Removed = append(v.Removed, x.Name)
 	}
 	for _, x := range p.Artifact.SystemdUnits {
 		v.Units = append(v.Units, x.Unit)
@@ -210,6 +213,12 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	}
 	if fedora.Artifact.BaseImage.Digest == "" {
 		t.Error("the Fedora base is not pinned by digest")
+	}
+	wantRemoved := []string{"gnome-software", "gnome-software-rpm-ostree"}
+	for name, p := range map[string]*plan.Plan{"centos-stream-10": centos, "rhel-10": rhel, "almalinux-10": alma, "fedora-45": fedora} {
+		if got := viewOf(p).Removed; !reflect.DeepEqual(got, wantRemoved) {
+			t.Errorf("%s removes %v, want %v", name, got, wantRemoved)
+		}
 	}
 	// The Fedora facts that reach the Plan and are worth keeping: the group id
 	// DeskOS asks dnf for, which on Fedora is a comps *environment* resolved through

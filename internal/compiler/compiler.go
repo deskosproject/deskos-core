@@ -142,10 +142,34 @@ func (c *Compiler) Plan(cat *compose.Catalog, workstation string) (*plan.Plan, e
 	if err := applyDownloads(pl, plSpec, p); err != nil {
 		return nil, err
 	}
+	if err := validateRemovePackages(p); err != nil {
+		return nil, err
+	}
 	if err := p.Normalize(); err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+// validateRemovePackages rejects contradictory intent after every lowerer has
+// spoken: a package the platform removes cannot also be installed by the
+// composition. A group member that the platform removes is not this conflict;
+// the group is an install and the platform's removal runs afterwards
+// (docs/adr/0022).
+func validateRemovePackages(p *plan.Plan) error {
+	for _, rm := range p.Artifact.RemovePackages {
+		for _, pkg := range p.Artifact.Packages {
+			if pkg.Name == rm.Name {
+				installedBy := "the composition"
+				if len(pkg.Provenance) > 0 {
+					installedBy = pkg.Provenance[0].Describe()
+				}
+				return fmt.Errorf("package %q is removed by Platform/%s and installed by the composition\n  installed by: %s",
+					rm.Name, p.Platform.Name, installedBy)
+			}
+		}
+	}
+	return nil
 }
 
 // applyDownloads is what makes downloading a platform's fact instead of an

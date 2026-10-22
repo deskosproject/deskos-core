@@ -23,6 +23,11 @@ spec:
       graphical: true
       # Its Firefox Flatpak needs a session-bus authenticator, which fails the system preinstall of every declared Flatpak.
       excludePackages: [redhat-flatpak-preinstall-firefox]
+  # Bazaar is the workstation's application store; GNOME Software is not. The
+  # build removes it after the package transaction and proves it is absent
+  # (docs/adr/0022). The names are a no-op on a base or group that does not ship
+  # them, which is why the same declaration is safe across the EL10 family.
+  removePackages: [gnome-software, gnome-software-rpm-ostree]
   unavailablePackages:
     - name: firefox
       reason: RHEL 10 publishes Firefox only as a Flatpak; the workstation gets it from Flathub (Profile/firefox), never as an RPM

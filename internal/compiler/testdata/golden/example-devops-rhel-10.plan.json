@@ -475,6 +475,26 @@
         ]
       }
     ],
+    "removePackages": [
+      {
+        "name": "gnome-software",
+        "provenance": [
+          {
+            "resource": "Platform/rhel-10",
+            "source": "resources/platforms/rhel-10.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "gnome-software-rpm-ostree",
+        "provenance": [
+          {
+            "resource": "Platform/rhel-10",
+            "source": "resources/platforms/rhel-10.yaml:1"
+          }
+        ]
+      }
+    ],
     "rpmFiles": [],
     "binaries": [
       {

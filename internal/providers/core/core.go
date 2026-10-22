@@ -35,6 +35,11 @@ type PlatformSpec struct {
 	Bootc         BootcBase      `json:"bootc"`
 	Distribution  Distribution   `json:"distribution"`
 	PackageGroups []PackageGroup `json:"packageGroups,omitempty"`
+	// RemovePackages are RPM packages the platform image must not carry. The
+	// build removes them after the package transactions and fails if one remains
+	// (docs/adr/0022). They are not group exclusions: a group exclusion only
+	// changes what that transaction installs.
+	RemovePackages []string `json:"removePackages,omitempty"`
 	// UnavailablePackages records known packages the platform does not
 	// provide from a supported repository, so requests fail at compile time.
 	UnavailablePackages []UnavailablePackage `json:"unavailablePackages,omitempty"`
@@ -326,6 +331,19 @@ func (platformProvider) Decode(res *model.Resource) error {
 	}
 	if s.Bootc.Digest != "" && !digestRE.MatchString(s.Bootc.Digest) {
 		errs.Add(model.Errorf(res, "bootc.digest %q must be sha256:<64 hex>", s.Bootc.Digest))
+	}
+	if s.PackageManager == model.PackageManagerDeb && len(s.RemovePackages) > 0 {
+		errs.Add(model.Errorf(res, "removePackages is an RPM operation; %s is %s", s.DisplayName, s.PackageManager))
+	}
+	removed := map[string]bool{}
+	for _, name := range s.RemovePackages {
+		if !pkgRE.MatchString(name) {
+			errs.Add(model.Errorf(res, "invalid removed package %q", name))
+		}
+		if removed[name] {
+			errs.Add(model.Errorf(res, "package %q is removed twice", name))
+		}
+		removed[name] = true
 	}
 	seen := map[string]bool{}
 	for _, g := range s.PackageGroups {

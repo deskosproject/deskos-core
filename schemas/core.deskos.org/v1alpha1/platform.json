@@ -70,6 +70,12 @@
             }
           }
         },
+        "removePackages": {
+          "description": "RPM packages the platform image must not carry. The build removes them after the package transactions and fails if one remains. A package the composition explicitly installs is a conflict (ADR 0022).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "../../common/definitions.json#/$defs/packageName" }
+        },
         "unavailablePackages": {
           "type": "array",
           "items": {

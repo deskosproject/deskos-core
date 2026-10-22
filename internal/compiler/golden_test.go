@@ -314,7 +314,7 @@ func checkRHSMRuns(t *testing.T, name string, p *plan.Plan, cf string) {
 		}
 	}
 	want := 0
-	for _, n := range []int{len(p.Artifact.PackageGroups), len(p.Artifact.Packages), len(p.Artifact.RpmFiles)} {
+	for _, n := range []int{len(p.Artifact.PackageGroups), len(p.Artifact.Packages), len(p.Artifact.RemovePackages), len(p.Artifact.RpmFiles)} {
 		if n > 0 {
 			want++
 		}

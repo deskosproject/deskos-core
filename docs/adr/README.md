@@ -31,3 +31,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0019: A platform says whether its base can fetch](0019-a-platform-says-whether-its-base-can-fetch.md) | accepted |
 | [0020: Ubuntu lives in its own repository](0020-ubuntu-lives-in-its-own-repository.md) | accepted |
 | [0021: An extension the platform's repositories do not carry as a pinned artifact](0021-extensions-can-be-delivered-as-pinned-artifacts.md) | accepted |
+| [0022: Removing packages a platform must not carry](0022-removing-packages-a-platform-must-not-carry.md) | accepted |
