@@ -131,7 +131,7 @@ jobs:
             ./bin/deskosctl render --no-core ./resources ./examples/organization-and-role --workstation "$ws" --output "dist/c/$ws"
             ./bin/deskosctl render --no-core ./examples/organization-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
           done
-          # The parked examples still render from their self-contained roots.
+          # The example platforms still render from their self-contained roots.
           ./bin/deskosctl render ./examples/almalinux-10 --workstation example-almalinux-10 --output dist/alma
           ./bin/deskosctl render ./examples/fedora-45 --workstation example-fedora-45 --output dist/fedora-45
           diff -r dist/a dist/b

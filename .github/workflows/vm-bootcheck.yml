@@ -11,7 +11,7 @@ name: vm-bootcheck
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
-# The AlmaLinux and Fedora examples are not built here: they are parked examples,
+# The AlmaLinux and Fedora examples are not built here: they are example platforms,
 # not published platforms. Their roots still validate and render in ci.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
@@ -68,7 +68,7 @@ env:
 jobs:
   changes:
     # A platform pin or a platform resource only concerns that platform. Shared
-    # Core code and resources concern all of them. The parked examples are not
+    # Core code and resources concern all of them. The example platforms are not
     # image legs.
     runs-on: ubuntu-24.04
     outputs:

@@ -33,7 +33,7 @@ spec:
   # what must be done before promoting it back.
   #
   # The example carries one Fedora release for clarity; the previous compose is not
-  # kept alongside it. Fedora is parked as an example because its daily base
+  # kept alongside it. Fedora is kept as an example because its daily base
   # digest is garbage-collected upstream; docs/fedora.md records how to resume it.
   family: fedora
   release: "45"

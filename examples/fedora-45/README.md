@@ -28,5 +28,5 @@ family's software choices are in `Profile/fedora`; the example keeps Fedora's
 own wallpaper and splash.
 
 To build it locally, including refreshing the base digest and writing a QCOW2,
-follow [docs/parked-platforms.md](../../docs/parked-platforms.md). Do not
+follow [docs/example-platforms.md](../../docs/example-platforms.md). Do not
 publish the resulting image.

@@ -116,7 +116,7 @@ DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
 profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
 which a workstation selects only when its platform's base lets DeskOS write
 them (ADR 0016). The same Core composes onto the shipped `centos-stream-10` and `rhel-10`; the
-parked AlmaLinux and Fedora examples compose it from their own roots. The Ubuntu
+example AlmaLinux and Fedora platforms compose it from their own roots. The Ubuntu
 platform composes it in its own repository
 ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)), on a base the project
 owns rather than its vendor. A RHEL workstation starts from
@@ -346,11 +346,11 @@ account the upstream container image ships suppressing the wizard — is in
   this repository's identity passes, with the SBOM, accepted-exception and
   effective-exception attestations bound to that digest. RHEL-derived images are never
   published (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
-  Fedora are parked examples and publish nothing.
-- **Parked AlmaLinux and Fedora examples.** Their self-contained roots compose and
+  Fedora are example platforms and publish nothing.
+- **Example AlmaLinux and Fedora platforms.** Their self-contained roots compose and
   render in CI, and `examples-weekly.yml` builds and boots them weekly without
   publishing. They are not shipped platforms and have no image repository; see
-  [parked-platforms.md](parked-platforms.md). Historical measurements remain in the
+  [example-platforms.md](example-platforms.md). Historical measurements remain in the
   example Platform resources, not in the shipped platform matrix.
 - **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
   private RHEL 10.2 workstation with four Flathub apps installed all four from
@@ -643,7 +643,7 @@ Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
 image-update unit. Where the base **enables** it, its service runs
 `bootc upgrade --apply`, which **reboots** whenever a new image is published.
 The reboot-on-publish path was checked end to end on CentOS Stream 10. RHEL is
-built and booted by the organization, which owns that validation. The parked
+built and booted by the organization, which owns that validation. The example
 examples are checked weekly but are not shipped platforms.
 
 DeskOS declares the update unit on every shipped platform, so masking it leaves
@@ -734,7 +734,7 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   the current `main`, and it is a preview rather than a supported channel; the
   checksum is published beside it. QCOW2 files and RHEL ISOs are not published:
   RHEL stays private, and the pinned example roots are built locally for testing
-  (see [parked-platforms.md](parked-platforms.md)). The CI builds a QCOW2 (the EL
+  (see [example-platforms.md](example-platforms.md)). The CI builds a QCOW2 (the EL
   platforms) only as test input; an Ubuntu disk is written with
   `bootc install to-disk` by that platform's own repository.
 - **Planned:** promote the same digest through channels (candidate,

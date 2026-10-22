@@ -8,7 +8,7 @@ spec:
   # the published platform matrix. Its Platform lives here so composition and
   # rendering stay exercised without carrying a second experimental EL10 image
   # in CI and release. To re-promote it, mirror the base digest at a stable
-  # reference and follow docs/parked-platforms.md.
+  # reference and follow docs/example-platforms.md.
   # The vendor here is the AlmaLinux project, which publishes this base itself, so
   # the platform follows ADR 0004's official-base rule and declares no
   # organization owner or tier — like centos-stream-10 and rhel-10. The vendor

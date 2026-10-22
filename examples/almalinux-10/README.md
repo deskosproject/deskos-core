@@ -20,5 +20,5 @@ CentOS Stream 10 and RHEL 10. The example still composes and renders in CI; a
 weekly job builds and boots it without publishing.
 
 To build it locally, including refreshing the base digest and writing a QCOW2,
-follow [docs/parked-platforms.md](../../docs/parked-platforms.md). Do not
+follow [docs/example-platforms.md](../../docs/example-platforms.md). Do not
 publish the resulting image.

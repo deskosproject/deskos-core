@@ -41,7 +41,7 @@ the effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 > EL family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither
 > the package nor the unit without a profile that selects it; an organization can
 > still declare them itself. A platform that declares no channel fails composition
-> for a `FlatpakSet` rather than pretending. The parked AlmaLinux and Fedora
+> for a `FlatpakSet` rather than pretending. The example AlmaLinux and Fedora
 > examples are not part of the shipped support statement
 > ([platforms.md](platforms.md)).
 

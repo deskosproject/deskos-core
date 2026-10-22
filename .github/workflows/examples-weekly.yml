@@ -1,6 +1,6 @@
 name: examples-weekly
 
-# Weekly smoke test for the parked platform examples.
+# Weekly smoke test for the example platforms.
 #
 # AlmaLinux 10 and Fedora 45 are examples, not shipped platforms: nothing here
 # publishes an image, signs one, or touches a registry. The job builds each

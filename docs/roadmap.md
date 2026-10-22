@@ -69,11 +69,11 @@ each slice is reviewed on its own:
   pure check.
 - **Pinned base:** digest-pinned base image, updated deliberately. Done for
   CentOS Stream 10 and RHEL 10; the Ubuntu base is pinned in its own repository.
-- **Parked AlmaLinux and Fedora examples.** Neither is a shipped platform. Their
+- **Example AlmaLinux and Fedora platforms.** Neither is a shipped platform. Their
   self-contained roots compose and render in CI, and `examples-weekly.yml` builds
   and boots them weekly without publishing. Re-promotion requires a durable base
   (for Fedora, a mirrored digest in DeskOS Quay) and the checklist in
-  [parked-platforms.md](parked-platforms.md).
+  [example-platforms.md](example-platforms.md).
 - **Open:** decide how to treat `bootc container lint` warnings from
   packages.
 
@@ -124,9 +124,9 @@ Details in
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
 - A decision by the example organization on the `virt-manager` gap.
-- **Parked AlmaLinux and Fedora examples:** their image builds move to the
+- **Example AlmaLinux and Fedora platforms:** their image builds move to the
   weekly `examples-weekly.yml` check, with no publication. This is not a support
-  promise; [parked-platforms.md](parked-platforms.md) records the re-promotion
+  promise; [example-platforms.md](example-platforms.md) records the re-promotion
   path.
 - ~~A **session check for Ubuntu**~~ done: `vm-bootcheck.yml` runs
   `sessioncheck.py` on the Ubuntu disk beside the boot and first-boot checks
@@ -150,7 +150,7 @@ Details in
   not always, so `main` can go red on its own. Cause still unexplained.
 - **Fedora example:** the weekly examples workflow builds and boots it from the
   current Fedora tag. A published Fedora platform waits for a mirrored base and
-  the promotion checklist in [parked-platforms.md](parked-platforms.md).
+  the promotion checklist in [example-platforms.md](example-platforms.md).
 - RHEL's Red Hat logo in the Activities button (see
   [research-notes.md](research-notes.md#gnome-shell-on-el10-2026-10-04)):
   replacing `fedora-logo-icon` through an icon theme is untried.

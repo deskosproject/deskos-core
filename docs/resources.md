@@ -674,7 +674,7 @@ project.
 - **AlmaLinux 10** and **Fedora 45** compose the same Core in example roots,
   not shipped platforms. They are built and booted by the weekly example check
   without being published; see
-  [parked-platforms.md](parked-platforms.md).
+  [example-platforms.md](example-platforms.md).
 - **Ubuntu 26.04** composes the same Core in a repository of its own, on a base
   owned by the Project DeskOS and without the RHEL family's software
   ([ADR 0014](adr/0014-platform-base-ownership.md), [ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).

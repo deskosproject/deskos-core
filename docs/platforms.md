@@ -29,11 +29,11 @@ and build context. It does **not** mean the image builds or boots — that is th
 next two columns. Evidence, per claim, is in
 [architecture.md](architecture.md#validation-status) and the run artifacts.
 
-AlmaLinux 10 and Fedora 45 are **parked examples**, not shipped platforms. They
+AlmaLinux 10 and Fedora 45 are **example platforms**, not shipped platforms. They
 are not in `resources/platforms/`, are not published, and do not block a pull
 request. They still compose and render in CI and are built and booted by a
 weekly example workflow. To build one locally or re-promote it, see
-[Parked platform examples](parked-platforms.md).
+[Example platforms](example-platforms.md).
 
 ## How to get a machine today
 
@@ -72,8 +72,8 @@ machines, the publish leg and the platform's resources moved with it.
   inferred from its vendor's lifecycle; the matrix above is not an LTS promise.
 - Retiring a platform means removing it from `resources/platforms/`, the publish
   matrix and the image legs of CI. Its example may stay in `examples/` as a
-  parked, non-published root.
-- Re-promoting a parked example follows
-  [parked-platforms.md](parked-platforms.md): make the base durable, move the
+  example, non-published root.
+- Re-promoting an example platform follows
+  [example-platforms.md](example-platforms.md): make the base durable, move the
   Platform back, add the reference workstation and CI/publish legs, regenerate
   goldens, then validate, build, boot and only then publish.

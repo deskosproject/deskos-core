@@ -1,10 +1,10 @@
-# Parked platform examples: AlmaLinux and Fedora
+# Example platforms: AlmaLinux and Fedora
 
 AlmaLinux 10 and Fedora 45 are **not shipped platforms**. They live in their own
 example roots so their composition and rendering stay exercised without carrying
 their build, boot and publication cost in every pull request.
 
-| Example | Platform resource | Why it is parked |
+| Example | Platform resource | Why it is an example |
 |---|---|---|
 | [`examples/almalinux-10`](../examples/almalinux-10/) | [`platforms/almalinux-10.yaml`](../examples/almalinux-10/platforms/almalinux-10.yaml) | The vendor labels its bootc base experimental. It is useful for EL10 composition work, but it is not a support commitment. |
 | [`examples/fedora-45`](../examples/fedora-45/) | [`platforms/fedora-45.yaml`](../examples/fedora-45/platforms/fedora-45.yaml) | Fedora Silverblue's `:45` tag moves daily; a durable published platform needs a mirrored digest first. |
@@ -133,7 +133,7 @@ and no update source outside your local test; do not hand this disk to a user.
 Those are example checks, not a support promise for a published AlmaLinux or
 Fedora platform.
 
-## Re-promoting a parked example
+## Re-promoting an example platform
 
 1. **Make the base durable first.** For Fedora, copy the exact digest into a
    DeskOS-controlled registry, for example

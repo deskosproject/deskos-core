@@ -68,9 +68,9 @@ and the table says what has actually been verified on each:
 | CentOS Stream 10 | vendor | **published image**, built and booted in CI |
 | RHEL 10 | vendor (entitled) | composes and renders here; **built and booted by the organization** — its build and boot were validated once on a retired host, and are not re-run here |
 
-AlmaLinux 10 and Fedora 45 are parked examples: they compose and render, and a
+AlmaLinux 10 and Fedora 45 are example platforms: they compose and render, and a
 weekly job builds and boots them without publishing. See
-[`docs/parked-platforms.md`](docs/parked-platforms.md).
+[`docs/example-platforms.md`](docs/example-platforms.md).
 
 Ubuntu 26.04 is not in this table. It has a base of its own and lives in
 [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
@@ -183,7 +183,7 @@ flow, with the exact commands, is in
 
 | | |
 |---|---|
-| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; the parked examples |
+| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; the example platforms |
 | **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Choose a platform** | [**Platforms**](docs/platforms.md): the canonical matrix and what is verified on each |
 | **Author resources** | [**Resources**](docs/resources.md): every kind with an example |

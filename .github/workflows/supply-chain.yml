@@ -62,7 +62,7 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux and Fedora are parked
+        # release. RHEL is never published. AlmaLinux and Fedora are example
         # examples and have no publication leg.
         #
         # `disk` says how that platform's disk is written and `diskfile` where it
