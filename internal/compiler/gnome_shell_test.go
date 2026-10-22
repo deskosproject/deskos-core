@@ -14,6 +14,7 @@ const (
 	keyClockWeekday  = "/org/gnome/desktop/interface/clock-show-weekday"
 	keyClockFormat   = "/org/gnome/desktop/interface/clock-format"
 	keyNumLock       = "/org/gnome/desktop/peripherals/keyboard/numlock-state"
+	keyXKBOptions    = "/org/gnome/desktop/input-sources/xkb-options"
 	keyDynamicWS     = "/org/gnome/mutter/dynamic-workspaces"
 	keyNumWS         = "/org/gnome/desktop/wm/preferences/num-workspaces"
 	keyFolders       = "/org/gnome/desktop/app-folders/folder-children"
@@ -38,7 +39,7 @@ func TestGnomeShellClockKeyboardValidation(t *testing.T) {
 	}
 	valid := shellDefaults("      hotCorners: false\n      workspaces: 4\n"+devFolder) +
 		"    clock:\n      showWeekday: true\n      format: 12h\n" +
-		"    keyboard:\n      numLock: true\n      terminal: org.gnome.Ptyxis.desktop\n"
+		"    keyboard:\n      numLock: true\n      terminal: org.gnome.Ptyxis.desktop\n      xkbOptions: [compose:caps]\n"
 	if err := load(valid); err != nil {
 		t.Fatalf("valid settings rejected: %v", err)
 	}
@@ -56,6 +57,9 @@ func TestGnomeShellClockKeyboardValidation(t *testing.T) {
 		"clock format":          "    clock:\n      format: 24-hour\n",
 		"terminal not an id":    "    keyboard:\n      terminal: ghostty\n",
 		"terminal with command": "    keyboard:\n      terminal: x.desktop\n      command: xterm\n",
+		"unknown xkb option":    "    keyboard:\n      xkbOptions: [compose:hyper]\n",
+		"duplicate xkb option":  "    keyboard:\n      xkbOptions: [compose:caps, compose:caps]\n",
+		"empty xkb options":     "    keyboard:\n      xkbOptions: []\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			mustFail(t, load(defaults), "schema validation failed")
@@ -76,6 +80,9 @@ func TestGnomeShellTypedValidationWithoutSchema(t *testing.T) {
 		"folder no folders": {`{"defaults":{"shell":{"appFolders":[]}}}`, "shell.appFolders: at least one folder is required"},
 		"clock format":      {`{"defaults":{"clock":{"format":"am/pm"}}}`, `clock.format: expected 24h or 12h, got "am/pm"`},
 		"terminal":          {`{"defaults":{"keyboard":{"terminal":"ghostty"}}}`, `keyboard.terminal: "ghostty" is not a desktop file id`},
+		"xkb option":        {`{"defaults":{"keyboard":{"xkbOptions":["compose:hyper"]}}}`, `keyboard.xkbOptions: expected `},
+		"xkb duplicate":     {`{"defaults":{"keyboard":{"xkbOptions":["compose:caps","compose:caps"]}}}`, `keyboard.xkbOptions: "compose:caps" is listed twice`},
+		"xkb empty":         {`{"defaults":{"keyboard":{"xkbOptions":[]}}}`, `keyboard.xkbOptions: at least one option is required`},
 	} {
 		t.Run(name, func(t *testing.T) {
 			res := rawResource("desktop.deskos.org/v1alpha1", "GnomeProfile", "x", tc.spec)
@@ -94,7 +101,7 @@ func TestGnomeShellLowering(t *testing.T) {
 		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
 		"g.yaml": gnome("g", shellDefaults("      hotCorners: false\n      workspaces: 4\n"+devFolder)+
 			"    clock:\n      showWeekday: true\n      format: 24h\n"+
-			"    keyboard:\n      numLock: true\n      terminal: com.mitchellh.ghostty.desktop\n"),
+			"    keyboard:\n      numLock: true\n      terminal: com.mitchellh.ghostty.desktop\n      xkbOptions: [compose:caps]\n"),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	for key, want := range map[string]string{
@@ -102,6 +109,7 @@ func TestGnomeShellLowering(t *testing.T) {
 		keyClockWeekday: "true",
 		keyClockFormat:  "'24h'",
 		keyNumLock:      "true",
+		keyXKBOptions:   "['compose:caps']",
 		keyDynamicWS:    "false",
 		keyNumWS:        "4",
 		keyFolders:      "['Development', 'Utilities']",
@@ -205,6 +213,10 @@ func TestGnomeShellRenderAndLocks(t *testing.T) {
 		if !strings.Contains(keyfile, want) {
 			t.Errorf("dconf keyfile lacks %q:\n%s", want, keyfile)
 		}
+	}
+	term := files["rootfs/etc/xdg/xdg-terminals.list"]
+	if !strings.Contains(term, "org.gnome.Ptyxis.desktop\n") {
+		t.Errorf("xdg-terminals.list lacks the selected terminal:\n%s", term)
 	}
 	locks := files["rootfs/etc/dconf/db/distro.d/locks/50-deskos"]
 	for _, want := range []string{keyHotCorners, keyCustomKeys, terminalKeysPath + "binding", terminalKeysPath + "command"} {

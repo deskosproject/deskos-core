@@ -34,7 +34,7 @@
             "software.updates",
             "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
             "clock.showWeekday", "clock.format",
-            "keyboard.numLock", "keyboard.terminal",
+            "keyboard.numLock", "keyboard.terminal", "keyboard.xkbOptions",
             "power.buttonAction"
           ] }
         }
@@ -62,6 +62,18 @@
           "properties": {
             "buttons": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["minimize", "maximize", "close"] } },
             "buttonPlacement": { "enum": ["left", "right"] }
+          }
+        },
+        "applications": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "browser": { "$ref": "#/$defs/desktopId" },
+            "fileManager": { "$ref": "#/$defs/desktopId" },
+            "textEditor": { "$ref": "#/$defs/desktopId" },
+            "imageViewer": { "$ref": "#/$defs/desktopId" },
+            "videoPlayer": { "$ref": "#/$defs/desktopId" },
+            "pdfViewer": { "$ref": "#/$defs/desktopId" }
           }
         },
         "appearance": {
@@ -152,7 +164,16 @@
           "additionalProperties": false,
           "properties": {
             "numLock": { "type": "boolean" },
-            "terminal": { "$ref": "#/$defs/desktopId" }
+            "terminal": { "$ref": "#/$defs/desktopId" },
+            "xkbOptions": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "enum": [
+                "caps:none", "compose:caps", "compose:menu", "compose:ralt",
+                "compose:rctrl", "ctrl:nocaps", "grp:alt_shift_toggle"
+              ] }
+            }
           }
         },
         "session": {

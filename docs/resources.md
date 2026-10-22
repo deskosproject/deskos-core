@@ -434,6 +434,11 @@ spec:
   defaults:
     windows:
       buttons: [close]
+    applications:
+      browser: google-chrome.desktop
+      fileManager: org.gnome.Nautilus.desktop
+      textEditor: org.gnome.TextEditor.desktop
+      imageViewer: org.gnome.Loupe.desktop
     appearance:
       wallpaper:
         light: ../assets/example.svg
@@ -481,10 +486,16 @@ spec:
     keyboard:
       numLock: true
       terminal: com.mitchellh.ghostty.desktop   # Ctrl+Alt+T
+      xkbOptions: [compose:caps]                  # Caps Lock as Compose key
     power:
       buttonAction: hibernate      # nothing | suspend | hibernate | interactive
 ```
 
+- **`applications.*`** names the desktop entry that handles a document role:
+  `browser`, `fileManager`, `textEditor`, `imageViewer`, `videoPlayer` or
+  `pdfViewer`. Core owns the role-to-MIME table and writes
+  `/etc/xdg/mimeapps.list`; the profile never authors MIME types. A user's
+  `~/.config/mimeapps.list` still wins, so this is a default, not a lock.
 - **`appFolders`** replaces GNOME's built-in folders (such as
   *Utilities*); declare every folder the app grid should have. A higher
   layer replaces the whole list. Not available on RHEL 10.2, whose GNOME
@@ -508,7 +519,12 @@ spec:
 - **`power.buttonAction`** is the hardware power button's action, from GNOME's own
   values.
 - **`keyboard.terminal`** binds Ctrl+Alt+T to the given desktop file
-  through the Platform's application launcher (`gtk-launch` on EL10).
+  through the Platform's application launcher (`gtk-launch` on EL10), and
+  writes the same entry to `/etc/xdg/xdg-terminals.list` so other
+  `xdg-terminal-exec` callers pick it too.
+- **`keyboard.xkbOptions`** accepts a small reviewed list of XKB options, not
+  raw keymap text. `compose:caps` turns Caps Lock into the Compose key; users
+  type Shift for capitals and use sequences such as Compose, `'`, `e` for `é`.
 - **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 

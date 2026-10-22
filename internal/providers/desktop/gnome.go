@@ -35,6 +35,12 @@ var (
 const (
 	KeyButtons         = "windows.buttons"
 	KeyButtonPlacement = "windows.buttonPlacement"
+	KeyAppBrowser      = "applications.browser"
+	KeyAppFileManager  = "applications.fileManager"
+	KeyAppTextEditor   = "applications.textEditor"
+	KeyAppImageViewer  = "applications.imageViewer"
+	KeyAppVideoPlayer  = "applications.videoPlayer"
+	KeyAppPDFViewer    = "applications.pdfViewer"
 	KeyWallpaper       = "appearance.wallpaper"
 	KeyLoginLogo       = "appearance.loginLogo"
 	KeyFontInterface   = "appearance.fonts.interface"
@@ -62,6 +68,7 @@ const (
 	KeyClockFormat     = "clock.format"
 	KeyNumLock         = "keyboard.numLock"
 	KeyTerminal        = "keyboard.terminal"
+	KeyXKBOptions      = "keyboard.xkbOptions"
 	KeyPowerButton     = "power.buttonAction"
 )
 
@@ -88,7 +95,7 @@ var knownKeys = map[string]bool{
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
-	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true,
+	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
 	KeyPowerButton: true, KeyExtensions: true,
 }
 
@@ -98,6 +105,10 @@ var (
 	accentColors = []string{"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
 	updateModes  = []string{"automatic", "manual", "disabled"}
 	clockFormats = []string{"24h", "12h"}
+	xkbOptions   = []string{
+		"caps:none", "compose:caps", "compose:menu", "compose:ralt",
+		"compose:rctrl", "ctrl:nocaps", "grp:alt_shift_toggle",
+	}
 )
 
 // MaxWorkspaces is mutter's limit for num-workspaces.
@@ -110,15 +121,16 @@ type GnomeProfileSpec struct {
 }
 
 type Settings struct {
-	Windows    *Windows    `json:"windows,omitempty"`
-	Appearance *Appearance `json:"appearance,omitempty"`
-	Shell      *Shell      `json:"shell,omitempty"`
-	Session    *Session    `json:"session,omitempty"`
-	Dock       *Dock       `json:"dock,omitempty"`
-	Software   *Software   `json:"software,omitempty"`
-	Clock      *Clock      `json:"clock,omitempty"`
-	Keyboard   *Keyboard   `json:"keyboard,omitempty"`
-	Power      *Power      `json:"power,omitempty"`
+	Windows      *Windows      `json:"windows,omitempty"`
+	Applications *Applications `json:"applications,omitempty"`
+	Appearance   *Appearance   `json:"appearance,omitempty"`
+	Shell        *Shell        `json:"shell,omitempty"`
+	Session      *Session      `json:"session,omitempty"`
+	Dock         *Dock         `json:"dock,omitempty"`
+	Software     *Software     `json:"software,omitempty"`
+	Clock        *Clock        `json:"clock,omitempty"`
+	Keyboard     *Keyboard     `json:"keyboard,omitempty"`
+	Power        *Power        `json:"power,omitempty"`
 }
 
 // Power is the hardware power button's action.
@@ -129,6 +141,17 @@ type Power struct {
 type Windows struct {
 	Buttons         []string `json:"buttons,omitempty"`
 	ButtonPlacement string   `json:"buttonPlacement,omitempty"`
+}
+
+// Applications assigns the desktop entries that handle the common document
+// roles. The lowering owns the role-to-MIME table; a profile names entries only.
+type Applications struct {
+	Browser     string `json:"browser,omitempty"`
+	FileManager string `json:"fileManager,omitempty"`
+	TextEditor  string `json:"textEditor,omitempty"`
+	ImageViewer string `json:"imageViewer,omitempty"`
+	VideoPlayer string `json:"videoPlayer,omitempty"`
+	PDFViewer   string `json:"pdfViewer,omitempty"`
 }
 
 type Appearance struct {
@@ -188,8 +211,9 @@ type Clock struct {
 }
 
 type Keyboard struct {
-	NumLock  *bool  `json:"numLock,omitempty"`
-	Terminal string `json:"terminal,omitempty"`
+	NumLock    *bool    `json:"numLock,omitempty"`
+	Terminal   string   `json:"terminal,omitempty"`
+	XKBOptions []string `json:"xkbOptions,omitempty"`
 }
 
 // Workspaces is the composed workspace mode; Count is 0 for dynamic workspaces.
@@ -308,6 +332,26 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: expected left or right, got %q", KeyButtonPlacement, w.ButtonPlacement)
 			}
 			set(KeyButtonPlacement, w.ButtonPlacement, w.ButtonPlacement)
+		}
+	}
+
+	if apps := s.Applications; apps != nil {
+		for _, app := range []struct{ key, id string }{
+			{KeyAppBrowser, apps.Browser},
+			{KeyAppFileManager, apps.FileManager},
+			{KeyAppTextEditor, apps.TextEditor},
+			{KeyAppImageViewer, apps.ImageViewer},
+			{KeyAppVideoPlayer, apps.VideoPlayer},
+			{KeyAppPDFViewer, apps.PDFViewer},
+		} {
+			if app.id == "" {
+				continue
+			}
+			if !desktopIDRE.MatchString(app.id) {
+				bad("%s: %q is not a desktop file id (for example google-chrome.desktop)", app.key, app.id)
+				continue
+			}
+			set(app.key, app.id, app.id)
 		}
 	}
 
@@ -502,6 +546,22 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %q is not a desktop file id (for example org.gnome.Ptyxis.desktop)", KeyTerminal, k.Terminal)
 			}
 			set(KeyTerminal, k.Terminal, k.Terminal+" (Ctrl+Alt+T)")
+		}
+		if k.XKBOptions != nil {
+			if len(k.XKBOptions) == 0 {
+				bad("%s: at least one option is required", KeyXKBOptions)
+			}
+			seen := map[string]bool{}
+			for _, opt := range k.XKBOptions {
+				if !slices.Contains(xkbOptions, opt) {
+					bad("%s: expected %s, got %q", KeyXKBOptions, strings.Join(xkbOptions, ", "), opt)
+				}
+				if seen[opt] {
+					bad("%s: %q is listed twice", KeyXKBOptions, opt)
+				}
+				seen[opt] = true
+			}
+			set(KeyXKBOptions, k.XKBOptions, strings.Join(k.XKBOptions, ", "))
 		}
 	}
 
