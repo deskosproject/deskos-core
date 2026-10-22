@@ -98,8 +98,8 @@ packages on this pin), Flatpak 1.18.4 with `flatpak preinstall`,
 [`resources/platforms/fedora-45.yaml`](../resources/platforms/fedora-45.yaml), one
 comment per fact. [install.md](install.md#fedora-45) has the commands.
 
-**The pin is the released compose.** `:45` resolves to `45.20261021.n.0`
-(os-release reads "Silverblue"), measured 2026-10-21. That base enables `fedora`,
+**The pin is the released compose.** `:45` resolves to `45.20261022.n.0`
+(os-release reads "Silverblue"), measured 2026-10-22. That base enables `fedora`,
 `updates`, `updates-archive` and Fedora's openh264 repository, not
 `updates-testing`: the vendor's Dash to Dock 105 and its appindicator 64-2 stop at
 GNOME Shell 50, while the image ships 51. The platform therefore delivers the
@@ -170,7 +170,7 @@ above rather than hidden:
   as every other base pin is ([roadmap.md](roadmap.md)).
 - **One Fedora release at a time.** Fedora 44 was retired when 45 was promoted, so
   `resources/platforms/` carries a single Fedora platform and a machine's platform
-  is unambiguous. The compose is a property of the **pin** — `45.20261021.n.0`
+  is unambiguous. The compose is a property of the **pin** — `45.20261022.n.0`
   — and not of the name: a re-pin moves the digest and the
   measurement comments and the platform keeps its name, its workstation and
   its image repository.

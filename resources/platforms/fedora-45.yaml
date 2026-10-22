@@ -20,11 +20,11 @@ spec:
   # only an organization's extra applications go to Flatpak (ADR 0005).
   #
   # Fedora 45 is the release this family ships, and it is pinned to the released
-  # compose: os-release reads "45.20261021.n.0 (Silverblue)", and the base enables
+  # compose: os-release reads "45.20261022.n.0 (Silverblue)", and the base enables
   # `fedora`, `updates`, `updates-archive` and Fedora's openh264 repository — the
   # repositories are read from /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and
   # `dnf5 repolist --enabled` lists exactly those. It does not enable
-  # `updates-testing`. Measured on 2026-10-21. The resource is what decides which
+  # `updates-testing`. Measured on 2026-10-22. The resource is what decides which
   # compose a build gets, and docs/platforms.md reports what was verified against
   # that pin.
   #
@@ -36,13 +36,13 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/fedora/fedora-silverblue:45
-    # x86_64 manifest of the :45 index, built 2026-10-21T07:46:50Z as Fedora
-    # 45.20261021.n.0, ostree commit ccd2c044..., kernel 7.2.11-300.fc45.
+    # x86_64 manifest of the :45 index, built 2026-10-22T07:42:13Z as Fedora
+    # 45.20261022.n.0, ostree commit ce462a2c..., kernel 7.2.11-300.fc45.
     # Fedora Silverblue's :45 compose moves **daily**: a pin here is a digest the
     # registry stops serving within a day or two, and the `validate` job reports
-    # exactly that. Re-pinned 2026-10-21 to the released compose; the previous
-    # digest (45.20261020.n.0) is no longer served.
-    digest: sha256:67e68468673b87e2b716dcd101ceab298dcc1680b19975cfdfc0389975b47c7a
+    # exactly that. Re-pinned 2026-10-22 to the released compose; the previous
+    # digest (45.20261021.n.0) is no longer served.
+    digest: sha256:ddebc7b35c6aec83cdad2e7602a851965ff316c91aa638ba3f9c195a4d750d26
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true

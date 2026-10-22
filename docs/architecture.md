@@ -370,7 +370,7 @@ account the upstream container image ships suppressing the wizard — is in
   theme, its watermark and throbber frames and `Theme=deskos` are inside it, so the
   image carries them; `bootc container lint` passed 12 checks with 2 warnings
   (`nonempty-run-tmp`, `var-tmpfiles`). The pin is the released compose
-  (`45.20261021.n.0`, os-release reads "Silverblue"), and the platform follows
+  (`45.20261022.n.0`, os-release reads "Silverblue"), and the platform follows
   that pin ([platforms.md](platforms.md)). **Booted and checked in CI** (run 39462806315):
   `vm-bootcheck.yml` builds `examples/fedora-45`, makes a btrfs QCOW2 and runs the
   boot, instrumented session and first-boot checks; the graphical screen appeared
