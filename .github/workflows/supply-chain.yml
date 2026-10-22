@@ -62,7 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. Fedora joins when it has been booted.
+        # release. RHEL is never published. AlmaLinux and Fedora are example
+        # examples and have no publication leg.
         #
         # `disk` says how that platform's disk is written and `diskfile` where it
         # lands, because they differ: the EL platforms go through
@@ -75,12 +76,6 @@ jobs:
           - token: centos-stream-10
             workstation: deskos-core-centos-stream-10
             exceptions: tests/supply-chain/exceptions.json
-            disk: bib
-            diskfile: output/qcow2/disk.qcow2
-            splash: true
-          - token: almalinux-10
-            workstation: deskos-core-almalinux-10
-            exceptions: tests/supply-chain/exceptions-almalinux-10.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
             splash: true

@@ -22,12 +22,12 @@ artifact.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published; and AlmaLinux 10, published at quay.io/deskos/deskos-core-almalinux-10 on the base its vendor labels experimental. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers — workstation, role, organization and foundation, where the higher layer wins rather than file order — then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
-Most people should never run that pipeline by hand: **two platforms publish a
-finished image you can install today.** The rest of this page starts there, and
+Most people should never run that pipeline by hand: **CentOS Stream 10 publishes
+a finished image you can install today; RHEL 10 is built privately.** The rest of this page starts there, and
 leaves the compiler for whoever wants to understand everything.
 
 Composition is where the layers meet: sets union, keyed definitions must match,
@@ -43,9 +43,8 @@ the provenance of every value.
 
 ## Use it
 
-`quay.io/deskos/deskos-core-centos-stream-10` and
-`quay.io/deskos/deskos-core-almalinux-10` are the published images, each
-`:latest` plus a `:<commit>` tag, built and booted by the gate before they were
+`quay.io/deskos/deskos-core-centos-stream-10` is the published image, with
+`:latest` plus a `:<commit>` tag, built and booted by the gate before it was
 pushed. On a machine that already runs bootc, move it to DeskOS:
 
 ```bash
@@ -61,15 +60,17 @@ To install onto a disk instead, make a QCOW2 or an ISO from the same published
 image — no compiler involved — as
 [**Installing DeskOS**](docs/install.md#install-a-published-image) describes.
 
-Four platforms are compiled from this repository; two publish an image, and the
-table says what has actually been verified on each:
+Two shipped platforms are compiled from this repository; one publishes an image,
+and the table says what has actually been verified on each:
 
 | Platform | Base | Today |
 |---|---|---|
 | CentOS Stream 10 | vendor | **published image**, built and booted in CI |
-| AlmaLinux 10 | vendor (experimental) | **published image**, built and booted in CI |
 | RHEL 10 | vendor (entitled) | composes and renders here; **built and booted by the organization** — its build and boot were validated once on a retired host, and are not re-run here |
-| Fedora 45 | vendor | composes, builds and boots in CI (btrfs disk; GNOME session and first boot checked); pinned to a prerelease compose, no published image |
+
+AlmaLinux 10 and Fedora 45 are example platforms: they compose and render, and a
+weekly job builds and boots them without publishing. See
+[`docs/example-platforms.md`](docs/example-platforms.md).
 
 Ubuntu 26.04 is not in this table. It has a base of its own and lives in
 [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
@@ -131,8 +132,7 @@ Then see what the repository already ships, and what the image will contain:
 
 ```console
 $ ./deskosctl validate
-ok: 3 workstation(s) compose cleanly: deskos-core-almalinux-10,
-    deskos-core-centos-stream-10, deskos-core-fedora-45
+ok: 1 workstation(s) compose cleanly: deskos-core-centos-stream-10
 
 $ ./deskosctl plan --workstation deskos-core-centos-stream-10
 WORKSTATION
@@ -183,7 +183,7 @@ flow, with the exact commands, is in
 
 | | |
 |---|---|
-| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; Fedora 45 |
+| **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; the example platforms |
 | **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
 | **Choose a platform** | [**Platforms**](docs/platforms.md): the canonical matrix and what is verified on each |
 | **Author resources** | [**Resources**](docs/resources.md): every kind with an example |

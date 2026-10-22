@@ -10,14 +10,13 @@ They are few, and most confusion comes from two of them meaning more than one th
 - **Core**: what this repository ships — the compiler (`deskosctl`), the resource model, the
   profiles and reference workstations a flavor builds on.
 - **Platform**: an operating-system target and the facts that come with it. One resource per
-  platform (`centos-stream-10`, `almalinux-10`), holding its base image, its package manager,
+  platform (`centos-stream-10`, `rhel-10`), holding its base image, its package manager,
   its package groups, its boot splash, and what it can and cannot do. Everything that is
   specific to one platform lives in its `Platform` resource and nowhere else.
 - **Base image**: the OS image a platform starts `FROM` — the vendor's own
   (`quay.io/centos-bootc/centos-bootc`) or, where the vendor publishes no bootc base, one
   the project owns and supports itself (ADR 0014).
-- **Vendor**: the supplier of that base — Canonical for Ubuntu, Red Hat for RHEL, the CentOS
-  and AlmaLinux projects, the Fedora Project. A **software** vendor whose repository an
+- **Vendor**: the supplier of that base — Canonical for Ubuntu, Red Hat for RHEL, the CentOS project. A **software** vendor whose repository an
   organization installs from is a different party and a different decision; the example in
   the Ubuntu repository is one of those.
 - **Workstation**: the thing a person installs. One platform plus the profiles to select.
@@ -49,7 +48,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | Page | What it is |
 |---|---|
 | [Platforms](platforms.md) | **The canonical matrix**: base owner, what is verified, and how to install each platform |
-| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, private RHEL builds, AlmaLinux and Fedora 45. An Ubuntu install is documented in that platform's own repository |
+| [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, and private RHEL builds. An Ubuntu install is documented in that platform's own repository; AlmaLinux and Fedora are example platforms |
 | [Architecture](architecture.md) | The pipeline and boundary, the resource model, composition, the Plan, the Containerfile backend, and the evidence behind the claims |
 | [Resources](resources.md) | Every one of the fourteen kinds, with an example |
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |

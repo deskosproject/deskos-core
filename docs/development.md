@@ -153,7 +153,7 @@ creates a GitHub Release (`.github/workflows/release.yml`) with:
 | Asset | Contents |
 |---|---|
 | `deskosctl-vX.Y.Z-linux-amd64` | the CLI; only **linux/amd64** is built |
-| `deskos-resources-vX.Y.Z.tar.gz` | `resources/` of the same commit (DeskOS Core, platforms, assets), validated by that binary before release; a reproducible archive |
+| `deskos-core-resources-vX.Y.Z.tar.gz` | `resources/` of the same commit (DeskOS Core, platforms, assets), validated by that binary before release; a reproducible archive |
 | `SHA256SUMS` | checksums of both |
 
 > [!NOTE]

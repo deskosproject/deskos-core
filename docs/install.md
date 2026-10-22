@@ -8,7 +8,7 @@ Two paths, and you only need the first: **install a published image**, or
 > **container images** are published, and `bootc-image-builder` turns one into a
 > disk on your machine. A **CentOS Stream 10 preview ISO** is also published at
 > <https://download.deskos.org/>; verify its `SHA256SUMS` before booting it. No
-> QCOW2, RHEL, AlmaLinux or Fedora ISO is published.
+> QCOW2, RHEL or Ubuntu ISO is published by this repository.
 
 ## Install a published image
 
@@ -17,7 +17,6 @@ Two platforms publish an image that the gate built, scanned and booted:
 | Platform | Image |
 |---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` |
-| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` |
 
 Each has `:latest` (the newest image that passed the boot and session checks) and
 a `:<commit>` tag, moved together by a manual `publish=true` dispatch. For
@@ -68,7 +67,7 @@ The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default).
 > minsize = "40 GiB"
 > ```
 
-For AlmaLinux 10, use the same command with its image reference.
+
 
 ### Or make an installer ISO
 
@@ -115,16 +114,16 @@ install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 and build it:
 
 ```bash
-./bin/deskosctl render ./examples/almalinux-10 \
-    --workstation example-almalinux-10 --output ./dist/alma
-sudo podman build -t localhost/deskos-alma:test ./dist/alma
+./bin/deskosctl render ./examples/centos-stream-10 \
+    --workstation example-centos-stream-10 --output ./dist/centos
+sudo podman build -t localhost/deskos-centos:test ./dist/centos
 ```
 
 **3. Write the disk** with the same `bootc-image-builder` command as above,
 passing your `localhost/` image:
 
 ```bash
-image=localhost/deskos-alma:test
+image=localhost/deskos-centos:test
 
 mkdir -p output
 sudo podman run --rm -it --privileged --pull=missing \
@@ -206,43 +205,6 @@ subscription state (see [validation status](architecture.md#validation-status));
 a build you make is your own to check. The image, disks and ISOs are **still RHEL
 derivatives**: push them only to registries and storage that are private to your
 organization.
-
-## Fedora 45
-
-Fedora is a public, subscription-free base published by the Fedora Project
-itself, so a build needs no entitlement. **DeskOS publishes no Fedora image.**
-Get `deskosctl` as in step 1 above, then build the shipped reference workstation
-from a checkout of this repository:
-
-```bash
-./bin/deskosctl render \
-    --workstation deskos-core-fedora-45 --output ./dist/fedora-45
-sudo podman build -t localhost/deskos-core-fedora-45:test ./dist/fedora-45
-```
-
-`examples/fedora-45/` is the minimal example (Core and the family profile only).
-Then write the QCOW2 as above.
-
-If you publish it, give it its **own repository** —
-`quay.io/deskos/deskos-core-fedora-45` — and point the installed machine at that
-reference. A shared `:latest` repository would let a Fedora release change under
-a machine at `bootc upgrade` ([platforms.md](platforms.md)).
-
-> [!WARNING]
-> **This path is proposed, not measured, past the build.** The platform's facts
-> are measured against the pinned base (one comment per fact in
-> `resources/platforms/fedora-45.yaml`) and the image builds; CI also boots a
-> QCOW2 of the example and runs the session and first-boot checks. What has **not**
-> happened is an installation on hardware: there is no published Fedora image and
-> no Fedora disk has been installed by a user. See [platforms.md](platforms.md).
-
-> [!NOTE]
-> **The pin is a prerelease compose.** The `:45` tag still resolves to
-> `45.20261019.n.0`, whose base enables Fedora's `updates-testing` repository, so
-> a build can take packages from testing. `resources/platforms/fedora-45.yaml`
-> says which compose the pin is and what was measured against it; the released
-> compose is re-pinned when it appears. Fedora 44 is retired: DeskOS ships one
-> Fedora release at a time ([roadmap.md](roadmap.md)).
 
 ## Ubuntu 26.04
 

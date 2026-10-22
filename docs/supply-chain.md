@@ -156,7 +156,7 @@ names. Do not use `--insecure-ignore-tlog` on this path.
 
 ```bash
 # One repository per platform and release:
-# quay.io/deskos/deskos-core-centos-stream-10, -almalinux-10, …
+# quay.io/deskos/deskos-core-centos-stream-10
 ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
 identity='^https://github\.com/deskosproject/deskos-core/'
@@ -203,12 +203,9 @@ them.
 ## Before accepting a risk, check whether the base moved
 
 A gate that fails on Criticals inside the **base** is not asking for an exception
-first. AlmaLinux publishes a new bootc base every few days, and re-pinning to it is
-the fix that accepts nothing: on 2026-10-17 the gate found Criticals in Go modules
-compiled into `podman`, `skopeo`, `toolbox` and `ipp-usb`, and `quay.io/almalinuxorg/almalinux-bootc:10`
-already served a base built that morning, three days newer than the pinned one.
-The platform moved to it, and the scan after the change is what says whether it was
-enough.
+first. A vendor can publish a new bootc base that fixes Criticals already present in the
+pinned one. Re-pinning to it is the fix that accepts nothing: run the scan after the
+change and let it decide whether the new base was enough.
 
 The check is cheap and it is the first thing to do, because the alternative —
 writing an exception — is a decision to ship a known Critical, and that decision
