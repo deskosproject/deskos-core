@@ -13,6 +13,42 @@ Both examples still compose and render in `ci.yml`. They are **not** in
 `resources/platforms/`, `supply-chain.yml`, or the image legs of
 `vm-bootcheck.yml`.
 
+## Mirrored Fedora base
+
+Fedora publishes Silverblue as the moving tag `quay.io/fedora/fedora-silverblue:45`
+and drops an old digest from the registry within days. A commit that pins one of
+those digests therefore stops resolving, and ADR 0014 asks for a durable base
+before a Fedora platform can be promoted.
+
+`.github/workflows/mirror-fedora.yml` copies the current official image into
+DeskOS's namespace, preserving the upstream index digest and every manifest in
+it:
+
+```bash
+gh workflow run mirror-fedora.yml --repo deskosproject/deskos-core --ref main
+```
+
+It writes two tags: the vendor's tag (`45`) and the immutable version the image
+labels itself with (`45.20261022.n.0`, from
+`org.opencontainers.image.version`). Both resolve to the same digest. A copy
+cannot create a Quay repository, so `quay.io/deskos/fedora-silverblue` must exist,
+be **public**, and grant the `QUAY_ROBOT_USERNAME` robot **write** before the
+first run.
+
+The job is dispatched by a person, never scheduled. The pin bump that follows is
+a pull request:
+
+1. run the workflow and read the printed source digest;
+2. change the example's `spec.bootc.image` to
+   `quay.io/deskos/fedora-silverblue:45` and keep `spec.bootc.digest` equal to
+   the printed digest, so the mirror is the same bytes as the vendor's image;
+3. run `make check` and let the weekly example workflow build the disk.
+
+The weekly check still resolves the **vendor's** `:45` tag, because its job is to
+follow today's Fedora, not our copy. The mirror is what the committed pin uses,
+so an example can still be built after the vendor has moved on. Neither path
+publishes a Fedora image.
+
 ## Weekly check
 
 `.github/workflows/examples-weekly.yml` runs every Wednesday at 06:00 UTC and can
