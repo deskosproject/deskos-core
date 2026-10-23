@@ -107,8 +107,14 @@ Details in
   `/usr/share/applications` (the compiler cannot know package contents),
   and that favorites launch.
 - Browser against harness-served content, offline login, GDM logo check.
-- Reboot and shutdown splash in the session run; Tier C lifecycle
-  (upgrade, rollback).
+- Reboot and shutdown splash in the session run.
+- **Tier C lifecycle (A -> B -> A):** designed and implemented
+  (`tests/lifecycle/driver.py`), and it ran end to end on CS10 on 2026-10-24
+  (install and stage, boot B, roll back, boot A; power loss mid-upgrade
+  recovered). It is **manual**: it needs rootful podman, qemu and `/dev/kvm`,
+  and the workflow that will call it is dispatch-only. It becomes a gate only
+  after it has been green on real builds for a while. The ostree-write
+  interruption window is still untested.
 - **Installer ISO:** no check installs one. The ISO is built, signed and
   published, but nothing boots Anaconda and asserts it reaches the progress
   screen and installs. On 2026-10-23 the DayTwo RHEL ISO shipped a kickstart
