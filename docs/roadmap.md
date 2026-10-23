@@ -109,6 +109,19 @@ Details in
 - Browser against harness-served content, offline login, GDM logo check.
 - Reboot and shutdown splash in the session run; Tier C lifecycle
   (upgrade, rollback).
+- **Installer ISO:** no check installs one. The ISO is built, signed and
+  published, but nothing boots Anaconda and asserts it reaches the progress
+  screen and installs. On 2026-10-23 the DayTwo RHEL ISO shipped a kickstart
+  with `graphical --non-interactive`; RHEL 10.2's Anaconda aborted it at the
+  progress screen (`User interaction required on standalone spoke
+  ProgressSpoke`), and the machine rebooted, which reads as a hardware
+  failure. Boot the ISO in QEMU and follow the install, at least for the
+  CentOS Stream 10 preview.
+- **Installer tree pinning:** the installer's own payload (Anaconda,
+  lorax) comes from the distribution repositories when the ISO is built; it
+  is not pinned the way the image is, so the same kickstart can behave
+  differently between builds. Decide whether to pin it or to record that it
+  floats.
 - RHEL: the build, boot and session checks run in
   a downstream organization's repository (GitHub-hosted); no reference
   matching or E2E.
