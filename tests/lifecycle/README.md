@@ -1,18 +1,21 @@
 # Lifecycle tests: A → B → A
 
-**Status: skeleton.** This directory holds the marker format, the boot
-sequence and its fail-closed evaluation. There is no QEMU driver yet, so
-nothing here boots a machine and nothing here is a CI gate. The design is
-[`docs/design/lifecycle.md`](../../docs/design/lifecycle.md).
+The design is [`docs/design/lifecycle.md`](../../docs/design/lifecycle.md). Two
+registry spikes ran on 2026-10-23 and are recorded there; this directory holds
+the evaluator and the driver, and the driver is **not** wired into CI yet.
 
 ## What exists
 
-- `lifecycle.py` — the seven-boot sequence (install A, stage B, boot B,
-  roll back, boot A, interrupt an upgrade, retry), a parser for the blocks a
-  guest prints to the serial console, and an evaluator that fails on a missing
-  block, a missing key, an unknown image, a lost `/var` marker or a deployment
-  that did not stage.
-- `test_lifecycle.py` — unit tests for both.
+- `driver.py` — installs a disk from a source image, boots it under QEMU, stages
+  B from a local registry, reboots into it, rolls back to A, and optionally
+  interrupts an upgrade with a power loss. Writes `lifecycle.json` and
+  `summary.md` in the work directory.
+- `lifecycle.py` — the boot sequence, a parser for serial marker blocks and a
+  fail-closed evaluator: a missing block, a missing key, an unknown image, a lost
+  `/var` marker, a deployment that did not stage or a rollback that was not
+  queued all fail.
+- `test_lifecycle.py` and `test_driver.py` — unit tests for both; `ci.yml` runs
+  them with the other harness unit tests.
 
 ## Run the unit tests
 
@@ -20,24 +23,27 @@ nothing here boots a machine and nothing here is a CI gate. The design is
 python3 -m unittest discover -s tests/lifecycle
 ```
 
-## Judge a captured serial log
+## Run the driver
 
-The driver will produce one; until then, any serial log with the marker blocks
-can be evaluated:
+On a Linux host with rootful podman, `skopeo`, `qemu-img`, qemu (on EL,
+`/usr/libexec/qemu-kvm`), OVMF (`/usr/share/edk2/ovmf/`) and `/dev/kvm`, with
+about 30 GB free:
 
 ```bash
-python3 tests/lifecycle/lifecycle.py --serial serial.log \
-  --image-a "$(sha256sum a/image-info.json | cut -d' ' -f1)" \
-  --image-b "$(sha256sum b/image-info.json | cut -d' ' -f1)"
+python3 tests/lifecycle/driver.py \
+  --image quay.io/deskos/deskos-core-centos-stream-10@sha256:<digest> \
+  --workdir /var/tmp/lifecycle --keep
 ```
 
-Exit `0` means the sequence held, `1` means it did not (each failure is named),
-`2` means the harness could not read the report at all. Unknown is never clean.
+It builds two test images from `--image` (A and B; B adds one marker file), pushes
+them to a `registry:2` on `127.0.0.1:5000`, installs with `bootc install to-disk`
+against `10.0.2.2:5000`, and drives the guest over SSH. `--interrupt` adds the
+power-loss run. Nothing is published and the source image is not modified.
 
-## Not here yet
+## What is deliberately absent
 
-- the QEMU driver that builds A and B, serves them from a local registry and
-  chains the boots with `keep_overlay`;
-- the guest-side unit and its credential;
-- a workflow. The first runs must be manual and reviewed, then it can become a
-  gate.
+- A workflow. The driver takes about 20 minutes and needs privileged podman;
+  the first runs are manual, and it becomes a gate only after it has been green
+  on real builds for a while.
+- Reference screenshots and the session check: this tier is about deployments,
+  not about the desktop.

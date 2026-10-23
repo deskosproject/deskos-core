@@ -19,6 +19,7 @@ def full_sequence(images=("sha-a", "sha-b")):
             step=boot.step,
             image=images[0] if boot.image == "a" else images[1],
             staged=boot.staged or "no",
+            rollback=boot.rollback or "no",
             marker=boot.expect_marker if boot.expect_marker is not None else "-",
         ))
     return "".join(out)
@@ -83,6 +84,12 @@ class EvaluateTests(unittest.TestCase):
         text = full_sequence().replace("staged=yes", "staged=no", 1)
         failures = lifecycle.evaluate(lifecycle.parse_blocks(text), images=self.images)
         self.assertTrue(any("staged=no, expected yes" in f for f in failures))
+
+    def test_a_missing_rollback_queue_fails(self):
+        blocks = lifecycle.parse_blocks(full_sequence())
+        blocks[3]["rollback"] = "no"
+        failures = lifecycle.evaluate(blocks, images=self.images)
+        self.assertTrue(any("rollback=no, expected yes" in f for f in failures))
 
     def test_missing_key_fails(self):
         blocks = lifecycle.parse_blocks(full_sequence())
