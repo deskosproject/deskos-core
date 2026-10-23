@@ -1,7 +1,9 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
 **Status:** design, evaluator, driver and two registry spikes (2026-10-23).
-The driver runs manually; no workflow calls it yet.
+The driver runs manually; no workflow calls it yet. It first ran end to end
+on 2026-10-24: install and stage on boot 1, B and rollback on boot 2, A on
+boot 3, evaluator `ok`.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
 SSH, which is what the harness will automate. `docs/roadmap.md` (Milestone 3)
 lists lifecycle as remaining; a staged update and a manual rollback were
@@ -72,13 +74,13 @@ Two images, one installed disk, and reboots.
 | Step | Boot | What happens | What is asserted |
 |---|---|---|---|
 | 1 | A | the installed image records itself | `image-info.json` is A's; `bootc status` has one deployment |
-| 2 | A | `bootc upgrade` stages B, then power off | a staged B exists and is not booted |
+| 2 | A | `bootc upgrade` stages B, then reboot | a staged B exists and is not booted |
 | 3 | B | plain reboot | the running deployment is B; the `/var` marker written in step 1 survives |
 | 4 | B | `bootc rollback` (queues the previous deployment), reboot | the running deployment is A again; the `/var` marker survives |
 | 5 | A | start an upgrade, interrupt it, reboot | the machine still boots A and a retry can stage B |
 
-That is five steps across seven boots: staging and rollback each need a reboot
-to become visible.
+That is five steps across three boots: the staged update and the rollback take
+effect on the next boot. The interrupted-upgrade run adds a fourth boot.
 
 B is built from the same resources as A with one deliberate difference — the
 workstation's `displayName` — so the image digest changes, `image-info.json`
