@@ -138,7 +138,8 @@ class Driver:
         self.seq = lifecycle.SEQUENCE if args.interrupt else SHORT_SEQUENCE
 
     def sh(self, *cmd, **kw):
-        return subprocess.run(cmd, check=True, **kw)
+        kw.setdefault("check", True)
+        return subprocess.run(cmd, **kw)
 
     def podman(self, *cmd, **kw):
         return self.sh(*self.podman_cmd, *cmd, **kw)
@@ -223,12 +224,12 @@ class Driver:
         self.say("install the disk")
         disk = self.work / "disk.raw"
         if disk.exists():
-            disk.unlink()
+            self.sh(*self.sudo, "rm", "-f", str(disk))
         with open(disk, "wb") as fh:
             fh.truncate(self.args.disk_size_gb * 1024 ** 3)
         oci = self.work / "oci"
         if oci.exists():
-            shutil.rmtree(oci)
+            self.sh(*self.sudo, "rm", "-rf", str(oci))
         self.skopeo("copy", "containers-storage:localhost/deskos-lifecycle:a",
                     f"oci:{oci}:{TAG}")
         self.podman(
@@ -271,6 +272,7 @@ class Driver:
 
     def reboot(self):
         self.guest("systemctl reboot", check=False)
+        self.boots += 1
         time.sleep(15)
         self.wait_ssh()
 
@@ -359,9 +361,15 @@ class Driver:
             for failure in failures:
                 print(f"FAIL: {failure}", file=sys.stderr)
         else:
-            print(f"ok: {len(self.blocks)} boots, A -> B -> A held")
+            print(f"ok: {len(self.blocks)} steps, A -> B -> A held")
 
     def cleanup(self):
+        pid_file = self.work / "qemu.pid"
+        if pid_file.exists():
+            try:
+                self.kill_qemu()
+            except subprocess.CalledProcessError:
+                pass
         self.podman("rm", "-f", "lifecycle-registry", check=False,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
