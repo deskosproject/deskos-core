@@ -57,6 +57,14 @@ anything here disagrees with an ADR, the ADR wins and this file is wrong.
     Agents never self-merge, never push to `main`, never touch signing,
     secrets, releases or registries, and never weaken a check to go green.
 
+## Language
+
+English is the working language of this repository: code, comments,
+documentation, commit messages, pull request titles and bodies, issues and
+review comments. Write in English even when the maintainer writes in another
+language, and translate text you touch rather than adding more of it in
+another language.
+
 ## Design
 
 Avoid unnecessary secondary labels and descriptions. Let the design do the explaining.
