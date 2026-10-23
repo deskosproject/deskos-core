@@ -213,6 +213,11 @@ how-to: [supply-chain.md](supply-chain.md).
 - **Done:** the `GnomeProfile` shell, clock and keyboard settings
   ([ADR 0008](adr/0008-gnome-shell-clock-keyboard.md)) and `TrustAnchor`
   ([ADR 0009](adr/0009-trustanchor.md)).
+- **Done:** each image carries `/usr/share/deskos/image-info.json`, a small
+  identity summary (workstation, platform, base image, contributing
+  profiles) generated from the Plan. It is a reader's view, not a second
+  authoritative record: `plan.json` stays that, and the distribution
+  identity in `os-release` stays the vendor's.
 - **This release (v0.9.0):** the `Theme` kind and the `deskos-theme` applier
   ([ADR 0013](adr/0013-theme.md)), and repository signing keys as **local
   assets** instead of URLs (`gpgKeyFiles`; a deliberate break of v1alpha1).

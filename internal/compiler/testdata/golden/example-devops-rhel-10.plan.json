@@ -615,6 +615,18 @@
             "source": "organization-and-role/desktop/example-theme.yaml:1"
           }
         ]
+      },
+      {
+        "path": "/usr/share/deskos/image-info.json",
+        "mode": "0644",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"example-devops-rhel-10\",\n  \"image-title\": \"Example DevOps Workstation\",\n  \"platform\": \"rhel-10\",\n  \"platform-title\": \"Red Hat Enterprise Linux 10\",\n  \"platform-family\": \"rhel\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee\",\n  \"base-image-digest\": \"sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-boot\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"example-organization\",\n      \"layer\": \"organization\"\n    },\n    {\n      \"name\": \"example-devops\",\n      \"layer\": \"role\"\n    }\n  ]\n}\n",
+        "provenance": [
+          {
+            "resource": "Workstation/example-devops-rhel-10",
+            "layer": "workstation",
+            "source": "organization-and-role/workstations/example-devops-rhel-10.yaml:1"
+          }
+        ]
       }
     ],
     "trustAnchors": [

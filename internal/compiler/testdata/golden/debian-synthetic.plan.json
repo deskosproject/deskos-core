@@ -91,6 +91,20 @@
     "rpmFiles": [],
     "binaries": [],
     "files": [],
+    "generatedFiles": [
+      {
+        "path": "/usr/share/deskos/image-info.json",
+        "mode": "0644",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"debian-synthetic\",\n  \"platform\": \"test-platform\",\n  \"platform-title\": \"Test Platform\",\n  \"platform-family\": \"test\",\n  \"platform-release\": \"1\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"example.org/test/bootc:1\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"core\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
+        "provenance": [
+          {
+            "resource": "Workstation/debian-synthetic",
+            "layer": "workstation",
+            "source": "root/ws.yaml:1"
+          }
+        ]
+      }
+    ],
     "trustAnchors": [],
     "desktopEntries": [],
     "iconCaches": [],
