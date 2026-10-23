@@ -232,10 +232,16 @@ class Driver:
             "FROM localhost/deskos-lifecycle:a\n"
             f"RUN echo b > {B_MARKER}\n"
         )
+        (ctx / "Containerfile.c").write_text(
+            "FROM localhost/deskos-lifecycle:a\n"
+            "RUN echo c > /usr/share/deskos/lifecycle-c\n"
+        )
         self.podman("build", "-q", "-t", "localhost/deskos-lifecycle:a",
                     "-f", str(ctx / "Containerfile.a"), str(ctx))
         self.podman("build", "-q", "-t", "localhost/deskos-lifecycle:b",
                     "-f", str(ctx / "Containerfile.b"), str(ctx))
+        self.podman("build", "-q", "-t", "localhost/deskos-lifecycle:c",
+                    "-f", str(ctx / "Containerfile.c"), str(ctx))
 
         self.say("start the registry and push A")
         self.podman("rm", "-f", "lifecycle-registry", check=False,
@@ -303,14 +309,14 @@ class Driver:
         time.sleep(15)
         self.wait_ssh()
 
-    def push_b(self):
-        self.podman("push", "--tls-verify=false", "localhost/deskos-lifecycle:b",
+    def push_image(self, name, key):
+        self.podman("push", "--tls-verify=false", f"localhost/deskos-lifecycle:{name}",
                     f"docker://{LOCAL_REGISTRY}/{REPO}:{TAG}")
         digest = self.skopeo(
             "inspect", "--tls-verify=false", "--format", "{{.Digest}}",
             f"docker://{LOCAL_REGISTRY}/{REPO}:{TAG}",
             capture_output=True, text=True).stdout.strip()
-        self.images["b"] = digest
+        self.images[key] = digest
         return digest
 
     def run(self):
@@ -334,7 +340,7 @@ class Driver:
         self.images["a"] = self.record("install", write=self.marker_a)
 
         self.say("push B and stage it")
-        self.push_b()
+        self.push_image("b", "b")
         self.guest("bootc upgrade")
         self.record("stage")
         self.reboot()
@@ -349,7 +355,10 @@ class Driver:
         self.record("boot-a", write=self.marker_b)
 
         if self.args.interrupt:
+            # A third image: after the rollback, B is the rollback deployment,
+            # and upgrading to the rollback image is not a real update.
             self.say("interrupt an upgrade with a power loss")
+            self.push_image("c", "c")
             self.guest("setsid nohup bootc upgrade >/dev/null 2>&1 < /dev/null & true")
             time.sleep(3)
             self.kill_qemu()
