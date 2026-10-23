@@ -123,8 +123,13 @@ runs.
 **Interrupting an upgrade.** The upgrade script starts `bootc upgrade` in the
 background, waits for the first progress line on the journal, then stops it
 (`systemctl kill`/`SIGTERM`) and powers off. The next boot must be A, and a
-fresh `bootc upgrade` must be able to stage B. What counts as "interrupted" is
-recorded in the markers, so the report can say how far it got.
+fresh `bootc upgrade` must be able to stage the update. What counts as
+"interrupted" is recorded in the markers, so the report can say how far it got.
+
+The interrupted upgrade uses a **third image C**, not B. After the rollback,
+B is the rollback deployment, and `bootc upgrade` to the rollback image is not
+a real update: the retry staged nothing on the first CI run. C is a distinct
+deployment, so the retry is meaningful.
 
 ## Driver
 
