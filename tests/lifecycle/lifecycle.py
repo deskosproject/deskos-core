@@ -40,17 +40,25 @@ class Boot:
     writes: str | None = None
     # The staged deployment bootc status must report, or None when unchecked.
     staged: str | None = None
+    # The queued rollback bootc status must report, or None when unchecked.
+    rollback: str | None = None
 
 
 # Five steps, seven boots: staging and rollback each need a reboot to show.
+# A boot number repeats when one boot runs two steps: staging and the
+# rollback command both run on the deployment they are about to leave, and
+# take effect on the next boot. Three boots for A -> B -> A, four with the
+# interrupted upgrade.
 SEQUENCE = (
-    Boot(1, "install", "a", None, writes="A1", staged="no"),
-    Boot(2, "stage", "a", "A1", staged="yes"),
-    Boot(3, "boot-b", "b", "A1", staged="no"),
-    Boot(4, "rollback", "b", "A1", staged="yes"),
-    Boot(5, "boot-a", "a", "A1", writes="A2", staged="no"),
-    Boot(6, "interrupt", "a", "A2", staged="no"),
-    Boot(7, "retry", "a", "A2", staged="yes"),
+    Boot(1, "install", "a", None, writes="A1", staged="no", rollback="no"),
+    Boot(1, "stage", "a", "A1", staged="yes", rollback="no"),
+    Boot(2, "boot-b", "b", "A1", staged="no", rollback="no"),
+    # `bootc rollback` queues the previous deployment; it does not stage a
+    # download, so the assertion is on rollbackQueued, not on staged.
+    Boot(2, "rollback", "b", "A1", staged="no", rollback="yes"),
+    Boot(3, "boot-a", "a", "A1", writes="A2", staged="no", rollback="no"),
+    Boot(4, "interrupt", "a", "A2", staged="no", rollback="no"),
+    Boot(4, "retry", "a", "A2", staged="yes", rollback="no"),
 )
 
 
@@ -124,6 +132,9 @@ def evaluate(blocks, seq=SEQUENCE, images=None):
         if boot.staged is not None and block["staged"] != boot.staged:
             failures.append(
                 f"{where}: staged={block['staged']}, expected {boot.staged}")
+        if boot.rollback is not None and block.get("rollback", "no") != boot.rollback:
+            failures.append(
+                f"{where}: rollback={block.get('rollback', 'no')}, expected {boot.rollback}")
         if boot.expect_marker is not None and block["marker"] != boot.expect_marker:
             failures.append(
                 f"{where}: /var marker {block['marker']!r}, expected {boot.expect_marker!r}")
