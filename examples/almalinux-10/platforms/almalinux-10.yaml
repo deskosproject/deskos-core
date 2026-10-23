@@ -97,6 +97,7 @@ spec:
     preinstall: true
   trust:
     anchorsDir: /etc/pki/ca-trust/source/anchors
+    blocklistDir: /etc/pki/ca-trust/source/blocklist
     updateCommand: update-ca-trust
   iconCache:
     # Which package provides the icon cache tool and how it is invoked are this

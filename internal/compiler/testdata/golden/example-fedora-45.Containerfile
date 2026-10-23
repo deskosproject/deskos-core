@@ -86,11 +86,18 @@ RUN set -eu; \
     if compgen -G "$dest/schemas/*.gschema.xml" > /dev/null; then glib-compile-schemas "$dest/schemas"; fi; \
     rm -rf "$tmp"
 
+# Trust store certificates: the destination must not already exist
+RUN set -eu; \
+    for f in '/etc/pki/ca-trust/source/blocklist/aaa-certificate-services.crt' '/etc/pki/ca-trust/source/blocklist/emsign-ecc-root-ca-g3.crt'; do \
+        [ ! -e "$f" ] || { echo "$f already exists in the image" >&2; exit 1; }; \
+    done
+
 # Image files
 COPY rootfs/ /
 
 # System configuration
 RUN dconf update \
+    && 'update-ca-trust' \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
     && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
     && systemctl set-default 'graphical.target'

@@ -633,30 +633,46 @@ test QCOW2s are built with bootc-image-builder's
 
 ## Trust store
 
-`TrustAnchor` (`anchors[].name`, `anchors[].file`) places organization CA
-certificates in the platform trust store. It lowers to:
+`TrustAnchor` places organization CA certificates in the platform trust
+store. `anchors[].name` / `anchors[].file` add a certificate to the
+anchors directory; `blocklist[].name` / `blocklist[].file` add one to the
+blocklist, where p11-kit reads it as **distrusted**. It lowers to:
 
 - one image file per anchor at `<trust.anchorsDir>/<name>.crt`;
+- one image file per distrusted certificate at
+  `<trust.blocklistDir>/<name>.crt`;
 - one trust-store update through the platform's `trust.updateCommand`,
   run in the system-configuration step after `COPY rootfs/`.
 
-On `rhel-10` and `centos-stream-10` the anchors directory is
-`/etc/pki/ca-trust/source/anchors/` and the command is `update-ca-trust`,
-which regenerates `/etc/pki/ca-trust/extracted/`. The update runs during
-the build, so the extracted store is image content and changes only when
-the anchors change.
+On `rhel-10` and `centos-stream-10` the directories are
+`/etc/pki/ca-trust/source/anchors/` and
+`/etc/pki/ca-trust/source/blocklist/`, and the command is
+`update-ca-trust`, which regenerates `/etc/pki/ca-trust/extracted/`. A
+blocklisted certificate is left out of every extracted bundle, so a chain
+that ends at it is rejected: trust in that CA is removed and TLS itself is
+not weakened. The update runs during the build, so the extracted store is
+image content and changes only when the certificates change.
 
-Each anchor is a **keyed** definition by `name`: identical definitions
+Each certificate is a **keyed** definition by `name`: identical definitions
 deduplicate and different certificates under one name conflict at any
-layer. The certificate must be a PEM `CERTIFICATE` block that parses as
-X.509; the private key is neither needed nor accepted. A platform without
-`trust` facts fails composition when a `TrustAnchor` is used.
+layer. Anchoring and distrusting one name is a contradiction and fails
+composition. The certificate must be a PEM `CERTIFICATE` block that parses
+as X.509; the private key is neither needed nor accepted. A platform
+without `trust` facts fails composition when a `TrustAnchor` is used, and
+a platform with anchors but no `blocklistDir` fails when a `blocklist`
+entry is requested — a platform gap is named, never dropped.
 
-The destination is never replaced silently: the render rejects an anchor
-that shares a path with another image file, and the build fails if the
-base image or an installed package already provides that exact file. Asset
-paths are confined to the resource root, so `../` cannot pull a host file
-into the build context and a symlink out of the root is refused too.
+The distrust is ordinary intent, so it composes like anything else: Core
+ships `deskos-trust` for the October 2026 eMudhra roots (RHSB-2026-012),
+and an organization adds its own certificates through a profile at any
+layer, including the workstation layer. A foundation entry cannot be
+re-trusted by a lower layer; the certificate simply stays distrusted.
+
+The destination is never replaced silently: the render rejects a
+certificate that shares a path with another image file, and the build fails
+if the base image or an installed package already provides that exact file.
+Asset paths are confined to the resource root, so `../` cannot pull a host
+file into the build context and a symlink out of the root is refused too.
 
 ## Updates
 

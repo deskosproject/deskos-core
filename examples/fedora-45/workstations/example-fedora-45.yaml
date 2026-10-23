@@ -7,6 +7,7 @@ spec:
   platformRef: fedora-45
   profiles:
     - deskos-core
+    - deskos-trust
     - deskos-gnome
     - fedora
     # Fedora's own wallpaper and splash stay, only the text goes.

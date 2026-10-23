@@ -131,6 +131,14 @@ func Build(p *plan.Plan) ([]byte, error) {
 				{Name: "deskos:destination", Value: x.Path},
 			}})
 	}
+	for _, x := range a.TrustBlocklist {
+		add(Component{Type: "data", Name: x.Name,
+			Hashes: []Hash{{Alg: "SHA-256", Content: x.SHA256}},
+			Properties: []Property{
+				{Name: "deskos:source", Value: "trust-blocklist"},
+				{Name: "deskos:destination", Value: x.Path},
+			}})
+	}
 
 	sort.Slice(d.Components, func(i, j int) bool {
 		x, y := d.Components[i], d.Components[j]

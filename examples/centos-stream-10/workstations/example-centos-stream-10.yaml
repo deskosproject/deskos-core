@@ -7,6 +7,7 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
+    - deskos-trust
     - deskos-gnome
     - rhel-family
     - deskos-look

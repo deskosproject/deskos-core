@@ -142,14 +142,14 @@ func Render(p *plan.Plan) ([]File, error) {
 		r.addImage(f.Path, parseMode(f.Mode), []byte(f.Content))
 	}
 	for _, a := range p.Artifact.TrustAnchors {
-		data, err := os.ReadFile(a.AssetFile)
-		if err != nil {
-			return nil, fmt.Errorf("asset %s: %w", a.Asset, err)
+		if err := r.addTrustCertificate(a.Asset, a.AssetFile, a.SHA256, a.Path); err != nil {
+			return nil, err
 		}
-		if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != a.SHA256 {
-			return nil, fmt.Errorf("asset %s changed after planning (sha256 mismatch)", a.Asset)
+	}
+	for _, b := range p.Artifact.TrustBlocklist {
+		if err := r.addTrustCertificate(b.Asset, b.AssetFile, b.SHA256, b.Path); err != nil {
+			return nil, err
 		}
-		r.addImage(a.Path, 0o644, data)
 	}
 	for _, e := range p.Artifact.DesktopEntries {
 		r.addImage(e.Path, 0o644, desktopFile(e))
@@ -235,6 +235,21 @@ func (r *renderer) add(p string, mode fs.FileMode, data []byte) {
 func (r *renderer) addImage(imagePath string, mode fs.FileMode, data []byte) {
 	r.hasRootfs = true
 	r.add(path.Join(rootfsDir, strings.TrimPrefix(imagePath, "/")), mode, data)
+}
+
+// addTrustCertificate copies one certificate asset the plan validated to the
+// image path the platform chose, re-checking the digest so a changed file
+// fails the render instead of shipping unnoticed.
+func (r *renderer) addTrustCertificate(asset, assetFile, sha, imagePath string) error {
+	data, err := os.ReadFile(assetFile)
+	if err != nil {
+		return fmt.Errorf("asset %s: %w", asset, err)
+	}
+	if sum := sha256.Sum256(data); hex.EncodeToString(sum[:]) != sha {
+		return fmt.Errorf("asset %s changed after planning (sha256 mismatch)", asset)
+	}
+	r.addImage(imagePath, 0o644, data)
+	return nil
 }
 
 func parseMode(s string) fs.FileMode {
@@ -926,13 +941,16 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		w("    rm -rf \"$tmp\"\n")
 	}
 
-	if len(a.TrustAnchors) > 0 {
+	if len(a.TrustAnchors) > 0 || len(a.TrustBlocklist) > 0 {
 		// A package- or image-owned file is never replaced silently; a
 		// colliding name must fail the build instead.
-		w("\n# Trust anchors: the destination must not already exist\n")
+		w("\n# Trust store certificates: the destination must not already exist\n")
 		w("RUN set -eu; \\\n    for f in")
 		for _, t := range a.TrustAnchors {
 			w(" %s", shq(t.Path))
+		}
+		for _, b := range a.TrustBlocklist {
+			w(" %s", shq(b.Path))
 		}
 		w("; do \\\n        [ ! -e \"$f\" ] || { echo \"$f already exists in the image\" >&2; exit 1; }; \\\n    done\n")
 	}

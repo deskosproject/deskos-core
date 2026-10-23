@@ -1,0 +1,29 @@
+# CA roots DeskOS refuses to trust.
+#
+# The private keys of eight eMudhra intermediates were compromised in October
+# 2026; six of them issued TLS certificates under the roots below, and two
+# code-signing intermediates under the eMudhra root (RHSB-2026-012,
+# CVE-2026-111943). The vendor fix removes those roots from the ca-certificates
+# package. Until every platform's base or compose carries it, the image adds the
+# roots to the trust store's blocklist, which p11-kit reads and update-ca-trust
+# honors: they leave every extracted bundle and a chain that ends at one is
+# rejected. Trust is removed, TLS itself is not weakened.
+#
+# This is temporary and it is not a lock: an entry stops mattering as soon as
+# the platform's ca-certificates no longer ships that root, and it can be
+# dropped from here then. A blocklist entry for a certificate the image does not
+# carry changes nothing.
+#
+# The blocklist is keyed by name, like an anchor. An organization may add its
+# own distrusted certificates at any layer, including the workstation layer, but
+# it cannot re-trust a root listed at the foundation.
+apiVersion: system.deskos.org/v1alpha1
+kind: TrustAnchor
+metadata:
+  name: deskos-distrusted-roots
+spec:
+  blocklist:
+    - name: emsign-ecc-root-ca-g3
+      file: ../assets/ca/emsign-ecc-root-ca-g3.crt
+    - name: aaa-certificate-services
+      file: ../assets/ca/aaa-certificate-services.crt

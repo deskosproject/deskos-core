@@ -675,7 +675,8 @@ are described in [architecture.md](architecture.md#updates) and
 
 ### `TrustAnchor`
 
-**Organization CA certificates** placed in the platform trust store:
+**CA certificates the image trusts or refuses to trust** in the platform
+trust store:
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
@@ -696,6 +697,34 @@ anchors directory and the update command; on the EL platforms that is
 `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust`. The private key
 is neither needed nor accepted. See
 [architecture.md](architecture.md#trust-store).
+
+A certificate can also be **distrusted** instead of trusted:
+
+```yaml
+apiVersion: system.deskos.org/v1alpha1
+kind: TrustAnchor
+metadata:
+  name: my-workstation-distrust
+spec:
+  blocklist:
+    - name: compromised-root-ca
+      file: ../assets/compromised-root-ca.pem
+```
+
+`blocklist` entries have the same `name`/`file` shape, keying and asset
+rules as `anchors`, and one name cannot be in both. They lower to the
+platform's `trust.blocklistDir` (on the EL platforms
+`/etc/pki/ca-trust/source/blocklist/`), which p11-kit reads as distrusted:
+`update-ca-trust` leaves the certificate out of every extracted bundle, so
+a chain that ends at it is rejected. Trust in that CA is removed; TLS is
+not weakened. A platform that declares anchors but no `blocklistDir`
+fails composition with that gap instead of ignoring the entry.
+
+The rescue path for a compromised CA is a resource, not a script, and it
+composes at any layer including the workstation layer. Core ships
+`deskos-trust` with the October 2026 eMudhra roots (RHSB-2026-012); an
+organization adds its own through its profiles. Drop an entry once the
+platform's `ca-certificates` no longer ships that root.
 
 ## Composition
 

@@ -180,6 +180,12 @@ how-to: [supply-chain.md](supply-chain.md).
 
 - **Done (v0.8.0):** `deskosctl sbom`, the deterministic declared
   (CycloneDX) SBOM of a Plan.
+- **Done:** `TrustAnchor.blocklist` and the `deskos-trust` profile. A CA
+  whose keys are compromised is distrusted as image intent: p11-kit reads
+  the platform blocklist and `update-ca-trust` leaves the certificate out
+  of every extracted bundle. Core ships the October 2026 eMudhra roots
+  (RHSB-2026-012) and organizations can add their own at any layer. The
+  entries go when the platforms' `ca-certificates` carries the vendor fix.
 - **Ran and passed (2026-10-06, 0 Critical):** `.github/workflows/supply-chain.yml`
   builds the CentOS Stream 10 image, produces the installed SBOM with
   Syft and scans it with Grype, compares the declared SBOM against the

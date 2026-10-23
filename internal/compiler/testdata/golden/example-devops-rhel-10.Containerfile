@@ -126,9 +126,9 @@ RUN set -eu; \
     if compgen -G "$dest/schemas/*.gschema.xml" > /dev/null; then glib-compile-schemas "$dest/schemas"; fi; \
     rm -rf "$tmp"
 
-# Trust anchors: the destination must not already exist
+# Trust store certificates: the destination must not already exist
 RUN set -eu; \
-    for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt'; do \
+    for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt' '/etc/pki/ca-trust/source/blocklist/aaa-certificate-services.crt' '/etc/pki/ca-trust/source/blocklist/emsign-ecc-root-ca-g3.crt'; do \
         [ ! -e "$f" ] || { echo "$f already exists in the image" >&2; exit 1; }; \
     done
 
