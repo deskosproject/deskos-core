@@ -321,6 +321,12 @@ account the upstream container image ships suppressing the wizard — is in
 
 ### Evidence
 
+- **Artifact identity (CI).** Each gate leg writes `identity.json`: commit,
+  run, plan and manifest hashes, local image ID/digest, exported OCI archive,
+  disk hash, and the published digest/reference and signature evidence when
+  present. The record is uploaded even on failure, and a successful leg checks
+  that it is complete. It is workflow evidence, not `/etc/os-release`; the
+  distribution identity stays the vendor's. Durable storage is still open.
 - **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
   classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
   wallpaper), and `sessioncheck.py` on the instrumented boot. What the session check
