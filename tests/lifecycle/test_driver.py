@@ -5,13 +5,23 @@ import driver
 
 class QemuTests(unittest.TestCase):
     def test_the_command_forwards_ssh_and_uses_uefi(self):
-        argv = driver.qemu_argv("/usr/libexec/qemu-kvm", "/tmp/w", "/tmp/w/disk.raw", 2222)
+        argv = driver.qemu_argv("/usr/libexec/qemu-kvm", "/tmp/w", "/tmp/w/disk.raw",
+                                2222, "/code.fd", "/vars.fd")
         text = " ".join(argv)
         self.assertIn("hostfwd=tcp:127.0.0.1:2222-:22", text)
-        self.assertIn("OVMF_CODE.fd", text)
+        self.assertIn("/code.fd", text)
+        self.assertIn("/tmp/w/OVMF_VARS.fd", text)
         self.assertIn("/tmp/w/qemu.pid", text)
         self.assertIn("-daemonize", argv)
         self.assertNotIn("qemu-system", text)
+
+    def test_both_ovmf_paths_must_be_given_together(self):
+        with self.assertRaises(driver.HarnessError):
+            driver.ovmf_paths("/code.fd", None)
+
+    def test_an_explicit_ovmf_pair_is_used(self):
+        self.assertEqual(driver.ovmf_paths("/code.fd", "/vars.fd"),
+                         ("/code.fd", "/vars.fd"))
 
     def test_a_named_binary_wins(self):
         # Any existing absolute path stands in for qemu here.

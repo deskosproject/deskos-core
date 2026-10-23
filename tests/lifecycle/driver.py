@@ -63,7 +63,28 @@ def qemu_binary(explicit=None):
     return found
 
 
-def qemu_argv(qemu, workdir, disk, ssh_port):
+# EL keeps OVMF under edk2, Ubuntu under OVMF with 4M images. The same list as
+# tests/vm/bootcheck.py, so the two harnesses find the same firmware.
+OVMF_PAIRS = (
+    ("/usr/share/edk2/ovmf/OVMF_CODE.fd", "/usr/share/edk2/ovmf/OVMF_VARS.fd"),
+    ("/usr/share/OVMF/OVMF_CODE_4M.fd", "/usr/share/OVMF/OVMF_VARS_4M.fd"),
+    ("/usr/share/OVMF/OVMF_CODE.fd", "/usr/share/OVMF/OVMF_VARS.fd"),
+)
+
+
+def ovmf_paths(code=None, variables=None):
+    """Return the OVMF code and vars paths, or fail with a clear message."""
+    if code or variables:
+        if not (code and variables):
+            raise HarnessError("pass both --ovmf-code and --ovmf-vars")
+        return code, variables
+    for candidate_code, candidate_vars in OVMF_PAIRS:
+        if Path(candidate_code).exists() and Path(candidate_vars).exists():
+            return candidate_code, candidate_vars
+    raise HarnessError("no OVMF firmware found; pass --ovmf-code and --ovmf-vars")
+
+
+def qemu_argv(qemu, workdir, disk, ssh_port, ovmf_code, ovmf_vars):
     """The QEMU command line: UEFI, virtio, user networking with SSH forwarded."""
     workdir = Path(workdir)
     return [
@@ -72,7 +93,7 @@ def qemu_argv(qemu, workdir, disk, ssh_port):
         "-cpu", "host",
         "-m", "4096",
         "-smp", "4",
-        "-drive", "if=pflash,format=raw,readonly=on,file=/usr/share/edk2/ovmf/OVMF_CODE.fd",
+        "-drive", f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
         "-drive", f"if=pflash,format=raw,file={workdir / 'OVMF_VARS.fd'}",
         "-drive", f"if=virtio,format=raw,file={disk}",
         "-device", "virtio-vga",
@@ -124,6 +145,7 @@ class Driver:
         self.work = Path(args.workdir)
         self.key = self.work / "id_lifecycle"
         self.qemu = qemu_binary(args.qemu)
+        self.ovmf_code, self.ovmf_vars = ovmf_paths(args.ovmf_code, args.ovmf_vars)
         self.ssh_port = args.ssh_port
         parts = shlex.split(args.podman)
         if not parts or parts[-1] != "podman":
@@ -252,9 +274,10 @@ class Driver:
     def boot(self):
         self.boots += 1
         self.say(f"boot {self.boots}")
-        shutil.copy("/usr/share/edk2/ovmf/OVMF_VARS.fd", self.work / "OVMF_VARS.fd")
+        shutil.copy(self.ovmf_vars, self.work / "OVMF_VARS.fd")
         (self.work / "serial.log").write_text("")
-        argv = qemu_argv(self.qemu, self.work, str(self.work / "disk.raw"), self.ssh_port)
+        argv = qemu_argv(self.qemu, self.work, str(self.work / "disk.raw"),
+                         self.ssh_port, self.ovmf_code, self.ovmf_vars)
         self.sh(*self.sudo, *argv)
         self.wait_ssh()
 
@@ -388,6 +411,8 @@ def main(argv=None):
     parser.add_argument("--podman", default="sudo podman",
                         help="podman command, default 'sudo podman'")
     parser.add_argument("--qemu", help="qemu binary; detected when omitted")
+    parser.add_argument("--ovmf-code", help="OVMF code firmware; detected when omitted")
+    parser.add_argument("--ovmf-vars", help="OVMF vars template; detected when omitted")
     parser.add_argument("--interrupt", action="store_true",
                         help="also interrupt an upgrade with a power loss")
     parser.add_argument("--keep", action="store_true",
