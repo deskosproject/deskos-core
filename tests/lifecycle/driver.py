@@ -184,8 +184,12 @@ class Driver:
         self.guest(f"mkdir -p {MARKER_DIR} && printf '%s' '{value}' > {MARKER_FILE}")
 
     def install(self):
-        self.say("pull the source image")
-        self.podman("pull", "-q", f"docker://{self.args.image}")
+        self.say("source image")
+        # A digest ref is pulled; a local tag built by the caller is used as is.
+        if self.podman("image", "exists", self.args.image, check=False).returncode != 0:
+            self.podman("pull", "-q", f"docker://{self.args.image}")
+        else:
+            print(f"using the local image {self.args.image}")
 
         self.say("build the test images A and B")
         ctx = self.work / "ctx"
