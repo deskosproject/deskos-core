@@ -271,8 +271,10 @@ jobs:
         id: boot
         timeout-minutes: 15
         run: |
+          splash=()
+          [ -n "$SPLASH" ] && splash=("$SPLASH")
           python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
-            --out "$WORK/bootcheck" $SPLASH --hash-disk --keep-overlay --boot-timeout 420
+            --out "$WORK/bootcheck" "${splash[@]}" --hash-disk --keep-overlay --boot-timeout 420
 
       - name: Journal of the failed boot (diagnostic boot of the kept overlay)
         if: failure() && steps.boot.outcome == 'failure'
@@ -433,6 +435,59 @@ jobs:
           for row in sorted(droppable):
               print(f"  - {row[0]} {row[1]} {row[2]} {row[3]} {row[4]}")
           PY
+
+      - name: Write the artifact identity record
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORK/evidence"
+          args=(
+            --output "$WORK/evidence/identity.json"
+            --allow-missing
+            --set commit="$GITHUB_SHA"
+            --set run_id="$GITHUB_RUN_ID"
+            --set run_attempt="$GITHUB_RUN_ATTEMPT"
+            --set workflow="$GITHUB_WORKFLOW"
+            --set job="$GITHUB_JOB"
+            --set platform="${{ matrix.token }}"
+            --set workstation="${{ matrix.workstation }}"
+            --set image_id="$(sudo podman image inspect "$IMAGE" --format '{{.Id}}' 2>/dev/null || true)"
+            --set image_digest="$(sudo podman image inspect "$IMAGE" --format '{{.Digest}}' 2>/dev/null || true)"
+            --file plan=ctx/plan.json
+            --file generated_manifest=ctx/generated-manifest.json
+            --file declared_sbom=declared.sbom.cdx.json
+            --file installed_sbom=installed.sbom.cdx.json
+            --file image_archive="$WORK/image.tar"
+            --file disk="$WORK/${{ matrix.diskfile }}"
+            --require commit
+            --require run_id
+            --require platform
+            --require workstation
+            --require image_id
+            --require plan
+            --require generated_manifest
+            --require declared_sbom
+            --require installed_sbom
+            --require image_archive
+            --require disk
+          )
+          if [ -s digest.txt ]; then
+            args+=(--set published_digest="$(tr -d '\n\r' < digest.txt)")
+            args+=(--set published_ref="quay.io/deskos/deskos-core-${{ matrix.token }}@$(tr -d '\n\r' < digest.txt)")
+          fi
+          for pair in \
+            "cosign_verify=cosign-verify.txt" \
+            "bootcheck=$WORK/bootcheck/summary.json" \
+            "session=$WORK/session/session.json" \
+            "firstboot=$WORK/firstboot/firstboot.json"; do
+            file="${pair#*=}"
+            if [ -f "$file" ]; then args+=(--file "$pair"); fi
+          done
+          python3 tests/supply-chain/identity.py "${args[@]}"
+
+      - name: Assert the identity record is complete
+        if: success()
+        run: python3 tests/supply-chain/identity.py --check "$WORK/evidence/identity.json"
 
       - name: Upload evidence
         if: always()
