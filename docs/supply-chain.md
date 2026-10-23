@@ -134,6 +134,32 @@ CentOS Stream 10 baseline from that first run (Grype, distro `centos-10`):
 0 Critical, 1866 High, 26735 Medium, 10263 Low, 124 Unknown. The High count
 is dominated by the kernel (one entry per subpackage) and Firefox.
 
+## Artifact identity
+
+Each gate leg writes `identity.json` beside the raw evidence. It is a small,
+canonical record, not an SBOM and not a replacement for `/etc/os-release`:
+
+- source commit, workflow, run, attempt and job;
+- platform and workstation;
+- the declared plan and generated manifest, by SHA-256;
+- the local Podman image ID and digest;
+- the exported OCI archive, when the leg exports one;
+- the tested QCOW2 or raw disk, by SHA-256;
+- the published manifest digest and reference, when `publish=true`;
+- the signature-verification file and the boot, session and first-boot
+  summaries when they exist.
+
+`tests/supply-chain/identity.py` writes it with sorted keys and records every
+missing entry instead of inventing a value. The workflow uploads the record even
+on failure; a successful leg runs `--check`, so an incomplete success cannot
+pass silently. The record links the tested identity to the published digest
+without pretending that a local OCI archive digest and a registry manifest
+digest are the same bytes: compression and registry conversion can change the
+latter, and the record names each one separately.
+
+The record is workflow evidence with the same 14-day retention as the rest of
+the evidence until durable digest-indexed storage is designed.
+
 ## Signing and provenance
 
 The same workflow, with `publish` on `main`, pushes the scanned image and

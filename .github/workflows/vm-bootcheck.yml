@@ -133,7 +133,11 @@ jobs:
         run: |
           go build -o bin/deskosctl ./cmd/deskosctl
           # ROOT is empty for the Core workstation, whose root is the embedded Core.
-          ./bin/deskosctl render $ROOT --workstation "$WS" --output ctx
+          if [ -n "$ROOT" ]; then
+            ./bin/deskosctl render "$ROOT" --workstation "$WS" --output ctx
+          else
+            ./bin/deskosctl render --workstation "$WS" --output ctx
+          fi
           sha256sum ctx/plan.json ctx/generated-manifest.json
 
       - name: Put container storage and outputs on /mnt
@@ -258,6 +262,48 @@ jobs:
         run: |
           python3 tests/vm/firstbootcheck.py --disk "$WORK/output/qcow2/disk.qcow2" \
             --out "$WORK/firstboot" --boot-timeout 900
+
+      - name: Write the artifact identity record
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "$WORK/evidence"
+          args=(
+            --output "$WORK/evidence/identity.json"
+            --allow-missing
+            --set commit="$GITHUB_SHA"
+            --set run_id="$GITHUB_RUN_ID"
+            --set run_attempt="$GITHUB_RUN_ATTEMPT"
+            --set workflow="$GITHUB_WORKFLOW"
+            --set job="$GITHUB_JOB"
+            --set platform="centos-stream-10"
+            --set workstation="$WS"
+            --set image_id="$(sudo podman image inspect "$IMAGE" --format '{{.Id}}' 2>/dev/null || true)"
+            --file plan=ctx/plan.json
+            --file generated_manifest=ctx/generated-manifest.json
+            --file disk="$WORK/output/qcow2/disk.qcow2"
+            --require commit
+            --require run_id
+            --require platform
+            --require workstation
+            --require image_id
+            --require plan
+            --require generated_manifest
+            --require disk
+          )
+          for pair in \
+            "bootcheck=$WORK/bootcheck/summary.json" \
+            "bootcheck_attempt1=$WORK/bootcheck-attempt1/summary.json" \
+            "session=$WORK/session/session.json" \
+            "firstboot=$WORK/firstboot/firstboot.json"; do
+            file="${pair#*=}"
+            if [ -f "$file" ]; then args+=(--file "$pair"); fi
+          done
+          python3 tests/supply-chain/identity.py "${args[@]}"
+
+      - name: Assert the identity record is complete
+        if: success()
+        run: python3 tests/supply-chain/identity.py --check "$WORK/evidence/identity.json"
 
       - name: Summary
         if: always()
