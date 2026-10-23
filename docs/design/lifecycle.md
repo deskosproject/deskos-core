@@ -1,6 +1,6 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
-**Status:** design, harness skeleton and a completed registry spike (2026-10-23).
+**Status:** design, harness skeleton and two registry spikes (2026-10-23).
 Nothing installs itself yet: the spike built a disk by hand and drove it over
 SSH, which is what the harness will automate. `docs/roadmap.md` (Milestone 3)
 lists lifecycle as remaining; a staged update and a manual rollback were
@@ -35,6 +35,14 @@ user networking:
   throwaway public key for `root` and `sshd` enabled; QEMU forwards
   `127.0.0.1:2222` to the guest. This is simpler than SMBIOS credentials for a
   test that must also run `bootc` as root.
+- **A power loss mid-upgrade is recoverable.** Killing QEMU with `SIGKILL`
+  three seconds into `bootc upgrade` (B was 3.4 GB of new layers) left the disk
+  booting A, with no staged deployment, no rollback entry and no lock: the next
+  `bootc upgrade --check` still reported the update, and a retry staged B
+  (`sha256:473ba68a…`). The guest-side log of the interrupted run did **not**
+  survive (`/root/up.log` was gone after the reboot), so the harness takes its
+  evidence from `bootc status` and the markers, never from a log in the
+  deployment root.
 - **On EL hosts the binary is `/usr/libexec/qemu-kvm`**, not
   `qemu-system-x86_64`, and `bootc install` needs
   `--security-opt label=type:unconfined_t` plus `--privileged --pid=host`.
@@ -160,12 +168,14 @@ becomes a gate only after it has been green on real builds for a while.
    such flag; `bootc install to-disk` does and records the ref the test serves.
    The install source is a compressed OCI layout, and its digest differs from
    the registry's for the same content, so compare content hashes.
-3. **Where to stop the interrupt.** Unanswered. A kill during the layer
-   download, a poweroff during the ostree write and a kill after the deployment
-   is written are three different failures; the first is the one users hit.
-   Start there.
-4. **Time budget for a retry.** Unanswered. If `bootc upgrade` leaves a lock
-   after the interrupt, the retry assertion needs a documented wait, not a
+3. **Where to stop the interrupt — answered for the first window
+   (2026-10-23).** A kill during the layer download is recovered: nothing
+   staged, clean boot, retry works. The ostree-write window and a kill after the
+   deployment is written are still untested; they need the timing to be made
+   observable, not guessed.
+4. **Time budget for a retry — no lock observed (2026-10-23).** The retry
+   immediately after the interrupted boot staged B without a wait. If a future
+   Anaconda of bootc introduces one, the assertion must read the reason, not
    sleep.
 5. **SELinux and the bootc install.** Answered for the host side:
    `--security-opt label=type:unconfined_t`, `--privileged --pid=host`, and
