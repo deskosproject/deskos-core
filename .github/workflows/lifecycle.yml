@@ -1,0 +1,101 @@
+name: lifecycle
+
+# Tier C: install a CS10 disk, stage a second deployment from a local registry,
+# reboot into it, roll back, and (optionally) lose power mid-upgrade. It needs
+# rootful podman, qemu and /dev/kvm, takes about 40 minutes with the image
+# build, and is **dispatch only**: a check, never a publish.
+#
+# See docs/design/lifecycle.md and tests/lifecycle/README.md. The driver stays
+# manual until it has been green here for a while; this workflow is how it gets
+# there.
+on:
+  workflow_dispatch:
+    inputs:
+      interrupt:
+        description: Also interrupt an upgrade with a power loss
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifecycle
+  cancel-in-progress: false
+
+env:
+  WORK: /mnt/lifecycle
+  IMAGE: localhost/deskos-core-centos-stream-10:ci
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+  GOTOOLCHAIN: local
+
+jobs:
+  lifecycle:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Render the build context
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render --workstation deskos-core-centos-stream-10 \
+            --output ctx
+
+      - name: Put container storage and the artifacts on /mnt
+        run: |
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU, OVMF and skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
+
+      - name: Pull the base, with retries
+        run: |
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for i in 1 2 3 4 5; do
+            if sudo podman pull "$base"; then ok=1; break; fi
+            echo "attempt $i failed pulling $base; retrying in 20s" >&2
+            sleep 20
+          done
+          [ "${ok:-0}" = 1 ] || { echo "could not pull $base" >&2; exit 1; }
+
+      - name: Build the image
+        timeout-minutes: 40
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
+
+      - name: Run the lifecycle driver
+        env:
+          INTERRUPT: ${{ inputs.interrupt }}
+        run: |
+          args=(--image "$IMAGE" --workdir "$WORK/run" --disk-size-gb 14)
+          if [ "$INTERRUPT" = "true" ]; then args+=(--interrupt); fi
+          python3 tests/lifecycle/driver.py "${args[@]}"
+
+      - name: Upload the evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lifecycle-evidence
+          path: |
+            ${{ env.WORK }}/run/lifecycle.json
+            ${{ env.WORK }}/run/summary.md
+            ${{ env.WORK }}/run/serial.log
+          if-no-files-found: warn
+          retention-days: 14
