@@ -285,6 +285,20 @@
         ]
       }
     ],
+    "generatedFiles": [
+      {
+        "path": "/usr/share/deskos/image-info.json",
+        "mode": "0644",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"deskos-core-centos-stream-10\",\n  \"image-title\": \"DeskOS Core (CentOS Stream 10)\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:98cb998076992ed9052a7a989a7e8df3d1774a02c37bce7dec05ba8e3242f726\",\n  \"base-image-digest\": \"sha256:98cb998076992ed9052a7a989a7e8df3d1774a02c37bce7dec05ba8e3242f726\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-look\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
+        "provenance": [
+          {
+            "resource": "Workstation/deskos-core-centos-stream-10",
+            "layer": "workstation",
+            "source": "resources/workstations/deskos-core-centos-stream-10.yaml:1"
+          }
+        ]
+      }
+    ],
     "trustAnchors": [],
     "desktopEntries": [],
     "iconCaches": [],

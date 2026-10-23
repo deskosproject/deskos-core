@@ -6,7 +6,9 @@
 package compiler
 
 import (
+	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/loader"
@@ -145,10 +147,75 @@ func (c *Compiler) Plan(cat *compose.Catalog, workstation string) (*plan.Plan, e
 	if err := validateRemovePackages(p); err != nil {
 		return nil, err
 	}
+	if err := addImageInfo(p); err != nil {
+		return nil, err
+	}
 	if err := p.Normalize(); err != nil {
 		return nil, err
 	}
 	return p, nil
+}
+
+// addImageInfo writes the small, image-owned identity summary. It deliberately
+// omits build-host paths, a build commit and a plan hash: the first two are not
+// image content, and the plan hash would be self-referential. The full Plan
+// remains the authoritative record.
+func addImageInfo(p *plan.Plan) error {
+	profiles := append([]plan.Profile(nil), p.Profiles...)
+	sort.Slice(profiles, func(i, j int) bool {
+		if profiles[i].Layer != profiles[j].Layer {
+			return profiles[i].Layer < profiles[j].Layer
+		}
+		return profiles[i].Name < profiles[j].Name
+	})
+	type profileInfo struct {
+		Name  string `json:"name"`
+		Layer string `json:"layer"`
+	}
+	profileList := make([]profileInfo, 0, len(profiles))
+	for _, profile := range profiles {
+		profileList = append(profileList, profileInfo{Name: profile.Name, Layer: profile.Layer})
+	}
+	info := struct {
+		Schema          string        `json:"schema"`
+		ImageName       string        `json:"image-name"`
+		ImageTitle      string        `json:"image-title,omitempty"`
+		Platform        string        `json:"platform"`
+		PlatformTitle   string        `json:"platform-title,omitempty"`
+		PlatformFamily  string        `json:"platform-family"`
+		PlatformRelease string        `json:"platform-release"`
+		Architectures   []string      `json:"architectures"`
+		BaseImage       string        `json:"base-image"`
+		BaseImageDigest string        `json:"base-image-digest,omitempty"`
+		PlanFormat      string        `json:"plan-format"`
+		Profiles        []profileInfo `json:"profiles"`
+	}{
+		Schema:          "deskos.image-info/v1",
+		ImageName:       p.Workstation.Name,
+		ImageTitle:      p.Workstation.DisplayName,
+		Platform:        p.Platform.Name,
+		PlatformTitle:   p.Platform.DisplayName,
+		PlatformFamily:  p.Platform.Family,
+		PlatformRelease: p.Platform.Release,
+		Architectures:   append([]string(nil), p.Platform.Architectures...),
+		BaseImage:       p.Artifact.BaseImage.Ref,
+		BaseImageDigest: p.Artifact.BaseImage.Digest,
+		PlanFormat:      p.Format,
+		Profiles:        profileList,
+	}
+	data, err := json.MarshalIndent(info, "", "  ")
+	if err != nil {
+		return fmt.Errorf("image-info: %w", err)
+	}
+	p.Artifact.GeneratedFiles = append(p.Artifact.GeneratedFiles, plan.GeneratedFile{
+		Path: plan.ImageInfoPath, Mode: "0644", Content: string(data) + "\n",
+		Provenance: []model.Provenance{{
+			Resource: "Workstation/" + p.Workstation.Name,
+			Layer:    model.LayerWorkstation.String(),
+			Source:   p.Workstation.Source,
+		}},
+	})
+	return nil
 }
 
 // validateRemovePackages rejects contradictory intent after every lowerer has

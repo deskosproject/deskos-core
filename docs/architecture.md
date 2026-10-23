@@ -190,6 +190,21 @@ it.
 Every item keeps its provenance. The plan is **canonical**: sorted, no
 maps, no timestamps.
 
+### Image identity summary
+
+The compiler also writes `/usr/share/deskos/image-info.json`
+(`deskos.image-info/v1`): a small, image-owned summary naming the
+workstation and its title, the platform and its release, the
+architectures, the base image reference and digest, the plan format and
+the profiles that contributed, sorted by layer and name. It is generated
+from the Plan, so it stays deterministic and needs no extra input.
+
+It is not the identity of the machine and not `os-release`: the
+distribution identity stays the vendor's, and the file deliberately leaves
+out build-host paths, a build commit and a plan hash (the hash would
+describe itself). The full Plan remains the authoritative record; this
+file is the part a person or a support engineer can read without one.
+
 ## Containerfile backend
 
 `internal/backends/containerfile` reads **only the Plan**. It renders:
