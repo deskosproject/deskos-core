@@ -12,21 +12,29 @@
     "spec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["anchors"],
+      "anyOf": [{ "required": ["anchors"] }, { "required": ["blocklist"] }],
       "properties": {
         "anchors": {
           "type": "array",
           "minItems": 1,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["name", "file"],
-            "properties": {
-              "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
-              "file": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
-            }
-          }
+          "items": { "$ref": "#/$defs/certificate" }
+        },
+        "blocklist": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/certificate" }
         }
+      }
+    }
+  },
+  "$defs": {
+    "certificate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "file"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+        "file": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
       }
     }
   }

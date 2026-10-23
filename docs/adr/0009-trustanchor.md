@@ -60,3 +60,58 @@ symlink out of the root).
   remove anchors at runtime.
 - Requiring a PEM `CERTIFICATE` block rejects OpenSSL's `TRUSTED
   CERTIFICATE` format, which carries auxiliary trust data.
+
+## Update (2026-10-23): distrusting a CA
+
+**Status:** accepted.
+
+### Context
+
+In October 2026 the private keys of eight eMudhra intermediates were
+recovered; six issued TLS certificates under `emSign ECC Root CA - G3`
+and the Sectigo `AAA Certificate Services` cross-sign, which RHEL 10's
+`ca-certificates` still shipped (RHSB-2026-012). The vendor fix is a new
+package. Until a platform's base or compose carries it, a descent system
+trust store accepts certificates the root programs have already rejected.
+
+The vendor's own interim mitigation is to blocklist the roots. p11-kit
+reads `/etc/pki/ca-trust/source/blocklist/` and `update-ca-trust` leaves
+those certificates out of every extracted bundle. That is a typed,
+build-time operation, but `TrustAnchor` could only say *trust this CA*:
+there was no way to express *do not trust this CA* without an arbitrary
+file install or a shell step.
+
+### Decision
+
+`TrustAnchor.spec` gains an optional `blocklist[]` with the same
+`name`/`file` shape, keying and asset rules as `anchors[]`:
+
+- a certificate is either anchored or distrusted, never both: one `name`
+  may appear in only one list;
+- the Platform supplies `trust.blocklistDir`; a platform that has anchors
+  but no blocklist directory fails composition when a `blocklist` entry is
+  requested, rather than dropping it;
+- lowering copies each certificate to `<blocklistDir>/<name>.crt` and emits
+  the same single `trust.updateCommand` run after `COPY rootfs/`;
+- the Plan carries `trustBlocklist` next to `trustAnchors`, and the SBOM
+  records each entry with `deskos:source=trust-blocklist`.
+
+The field is a **profile resource like any other**, so an organization can
+declare its own distrusted certificates at any layer, including the
+workstation layer. Core ships `deskos-trust` with the eMudhra roots for
+the workstations that select it. The kind count stays fourteen.
+
+### Consequences
+
+- Removing trust is image content, and it travels with the deployment
+  across updates and rollbacks.
+- It is not a lock: an administrator may still add the CA at runtime, and
+  an entry stops mattering as soon as the platform's package stops
+  shipping that root. The list is meant to be emptied when it does.
+- A platform whose trust store cannot express distrust (no p11-kit
+  blocklist) cannot select the profile; it is a named composition gap, not
+  a silent omission.
+- Distrusting a root also rejects legitimate certificates that chain to
+  it, exactly as the browser root programs already do; that is the
+  intended trade, and it is why the entry is tied to a vendor advisory
+  rather than a preference.

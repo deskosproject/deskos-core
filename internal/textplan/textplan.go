@@ -85,6 +85,10 @@ func Write(out io.Writer, p *plan.Plan) error {
 	for _, t := range a.TrustAnchors {
 		pf("    %s\tfrom %s\t%s\n", t.Path, t.Asset, origins(t.Provenance))
 	}
+	section(w, "Distrusted certificates (platform trust store blocklist)", len(a.TrustBlocklist))
+	for _, b := range a.TrustBlocklist {
+		pf("    %s\tfrom %s\t%s\n", b.Path, b.Asset, origins(b.Provenance))
+	}
 	if ts := a.TrustStore; ts != nil {
 		pf("    store\tregenerated with %s\n", ts.Command)
 	}

@@ -106,6 +106,7 @@
       }
     ],
     "trustAnchors": [],
+    "trustBlocklist": [],
     "desktopEntries": [],
     "iconCaches": [],
     "gsettingsVendorDefaults": [],

@@ -86,9 +86,11 @@ spec:
     package: flatpak
     preinstall: true
   # Image-owned CA anchors go in source/anchors; one build-time
-  # update-ca-trust regenerates the extracted store from them.
+  # update-ca-trust regenerates the extracted store from them. Distrusted
+  # certificates go in source/blocklist, which p11-kit reads the same way.
   trust:
     anchorsDir: /etc/pki/ca-trust/source/anchors
+    blocklistDir: /etc/pki/ca-trust/source/blocklist
     updateCommand: update-ca-trust
   iconCache:
     # Which package provides the icon cache tool and how it is invoked are this

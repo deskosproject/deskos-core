@@ -136,6 +136,46 @@
     },
     {
       "type": "data",
+      "name": "aaa-certificate-services",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a5ddabd1602ae1c66ce11ad078e734cc473dcb8e9f573037832d8536ae3de90b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "trust-blocklist"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/etc/pki/ca-trust/source/blocklist/aaa-certificate-services.crt"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "emsign-ecc-root-ca-g3",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "36e68e205b53c67c7a013894e0d5c8583063468118d1ce78ecbc2200d1dd185c"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "trust-blocklist"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/etc/pki/ca-trust/source/blocklist/emsign-ecc-root-ca-g3.crt"
+        }
+      ]
+    },
+    {
+      "type": "data",
       "name": "example-root-ca",
       "hashes": [
         {

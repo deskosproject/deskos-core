@@ -163,6 +163,7 @@ spec:
   # /usr/sbin/update-ca-trust.
   trust:
     anchorsDir: /etc/pki/ca-trust/source/anchors
+    blocklistDir: /etc/pki/ca-trust/source/blocklist
     updateCommand: update-ca-trust
   iconCache:
     # Measured: gtk-update-icon-cache 3.24.52 (gtk3) at /usr/bin/gtk-update-icon-cache.

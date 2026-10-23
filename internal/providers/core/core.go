@@ -168,9 +168,14 @@ type FlatpakPlatform struct {
 }
 
 // TrustPlatform holds the platform's CA trust-store facts: the directory the
-// image places trust anchors in, and the command that regenerates the store.
+// image places trust anchors in, the directory it places distrusted
+// certificates in, and the command that regenerates the store from both.
 type TrustPlatform struct {
-	AnchorsDir    string `json:"anchorsDir"`
+	AnchorsDir string `json:"anchorsDir"`
+	// BlocklistDir is where p11-kit reads distrusted certificates. A platform
+	// that declares none cannot express a distrust, and composition says so
+	// instead of dropping the intent.
+	BlocklistDir  string `json:"blocklistDir,omitempty"`
 	UpdateCommand string `json:"updateCommand"`
 }
 
@@ -460,6 +465,9 @@ func (platformProvider) Decode(res *model.Resource) error {
 	if t := s.Trust; t != nil {
 		if !trustDirRE.MatchString(t.AnchorsDir) {
 			errs.Add(model.Errorf(res, "trust.anchorsDir %q must be an absolute directory under /etc", t.AnchorsDir))
+		}
+		if t.BlocklistDir != "" && !trustDirRE.MatchString(t.BlocklistDir) {
+			errs.Add(model.Errorf(res, "trust.blocklistDir %q must be an absolute directory under /etc", t.BlocklistDir))
 		}
 		if !trustCmdRE.MatchString(t.UpdateCommand) {
 			errs.Add(model.Errorf(res, "trust.updateCommand %q must be a bare command name", t.UpdateCommand))

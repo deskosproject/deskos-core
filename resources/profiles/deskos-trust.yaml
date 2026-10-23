@@ -1,0 +1,21 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-trust
+spec:
+  layer: foundation
+  description: The trust store roots DeskOS refuses to trust.
+  resources:
+    # The CA roots of the October 2026 eMudhra compromise, blocklisted while a
+    # platform's ca-certificates still ships them (RHSB-2026-012).
+    #
+    # This is a profile and not part of deskos-core on purpose: a distrust needs
+    # a platform trust store that has a blocklist (p11-kit), and a platform that
+    # does not must say so rather than inherit intent it cannot apply. A
+    # workstation adds it explicitly, and an organization may add its own
+    # certificates at any layer.
+    #
+    # Temporary: drop this profile from a workstation once every platform it
+    # builds on carries the vendor's fixed ca-certificates.
+    - kind: TrustAnchor
+      name: deskos-distrusted-roots

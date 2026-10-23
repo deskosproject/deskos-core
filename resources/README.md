@@ -17,11 +17,12 @@ different things.
 | [`workstations/`](workstations/) | `Workstation` | The reference workstations, `deskos-core-<platform>`: what a reader is meant to take. No RHEL one, because RHEL-derived images are never published |
 | [`desktop/`](desktop/) | `GnomeProfile` | GNOME settings: `deskos-core` (the session basics) and `deskos-look` (the appearance) |
 | [`software/`](software/) | `PackageSet`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` | Packages and application channels, plus `keys/` for the repository key assets those resources reference |
-| [`system/`](system/) | `BootProfile`, `UpdatePolicy` | Boot appearance and the image update policy, including `deskos-splash` and the per-family update policies |
+| [`system/`](system/) | `BootProfile`, `UpdatePolicy`, `TrustAnchor` | Boot appearance and the image update policy (`deskos-splash`, the per-family update policies), and `deskos-distrusted-roots`: the compromised CA roots the image refuses to trust |
 | [`assets/deskos/`](assets/deskos/) | — | The images the resources reference: wallpapers, the login logo, the splash watermark, with [`PROVENANCE.md`](assets/deskos/PROVENANCE.md) for where they come from |
+| [`assets/ca/`](assets/ca/) | — | The public CA certificates the trust blocklist names, with [`PROVENANCE.md`](assets/ca/PROVENANCE.md) for where they come from |
 
 Two kinds live **only in the examples**, which is worth knowing before hunting for them
-here: `RpmRepository` and `TrustAnchor`, both in
+here: `RpmRepository` and the trusting half of `TrustAnchor`, both in
 [`examples/organization-and-role/`](../examples/organization-and-role/). `AptRepository`, the
 third kind this repository renders but does not ship a resource for, appears in the tests and
 in the Ubuntu repository, where apt is the platform's own package manager. `Theme` is the one kind this
