@@ -1,0 +1,103 @@
+name: mirror-fedora
+
+# Copies the official Fedora Silverblue base into DeskOS's own Quay namespace,
+# preserving the upstream index digest and every manifest in it. The vendor's
+# `:45` tag moves daily and the registry stops serving an old digest within
+# days, so a committed pin stops resolving; a mirror is the same bytes at a
+# location the vendor does not rotate away (docs/example-platforms.md).
+#
+# Dispatch only, and main only: refreshing the mirror is a decision, and the
+# pin bump that follows it is a pull request. This job never touches a DeskOS
+# image repository, never signs and never publishes an artifact of our own.
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Source image, tag included
+        type: string
+        default: quay.io/fedora/fedora-silverblue:45
+      destination:
+        description: DeskOS repository, without a tag
+        type: string
+        default: quay.io/deskos/fedora-silverblue
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-fedora
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    # The robot token is an organisation credential, so this runs only from
+    # main, like supply-chain's publish job. The repository must already exist
+    # and grant the robot write: a copy cannot create a Quay repository.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo
+
+      - name: Copy the base, preserving its digest
+        env:
+          SOURCE: ${{ inputs.source }}
+          DEST: ${{ inputs.destination }}
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$QUAY_ROBOT_TOKEN" |
+            sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          trap 'sudo podman logout quay.io || true' EXIT
+
+          tag="${SOURCE##*:}"
+          [ "$tag" != "$SOURCE" ] || { echo "::error::$SOURCE has no tag"; exit 1; }
+          case "$SOURCE" in
+            *@*) echo "::error::mirror a tag, not a digest: $SOURCE"; exit 1 ;;
+          esac
+
+          # The digest the example pins is this index digest, so the copy has to
+          # preserve it rather than build a second representation. The vendor
+          # version is what makes an immutable tag: `45` alone would be a second
+          # moving tag, which is the problem this mirror exists to remove.
+          source_digest="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$SOURCE")"
+          version="$(sudo skopeo inspect --override-arch amd64 \
+            --format '{{ index .Labels "org.opencontainers.image.version" }}' "docker://$SOURCE")"
+          [ -n "$version" ] || { echo "::error::$SOURCE has no org.opencontainers.image.version"; exit 1; }
+          echo "source: $SOURCE@$source_digest ($version)"
+
+          # --all keeps every manifest of the index; --preserve-digests keeps the
+          # digest the signature and the pin refer to.
+          for target in "$tag" "$version"; do
+            sudo skopeo copy --all --preserve-digests "docker://$SOURCE" "docker://$DEST:$target"
+          done
+
+          for target in "$tag" "$version"; do
+            got="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:$target")"
+            [ "$got" = "$source_digest" ] || {
+              echo "::error::$DEST:$target is $got, source is $source_digest"; exit 1; }
+
+            source_count="$(sudo skopeo inspect --raw "docker://$SOURCE" |
+              python3 -c 'import json,sys; print(len(json.load(sys.stdin)["manifests"]))')"
+            mirrored_count="$(sudo skopeo inspect --raw "docker://$DEST:$target" |
+              python3 -c 'import json,sys; print(len(json.load(sys.stdin)["manifests"]))')"
+            [ "$mirrored_count" = "$source_count" ] || {
+              echo "::error::$DEST:$target has $mirrored_count manifests, source has $source_count"; exit 1; }
+            echo "mirrored: $DEST:$target@$got ($mirrored_count manifests)"
+          done
+
+      - name: Summary
+        run: |
+          {
+            echo "### Fedora base mirrored"
+            echo
+            echo "Source: \`${{ inputs.source }}\`"
+            echo "Destination: \`${{ inputs.destination }}\` \`${{ inputs.source }}\` tag and the vendor version tag"
+            echo
+            echo "Pin \`${{ inputs.destination }}:45\` at the digest printed above, then"
+            echo "update the Fedora example in a pull request."
+          } >> "$GITHUB_STEP_SUMMARY"
