@@ -40,9 +40,12 @@ Write `config.toml`:
 ```toml
 [customizations.installer.kickstart]
 contents = """
-# Graphical Anaconda, still fully answered by this kickstart. Use
-# `text --non-interactive` instead on a headless build host.
-graphical --non-interactive
+# Graphical Anaconda, fully answered by this kickstart. Do not add
+# --non-interactive: in Anaconda 40.22 (RHEL 10.2) the progress screen is a
+# standalone spoke, and the non-interactive check aborts the install with
+# "User interaction required on standalone spoke ProgressSpoke". The
+# installer then exits and the machine reboots, which reads like a crash.
+graphical
 lang en_US.UTF-8
 keyboard us
 timezone UTC --utc
@@ -67,10 +70,13 @@ reboot
 - `xconfig --startxonboot`: without an explicit target Anaconda sets
   `multi-user.target`, and the installed workstation boots to a text
   login.
-- `graphical --non-interactive` keeps every answer automatic but runs
-  Anaconda's graphical UI. `--non-interactive` stops instead of prompting if
-  an answer is missing; use `text --non-interactive` on a host with no
-  display. Either way, the kickstart erases every disk it sees.
+- `graphical` runs Anaconda's graphical UI. Without `--non-interactive`,
+  a complete kickstart still installs without a click; an incomplete one
+  waits on the summary hub, visible, instead of aborting. RHEL 10.2's
+  Anaconda aborts a graphical non-interactive install at the progress
+  screen (`User interaction required on standalone spoke ProgressSpoke`),
+  then exits and the machine reboots; do not add the flag back. On a host
+  with no display, `text` is the headless option.
 - bootc-image-builder adds the `ostreecontainer` line itself.
 
 ### 3. Build the ISO
@@ -110,3 +116,9 @@ from the current `main`; verify the checksum published beside it.
 
 **Not tested here:** bare metal, BIOS boot, RHEL ISOs (downstream), and
 updates through the `bootc switch` reference.
+
+**Not tested in CI:** no check installs the ISO; it is built, signed and
+published, and only a person has installed one. That gap reached a published
+ISO: on 2026-10-23 the DayTwo RHEL ISO carried `graphical --non-interactive`,
+which RHEL 10.2's Anaconda aborts at the progress screen, and the machine
+rebooted. The kickstart in this document no longer uses the flag.
