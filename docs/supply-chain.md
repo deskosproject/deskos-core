@@ -60,6 +60,36 @@ grype "$image" -o json > cves.json
 `grype` fails non-zero when the configured severity threshold is met
 (`--fail-on critical`), which is what a CI gate uses.
 
+## Inputs and who moves them
+
+Every input below is pinned; the column says what moves it, not who is on call.
+The trigger is a deliberate pull request or a workflow dispatch, never an
+automatic merge (ADR 0011). "Resolver" is
+[`tests/artifacts/resolve.py`](../tests/artifacts/resolve.py).
+
+| Input | Pinned in | Moved by | Checked by |
+|---|---|---|---|
+| CentOS Stream 10 base | `resources/platforms/centos-stream-10.yaml` (tag + digest) | Renovate Docker PR, then a person reviews the build/boot | `validate`/`render`, image build, boot/session checks, scan |
+| RHEL 10 base | `resources/platforms/rhel-10.yaml` (tag + digest) | Hand; Renovate is disabled because the registry needs an entitlement | composition here; build/boot in the downstream organization |
+| RPM repositories and GPG keys | `RpmRepository` resources | Hand, with the vendor | resolver probes `repomd.xml`; the build verifies signatures |
+| Binary artifacts (CLI tools, extensions) | `BinaryArtifact` resources | Renovate proposes a release version; a person fills the SHA-256, which Renovate cannot compute | resolver downloads and hashes; image build |
+| Runtime companion (`deskos`) | `resources/software/deskos.yaml` | Hand, from a released asset | checksum, release version check, image build; it must read the plan the same release renders |
+| ISO builder (BIB) | `docs/installer-iso.md`, the ISO workflows | Hand, by digest | image build, boot check, ISO install test |
+| Syft and Grype | `.github/workflows/supply-chain.yml` | Renovate proposes the installer tag | pinned installer, gate in the same run |
+| GitHub Actions | workflow files | Hand; the token has no workflows permission | action version review; no action runs with registry or signing credentials |
+| Flatpak remotes and apps | `FlatpakRemote`/`FlatpakSet` resources | Hand, on the vendor's release | build and first-boot preinstall; **not** the resolver |
+
+Known gaps, stated rather than implied:
+
+- the RHEL base cannot be checked anonymously; its check is downstream;
+- Flatpak remotes and apps have no URL/checksum probe like binary artifacts;
+- a version-only binary PR is incomplete until the checksum is filled;
+- action versions are reviewed by hand, and this repository has no workflow
+  token that could change them.
+
+Compilation itself makes no network request; everything above is checked in CI
+or at build time, not while rendering.
+
 ## CI job
 
 `.github/workflows/supply-chain.yml` runs on a weekly schedule and on
