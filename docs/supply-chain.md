@@ -203,7 +203,7 @@ accepted.
 Rekor's public instance caps an attestation at 100 KB, and an SBOM is far
 larger, so the SBOM itself is not attached: the signed statement names its
 exact SHA-256, and the digest is the unit of promotion. The SBOM travels as
-workflow evidence; durable, digest-indexed storage for it is open work.
+workflow evidence; durable, digest-indexed storage for it is [an open design](design/evidence-retention.md).
 
 **Verify a digest.** Checking the signature is necessary but not sufficient:
 require the three attestation types, pin the issuer and the workflow
