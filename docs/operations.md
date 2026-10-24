@@ -84,7 +84,7 @@ Inspect the apply units with `systemctl list-timers 'deskos-*'` and
 | machine off during the window | no catch-up on boot; the next window applies |
 | registry unreachable or no network | `bootc upgrade` fails, the journal records it, and the running deployment is unchanged; the next run retries |
 | download interrupted | no staged deployment is recorded; the running image is unchanged |
-| metered connection | not detected: the timer runs as on any other connection ([not supported](architecture.md#update-policy-and-failure-handling)) |
+| metered connection | not detected: the timer runs as on any other connection ([not supported](architecture.md#updates)) |
 | Flatpak updates | a separate timer and service, independent of the image update |
 | `deskos update` | stages the image only: no reboot, no Flatpaks, no firmware, no rollback, and no reconciliation of `/etc` |
 
