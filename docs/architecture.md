@@ -288,7 +288,7 @@ and the RHEL 10.2 builds `81bdfeec` and `0e65bf4b` (10 passed, 1
 skipped), where the RHSM tmpfs mounts keep `/var/log/rhsm/rhsm.log` out of
 the image. They are non-blocking.
 
-**Proposed disposition:** accept all three as vendor scriptlet warnings, and
+**Disposition (2026-10-24):** accept all three as vendor scriptlet warnings, and
 keep the lint in report mode. Do not use `--fatal-warnings`: it would make
 packaging owned by the distribution block a DeskOS release without a defect in
 DeskOS intent. Do not patch the packages to silence them. Re-run the lint each

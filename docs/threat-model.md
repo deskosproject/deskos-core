@@ -1,10 +1,11 @@
 # Threat model and publication authority
 
-**Status: draft for human review.** This page separates what the repository
-shows from what only GitHub or an operator can confirm. It records no secret
-values and changes no infrastructure; every remediation that touches credentials,
-runners, registries or branch protection needs its own approval (AGENTS.md,
-"Requires maintainer approval").
+**Status: reviewed and merged 2026-10-24; priority-1 remediation and the
+tabletop are open.** This page separates what the repository shows from what
+only GitHub or an operator can confirm. It records no secret values and changes
+no infrastructure; every remediation that touches credentials, runners,
+registries or branch protection needs its own approval (AGENTS.md, "Requires
+maintainer approval").
 
 ## Assets
 
@@ -70,6 +71,10 @@ that runs on an entitled self-hosted host, and a mutable tag on an action that
 runs beside publishing credentials.
 
 ## Tabletop
+
+**Not run yet.** The procedure below is the exercise to run with the release
+owner; a walk-through without a recorded date, participants and decisions is
+not evidence that it happened.
 
 A serious finding or a compromised input reaches the release owner. Walk one of
 these, record the date, the digests and the decisions, and do not publish a
