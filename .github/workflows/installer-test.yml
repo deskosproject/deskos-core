@@ -32,7 +32,7 @@ jobs:
 
       - name: Put container storage and outputs on /mnt
         run: |
-          sudo mkdir -p /mnt/containers /mnt/installer-output "$ISO_WORK"
+          sudo mkdir -p /mnt/containers /mnt/installer-output "$ISO_WORK" /var/lib/containers /etc/containers
           sudo mount --bind /mnt/containers /var/lib/containers
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
