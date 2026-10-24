@@ -38,6 +38,16 @@ they can pull.
 Write `config.toml`:
 
 ```toml
+# bootc-image-builder enables only the Network, Payloads and Storage modules,
+# which leaves the Language/Keyboard and Time & Date spokes out of the
+# summary. Enable both so the person installing can choose them; the
+# kickstart below answers neither.
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Localization",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+]
+
 [customizations.installer.kickstart]
 contents = """
 # Graphical Anaconda, and nothing else is answered. Language, keyboard,
@@ -76,7 +86,9 @@ reboot
 - No `lang`, `keyboard`, `timezone` or `network`: the installer asks. The ISO
   carries the image, so the install works offline; the hostname is not preset
   either. Preseeding these hides choices a person may need to change (a
-  different keyboard, a different timezone, Wi-Fi).
+  different keyboard, a different timezone, Wi-Fi). The `Localization` and
+  `Timezone` Anaconda modules must be enabled for those spokes to appear at
+  all; BIB does not enable them by default.
 - `xconfig --startxonboot`: without an explicit target Anaconda sets
   `multi-user.target`, and the installed workstation boots to a text
   login.
@@ -131,7 +143,9 @@ updates through the `bootc switch` reference.
 published, and only a person has installed one. That gap reached a published
 ISO: on 2026-10-23 the DayTwo RHEL ISO carried `graphical --non-interactive`,
 which RHEL 10.2's Anaconda aborts at the progress screen, and the machine
-rebooted. The kickstart in this document no longer uses the flag.
+rebooted. The kickstart in this document no longer uses the flag. The test-only
+ISO was installed unattended in KVM on 2026-10-24 and reached GNOME Initial
+Setup; that is a manual run, not a CI check.
 
 Because storage is interactive, this ISO cannot finish an install without a
 person: a QEMU check can assert that the installer reaches the hub with an
