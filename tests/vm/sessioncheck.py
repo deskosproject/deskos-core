@@ -237,6 +237,32 @@ def default_reads(image_database, vendor):
     )
 
 
+def favorite_entry_reads():
+    """The script fragment that resolves every declared favorite to a file.
+
+    The favorites list can match the plan while naming an application that was
+    never installed (the desktop file is the launchable object, not the id).
+    Resolve each id against the system and Flatpak export directories.
+    """
+    return r"""
+favorites=$(gsettings get org.gnome.shell favorite-apps)
+i=0
+printf '%s' "$favorites" | tr -d "[]' " | tr ',' '\n' | while IFS= read -r id; do
+  [ -n "$id" ] || continue
+  case "$id" in *.desktop) ;; *) continue ;; esac
+  found=no
+  for d in /usr/share/applications /usr/local/share/applications \
+           /var/lib/flatpak/exports/share/applications \
+           "$HOME/.local/share/applications" \
+           "$HOME/.local/share/flatpak/exports/share/applications"; do
+    if [ -f "$d/$id" ]; then found=yes; break; fi
+  done
+  echo "favorite_entry_$i=$id:$found"
+  i=$((i+1))
+done
+"""
+
+
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
                    binaries=()):
     """The script the desktop autostart runs inside the GNOME session.
@@ -295,6 +321,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
+{favorite_entry_reads()}
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
@@ -898,6 +925,12 @@ def evaluate(values, plan, journal="", skel_rels=()):
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")
+    for key, value in values.items():
+        if not key.startswith("favorite_entry_"):
+            continue
+        app, _, found = value.rpartition(":")
+        check(f"favorite entry {app}", found == "present",
+              f"{app} is {'installed' if found == 'present' else 'not installed'}")
     wp = dconf_value(plan, "/org/gnome/desktop/background/picture-uri")
     if wp:
         check("wallpaper as planned", values.get("picture_uri") == wp, f"got {values.get('picture_uri')} want {wp}")

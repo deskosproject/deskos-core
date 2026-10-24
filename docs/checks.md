@@ -81,6 +81,7 @@ it boots the disk as shipped.
 | Declared extensions load | `sessioncheck.py`, `gnome-extensions info` | state `ACTIVE`/`ENABLED` | missing or `ERROR` | instrumented |
 | Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
+| Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `deskos-flatpak-preinstall` state and `flatpak list --system` | service succeeded and declared apps are installed | failed unit or missing app | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state | wrong deployment, lost `/var`, failed retry | unmodified, dispatch |
