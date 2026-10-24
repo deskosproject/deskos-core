@@ -56,10 +56,12 @@ class StatusTests(unittest.TestCase):
 
 class BlockTests(unittest.TestCase):
     def test_a_block_names_what_the_evaluator_reads(self):
-        entry = driver.block(2, "stage", "sha256:a", True, False, None)
+        entry = driver.block(2, "stage", "sha256:a", True, False, None,
+                             "local", True)
         self.assertEqual(entry, {
             "boot": "2", "step": "stage", "image": "sha256:a",
             "staged": "yes", "rollback": "no", "marker": "-",
+            "etc": "local", "image_etc": "yes",
         })
 
 
