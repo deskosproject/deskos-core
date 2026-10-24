@@ -62,6 +62,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | [Installer ISO](installer-iso.md) | The Anaconda kickstart, and the warning that it erases every disk |
 | [Design: visual identity and boot](design/visual-identity-and-boot.md) | Branding, splash, first-boot appearance |
 | [Design: durable evidence](design/evidence-retention.md) | Digest-keyed evidence storage: options, recommendation, retrieval and open decisions |
+| [Design: promotion](design/promotion.md) | One tested digest through candidate/canary/stable, with evidence and human approval, without rebuilding |
 | [VM harness](../tests/vm/README.md) | The boot, session and first-boot checks, and their transport limits |
 | [Roadmap](roadmap.md) · [Research notes](research-notes.md) | What is done, planned, and measured — the notes are a dated archive |
 | [ADRs](adr/README.md) | The decisions behind all of it |
