@@ -51,6 +51,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | [Installing DeskOS](install.md) | QCOW2, the Anaconda ISO, and private RHEL builds. An Ubuntu install is documented in that platform's own repository; AlmaLinux and Fedora are example platforms |
 | [Architecture](architecture.md) | The pipeline and boundary, the resource model, composition, the Plan, the Containerfile backend, and the evidence behind the claims |
 | [Resources](resources.md) | Every one of the fourteen kinds, with an example |
+| [Compatibility](compatibility.md) | What stays stable between releases, the fixture matrix, and beta/1.0 criteria |
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |
 | [Recovery](recovery.md) | Install, first boot, registry, update and rollback failures, with evidence to collect |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
