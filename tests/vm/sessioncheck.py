@@ -237,29 +237,36 @@ def default_reads(image_database, vendor):
     )
 
 
-def favorite_entry_reads():
-    """The script fragment that resolves every declared favorite to a file.
+def session_probe():
+    """The helper script for probes that would push the main script past 4095 B.
 
-    The favorites list can match the plan while naming an application that was
-    never installed (the desktop file is the launchable object, not the id).
-    Resolve each id against the system and Flatpak export directories.
+    tmpfiles.d caps one argument; the main session script was already close to
+    that. This helper resolves every declared favorite and asks the shell to
+    lock, so it can grow without making the autostart script undeliverable.
     """
-    return r"""
-favorites=$(gsettings get org.gnome.shell favorite-apps)
+    return r"""#!/bin/bash
+# Every declared favorite must name an installed desktop entry.
 i=0
-printf '%s' "$favorites" | tr -d "[]' " | tr ',' '\n' | while IFS= read -r id; do
-  [ -n "$id" ] || continue
+for id in $(gsettings get org.gnome.shell favorite-apps | tr -d "[]', "); do
   case "$id" in *.desktop) ;; *) continue ;; esac
-  found=no
+  found=missing
   for d in /usr/share/applications /usr/local/share/applications \
            /var/lib/flatpak/exports/share/applications \
            "$HOME/.local/share/applications" \
            "$HOME/.local/share/flatpak/exports/share/applications"; do
-    if [ -f "$d/$id" ]; then found=yes; break; fi
+    if [ -f "$d/$id" ]; then found=present; break; fi
   done
   echo "favorite_entry_$i=$id:$found"
   i=$((i+1))
 done
+# Lock last; the VM is disposable and the report unit reads the results.
+gdbus call --session --dest org.gnome.ScreenSaver \
+  --object-path /org/gnome/ScreenSaver \
+  --method org.gnome.ScreenSaver.Lock >/dev/null 2>&1
+sleep 3
+echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
+  --object-path /org/gnome/ScreenSaver \
+  --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
 """
 
 
@@ -321,20 +328,11 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{favorite_entry_reads()}
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
-# Ask the shell to lock last and read its own answer. The VM is disposable and
-# the report unit reads the results, not the screen.
-gdbus call --session --dest org.gnome.ScreenSaver \
-  --object-path /org/gnome/ScreenSaver \
-  --method org.gnome.ScreenSaver.Lock >/dev/null 2>&1
-sleep 3
-echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
-  --object-path /org/gnome/ScreenSaver \
-  --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
+"$HOME/deskos-qa-probe.sh"
 }} > "$out.tmp"
 mv "$out.tmp" "$out"
 """
@@ -440,6 +438,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
             f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
             f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
+            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe())}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
             # the autologin to both and creates each directory, so the check does
