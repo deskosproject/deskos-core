@@ -25,6 +25,10 @@ boots from, so it needs root. `report` and `check` only read and need none.
 generates, the dconf defaults it sets — and prints its scope on every run. It is
 not an audit of everything the machine has become.
 
+When an install, a first boot or an update does not work, start with
+[recovery.md](recovery.md): it lists the symptom, the evidence to collect and
+the remedy.
+
 ## How updates work
 
 A DeskOS image **stages** its next version. By default it never reboots your
