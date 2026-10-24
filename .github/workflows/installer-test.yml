@@ -61,6 +61,19 @@ jobs:
           done
           [ "${ok:-0}" = 1 ] || { echo "could not pull $IMAGE" >&2; exit 1; }
 
+      - name: Pull the ISO builder, with retries
+        run: |
+          # quay.io returned an EOF in the middle of a layer on the first run;
+          # building with --pull=missing then used what arrived, so a failed
+          # pull is a real one.
+          bib=quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+          for i in 1 2 3 4 5; do
+            if sudo podman pull "$bib"; then ok=1; break; fi
+            echo "attempt $i failed pulling the builder; retrying in 20s" >&2
+            sleep 20
+          done
+          [ "${ok:-0}" = 1 ] || { echo "could not pull the builder" >&2; exit 1; }
+
       - name: Build the test-only ISO
         timeout-minutes: 60
         run: tests/installer/build.sh "$IMAGE"
@@ -73,8 +86,8 @@ jobs:
             --workdir "$ISO_WORK" \
             --minutes 30 \
             --qemu /usr/bin/qemu-system-x86_64 \
-            --ovmf-code /usr/share/OVMF/OVMF_CODE.fd \
-            --ovmf-vars /usr/share/OVMF/OVMF_VARS.fd \
+            --ovmf-code /usr/share/OVMF/OVMF_CODE_4M.fd \
+            --ovmf-vars /usr/share/OVMF/OVMF_VARS_4M.fd \
             --marker "Install finished"
 
       - name: Upload the serial log and frames
