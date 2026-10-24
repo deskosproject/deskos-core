@@ -63,6 +63,7 @@ GOOD = {
     "session_type": "wayland", "disable_user_extensions": "false",
     "favorite_apps": "['firefox.desktop', 'org.gnome.Calculator.desktop']",
     "picture_uri": "'file:///usr/share/deskos/backgrounds/a.svg'",
+    "screen_locked": "true",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
     "system_failed_units": "", "user_failed_units": "",
     **reported(PLAN),

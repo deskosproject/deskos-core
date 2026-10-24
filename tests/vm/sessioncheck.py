@@ -299,6 +299,15 @@ echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
+# Ask the shell to lock last and read its own answer. The VM is disposable and
+# the report unit reads the results, not the screen.
+gdbus call --session --dest org.gnome.ScreenSaver \
+  --object-path /org/gnome/ScreenSaver \
+  --method org.gnome.ScreenSaver.Lock >/dev/null 2>&1
+sleep 3
+echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
+  --object-path /org/gnome/ScreenSaver \
+  --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
 }} > "$out.tmp"
 mv "$out.tmp" "$out"
 """
@@ -901,6 +910,8 @@ def evaluate(values, plan, journal="", skel_rels=()):
     wp = dconf_value(plan, "/org/gnome/desktop/background/picture-uri")
     if wp:
         check("wallpaper as planned", values.get("picture_uri") == wp, f"got {values.get('picture_uri')} want {wp}")
+    check("screen locks on request", values.get("screen_locked") == "true",
+          f"screen_locked={values.get('screen_locked')}")
     if any(p["name"] == "firefox" for p in plan.get("artifact", {}).get("rpmPackages", [])):
         check("Firefox runs headless", values.get("firefox_headless_exit") == "0" and values.get("firefox_screenshot") == "yes",
               f"exit={values.get('firefox_headless_exit')} screenshot={values.get('firefox_screenshot')}")
