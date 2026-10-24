@@ -148,8 +148,16 @@ sudo reboot
 
 `bootc rollback` reorders the boot entries: the deployment marked `rollback`
 becomes the next boot and the current one becomes the rollback, so rolling
-back again returns you. Files under `/etc` revert with the deployment; `/var`
-(including home directories) is preserved.
+back again returns you. Files the image owns under `/etc` revert with the
+deployment; a local edit under `/etc` is kept (the merge is three-way, not a
+snapshot), and `/var` (including home directories) is preserved. The lifecycle
+check asserts both `/etc` cases on every run
+([design](design/lifecycle.md#shape)).
+
+A rollback does not undo data that the newer version already migrated under
+`/var`, and it is not automatic: choosing the previous deployment is a manual
+step (or the firmware entry for it after a candidate that does not boot).
+Restore application data from your own backup; the image ships no backup tool.
 
 ## Change where updates come from
 

@@ -64,13 +64,15 @@ SEQUENCE = (
     # download, so the assertion is on rollbackQueued, not on staged.
     Boot(2, "rollback", "b", "A1", staged="no", rollback="yes", etc="local",
          image_etc="yes"),
-    # On the rollback deployment, a file B added under /etc is recorded but not
-    # asserted: bootc merges /etc rather than versioning it per deployment, and
-    # the run reports what actually happened.
+    # Measured on 2026-10-24 (run 40065234971): after the rollback the local
+    # edit was still there and the file B ships under /etc was gone, so the
+    # rollback reverts image-owned /etc files but keeps local edits.
     Boot(3, "boot-a", "a", "A1", writes="A2", staged="no", rollback="no",
-         etc="local"),
-    Boot(4, "interrupt", "a", "A2", staged="no", rollback="no", etc="local"),
-    Boot(4, "retry", "a", "A2", staged="yes", rollback="no", etc="local"),
+         etc="local", image_etc="no"),
+    Boot(4, "interrupt", "a", "A2", staged="no", rollback="no", etc="local",
+         image_etc="no"),
+    Boot(4, "retry", "a", "A2", staged="yes", rollback="no", etc="local",
+         image_etc="no"),
 )
 
 
