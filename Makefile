@@ -11,7 +11,7 @@ BIN_RUNTIME := bin/deskos
 # passed on the command line.
 EXAMPLE   := ./examples/organization-and-role
 
-.PHONY: build test fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
+.PHONY: build test test-evidence fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
 
 build:
 	$(GO) build -o $(BIN) ./cmd/deskosctl
@@ -19,6 +19,9 @@ build:
 
 test:
 	$(GO) test ./...
+
+test-evidence:
+	python3 -m unittest discover -s tests/evidence
 
 fmt:
 	$(GOFMT) -w .
@@ -31,7 +34,7 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-check: fmt-check vet test validate
+check: fmt-check vet test test-evidence validate
 
 validate: build
 	$(BIN) validate $(EXAMPLE)
