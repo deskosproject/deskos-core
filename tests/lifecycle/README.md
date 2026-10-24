@@ -8,8 +8,10 @@ the evaluator and the driver, and the driver is **not** wired into CI yet.
 
 - `driver.py` — installs a disk from a source image, boots it under QEMU, stages
   B from a local registry, reboots into it, rolls back to A, and optionally
-  interrupts an upgrade with a power loss. Writes `lifecycle.json` and
-  `summary.md` in the work directory.
+  interrupts an upgrade with a power loss. It writes a `/var` marker, edits a
+  file under `/etc`, and B ships a different `/etc` file, so the run reports
+  what survives each transition; it keeps each boot's journal. Writes
+  `lifecycle.json` and `summary.md` in the work directory.
 - `lifecycle.py` — the boot sequence, a parser for serial marker blocks and a
   fail-closed evaluator: a missing block, a missing key, an unknown image, a lost
   `/var` marker, a deployment that did not stage or a rollback that was not

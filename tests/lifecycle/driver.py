@@ -36,6 +36,8 @@ TAG = "test"
 MARKER_DIR = "/var/lib/deskos-lifecycle"
 MARKER_FILE = f"{MARKER_DIR}/marker"
 B_MARKER = "/usr/share/deskos/lifecycle-b"
+B_ETC = "/etc/deskos-lifecycle-image"
+LOCAL_ETC = "/etc/deskos-lifecycle-local"
 
 SHORT_SEQUENCE = lifecycle.SEQUENCE[:5]
 
@@ -119,7 +121,7 @@ def rollback_queued(status):
     return bool((status.get("status") or {}).get("rollbackQueued"))
 
 
-def block(boot, step, digest, staged, rollback, marker):
+def block(boot, step, digest, staged, rollback, marker, etc, image_etc):
     """One report block, in the shape lifecycle.evaluate expects."""
     return {
         "boot": str(boot),
@@ -128,6 +130,8 @@ def block(boot, step, digest, staged, rollback, marker):
         "staged": "yes" if staged else "no",
         "rollback": "yes" if rollback else "no",
         "marker": marker or "-",
+        "etc": etc or "-",
+        "image_etc": "yes" if image_etc else "no",
     }
 
 
@@ -231,6 +235,7 @@ class Driver:
         (ctx / "Containerfile.b").write_text(
             "FROM localhost/deskos-lifecycle:a\n"
             f"RUN echo b > {B_MARKER}\n"
+            f" && echo b > {B_ETC}\n"
         )
         (ctx / "Containerfile.c").write_text(
             "FROM localhost/deskos-lifecycle:a\n"
@@ -287,21 +292,40 @@ class Driver:
         self.sh(*self.sudo, *argv)
         self.wait_ssh()
 
+    def read_local_etc(self):
+        raw = self.guest(f"cat {LOCAL_ETC} 2>/dev/null || true").strip()
+        return raw or None
+
+    def has_image_etc(self):
+        return self.ssh(f"test -f {B_ETC}").returncode == 0
+
     def record(self, step, write=None):
         status = self.status()
         digest = booted_digest(status)
         marker = self.read_marker()
+        local_etc = self.read_local_etc()
+        image_etc = self.has_image_etc()
         if write:
             self.write_marker(write)
         self.blocks.append(block(self.boots, step, digest,
                                  bool(staged_digest(status)),
                                  rollback_queued(status),
-                                 marker))
+                                 marker, local_etc, image_etc))
+        self.save_journal(step)
         print(f"boot {self.boots} {step}: booted {digest[:19]}… "
               f"staged={'yes' if staged_digest(status) else 'no'} "
               f"rollback={'yes' if rollback_queued(status) else 'no'} "
-              f"marker={marker}")
+              f"marker={marker} etc={local_etc} image_etc={'yes' if image_etc else 'no'}")
         return digest
+
+    def save_journal(self, step):
+        """Keep this boot's journal; the evaluator judges, a person reads."""
+        try:
+            journal = self.guest("journalctl -b --no-pager -o short")
+        except HarnessError:
+            return
+        name = f"journal-boot-{self.boots}-{step}.log"
+        (self.work / name).write_text(journal)
 
     def reboot(self):
         self.guest("systemctl reboot", check=False)
@@ -335,8 +359,9 @@ class Driver:
 
         self.install()
 
-        self.say("boot A and write the marker")
+        self.say("boot A, write the /var marker and edit /etc")
         self.boot()
+        self.guest(f"printf local > {LOCAL_ETC}")
         self.images["a"] = self.record("install", write=self.marker_a)
 
         self.say("push B and stage it")
@@ -389,7 +414,8 @@ class Driver:
         for entry in self.blocks:
             lines.append(f"- boot {entry['boot']} {entry['step']}: `{entry['image']}` "
                          f"staged={entry['staged']} rollback={entry['rollback']} "
-                         f"marker={entry['marker']}")
+                         f"marker={entry['marker']} etc={entry['etc']} "
+                         f"image_etc={entry['image_etc']}")
         lines += ["", "**PASS**" if not failures else "**FAIL**", ""]
         lines += [f"- {failure}" for failure in failures]
         (self.work / "summary.md").write_text("\n".join(lines) + "\n")
