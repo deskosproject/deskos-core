@@ -43,7 +43,7 @@ runners, registries or branch protection needs its own approval (AGENTS.md,
 | Publish is dispatch-only and `main`-only | verified | `supply-chain.yml` (`publish=true`), DayTwo `build-rhel-10.yml` |
 | Workflow tokens default to read | verified in the workflow files | `permissions: contents: read`; `id-token: write` only where keyless signing runs |
 | Third-party actions pinned by commit | verified for cosign and Renovate | `uses: …@<40-char sha> # version` |
-| First-party actions pinned by **tag**, not commit | **gap** | `actions/checkout@v7`, `setup-go@v7`, `upload-artifact@v7`, `download-artifact@v8` |
+| First-party actions pinned by commit | Core pinned; DayTwo still uses tags | `actions/checkout@<sha> # v7` and the same for setup/upload/download in Core; DayTwo is the remaining gap |
 | Tools downloaded with a checksum or a digest | verified where recorded | BIB by digest; Syft/Grype installer commit + release checksums; cosign checksums |
 | Signing | Core keyless OIDC; DayTwo key outside the repo, no transparency log | `supply-chain.yml`, DayTwo `docs/supply-chain.md` |
 | Publishing needs a human dispatch | verified | no schedule can set `publish=true` |
@@ -58,16 +58,16 @@ runners, registries or branch protection needs its own approval (AGENTS.md,
 | Priority | Item | Owner | Evidence it is done |
 |---|---|---|---|
 | 1 | Move DayTwo pull-request validation off the self-hosted entitled runner (or isolate it from entitlement, secrets and the host) | DayTwo maintainer | `runs-on` for `pull_request` is GitHub-hosted or a hardened runner; a PR cannot read host secrets |
-| 1 | Pin first-party actions by commit SHA | repository maintainer | `uses: owner/action@<sha> # vX` in every workflow; Dependabot/Renovate PR |
+| 1 | Pin first-party actions by commit SHA | repository maintainer | Core workflows use `uses: owner/action@<sha> # vX`; DayTwo remains |
 | 2 | Verify and record branch/tag protection and required checks | repository owner | exported GitHub settings or an audit screenshot attached to this page's issue |
 | 2 | Add a second reviewer or environment approval for `publish=true` and signing, or record why one person is acceptable at this scale | maintainer | environment protection settings; a dispatch audit |
 | 3 | Durable evidence index (P0-05) | maintainer | a historical digest's evidence retrievable after 14 days |
 | 3 | Consumer-side authenticity enforcement (P0-03) | maintainer | a policy that rejects unsigned updates, tested |
 | 4 | Rotate and back up the DayTwo signing key and registry/R2 credentials on a schedule | key holder | rotation record; no secret in the repository |
 
-The two priority-1 items are the ones that most change the risk: a pull request
-that runs on an entitled self-hosted host, and a mutable tag on an action that
-runs beside publishing credentials.
+The remaining priority-1 item is the one that most changes the risk: a pull
+request that runs on an entitled self-hosted host. Core's first-party actions are
+now pinned by commit; DayTwo's are not yet.
 
 ## Tabletop
 
