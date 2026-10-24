@@ -137,6 +137,19 @@ On the EL platforms only, the Flatpak half:
 sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
 ```
 
+`deskos update` stages the image and nothing else. System Flatpaks and
+user-level tools are separate layers, updated by their own commands:
+
+```bash
+sudo deskos update                                  # the image, staged
+sudo systemctl start deskos-flatpak-update.service  # system Flatpaks
+mise upgrade                                        # example user-level tools
+```
+
+The last line is an example: a user-level tool manager changes `$HOME` and runs
+as the person, never under `sudo`. `deskos update` does not touch a home or
+update Flatpaks, user or system.
+
 ## Roll back
 
 Every applied image keeps the previous deployment. To boot it:
