@@ -318,7 +318,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.artifact }}
+          name: ${{ matrix.artifact }}-attempt-${{ github.run_attempt }}
           path: |
             ${{ env.WORK }}/evidence
             ${{ env.WORK }}/bootcheck

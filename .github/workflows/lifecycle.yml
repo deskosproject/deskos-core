@@ -92,7 +92,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: lifecycle-evidence
+          name: lifecycle-evidence-attempt-${{ github.run_attempt }}
           path: |
             ${{ env.WORK }}/run/lifecycle.json
             ${{ env.WORK }}/run/summary.md
