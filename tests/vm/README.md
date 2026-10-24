@@ -102,8 +102,8 @@ python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.
 ```
 
 Expected values come from the image's `plan.json`: the enabled
-extensions (including Dash to Dock), the favorites order and the
-wallpaper. The check also requires `disable-user-extensions` to be false,
+extensions (including Dash to Dock), the favorites order, each favorite's
+desktop entry (system or Flatpak export) and the wallpaper. The check also requires `disable-user-extensions` to be false,
 Firefox to run headless, no failed user units and no unexpected failed
 system units (see [the mcelog exception](#known-amd-guest-exception-mcelog)
 below). Results are in `session.md`, `session.json` and `journal.txt`,
