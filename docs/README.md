@@ -55,6 +55,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |
 | [Recovery](recovery.md) | Install, first boot, registry, update and rollback failures, with evidence to collect |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
+| [Checks](checks.md) | What each workflow proves, what evidence it keeps, and how to read a red run |
 | [Development](development.md) | Build `deskosctl`, run the tests, cut a release |
 | [Installer ISO](installer-iso.md) | The Anaconda kickstart, and the warning that it erases every disk |
 | [Design: visual identity and boot](design/visual-identity-and-boot.md) | Branding, splash, first-boot appearance |

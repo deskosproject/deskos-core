@@ -94,7 +94,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: installer-test-evidence
+          name: installer-test-evidence-attempt-${{ github.run_attempt }}
           path: |
             ${{ env.ISO_WORK }}/serial.log
             ${{ env.ISO_WORK }}/shots
