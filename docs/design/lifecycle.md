@@ -77,7 +77,7 @@ Two images, one installed disk, and reboots.
 | 1 | A | the installed image records itself | `image-info.json` is A's; `bootc status` has one deployment |
 | 2 | A | `bootc upgrade` stages B, then reboot | a staged B exists and is not booted |
 | 3 | B | plain reboot | the running deployment is B; the `/var` marker and the local `/etc` edit from step 1 survive; the `/etc` file B ships is present |
-| 4 | B | `bootc rollback` (queues the previous deployment), reboot | the running deployment is A again; the `/var` marker survives |
+| 4 | B | `bootc rollback` (queues the previous deployment), reboot | the running deployment is A again; the `/var` marker and the local `/etc` edit survive; the `/etc` file B ships is gone |
 | 5 | A | start an upgrade, interrupt it, reboot | the machine still boots A and a retry can stage B |
 
 That is five steps across three boots: the staged update and the rollback take
@@ -118,11 +118,11 @@ test that has to run `bootc` as root and survives a reboot.
 
 **Chaining boots.** Each boot runs the same raw disk (or a copy), so `/var`
 persists for real. The driver also writes `/etc/deskos-lifecycle-local` and B
-ships `/etc/deskos-lifecycle-image`: the local edit must survive the upgrade and
-the rollback, while the image file is asserted on B and only recorded after the
-rollback, because bootc merges `/etc` rather than versioning it per deployment.
-Each boot keeps its journal (`journalctl -b`) beside the summary; the evaluator
-judges the record, a person reads the journal. The disk is rebuilt from scratch
+ships `/etc/deskos-lifecycle-image`. The run of 2026-10-24 measured what happens
+on the rollback: the local edit survived both transitions, and the image file was
+gone once A ran again. The evaluator now asserts both, so the merge behavior is
+a regression, not a note. Each boot keeps its journal (`journalctl -b`) beside
+the summary; the evaluator judges the record, a person reads the journal. The disk is rebuilt from scratch
 for each run, never reused between runs.
 
 **Interrupting an upgrade.** The upgrade script starts `bootc upgrade` in the
