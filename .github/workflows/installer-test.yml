@@ -1,0 +1,89 @@
+name: installer-test
+
+# Tier C: build the test-only ISO, install it unattended in QEMU and require the
+# builder's "Install finished" marker. Dispatch only: it takes about 45 minutes,
+# pulls a published image and needs KVM, so it must not gate a pull request.
+#
+# The published ISO is not installed here: its storage is interactive, so it
+# cannot finish without a person. This job exercises the test-only ISO from
+# tests/installer/README.md, which answers storage and locale for a disposable
+# VM.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-test
+  cancel-in-progress: false
+
+env:
+  IMAGE: quay.io/deskos/deskos-core-centos-stream-10:latest
+  ISO_WORK: /mnt/installer-work
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          sudo mkdir -p /mnt/containers /mnt/installer-output "$ISO_WORK"
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+          ln -s /mnt/installer-output tests/installer/output
+          df -h / /mnt
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Install QEMU and OVMF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+
+      - name: Pull the published image, with retries
+        run: |
+          for i in 1 2 3 4 5; do
+            if sudo podman pull "$IMAGE"; then ok=1; break; fi
+            echo "attempt $i failed pulling $IMAGE; retrying in 20s" >&2
+            sleep 20
+          done
+          [ "${ok:-0}" = 1 ] || { echo "could not pull $IMAGE" >&2; exit 1; }
+
+      - name: Build the test-only ISO
+        timeout-minutes: 60
+        run: tests/installer/build.sh "$IMAGE"
+
+      - name: Install unattended and require the completion marker
+        timeout-minutes: 45
+        run: |
+          python3 tests/installer/boot.py \
+            --iso tests/installer/output/bootiso/install.iso \
+            --workdir "$ISO_WORK" \
+            --minutes 30 \
+            --qemu /usr/bin/qemu-system-x86_64 \
+            --ovmf-code /usr/share/OVMF/OVMF_CODE.fd \
+            --ovmf-vars /usr/share/OVMF/OVMF_VARS.fd \
+            --marker "Install finished"
+
+      - name: Upload the serial log and frames
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-test-evidence
+          path: |
+            ${{ env.ISO_WORK }}/serial.log
+            ${{ env.ISO_WORK }}/shots
+            ${{ env.ISO_WORK }}/summary.md
+          if-no-files-found: warn
+          retention-days: 14
