@@ -14,6 +14,10 @@ deskosctl plan ./examples/organization-and-role --workstation example-devops-rhe
 | `example-devops-rhel-10` | the target |
 | `example-devops-centos-stream-10` | composes the same profiles on the public platform so it can be built without a subscription |
 
+For a pinned, end-to-end exercise — compiler, Plan and provenance, declared
+SBOM, customization, build, UEFI QCOW2, first user, update and rollback — follow
+[WALKTHROUGH.md](WALKTHROUGH.md).
+
 The minimal per-platform examples live in the sibling directories
 (`centos-stream-10/`, `almalinux-10/`, `rhel-10/`,
 `ubuntu-2604/`); this one
