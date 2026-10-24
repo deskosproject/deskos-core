@@ -191,6 +191,11 @@ Details in
   (`deskos-theme install <url>`, reading only `colors.toml` and
   `backgrounds/` and never running the repository's code) and vendoring one
   into resources pinned by commit.
+- **Skip the GNOME Initial Setup software page.** The first-boot wizard still
+  offers the "enable third-party repositories" step, which means nothing on an
+  image-based workstation whose store is Bazaar. Ship
+  `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
+  and assert in the first-boot check that the page is gone.
 
 ## Milestone 4: workstation E2E
 
