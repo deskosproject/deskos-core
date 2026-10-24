@@ -43,6 +43,9 @@ def main():
     p.add_argument("--qemu", default="/usr/libexec/qemu-kvm")
     p.add_argument("--ovmf-code", default="/usr/share/edk2/ovmf/OVMF_CODE.fd")
     p.add_argument("--ovmf-vars", default="/usr/share/edk2/ovmf/OVMF_VARS.fd")
+    p.add_argument("--marker", default="",
+                   help="text that must appear in the serial log (for example "
+                        "\"Install finished\")")
     args = p.parse_args()
 
     work = Path(args.workdir)
@@ -111,6 +114,14 @@ def main():
     sock.close()
     time.sleep(2)
     print(f"screenshots in {shots}")
+
+    if args.marker:
+        serial = (work / "serial.log").read_text(errors="replace")
+        if args.marker not in serial:
+            print(f"serial log does not contain {args.marker!r}; the install did "
+                  "not finish", file=sys.stderr)
+            sys.exit(1)
+        print(f"serial log contains {args.marker!r}")
 
 
 if __name__ == "__main__":

@@ -33,8 +33,13 @@ not pinned to an update source.
 ```bash
 tests/installer/boot.py \
     --iso tests/installer/output/bootiso/install.iso \
-    --workdir /tmp/deskos-install-test
+    --workdir /tmp/deskos-install-test \
+    --marker "Install finished"
 ```
+
+The builder's own kickstart writes `Install finished` to the serial console, so
+`--marker` turns "the install completed" into an exit status instead of a
+screenshot to inspect. Without `--marker`, only the frames are evidence.
 
 The harness creates a throwaway qcow2, boots the ISO with UEFI and captures a
 screendump every 20 seconds for 25 minutes. The CD boots once (`-boot once=d`),
