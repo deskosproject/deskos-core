@@ -40,18 +40,17 @@ Write `config.toml`:
 ```toml
 [customizations.installer.kickstart]
 contents = """
-# Graphical Anaconda, fully answered by this kickstart. Do not add
-# --non-interactive: in Anaconda 40.22 (RHEL 10.2) the progress screen is a
-# standalone spoke, and the non-interactive check aborts the install with
-# "User interaction required on standalone spoke ProgressSpoke". The
-# installer then exits and the machine reboots, which reads like a crash.
+# Graphical Anaconda. Storage is deliberately NOT answered here: the person
+# picks the disk and decides whether to enable LUKS in Installation
+# Destination. A kickstart with clearpart/autopart auto-selects every disk,
+# disables that spoke and gives no way to encrypt. Do not add
+# --non-interactive either: in Anaconda 40.22 (RHEL 10.2) the progress screen
+# is a standalone spoke, and the non-interactive check aborts the install
+# with "User interaction required on standalone spoke ProgressSpoke".
 graphical
 lang en_US.UTF-8
 keyboard us
 timezone UTC --utc
-zerombr
-clearpart --all --initlabel --disklabel=gpt
-autopart --noswap --type=lvm
 network --bootproto=dhcp --device=link --activate --onboot=on --hostname=deskos
 rootpw --lock
 xconfig --startxonboot
@@ -60,13 +59,20 @@ reboot
 ```
 
 > [!WARNING]
-> `zerombr` and `clearpart --all` erase **every disk** the installer
-> sees, without asking. Adjust partitioning before handing the ISO to
-> anyone.
+> The installer asks which disk to use and then erases **that disk**. It no
+> longer prescribes storage, so it no longer wipes every disk it sees; but the
+> person installing must still read the destination screen and must be told
+> that the installation destroys the selected disk. LUKS is opt-in on the same
+> screen.
 
 - `rootpw --lock` and no `user`: GNOME Initial Setup creates the first
-  account at first boot. Anaconda does not install non-interactively
-  without either a root password decision or a user.
+  account at first boot. Anaconda requires either a root password decision or
+  a user before it will install; the lock satisfies that while leaving no root
+  password to guess.
+- No `clearpart` and no `autopart`: the installation is interactive by
+  design. Storage — the disk, the partitioning and LUKS — is the decision of
+  the person installing, and an unattended kickstart cannot both choose a disk
+  safely and let that person encrypt it.
 - `xconfig --startxonboot`: without an explicit target Anaconda sets
   `multi-user.target`, and the installed workstation boots to a text
   login.
@@ -122,3 +128,9 @@ published, and only a person has installed one. That gap reached a published
 ISO: on 2026-10-23 the DayTwo RHEL ISO carried `graphical --non-interactive`,
 which RHEL 10.2's Anaconda aborts at the progress screen, and the machine
 rebooted. The kickstart in this document no longer uses the flag.
+
+Because storage is now interactive, an install test cannot be unattended: a
+QEMU check can assert that the installer reaches the hub with an editable
+Installation Destination (the screen that used to be locked), but completing
+the install needs either a person or a test-only kickstart that answers
+storage. Do not put that answer back into the shipped ISO.
