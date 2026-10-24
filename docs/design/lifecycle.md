@@ -143,12 +143,47 @@ deployment, so the retry is meaningful.
   that does not boot needs the previous boot entry or a rescue environment.
   The driver does not exercise that path yet.
 - **A candidate that never boots.** The interrupted run loses power during the
-  download. It does not write a deployment that then fails to boot.
+  download. It does not write a deployment that then fails to boot; the planned
+  fault-injection and boot-entry recovery is above.
 - **Application data.** `/var` and local `/etc` edits survive a rollback
   because neither is snapshotted. An upgrade that migrates or rewrites data
   under `/var` is not undone by rolling back; the operator restores that data
   from their own backup. The image ships no backup tool, and the driver's
   marker is not an application migration.
+
+## Planned: a candidate that does not boot
+
+The run covers a power loss during download; it does not write a deployment
+that then fails to boot. Closing that gap needs a deterministic failure and a
+deterministic way back to the previous entry.
+
+**Failure.** Build D from A with one deliberate, image-owned defect: remove the
+init binary the kernel executes (for example `/usr/lib/systemd/systemd`) so the
+kernel starts and then panics. That is more realistic than a missing kernel,
+which may fail during deployment rather than at boot. Stage D, reboot, and
+assert the machine never reaches SSH, with the panic in the serial log.
+
+**Recovery.** The only trusted path is the previous boot entry; `bootc rollback`
+cannot run because D never reaches a shell. The lab must select A in the
+bootloader (GRUB), then verify `bootc status` and the `/var` and local `/etc`
+markers. A rescue environment that mounts the disk and queues the rollback is
+the fallback if the boot menu cannot be driven deterministically.
+
+**Automation.** QEMU needs an input channel, not only the serial file, to select
+the previous entry; the driver currently has none. The entry names and timeout
+are also bootloader- and image-dependent. If selection cannot be made
+repeatable, the scenario stays a documented manual exercise and is not called a
+test.
+
+**Evidence.** The failed boot's serial log and panic, the chosen boot entry, the
+recovered deployment's `bootc status`, and the same local-state markers as the
+A→B→A run. The evaluator must distinguish "D failed to boot" from "no evidence
+was collected".
+
+**Open questions.** GRUB entry naming across two deployments; UEFI versus BIOS
+menu behavior; whether the rescue path can queue a rollback without a person;
+and whether a candidate that fails before reaching userspace is enough, or the
+lab also needs a failing userspace service after a successful login path.
 
 ## Driver
 
