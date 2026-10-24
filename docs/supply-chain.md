@@ -206,6 +206,53 @@ cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
   | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
 ```
 
+**Rescan a published digest.** The weekly job builds from the checkout; it
+does not rescan every digest already published. The list of published digests
+is in [architecture.md](architecture.md#validation-status); RHEL digests belong
+to the downstream organization. To review one later:
+
+```bash
+ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
+podman pull "$ref"
+
+# Record what produced the result, not only the result.
+grype version            # scanner and vulnerability database versions
+syft --from containers-storage "$ref"   --select-catalogers "-file-content-cataloger,-file-digest-cataloger,-file-executable-cataloger,-file-metadata-cataloger"   -o cyclonedx-json=installed.sbom.cdx.json
+
+# Evidence pass, unfiltered.
+grype --from containers-storage "$ref"   --config tests/supply-chain/grype-raw.yaml -o json > cves.json
+
+# The plan the image carries names its base digest; the exception record
+# must have been reviewed against that base.
+id=$(podman create "$ref")
+podman cp "$id:/usr/share/deskos/plan.json" plan.json
+podman rm "$id"
+
+python3 tests/supply-chain/check_exceptions.py   --cves cves.json --exceptions tests/supply-chain/exceptions.json   --plan plan.json --emit-gate gate.grype.yaml
+
+# The gate: Critical blocks, with only the reviewed exceptions applied.
+grype --from containers-storage "$ref"   --config gate.grype.yaml --fail-on critical
+```
+
+When a new Critical appears, the release owner for that digest chooses one of
+three routes and records it on an issue with the digest, scanner/database
+versions and the matching package, type, version and location:
+
+1. **Revalidate**: prove the finding does not apply (a reachability argument,
+   or a vendor advisory that shows the shipped version is the fixed one), and
+   record the evidence; do not add a blanket ignore.
+2. **Exception**: add an exact, owned and dated entry to
+   `tests/supply-chain/exceptions.json`, with a review date that forces the
+   question to return (ADR 0012).
+3. **Replace or withdraw**: publish a fix or stop recommending the digest. A
+   deleted tag or signature does **not** revoke copies already pulled or
+   cached; consumers move by changing the reference or pin. Publication
+   authority remains with the release owner.
+
+The raw report and the effective exceptions belong with the issue; artifact
+retention is 14 days, so copy anything the decision depends on somewhere
+durable.
+
 **RHEL builds** run in a downstream organization's pipeline, which owns the
 entitled build host, with no OIDC: they are signed with a cosign **key** kept
 outside this repository and verified against its public key. That key's
