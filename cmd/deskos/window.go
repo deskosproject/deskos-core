@@ -38,46 +38,48 @@ func window(args []string, _ io.Writer, errOut io.Writer) int {
 			return 2
 		}
 	}
-	now := time.Now().In(loc)
-
-	hasAt := *at != ""
-	hasWindow := *start != "" || *duration != 0
-	if hasAt == hasWindow {
-		fmt.Fprintln(errOut, "deskos window: set exactly one of --at or --start/--duration")
-		return 2
-	}
-	if hasAt {
-		h, m, err := parseClock(*at)
-		if err != nil {
-			fmt.Fprintf(errOut, "deskos window: %v\n", err)
-			return 2
-		}
-		if *grace < 0 {
-			fmt.Fprintln(errOut, "deskos window: --grace must not be negative")
-			return 2
-		}
-		begin := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, loc)
-		if !days[now.Weekday()] || now.Before(begin) || !now.Before(begin.Add(*grace)) {
-			return 1
-		}
-		return 0
-	}
-
-	if *start == "" || *duration <= 0 {
-		fmt.Fprintln(errOut, "deskos window: --start and a positive --duration are required together")
-		return 2
-	}
-	h, m, err := parseClock(*start)
+	allowed, err := windowAt(time.Now().In(loc), days, *at, *grace, *start, *duration)
 	if err != nil {
 		fmt.Fprintf(errOut, "deskos window: %v\n", err)
 		return 2
 	}
-	begin := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, loc)
-	end := begin.Add(*duration)
-	if !days[now.Weekday()] || now.Before(begin) || !now.Before(end) {
+	if !allowed {
 		return 1
 	}
 	return 0
+}
+
+// windowAt answers the question for one instant, so the boundary rules are
+// testable without waiting for a clock. `now` carries the local zone.
+func windowAt(now time.Time, days map[time.Weekday]bool,
+	at string, grace time.Duration, start string, duration time.Duration) (bool, error) {
+	hasAt := at != ""
+	hasWindow := start != "" || duration != 0
+	if hasAt == hasWindow {
+		return false, fmt.Errorf("set exactly one of --at or --start/--duration")
+	}
+	if hasAt {
+		h, m, err := parseClock(at)
+		if err != nil {
+			return false, err
+		}
+		if grace < 0 {
+			return false, fmt.Errorf("--grace must not be negative")
+		}
+		begin := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, now.Location())
+		return days[now.Weekday()] && !now.Before(begin) && now.Before(begin.Add(grace)), nil
+	}
+
+	if start == "" || duration <= 0 {
+		return false, fmt.Errorf("--start and a positive --duration are required together")
+	}
+	h, m, err := parseClock(start)
+	if err != nil {
+		return false, err
+	}
+	begin := time.Date(now.Year(), now.Month(), now.Day(), h, m, 0, 0, now.Location())
+	end := begin.Add(duration)
+	return days[now.Weekday()] && !now.Before(begin) && now.Before(end), nil
 }
 
 func parseClock(s string) (int, int, error) {
