@@ -150,6 +150,11 @@ snapshot), and `/var` (including home directories) is preserved. The lifecycle
 check asserts both `/etc` cases on every run
 ([design](design/lifecycle.md#shape)).
 
+A rollback does not undo data that the newer version already migrated under
+`/var`, and it is not automatic: choosing the previous deployment is a manual
+step (or the firmware entry for it after a candidate that does not boot).
+Restore application data from your own backup; the image ships no backup tool.
+
 ## Change where updates come from
 
 A machine tracks the image reference it was installed from. To move it to a

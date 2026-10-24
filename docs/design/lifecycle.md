@@ -136,6 +136,20 @@ B is the rollback deployment, and `bootc upgrade` to the rollback image is not
 a real update: the retry staged nothing on the first CI run. C is a distinct
 deployment, so the retry is meaningful.
 
+## What this does not test
+
+- **Automatic recovery.** Step 4 recovers with `bootc rollback`. bootc keeps
+  the previous deployment but does not switch to it on its own: a candidate
+  that does not boot needs the previous boot entry or a rescue environment.
+  The driver does not exercise that path yet.
+- **A candidate that never boots.** The interrupted run loses power during the
+  download. It does not write a deployment that then fails to boot.
+- **Application data.** `/var` and local `/etc` edits survive a rollback
+  because neither is snapshotted. An upgrade that migrates or rewrites data
+  under `/var` is not undone by rolling back; the operator restores that data
+  from their own backup. The image ships no backup tool, and the driver's
+  marker is not an application migration.
+
 ## Driver
 
 `tests/lifecycle/driver.py` implements the steps above and is the artifact the
