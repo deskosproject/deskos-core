@@ -54,6 +54,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 | [Compatibility](compatibility.md) | What stays stable between releases, the fixture matrix, and beta/1.0 criteria |
 | [Operations](operations.md) | Updates, inspect, apply, roll back, change the update source |
 | [Recovery](recovery.md) | Install, first boot, registry, update and rollback failures, with evidence to collect |
+| [Diagnostics](diagnostics.md) | What a resource, input or machine failure looks like, which class it is, and the next action |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
 | [Development](development.md) | Build `deskosctl`, run the tests, cut a release |
 | [Installer ISO](installer-iso.md) | The Anaconda kickstart, and the warning that it erases every disk |

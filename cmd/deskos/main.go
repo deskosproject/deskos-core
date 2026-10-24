@@ -88,6 +88,7 @@ func report(args []string, out, errOut io.Writer) int {
 	p, err := loadPlan(*root)
 	if err != nil {
 		fmt.Fprintf(errOut, "deskos report: %v\n", err)
+		fmt.Fprintln(errOut, "hint: install a DeskOS image, or pass --root DIR for another tree")
 		return 1
 	}
 	var present *evidence.Booted
@@ -110,6 +111,7 @@ func check(args []string, out, errOut io.Writer) int {
 	p, err := loadPlan(*root)
 	if err != nil {
 		fmt.Fprintf(errOut, "deskos check: %v\n", err)
+		fmt.Fprintln(errOut, "hint: install a DeskOS image, or pass --root DIR for another tree")
 		return 1
 	}
 	findings, scope := evidence.Check(system{root: *root}, p)
@@ -136,6 +138,7 @@ func update(args []string, out, errOut io.Writer) int {
 		// Without a plan the machine cannot be told what it is: refuse instead of
 		// updating something into something else.
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
+		fmt.Fprintln(errOut, "hint: update runs on the machine whose image carries the plan; there is no --root")
 		return 1
 	}
 	if !*dryRun && os.Geteuid() != 0 {
