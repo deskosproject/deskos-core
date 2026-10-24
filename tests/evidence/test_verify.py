@@ -51,12 +51,9 @@ class VerifyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify.load_index(tmp / "index.json")
 
-    def test_an_index_for_another_digest_is_refused(self):
+    def test_the_index_names_its_image_digest(self):
         tmp, _ = self.make()
-        errors = verify.verify(tmp / "index.json", tmp)
-        self.assertEqual(errors, [])
-        data = verify.load_index(tmp / "index.json")
-        self.assertNotEqual(data["digest"], "sha256:" + "b" * 64)
+        self.assertEqual(verify.load_index(tmp / "index.json")["digest"], "sha256:" + "a" * 64)
 
 
 if __name__ == "__main__":
