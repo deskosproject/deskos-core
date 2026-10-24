@@ -42,6 +42,10 @@ class Boot:
     staged: str | None = None
     # The queued rollback bootc status must report, or None when unchecked.
     rollback: str | None = None
+    # The locally edited /etc file this boot must see, or None when unchecked.
+    etc: str | None = None
+    # Whether the file B ships under /etc must be present ("yes"/"no"), or None.
+    image_etc: str | None = None
 
 
 # Five steps, seven boots: staging and rollback each need a reboot to show.
@@ -50,15 +54,23 @@ class Boot:
 # take effect on the next boot. Three boots for A -> B -> A, four with the
 # interrupted upgrade.
 SEQUENCE = (
-    Boot(1, "install", "a", None, writes="A1", staged="no", rollback="no"),
-    Boot(1, "stage", "a", "A1", staged="yes", rollback="no"),
-    Boot(2, "boot-b", "b", "A1", staged="no", rollback="no"),
+    Boot(1, "install", "a", None, writes="A1", staged="no", rollback="no",
+         image_etc="no"),
+    Boot(1, "stage", "a", "A1", staged="yes", rollback="no", etc="local",
+         image_etc="no"),
+    Boot(2, "boot-b", "b", "A1", staged="no", rollback="no", etc="local",
+         image_etc="yes"),
     # `bootc rollback` queues the previous deployment; it does not stage a
     # download, so the assertion is on rollbackQueued, not on staged.
-    Boot(2, "rollback", "b", "A1", staged="no", rollback="yes"),
-    Boot(3, "boot-a", "a", "A1", writes="A2", staged="no", rollback="no"),
-    Boot(4, "interrupt", "a", "A2", staged="no", rollback="no"),
-    Boot(4, "retry", "a", "A2", staged="yes", rollback="no"),
+    Boot(2, "rollback", "b", "A1", staged="no", rollback="yes", etc="local",
+         image_etc="yes"),
+    # On the rollback deployment, a file B added under /etc is recorded but not
+    # asserted: bootc merges /etc rather than versioning it per deployment, and
+    # the run reports what actually happened.
+    Boot(3, "boot-a", "a", "A1", writes="A2", staged="no", rollback="no",
+         etc="local"),
+    Boot(4, "interrupt", "a", "A2", staged="no", rollback="no", etc="local"),
+    Boot(4, "retry", "a", "A2", staged="yes", rollback="no", etc="local"),
 )
 
 
@@ -135,6 +147,13 @@ def evaluate(blocks, seq=SEQUENCE, images=None):
         if boot.rollback is not None and block.get("rollback", "no") != boot.rollback:
             failures.append(
                 f"{where}: rollback={block.get('rollback', 'no')}, expected {boot.rollback}")
+        if boot.etc is not None and block.get("etc") != boot.etc:
+            failures.append(
+                f"{where}: /etc edit {block.get('etc')!r}, expected {boot.etc!r}")
+        if boot.image_etc is not None and block.get("image_etc") != boot.image_etc:
+            failures.append(
+                f"{where}: image /etc file {block.get('image_etc')!r}, "
+                f"expected {boot.image_etc}")
         if boot.expect_marker is not None and block["marker"] != boot.expect_marker:
             failures.append(
                 f"{where}: /var marker {block['marker']!r}, expected {boot.expect_marker!r}")
