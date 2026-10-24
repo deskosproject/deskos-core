@@ -184,7 +184,7 @@ flow, with the exact commands, is in
 | | |
 |---|---|
 | **Install a machine** | [**Installing DeskOS**](docs/install.md): QCOW2 and ISO from a published image; private RHEL 10 builds; the example platforms |
-| **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back |
+| **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back; [**Recovery**](docs/recovery.md) when they do not |
 | **Choose a platform** | [**Platforms**](docs/platforms.md): the canonical matrix and what is verified on each |
 | **Author resources** | [**Resources**](docs/resources.md): every kind with an example |
 | **Understand the design** | [**Architecture**](docs/architecture.md): the pipeline, the Plan, the backend, and the evidence behind the claims |

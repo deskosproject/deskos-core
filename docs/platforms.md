@@ -68,12 +68,35 @@ machines, the publish leg and the platform's resources moved with it.
 
 ## Support and retirement
 
-- A platform's maintainer, security maintenance and hardware evidence are not
-  inferred from its vendor's lifecycle; the matrix above is not an LTS promise.
-- Retiring a platform means removing it from `resources/platforms/`, the publish
-  matrix and the image legs of CI. Its example may stay in `examples/` as a
-  example, non-published root.
-- Re-promoting an example platform follows
+The matrix above is the support statement. It is **not an LTS promise**, and a
+vendor's lifecycle dates do not become DeskOS dates.
+
+- **Maintained artifacts today:** CentOS Stream 10, published as a Core image;
+  RHEL 10, built privately by an organization that owns the entitlement; Ubuntu
+  26.04, built and published in its own repository. AlmaLinux 10 and Fedora 45
+  are examples: composed and built in CI, but not supported artifacts.
+- **Security maintenance** is a deliberate re-pin of the vendor base followed by
+  the image build, scan and boot checks. DeskOS does not backport fixes to older
+  image digests, and a clean scan is not a claim that an image is secure
+  ([ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md)).
+- **Hardware evidence** is claimed only where
+  [architecture.md](architecture.md#validation-status) records it. "Booted and
+  checked" in the matrix is virtual-machine evidence unless that page says
+  otherwise; bare metal is not implied.
+- **Upgrade paths:** within a platform, a machine moves forward with `bootc
+  upgrade` and back with the previous deployment. Moving between platforms is a
+  reinstall, not an upgrade; the image reference is the boundary.
+- **Losing a maintainer or a vendor base:** the platform stops being maintained.
+  It moves to an example root or is removed; it does not silently keep the
+  "published" status. A new maintainer or base re-enters through the
+  re-promotion steps below.
+- **Consumer notice:** a status change lands in this file and in the release
+  notes. There is no telemetry and no automatic fleet action; a machine changes
+  only when its update reference or its deployment changes.
+- **Retiring a platform** means removing it from `resources/platforms/`, the
+  publish matrix and the image legs of CI. Its example may stay in `examples/`
+  as an example, non-published root.
+- **Re-promoting an example platform** follows
   [example-platforms.md](example-platforms.md): make the base durable, move the
   Platform back, add the reference workstation and CI/publish legs, regenerate
   goldens, then validate, build, boot and only then publish.
