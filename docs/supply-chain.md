@@ -210,6 +210,10 @@ require the three attestation types, pin the issuer and the workflow
 identity, and compare the SBOM you obtained against the hash the reference
 names. Do not use `--insecure-ignore-tlog` on this path.
 
+A verification command is not enforcement: the installer and the installed
+machine accept what their `containers-policy.json` allows. That gap, and the
+prototype needed to close it, is [the authenticity design](design/authenticity.md).
+
 ```bash
 # One repository per platform and release:
 # quay.io/deskos/deskos-core-centos-stream-10
