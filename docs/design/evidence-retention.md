@@ -58,7 +58,10 @@ the image signature. Only then decide retention, GC and whether OCI referrers
 become the secondary path.
 
 The index must not be authoritative by itself: if an object is missing or its
-hash differs, verification **fails**. A 404 is not "no known issues".
+hash differs, verification **fails**. A 404 is not "no known issues". A verifier
+for this shape exists at
+[`tests/evidence/verify.py`](../../tests/evidence/verify.py); it checks the
+index, rejects traversal and duplicate names, and hashes every named object.
 
 ## Retrieval procedure (to test with the first digest)
 
