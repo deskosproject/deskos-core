@@ -136,6 +136,18 @@ Details in
 
 - Lockfiles resolving binary artifacts and base digests, designed after
   real release experience shows which inputs need them.
+- **Tracked resource pins.** Renovate keeps base-image digests and GitHub
+  Actions current, but it cannot resolve the pins that live in resources:
+  `BinaryArtifact` and `ExtensionSource` carry a URL, a version and a
+  sha256, and nothing updates them. Add a `deskosctl track` maintenance
+  command — resolve the declared pattern, download, verify, hash, rewrite
+  the resource and regenerate the goldens — plus a scheduled workflow with
+  a curated list, review notes for core components, and **one bundle pull
+  request** with one commit per resource. A person merges; nothing is
+  published. The compiler stays offline and deterministic: tracking is a
+  maintenance step, not part of compilation. Modeled on BuildStream's
+  `track:` and `bst source track`, which Bluefin's Dakota runs daily in
+  `.github/workflows/track-bst-sources.yml`; Renovate covers the rest.
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
   [resources.md](resources.md#rpmrepository)).
