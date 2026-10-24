@@ -71,6 +71,23 @@ active-session check in this version: the window is the maintenance contract.
 Inspect the apply units with `systemctl list-timers 'deskos-*'` and
 `journalctl -u deskos-image-apply.service`.
 
+## What happens in each situation
+
+| Situation | Result |
+|---|---|
+| automatic on, on AC power, at the daily run | stages the next image; the running session is untouched |
+| automatic on, on battery when the timer fires | `ConditionACPower` skips the service; nothing is staged. There is no catch-up when AC power returns: the next timer run does it |
+| automatic off | no timer is installed; `deskos update` or `systemctl start deskos-image-update.service` stages on demand |
+| staged, `image.apply` off or not configured | the image waits; it applies at the next reboot, whenever the person chooses |
+| `image.apply` on, staged, inside the declared window | `deskos window` passes, the service runs `bootc upgrade --apply` and reboots |
+| `image.apply` on, outside the window | `deskos window` fails, so the service does not apply and the machine keeps running; the apply timer is not persistent, so the next window is the next chance |
+| machine off during the window | no catch-up on boot; the next window applies |
+| registry unreachable or no network | `bootc upgrade` fails, the journal records it, and the running deployment is unchanged; the next run retries |
+| download interrupted | no staged deployment is recorded; the running image is unchanged |
+| metered connection | not detected: the timer runs as on any other connection ([not supported](architecture.md#update-policy-and-failure-handling)) |
+| Flatpak updates | a separate timer and service, independent of the image update |
+| `deskos update` | stages the image only: no reboot, no Flatpaks, no firmware, no rollback, and no reconciliation of `/etc` |
+
 ## Inspect
 
 ```bash
