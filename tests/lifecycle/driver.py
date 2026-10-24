@@ -121,6 +121,18 @@ def rollback_queued(status):
     return bool((status.get("status") or {}).get("rollbackQueued"))
 
 
+def image_b_containerfile():
+    """The image B Containerfile: both markers in one RUN instruction.
+
+    A line beginning with `&&` is a new instruction, not a continuation, so the
+    second `echo` has to stay on the `RUN` line.
+    """
+    return (
+        "FROM localhost/deskos-lifecycle:a\n"
+        f"RUN echo b > {B_MARKER} && echo b > {B_ETC}\n"
+    )
+
+
 def block(boot, step, digest, staged, rollback, marker, etc, image_etc):
     """One report block, in the shape lifecycle.evaluate expects."""
     return {
@@ -232,11 +244,7 @@ class Driver:
             " > /etc/ssh/sshd_config.d/10-lifecycle.conf \\\n"
             " && systemctl enable sshd.service\n"
         )
-        (ctx / "Containerfile.b").write_text(
-            "FROM localhost/deskos-lifecycle:a\n"
-            f"RUN echo b > {B_MARKER}\n"
-            f" && echo b > {B_ETC}\n"
-        )
+        (ctx / "Containerfile.b").write_text(image_b_containerfile())
         (ctx / "Containerfile.c").write_text(
             "FROM localhost/deskos-lifecycle:a\n"
             "RUN echo c > /usr/share/deskos/lifecycle-c\n"

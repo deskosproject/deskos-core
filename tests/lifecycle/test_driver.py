@@ -28,6 +28,14 @@ class QemuTests(unittest.TestCase):
         self.assertEqual(driver.qemu_binary("/bin/sh"), "/bin/sh")
 
 
+class ImageBTests(unittest.TestCase):
+    def test_both_markers_are_one_run_instruction(self):
+        text = driver.image_b_containerfile()
+        self.assertIn(f"RUN echo b > {driver.B_MARKER} && echo b > {driver.B_ETC}",
+                      text)
+        self.assertNotIn("\n &&", text)
+
+
 class StatusTests(unittest.TestCase):
     STATUS = (
         'Some banner\n{"status": {"booted": {"image": {"imageDigest": "sha256:a"}},'
