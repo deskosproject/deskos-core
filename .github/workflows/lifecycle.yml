@@ -97,5 +97,6 @@ jobs:
             ${{ env.WORK }}/run/lifecycle.json
             ${{ env.WORK }}/run/summary.md
             ${{ env.WORK }}/run/serial.log
+            ${{ env.WORK }}/run/journal-*.log
           if-no-files-found: warn
           retention-days: 14
