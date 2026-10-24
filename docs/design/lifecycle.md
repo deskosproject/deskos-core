@@ -1,13 +1,14 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
-**Status:** design, evaluator, driver and two registry spikes (2026-10-23).
-The driver runs manually; no workflow calls it yet. It first ran end to end
-on 2026-10-24: install and stage on boot 1, B and rollback on boot 2, A on
-boot 3, evaluator `ok`.
+**Status:** design, evaluator, driver and a dispatch-only workflow
+(2026-10-24). `lifecycle.yml` runs the driver on manual dispatch; no pull
+request and no schedule runs it. It first ran end to end on 2026-10-24:
+install and stage on boot 1, B and rollback on boot 2, A on boot 3,
+evaluator `ok`.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
-SSH, which is what the harness will automate. `docs/roadmap.md` (Milestone 3)
-lists lifecycle as remaining; a staged update and a manual rollback were
-validated once on a CS10 VM, not by a test.
+SSH, which the harness automates. `docs/roadmap.md` (Milestone 3) lists
+lifecycle as remaining; a staged update and a manual rollback were validated
+once on a CS10 VM, not by a test.
 
 ## What the spike proved (2026-10-23)
 
@@ -142,8 +143,8 @@ spikes were folded into: it builds A and B, pushes them to the local registry,
 installs with `bootc install to-disk`, boots, drives the guest over SSH and
 evaluates the record. `--interrupt` adds the power-loss run. It needs rootful
 podman, qemu, `skopeo` and `/dev/kvm`, takes about twenty minutes, and is
-**manual**: `ci.yml` runs its unit tests, not the driver, until it has been
-green on real builds for a while.
+**dispatch-only**: `ci.yml` runs its unit tests, and `lifecycle.yml` runs the
+driver by hand until it has been green on real builds for a while.
 
 ## Markers and evaluation
 
@@ -157,6 +158,8 @@ image=<sha256 of /usr/share/deskos/image-info.json>
 deployments=<bootc status --json, one line>
 var_marker=<contents of /var/lib/deskos-lifecycle/marker>
 staged=<yes|no>
+etc=<contents of /etc/deskos-lifecycle-local>
+image_etc=<yes|no>
 DESKOS-LIFECYCLE-END
 ```
 
@@ -167,10 +170,11 @@ no "unknown is clean".
 
 ## Evidence
 
-Per run: one directory per boot (serial log, markers, frames, `summary.json`),
-the A and B `plan.json` and `image-info.json`, the registry log, the installer
-log, and a top-level `lifecycle.json` naming the A digest, the B digest, each
-boot's observed image, and the `/var` marker across boots. That file is what a
+Per run: one directory per boot (serial log, markers, frames, `summary.json`,
+`journal-boot-N-<step>.log`), the A and B `plan.json` and `image-info.json`, the
+registry log, the installer log, and a top-level `lifecycle.json` naming the A
+digest, the B digest, each boot's observed image, the `/var` marker, and the
+local and image `/etc` files across boots. That file is what a
 person reads to see the timeline, and what a future gate would compare.
 
 ## Cost and placement
