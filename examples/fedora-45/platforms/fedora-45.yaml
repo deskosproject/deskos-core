@@ -40,14 +40,15 @@ spec:
   architectures: [x86_64]
   packageManager: rpm
   bootc:
-    image: quay.io/fedora/fedora-silverblue:45
-    # x86_64 manifest of the :45 index, built 2026-10-22T07:42:13Z as Fedora
-    # 45.20261022.n.0, ostree commit ce462a2c..., kernel 7.2.11-300.fc45.
-    # Fedora Silverblue's :45 compose moves **daily**: a pin here is a digest the
-    # registry stops serving within a day or two, and the `validate` job reports
-    # exactly that. Re-pinned 2026-10-22 to the released compose; the previous
-    # digest (45.20261021.n.0) is no longer served. This is an example-only pin.
-    digest: sha256:ddebc7b35c6aec83cdad2e7602a851965ff316c91aa638ba3f9c195a4d750d26
+    # DeskOS's own mirror of the vendor image, copied on 2026-10-23 by
+    # .github/workflows/mirror-fedora.yml with --all --preserve-digests, so this
+    # is the vendor's index digest and every manifest in it. Fedora only
+    # publishes moving tags and drops an old digest within days; the mirror is
+    # the same bytes at a location the vendor does not rotate away. Refresh it
+    # with a workflow dispatch, then bump this pin in a pull request.
+    image: quay.io/deskos/fedora-silverblue:45
+    # Vendor build 45.20261023.n.0 (the mirror also carries that immutable tag).
+    digest: sha256:9861aff934d83fd6ca847582ec8fa49ca3e501156f3f551afc31a27484eda457
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
