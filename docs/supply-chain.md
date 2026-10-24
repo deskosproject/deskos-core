@@ -60,6 +60,36 @@ grype "$image" -o json > cves.json
 `grype` fails non-zero when the configured severity threshold is met
 (`--fail-on critical`), which is what a CI gate uses.
 
+## Inputs and who moves them
+
+Every input below is pinned; the column says what moves it, not who is on call.
+The trigger is a deliberate pull request or a workflow dispatch, never an
+automatic merge (ADR 0011). "Resolver" is
+[`tests/artifacts/resolve.py`](../tests/artifacts/resolve.py).
+
+| Input | Pinned in | Moved by | Checked by |
+|---|---|---|---|
+| CentOS Stream 10 base | `resources/platforms/centos-stream-10.yaml` (tag + digest) | Renovate Docker PR, then a person reviews the build/boot | `validate`/`render`, image build, boot/session checks, scan |
+| RHEL 10 base | `resources/platforms/rhel-10.yaml` (tag + digest) | Hand; Renovate is disabled because the registry needs an entitlement | composition here; build/boot in the downstream organization |
+| RPM repositories and GPG keys | `RpmRepository` resources | Hand, with the vendor | resolver probes `repomd.xml`; the build verifies signatures |
+| Binary artifacts (CLI tools, extensions) | `BinaryArtifact` resources | Renovate proposes a release version; a person fills the SHA-256, which Renovate cannot compute | resolver downloads and hashes; image build |
+| Runtime companion (`deskos`) | `resources/software/deskos.yaml` | Hand, from a released asset | checksum, release version check, image build; it must read the plan the same release renders |
+| ISO builder (BIB) | `docs/installer-iso.md`, the ISO workflows | Hand, by digest | image build, boot check, ISO install test |
+| Syft and Grype | `.github/workflows/supply-chain.yml` | Renovate proposes the installer tag | pinned installer, gate in the same run |
+| GitHub Actions | workflow files | Hand; the token has no workflows permission | action version review; no action runs with registry or signing credentials |
+| Flatpak remotes and apps | `FlatpakRemote`/`FlatpakSet` resources | Hand, on the vendor's release | build and first-boot preinstall; **not** the resolver |
+
+Known gaps, stated rather than implied:
+
+- the RHEL base cannot be checked anonymously; its check is downstream;
+- Flatpak remotes and apps have no URL/checksum probe like binary artifacts;
+- a version-only binary PR is incomplete until the checksum is filled;
+- action versions are reviewed by hand, and this repository has no workflow
+  token that could change them.
+
+Compilation itself makes no network request; everything above is checked in CI
+or at build time, not while rendering.
+
 ## CI job
 
 `.github/workflows/supply-chain.yml` runs on a weekly schedule and on
@@ -205,6 +235,53 @@ cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
   --certificate-oidc-issuer "$issuer" --certificate-identity-regexp "$identity" "$ref" \
   | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
 ```
+
+**Rescan a published digest.** The weekly job builds from the checkout; it
+does not rescan every digest already published. The list of published digests
+is in [architecture.md](architecture.md#validation-status); RHEL digests belong
+to the downstream organization. To review one later:
+
+```bash
+ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
+podman pull "$ref"
+
+# Record what produced the result, not only the result.
+grype version            # scanner and vulnerability database versions
+syft --from containers-storage "$ref"   --select-catalogers "-file-content-cataloger,-file-digest-cataloger,-file-executable-cataloger,-file-metadata-cataloger"   -o cyclonedx-json=installed.sbom.cdx.json
+
+# Evidence pass, unfiltered.
+grype --from containers-storage "$ref"   --config tests/supply-chain/grype-raw.yaml -o json > cves.json
+
+# The plan the image carries names its base digest; the exception record
+# must have been reviewed against that base.
+id=$(podman create "$ref")
+podman cp "$id:/usr/share/deskos/plan.json" plan.json
+podman rm "$id"
+
+python3 tests/supply-chain/check_exceptions.py   --cves cves.json --exceptions tests/supply-chain/exceptions.json   --plan plan.json --emit-gate gate.grype.yaml
+
+# The gate: Critical blocks, with only the reviewed exceptions applied.
+grype --from containers-storage "$ref"   --config gate.grype.yaml --fail-on critical
+```
+
+When a new Critical appears, the release owner for that digest chooses one of
+three routes and records it on an issue with the digest, scanner/database
+versions and the matching package, type, version and location:
+
+1. **Revalidate**: prove the finding does not apply (a reachability argument,
+   or a vendor advisory that shows the shipped version is the fixed one), and
+   record the evidence; do not add a blanket ignore.
+2. **Exception**: add an exact, owned and dated entry to
+   `tests/supply-chain/exceptions.json`, with a review date that forces the
+   question to return (ADR 0012).
+3. **Replace or withdraw**: publish a fix or stop recommending the digest. A
+   deleted tag or signature does **not** revoke copies already pulled or
+   cached; consumers move by changing the reference or pin. Publication
+   authority remains with the release owner.
+
+The raw report and the effective exceptions belong with the issue; artifact
+retention is 14 days, so copy anything the decision depends on somewhere
+durable.
 
 **RHEL builds** run in a downstream organization's pipeline, which owns the
 entitled build host, with no OIDC: they are signed with a cosign **key** kept
