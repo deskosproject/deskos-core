@@ -286,9 +286,14 @@ distribution package scriptlets rather than by DeskOS:
 Seen on CS10 Core builds `50f8892a` and `77832d5c` (11 passed, 1 skipped)
 and the RHEL 10.2 builds `81bdfeec` and `0e65bf4b` (10 passed, 1
 skipped), where the RHSM tmpfs mounts keep `/var/log/rhsm/rhsm.log` out of
-the image. They are non-blocking. Whether to seek upstream fixes, declare
-exceptions or use `--fatal-warnings` is a release decision; DeskOS does
-not alter package behavior to silence them.
+the image. They are non-blocking.
+
+**Proposed disposition:** accept all three as vendor scriptlet warnings, and
+keep the lint in report mode. Do not use `--fatal-warnings`: it would make
+packaging owned by the distribution block a DeskOS release without a defect in
+DeskOS intent. Do not patch the packages to silence them. Re-run the lint each
+release; a warning that originates in a DeskOS `RUN` step is a defect and
+blocks, unlike these three. Track upstream fixes where the vendor accepts them.
 
 ## Public CentOS, private RHEL
 
