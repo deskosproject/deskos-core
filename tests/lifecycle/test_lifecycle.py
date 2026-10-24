@@ -21,6 +21,8 @@ def full_sequence(images=("sha-a", "sha-b")):
             staged=boot.staged or "no",
             rollback=boot.rollback or "no",
             marker=boot.expect_marker if boot.expect_marker is not None else "-",
+            etc=boot.etc or "-",
+            image_etc=boot.image_etc or "no",
         ))
     return "".join(out)
 
@@ -84,6 +86,18 @@ class EvaluateTests(unittest.TestCase):
         text = full_sequence().replace("staged=yes", "staged=no", 1)
         failures = lifecycle.evaluate(lifecycle.parse_blocks(text), images=self.images)
         self.assertTrue(any("staged=no, expected yes" in f for f in failures))
+
+    def test_a_lost_etc_edit_fails(self):
+        blocks = lifecycle.parse_blocks(full_sequence())
+        blocks[2]["etc"] = "-"
+        failures = lifecycle.evaluate(blocks, images=self.images)
+        self.assertTrue(any("/etc edit" in f for f in failures))
+
+    def test_an_image_etc_file_that_did_not_arrive_fails(self):
+        blocks = lifecycle.parse_blocks(full_sequence())
+        blocks[2]["image_etc"] = "no"
+        failures = lifecycle.evaluate(blocks, images=self.images)
+        self.assertTrue(any("image /etc file" in f for f in failures))
 
     def test_a_missing_rollback_queue_fails(self):
         blocks = lifecycle.parse_blocks(full_sequence())
