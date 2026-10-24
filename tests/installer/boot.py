@@ -64,7 +64,8 @@ def main():
         "-drive", f"if=pflash,format=raw,file={work / 'OVMF_VARS.fd'}",
         "-drive", f"if=virtio,format=qcow2,file={disk}",
         "-drive", f"file={args.iso},media=cdrom,readonly=on",
-        "-boot", "order=d,menu=on",
+        # The CD installs once; after the kickstart's reboot, the disk boots.
+        "-boot", "once=d,menu=on",
         "-device", "virtio-vga", "-display", "none",
         "-nic", "user,model=virtio-net-pci",
         "-device", "virtio-rng-pci",
@@ -92,7 +93,7 @@ def main():
     index = 0
     while time.time() < deadline:
         index += 1
-        name = shots / f"shot-{index:02d}.png"
+        name = shots / f"shot-{index:02d}.ppm"
         try:
             qmp_command(sock, "screendump", {"filename": str(name)})
         except Exception as exc:  # noqa: BLE001 - report and keep going

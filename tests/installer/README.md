@@ -37,10 +37,18 @@ tests/installer/boot.py \
 ```
 
 The harness creates a throwaway qcow2, boots the ISO with UEFI and captures a
-screendump every 20 seconds for 25 minutes. The kickstart reboots when the
-install finishes; the last screenshots should show GNOME Initial Setup. The
+screendump every 20 seconds for 25 minutes. The CD boots once (`-boot once=d`),
+so the kickstart's reboot lands on the installed disk instead of starting the
+installer again. The last screenshots should show GNOME Initial Setup. The
 installed disk carries `/etc/deskos-installer-test` so an install can be traced
 to this ISO.
+
+QEMU writes the frames as PPM bytes even though the old filenames said `.png`;
+they are now named `.ppm`, and `magick shot-01.ppm shot-01.png` converts one for
+viewing.
+
+A run on 2026-10-24 with the published CentOS Stream 10 image installed
+unattended and reached GNOME Initial Setup. It has not run in CI.
 
 A screenshot that shows the Installation Summary with a disk step waiting means
 the kickstart did not answer storage; do not reuse that ISO for the test.
