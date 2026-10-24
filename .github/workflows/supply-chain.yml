@@ -493,7 +493,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: supply-chain-evidence-${{ matrix.token }}
+          name: supply-chain-evidence-${{ matrix.token }}-attempt-${{ github.run_attempt }}
           path: |
             declared.sbom.cdx.json
             installed.sbom.cdx.json

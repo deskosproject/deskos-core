@@ -165,7 +165,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: vm-evidence-example-${{ matrix.token }}
+          name: vm-evidence-example-${{ matrix.token }}-attempt-${{ github.run_attempt }}
           path: |
             /mnt/deskos-work/evidence
             /mnt/deskos-work/bootcheck
