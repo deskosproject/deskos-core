@@ -133,8 +133,10 @@ ISO: on 2026-10-23 the DayTwo RHEL ISO carried `graphical --non-interactive`,
 which RHEL 10.2's Anaconda aborts at the progress screen, and the machine
 rebooted. The kickstart in this document no longer uses the flag.
 
-Because storage is now interactive, an install test cannot be unattended: a
-QEMU check can assert that the installer reaches the hub with an editable
-Installation Destination (the screen that used to be locked), but completing
-the install needs either a person or a test-only kickstart that answers
-storage. Do not put that answer back into the shipped ISO.
+Because storage is interactive, this ISO cannot finish an install without a
+person: a QEMU check can assert that the installer reaches the hub with an
+editable Installation Destination (the screen that used to be locked), but
+completing the install does not happen on its own. Automated install tests use
+the second, test-only ISO in [tests/installer](../tests/installer/README.md):
+the same image with a kickstart that answers storage, locale and network. It is
+never published; do not put those answers back into the shipped ISO.
