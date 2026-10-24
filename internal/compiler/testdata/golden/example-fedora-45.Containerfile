@@ -3,7 +3,7 @@
 # Workstation: example-fedora-45
 # Platform:    fedora-45 (Fedora 45 (Silverblue, example only))
 
-FROM quay.io/fedora/fedora-silverblue:45@sha256:ddebc7b35c6aec83cdad2e7602a851965ff316c91aa638ba3f9c195a4d750d26
+FROM quay.io/deskos/fedora-silverblue:45@sha256:9861aff934d83fd6ca847582ec8fa49ca3e501156f3f551afc31a27484eda457
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
