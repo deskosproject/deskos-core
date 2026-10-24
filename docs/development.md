@@ -152,9 +152,14 @@ creates a GitHub Release (`.github/workflows/release.yml`) with:
 
 | Asset | Contents |
 |---|---|
-| `deskosctl-vX.Y.Z-linux-amd64` | the CLI; only **linux/amd64** is built |
+| `deskosctl-vX.Y.Z-linux-amd64` | the CLI that builds an image; only **linux/amd64** is built |
+| `deskos-vX.Y.Z-linux-amd64` | the runtime companion the image carries (ADR 0018), same commit and version checks |
 | `deskos-core-resources-vX.Y.Z.tar.gz` | `resources/` of the same commit (DeskOS Core, platforms, assets), validated by that binary before release; a reproducible archive |
-| `SHA256SUMS` | checksums of both |
+| `SHA256SUMS` | checksums of the three |
+
+The version-less aliases `deskosctl-linux-amd64` and `deskos-linux-amd64`
+exist so `releases/latest/download/<name>` works without knowing the tag; they
+track the latest stable release, not a prerelease.
 
 > [!NOTE]
 > The binary is not signed.
