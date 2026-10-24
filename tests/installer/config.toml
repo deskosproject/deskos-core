@@ -1,0 +1,35 @@
+# TEST ONLY. Never publish an ISO built from this configuration.
+#
+# The shipped ISO (docs/installer-iso.md) answers nothing: language,
+# keyboard, timezone, network, the disk and LUKS are the person's decisions.
+# That makes its install impossible to finish without a person, so it cannot
+# be the ISO an automated install test uses.
+#
+# This configuration answers all of those questions for a disposable VM with
+# exactly one disk and nothing to keep. It is the second ISO: build it for
+# tests, keep it internal, and do not hand it out as an installer.
+
+[customizations.installer.kickstart]
+contents = """
+# TEST ONLY. Do not ship this kickstart in a published ISO.
+#
+# `clearpart --all` erases every disk the installer sees. Run this only in a
+# throwaway VM whose single disk is the installation target.
+graphical
+lang en_US.UTF-8
+keyboard us
+timezone UTC --utc
+network --bootproto=dhcp --device=link --activate
+rootpw --lock
+zerombr
+clearpart --all --initlabel
+autopart
+xconfig --startxonboot
+
+# Leave evidence of which ISO installed the disk.
+%post --erroronfail
+echo "test-only installer ISO" > /etc/deskos-installer-test
+%end
+
+reboot
+"""
