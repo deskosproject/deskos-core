@@ -70,7 +70,8 @@ func TestReportRefusesAMachineWithoutAPlan(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exit %d, want 1", code)
 	}
-	if !strings.Contains(errOut, "does not carry a plan") {
+	if !strings.Contains(errOut, "does not carry a plan") ||
+		!strings.Contains(errOut, "hint: install a DeskOS image") {
 		t.Errorf("stderr = %q", errOut)
 	}
 }
@@ -119,7 +120,8 @@ func TestUpdateRefusesWithoutAPlanAndChangesNothing(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("exit %d, want 1 (stdout %q)", code, out)
 	}
-	if !strings.Contains(errOut, "does not carry a plan") {
+	if !strings.Contains(errOut, "does not carry a plan") ||
+		!strings.Contains(errOut, "hint: update runs on the machine") {
 		t.Errorf("stderr = %q", errOut)
 	}
 	if strings.Contains(out, "running: bootc") {
