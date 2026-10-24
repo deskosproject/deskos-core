@@ -9,6 +9,14 @@
 # exactly one disk and nothing to keep. It is the second ISO: build it for
 # tests, keep it internal, and do not hand it out as an installer.
 
+# Enable the same installer modules as the published ISO, so the test build
+# exercises the configuration that ships.
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Localization",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+]
+
 [customizations.installer.kickstart]
 contents = """
 # TEST ONLY. Do not ship this kickstart in a published ISO.
