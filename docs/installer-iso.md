@@ -40,18 +40,18 @@ Write `config.toml`:
 ```toml
 [customizations.installer.kickstart]
 contents = """
-# Graphical Anaconda. Storage is deliberately NOT answered here: the person
-# picks the disk and decides whether to enable LUKS in Installation
-# Destination. A kickstart with clearpart/autopart auto-selects every disk,
-# disables that spoke and gives no way to encrypt. Do not add
-# --non-interactive either: in Anaconda 40.22 (RHEL 10.2) the progress screen
-# is a standalone spoke, and the non-interactive check aborts the install
-# with "User interaction required on standalone spoke ProgressSpoke".
+# Graphical Anaconda, and nothing else is answered. Language, keyboard,
+# timezone, network, the disk and LUKS are the person's decisions. A
+# kickstart with clearpart/autopart auto-selects every disk, disables the
+# Installation Destination spoke and gives no way to encrypt; a preseeded
+# locale or network hides choices the person may need to change. The ISO
+# carries the image, so the install needs no network.
+#
+# Do not add --non-interactive either: in Anaconda 40.22 (RHEL 10.2) the
+# progress screen is a standalone spoke, and the non-interactive check aborts
+# the install with "User interaction required on standalone spoke
+# ProgressSpoke".
 graphical
-lang en_US.UTF-8
-keyboard us
-timezone UTC --utc
-network --bootproto=dhcp --device=link --activate --onboot=on --hostname=deskos
 rootpw --lock
 xconfig --startxonboot
 reboot
@@ -59,11 +59,11 @@ reboot
 ```
 
 > [!WARNING]
-> The installer asks which disk to use and then erases **that disk**. It no
-> longer prescribes storage, so it no longer wipes every disk it sees; but the
-> person installing must still read the destination screen and must be told
-> that the installation destroys the selected disk. LUKS is opt-in on the same
-> screen.
+> The installer asks for language, keyboard, timezone, network (optional),
+> the disk and LUKS, and then erases **the selected disk**. It no longer
+> prescribes storage, so it no longer wipes every disk it sees; but the person
+> installing must still read the destination screen and be told that the
+> installation destroys the selected disk. LUKS is opt-in on the same screen.
 
 - `rootpw --lock` and no `user`: GNOME Initial Setup creates the first
   account at first boot. Anaconda requires either a root password decision or
@@ -73,6 +73,10 @@ reboot
   design. Storage — the disk, the partitioning and LUKS — is the decision of
   the person installing, and an unattended kickstart cannot both choose a disk
   safely and let that person encrypt it.
+- No `lang`, `keyboard`, `timezone` or `network`: the installer asks. The ISO
+  carries the image, so the install works offline; the hostname is not preset
+  either. Preseeding these hides choices a person may need to change (a
+  different keyboard, a different timezone, Wi-Fi).
 - `xconfig --startxonboot`: without an explicit target Anaconda sets
   `multi-user.target`, and the installed workstation boots to a text
   login.
