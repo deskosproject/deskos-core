@@ -67,6 +67,34 @@ digest:
 registry-enforced immutability. A digest is the exact identity, which is why
 anything beyond a lab pins one.
 
+## Workstation behavior matrix
+
+Ties a promoted image's claims to the probe behind them. **Instrumented** means
+the check adds a test user, autologin or a session script; **unmodified** means
+it boots the disk as shipped.
+
+| Claim | Probe | Positive | Negative | Kind |
+|---|---|---|---|---|
+| Quiet graphical boot and splash | `bootcheck.py --expect-splash` | stable graphical frames and splash detected | text-only, blank or no stable frame | unmodified |
+| GNOME Initial Setup on first boot | `firstbootcheck.py` | the wizard and its session are present | no wizard, or a different session | unmodified |
+| Declared dconf defaults and vendor overrides | `sessioncheck.py` | each plan key reads back as declared | a value differs or cannot be read | instrumented |
+| Declared extensions load | `sessioncheck.py`, `gnome-extensions info` | state `ACTIVE`/`ENABLED` | missing or `ERROR` | instrumented |
+| Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
+| Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
+| Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
+| System Flatpaks materialize | `deskos-flatpak-preinstall` state and `flatpak list --system` | service succeeded and declared apps are installed | failed unit or missing app | instrumented |
+| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state | wrong deployment, lost `/var`, failed retry | unmodified, dispatch |
+| Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
+
+A missing result, an unreadable value or a `not measurable` count is a failure
+or an explicit unverified item, not a pass. The session row is an **instrumented
+autologin session**, not proof of an interactive GDM login.
+
+**Not proved by these probes:** an interactive GDM login and the Wayland session
+type through GDM; launching every declared favorite; screen locking; offline
+login; Flatpak install after reconnection; suspend, battery, display and other
+hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
+
 ## What is not covered
 
 - Bare metal, BIOS boot, Secure Boot and non-x86_64 are not tested.
