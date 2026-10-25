@@ -109,6 +109,8 @@ lab's HTTP registry; they are not part of the recipe for a TLS registry.
 | signature identity `127.0.0.1:5000/…`, image pulled as `registry.lab:5000/…` | rejected: identity not accepted |
 | no policy, `--enforce-container-sigpolicy` | **accepted the unsigned image** (rc 0) |
 | `default: reject` | rejected |
+| `bootc upgrade` to a newly signed digest | **accepted and staged** |
+| `bootc upgrade` to an unsigned digest | rejected: “A signature was required, but no signature exists” |
 | cosign bundle copied into the local sigstore store | rejected: unrecognized signature format |
 
 So key-based enforcement works **only when all three pieces are present**: a
@@ -116,6 +118,13 @@ policy that names the key and identity, `use-sigstore-attachments` for the
 registry, and a signature stored in the legacy referrers format that this
 containers/image reads. `--enforce-container-sigpolicy` alone is still not a
 control: with no policy it let an unsigned switch through.
+
+The same policy was exercised through `bootc upgrade`, not only `switch`: a
+new signed digest was staged, and an unsigned digest was rejected. The
+`deskos update` guard and the generated image-update unit were blocked on
+composefs by the ostree-only `/run/ostree-booted` test (#177); with the fix in
+#178, `deskos update` stages the signed image and the unit runs `bootc upgrade`
+instead of being skipped.
 
 **Bluefin / Universal Blue** documents the same shape: a `sigstoreSigned`
 entry with a key and `use-sigstore-attachments`, plus the cosign 3
@@ -126,10 +135,8 @@ here.
 
 **Not yet tested:** the Anaconda `ostreecontainer` install path; keyless Fulcio
 (containers/image binds Fulcio identity by issuer and subject email, while a
-GitHub Actions certificate carries a URI SAN); both update paths (`bootc
-upgrade` timer and `deskos update`, which use the same library); offline
-verification; key rotation and loss of trust in a digest that previously
-verified.
+GitHub Actions certificate carries a URI SAN); offline verification; key
+rotation (loss of trust is covered by the wrong-key case).
 
 ## Prototype plan (disposable lab)
 
