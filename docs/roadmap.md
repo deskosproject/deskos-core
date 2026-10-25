@@ -117,7 +117,7 @@ Details in
   interruption window is still untested.
 - **Installer ISO:** no check installs one. The ISO is built, signed and
   published, but nothing boots Anaconda and asserts it reaches the progress
-  screen and installs. On 2026-10-23 the DayTwo RHEL ISO shipped a kickstart
+  screen and installs. On 2026-10-23 an organization's RHEL ISO shipped a kickstart
   with `graphical --non-interactive`; RHEL 10.2's Anaconda aborted it at the
   progress screen (`User interaction required on standalone spoke
   ProgressSpoke`), and the machine rebooted, which reads as a hardware
@@ -280,16 +280,19 @@ how-to: [supply-chain.md](supply-chain.md).
 Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
 its own.
 
-- **Signature identity for consumer enforcement (P0-03), postponed 2026-10-25.**
-  The lab verifies that key-based `sigstoreSigned` policy blocks unsigned,
-  wrong-key and wrong-identity images on `bootc switch` and `bootc upgrade`.
-  The keyless Fulcio certificate used by CI cannot be pinned by
-  containers/image, which matches issuer plus subject email while a GitHub
-  Actions certificate carries a URI SAN. The choice between key-based signing
-  and waiting for URI-SAN support is postponed: Core keeps its keyless
-  signatures, and an installed machine still cannot enforce them. Revisit
-  after the Anaconda `ostreecontainer` test or when containers/image supports
-  URI-SAN identities. See [authenticity.md](design/authenticity.md).
+- **Signature identity for consumer enforcement (P0-03), decided 2026-10-25.**
+  DeskOS Core follows projectbluefin: keyless OIDC signatures, no key file and
+  no enforcement on the installed machine; a person verifies the digest
+  manually. An organization that chooses enforcement keeps key-based signing;
+  making that signature a policy requirement on update is that organization's
+  work. The lab verifies that key-based `sigstoreSigned` policy blocks unsigned,
+  wrong-key and wrong-identity images on `bootc switch` and `bootc upgrade`; the
+  keyless Fulcio certificate used by Core cannot be pinned by containers/image,
+  which matches issuer plus subject email while a GitHub Actions certificate
+  carries a URI SAN. No upstream change that pins a GitHub URI-SAN is merged or
+  committed. Core's P0-03 is closed as "signed and manually verifiable"; an
+  enforcing organization still owns the Anaconda install path and key rotation.
+  See [authenticity.md](design/authenticity.md).
 - **Documentation restructure (in progress).** The platform matrix now has one
   home, [platforms.md](platforms.md), and the README states the
   `YAML → validate → compose → plan → Containerfile → image → disk` line. Still

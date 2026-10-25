@@ -1,14 +1,18 @@
 # Consumer-side image authenticity
 
-**Status: research design, updated 2026-10-25.** A key-based enforcement recipe
-is verified in the lab; no image policy, key or install path is changed by this
-document. Core remains keyless, and the choice between key-based signing and
-waiting for URI-SAN support is **postponed**, so an installed machine still does
-not enforce signatures.
+**Status: decided, 2026-10-25.** DeskOS Core follows the projectbluefin model:
+keyless OIDC signatures, no key file and no consumer enforcement; verification
+is manual. An organization that chooses enforcement keeps a key outside its
+repository and uses a key-based policy, so `bootc` can reject an unsigned
+update. The key-based recipe is verified in the lab; that organization's policy,
+installer and key-rotation paths are not. This document changes no DeskOS Core
+image policy or key.
 
 CI verifies signatures with `cosign`. That proves the gate checked a digest; it
 does not prove an installer or an installed workstation rejects an unsigned or
-wrongly signed image. This page defines what to test and where the limits are.
+wrongly signed image. Core accepts that gap; an organization that requires
+enforcement closes it with a key. This page records the verified recipe and
+where each model stops.
 
 ## What is true today
 
@@ -16,14 +20,16 @@ wrongly signed image. This page defines what to test and where the limits are.
   for the workflow's OIDC identity and Rekor records the signature. Three
   attestations are attached (SBOM reference, reviewed exceptions, accepted
   matches).
-- **The enforcement decision is postponed (2026-10-25).** Core keeps keyless
-  signatures for now. Switching to key-based signing, or waiting for a
-  containers/image that can pin a GitHub URI-SAN, is revisited after the
-  Anaconda test. Meanwhile a machine cannot enforce authenticity.
-- DayTwo RHEL images are signed with a **key** kept outside its repository, with
-  no transparency log.
-- No generated image currently ships a `/etc/containers/policy.json`; the
-  containers/image default accepts an image without a signature.
+- **Core decided on 2026-10-25 to follow projectbluefin:** keyless signatures,
+  no key file, and no enforcement on the installed machine. A person verifies a
+  digest manually. An organization that chooses enforcement keeps key-based
+  signing; making that signature a policy requirement on update is that
+  organization's work.
+- Organization-owned RHEL images are signed with a **key** kept outside its
+  repository, with no transparency log.
+- No generated **Core** image ships a `/etc/containers/policy.json`; the
+  containers/image default accepts an image without a signature. That
+  organization's policy would be the enforcing half of the split.
 - `bootc` honors `containers-policy.json` when fetching images. Its upstream
   documentation says the default does not require signatures, and that this is
   not a bootc vulnerability.
@@ -32,15 +38,25 @@ wrongly signed image. This page defines what to test and where the limits are.
   requires the policy's **default** to demand signatures; it does not author the
   identity constraints for us.
 - The Anaconda `ostreecontainer` path used by the ISO has not been tested with a
-  requiring policy.
+  requiring policy; this matters to an organization that enforces, not to
+  Core's manual path.
+
+## Core: keyless, manual verification
+
+Core's signature is evidence, not enforcement. The release page must publish
+the digest and the exact workflow identity; a person verifies before installing
+or updating. `bootc` still accepts an unsigned image, so a user who does not run
+the check is not protected by it. Rekor remains the transparency record: an
+unexpected signature from the workflow identity can be investigated after the
+fact.
 
 ## Candidate mechanisms
 
 | Mechanism | What it can require | Limits to test |
 |---|---|---|
 | `signedBy` (GPG simple signing) | a GPG key over the image | cosign does not produce this signature format; not a match for the current signatures |
-| `sigstoreSigned` with `keyPath`/`keyData` | a cosign signature by a named public key | Core is keyless today; DayTwo already has a key. Verification and policy provisioning are local/offline |
-| `sigstoreSigned` with `fulcio` | a Fulcio certificate from an expected OIDC issuer, constrained to a subject (the documented policy field is an email) | **the workflow identity we use is a GitHub URL, not an email.** Whether the exact workflow/ref can be expressed needs a lab; a repository-wide identity regex would be too broad for release authorization |
+| `sigstoreSigned` with `keyPath`/`keyData` | a cosign signature by a named public key | Core is keyless; an organization that enforces already has a key. Verification and policy provisioning are local/offline |
+| `sigstoreSigned` with `fulcio` | a Fulcio certificate from an expected OIDC issuer, constrained to a subject (the documented policy field is an email) | **the workflow identity we use is a GitHub URL, not an email.** containers/image cannot express it; a repository-wide identity regex would be too broad for release authorization. Core therefore does not enforce keyless signatures |
 | `bootc --enforce-container-sigpolicy` | that the policy is not `insecureAcceptAnything` | it does not check which identity is allowed; the policy must do that |
 | Installer/Anaconda `ostreecontainer` | unclear | test with a requiring policy; if it does not enforce, the install path needs a separate control |
 | A `deskos` wrapper or hook that calls `cosign verify` | exact issuer/identity | a command, not enforcement of every pull; acceptable only if it cannot be bypassed and covers install, switch and update |
@@ -54,7 +70,7 @@ digest or repository.
 
 A policy is part of the image. That creates a circular problem: if a release is
 compromised, the next trusted policy would arrive through the same update path.
-The design must answer:
+For an organization that chooses enforcement, the design must answer:
 
 - where the policy and public trust roots live (image `/etc`, a local
   configuration system, or an installer-provided file);
@@ -105,7 +121,8 @@ cosign sign --key cosign.key \
 `--allow-http-registry` / `--allow-insecure-registry` were needed only for the
 lab's HTTP registry; they are not part of the recipe for a TLS registry.
 
-**Results on bootc 1.17.1, containers/image from Podman 5.8.9, cosign 3.1.3:**
+**Results on bootc 1.17.1, containers/image from Podman 5.8.9, cosign 3.1.3.**
+This is the enforced route; Core does not use it.
 
 | Case | Result |
 |---|---|
@@ -132,19 +149,33 @@ composefs by the ostree-only `/run/ostree-booted` test (#177); with the fix in
 #178, `deskos update` stages the signed image and the unit runs `bootc upgrade`
 instead of being skipped.
 
-**Bluefin / Universal Blue** documents the same shape: a `sigstoreSigned`
-entry with a key and `use-sigstore-attachments`, plus the cosign 3
-compatibility flags (`--new-bundle-format=false`, `--registry-referrers-mode=legacy`).
-Its open issue is about keyless Fulcio identity, not about whether key-based
-policy works. No repository-wide identity regex is used as release authorization
-here.
+**Bluefin has two signing models, not a migration.** Bluefin Classic
+(`ghcr.io/ublue-os/bluefin`) is key-based with a `cosign.pub`; the newer
+`projectbluefin` images are keyless. `projectbluefin/common` carries the
+key-based policy for `ghcr.io/ublue-os`, not for the keyless projectbluefin
+repository, so `--enforce-container-sigpolicy` does not protect the latter.
+The open issue there is the keyless Fulcio identity, not whether the key-based
+policy works. No repository-wide identity regex is used as release
+authorization here.
 
-**Not yet tested:** the Anaconda `ostreecontainer` install path; keyless Fulcio
-(containers/image binds Fulcio identity by issuer and subject email, while a
-GitHub Actions certificate carries a URI SAN); offline verification; key
-rotation (loss of trust is covered by the wrong-key case).
+**Upstream status (2026-10-25).** containers/image's `fulcio` policy accepts
+`oidcIssuer` and `subjectEmail`; it does not match a URI SAN. The pull request
+that would have added URI matching
+([containers/image#2235](https://github.com/containers/image/pull/2235)) was
+closed unmerged after the maintainers argued for a more specific typed claim.
+BYOPKI (`pki`) supports `subjectEmail` and `subjectHostname` for a custom CA,
+not a Fulcio certificate, and sigstore bundle support is still open
+([container-libs#388](https://github.com/podman-container-tools/container-libs/issues/388)).
+No merged or committed upstream change pins a GitHub Actions URI SAN, so
+key-based signing remains the only verified enforcement route.
 
-## Prototype plan (disposable lab)
+**Not yet tested for an organization that enforces:** the Anaconda
+`ostreecontainer` install path; offline key-based verification; key rotation
+and lost-key recovery. Keyless Core enforcement is not a pending test:
+containers/image cannot pin a GitHub URI SAN, and Core accepts manual
+verification instead.
+
+## Enforced prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
    Sign a test image with that key; prove an unsigned image, a wrong key and a
@@ -153,34 +184,36 @@ rotation (loss of trust is covered by the wrong-key case).
    `insecureAcceptAnything` default; prove the flag fails.
 3. Run the Anaconda `ostreecontainer` install path with the requiring policy;
    record whether install is enforced or silently accepts.
-4. Test a keyless `fulcio` policy. Determine whether the workflow URL can be
-   constrained at all; if the policy can only name an email, record that keyless
-   Core signatures cannot be pinned exactly by this mechanism. Enforcement
-   remains off until a mechanism is chosen.
-5. Cut the network to Fulcio/Rekor and repeat the key and keyless cases; record
-   which verification still works offline.
+4. Keyless `fulcio` policy: confirm that containers/image can match only an
+   issuer and subject email, not the GitHub URI SAN. Core stays manual; revisit
+   only if upstream adds a typed identity claim.
+5. Cut the network and repeat the key cases; record what an enforcing
+   organization can verify offline.
 6. Test both update paths: the generated image timer (`bootc upgrade`) and
-   `deskos update`.
-7. Exercise rotation: a new key/identity, a policy update, and loss of trust in
-   a digest that previously verified.
+   `deskos update`. Both were exercised with a signed and an unsigned digest;
+   keep them in the evaluator.
+7. Exercise key rotation: a new key, a policy update, and recovery after a key
+   is lost.
 
 Each case needs a positive and a negative result, a recorded digest, the bootc
 version and the containers/image version.
 
-## Decisions this design does not make
+## Decisions
 
-- Core keyless or key-based signatures for the enforced path; if key-based, the
-  key's custody, rotation and backup (P0-04). **Postponed 2026-10-25:** Core
-  stays keyless and enforcement stays off; revisit after the Anaconda test or
-  URI-SAN support.
-- Whether the policy is baked into the image, provisioned by the installer, or
-  both; and how a compromised-release policy update is delivered.
+- **Decided 2026-10-25:** Core follows projectbluefin — keyless OIDC, no key
+  file, no consumer enforcement, manual verification. An organization that
+  chooses enforcement keeps key-based signing; key custody, rotation and backup
+  stay downstream (P0-04).
+- How an enforcing organization bakes the policy into the image or provisions
+  it from the installer, and how a compromised-release policy update is
+  delivered.
 - Whether a DeskOS-specific verifier is acceptable, given that a manual
-  `cosign verify` is explicitly insufficient.
+  `cosign verify` is explicitly insufficient for enforcement.
 - The exact identity syntax supported by the installed containers/image for
   Fulcio certificates.
 - RHEL: the downstream organization owns the key and policy; this repository
   only documents the mechanism.
 
-No new resource kind is proposed. A working experiment and a human-approved ADR
-would be required first.
+No new resource kind is proposed. The split matches
+[ADR 0010](../adr/0010-artifact-evidence-and-supply-chain.md); the organization
+records its policy and rotation in its own repository.
