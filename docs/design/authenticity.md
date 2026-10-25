@@ -114,6 +114,16 @@ The positive acceptance cases therefore remain unproven: an authorized image
 must be accepted by the policy, not only rejected. The installer path was not
 tested in this lab.
 
+A follow-up enabled `use-sigstore-attachments: true` for the lab registry in
+`/etc/containers/registries.d/` and re-signed C with cosign 3's default bundle
+format. The switch still failed with “no signature exists”. The bundle tag
+(`sha256-<digest>`) is an **OCI index**, while containers/image's attachment
+lookup requested a manifest; the legacy `.sig` tag was not accepted either.
+This is a version-specific incompatibility between cosign 3's attachment shape
+and the containers/image in bootc 1.17.1, not proof that cosign signatures can
+never be consumed. Testing an older cosign bundle or a newer containers/image
+is the next concrete step.
+
 ## Prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
