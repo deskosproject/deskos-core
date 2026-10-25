@@ -70,8 +70,8 @@ class GrubEnvTests(unittest.TestCase):
             ("bootc-bootc-1", "options composefs.digest=?v1-sha512-12:new"),
             ("bootc-bootc-0", "options composefs.digest=?v1-sha512-12:old"),
         ]
-        self.assertEqual(driver.grub_entry_index(entries, "old"), 1)
-        self.assertEqual(driver.grub_entry_index(entries, "new"), 0)
+        self.assertEqual(driver.grub_entry_index(entries, "old"), 0)
+        self.assertEqual(driver.grub_entry_index(entries, "new"), 1)
         with self.assertRaises(ValueError):
             driver.grub_entry_index(entries, "missing")
 

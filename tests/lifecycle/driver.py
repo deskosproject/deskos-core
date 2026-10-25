@@ -188,11 +188,11 @@ def with_grub_default(text, value="1"):
 def grub_entry_index(entries, verity):
     """Return the menu index of the BLS entry whose options carry `verity`.
 
-    GRUB orders BLS entries by `sort-key` from high to low; that is why the
+    GRUB orders BLS entries by `sort-key` from low to high; that is why the
     freshly installed image can be entry 1 after a rollback. Entries is a
     sequence of (sort-key, options) pairs.
     """
-    ordered = sorted(entries, key=lambda entry: entry[0], reverse=True)
+    ordered = sorted(entries, key=lambda entry: entry[0])
     for index, (_, options) in enumerate(ordered):
         if verity and verity in options:
             return index
