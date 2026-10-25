@@ -82,6 +82,7 @@ it boots the disk as shipped.
 | Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
+| Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `deskos-flatpak-preinstall` state and `flatpak list --system` | service succeeded and declared apps are installed | failed unit or missing app | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state | wrong deployment, lost `/var`, failed retry | unmodified, dispatch |
@@ -92,9 +93,9 @@ or an explicit unverified item, not a pass. The session row is an **instrumented
 autologin session**, not proof of an interactive GDM login.
 
 **Not proved by these probes:** an interactive GDM login and the Wayland session
-type through GDM; launching every declared favorite; screen locking; offline
-login; Flatpak install after reconnection; suspend, battery, display and other
-hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
+type through GDM; launching every declared favorite; offline login; Flatpak
+install after reconnection; suspend, battery, display and other hardware
+behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
 
 ## What is not covered
 
