@@ -211,8 +211,11 @@ identity, and compare the SBOM you obtained against the hash the reference
 names. Do not use `--insecure-ignore-tlog` on this path.
 
 A verification command is not enforcement: the installer and the installed
-machine accept what their `containers-policy.json` allows. That gap, and the
-prototype needed to close it, is [the authenticity design](design/authenticity.md).
+machine accept what their `containers-policy.json` allows. Core's decision on
+2026-10-25 is keyless signatures with manual verification; an organization that
+chooses enforcement keeps key-based signing so its policy can reject unsigned
+updates. That split, the verified recipe and the remaining limits are in
+[the authenticity design](design/authenticity.md).
 
 ```bash
 # One repository per platform and release:
