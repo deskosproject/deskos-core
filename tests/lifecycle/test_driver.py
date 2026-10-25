@@ -65,6 +65,16 @@ class GrubEnvTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             driver.with_grub_default(self.ENV, "previous")
 
+    def test_finds_the_entry_by_verity_and_uses_grub_order(self):
+        entries = [
+            ("bootc-bootc-1", "options composefs.digest=?v1-sha512-12:new"),
+            ("bootc-bootc-0", "options composefs.digest=?v1-sha512-12:old"),
+        ]
+        self.assertEqual(driver.grub_entry_index(entries, "old"), 0)
+        self.assertEqual(driver.grub_entry_index(entries, "new"), 1)
+        with self.assertRaises(ValueError):
+            driver.grub_entry_index(entries, "missing")
+
 
 class StatusTests(unittest.TestCase):
     STATUS = (

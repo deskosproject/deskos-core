@@ -1,11 +1,12 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
 **Status:** design, evaluator, driver and a dispatch-only workflow
-(2026-10-24; boot-failure recovery added 2026-10-25). `lifecycle.yml` runs the
-driver on manual dispatch; no pull request and no schedule runs it. It first ran
-end to end on 2026-10-24:
+(2026-10-24; boot-failure recovery added and passed 2026-10-25).
+`lifecycle.yml` runs the driver on manual dispatch; no pull request and no
+schedule runs it. It first ran end to end on 2026-10-24:
 install and stage on boot 1, B and rollback on boot 2, A on boot 3,
-evaluator `ok`.
+evaluator `ok`. The boot-failure run passed on 2026-10-25: D failed, the host
+selected A by its composefs verity, and the recovery boot held the marker.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
 SSH, which the harness automates. `docs/roadmap.md` (Milestone 3) lists
 lifecycle as remaining; a staged update and a manual rollback were validated
@@ -163,9 +164,10 @@ SSH, with the failure in the serial log.
 title and the timeout is one second, so blind key injection is neither
 repeatable nor safe. The accepted mechanism is **host-side bootloader
 recovery**: after the failed boot, the driver attaches the disk with
-`qemu-nbd`, mounts its root, sets `default=1` in `/boot/grub2/grubenv`, boots
-again, and verifies A. This tests the previous boot entry as the recovery path;
-it does not test a person selecting an entry in the menu.
+`qemu-nbd`, mounts its root, finds the installed entry by its composefs verity
+in the BLS options, sets that index in `/boot/grub2/grubenv`, boots again, and
+verifies A. This tests the previous boot entry as the recovery path; it does
+not test a person selecting an entry in the menu.
 
 **Evidence.** `serial-failed.log` (the failed boot), the staged and recovered
 blocks in `lifecycle.json`, the recovered `bootc status`, and the same `/var`
@@ -193,9 +195,15 @@ staged with `bootc upgrade`. After the reboot:
 
 So the previous boot entry does recover the machine. The lab automated it by
 editing the bootloader environment from the host, not by a person choosing an
-entry. The driver now uses the same host-side mechanism: identical titles and a
-one-second timeout make blind QMP key injection unsafe. Menu behavior itself is
-not tested.
+entry. The driver now uses the same host-side mechanism: after the rollback it
+has three BLS entries, matches the installed deployment by its composefs
+verity, and does not rely on a fixed index. Identical titles and a one-second
+timeout make blind QMP key injection unsafe. Menu behavior itself is not tested.
+
+The automated run on 2026-10-25 passed: boot 1 installed A, boot 2 staged B,
+boot 3 booted B and rolled back, boot 4 failed in D before SSH, and boot 5
+recovered A with the `/var` marker intact. `lifecycle.json` records the failed
+candidate and the recovery block; `serial-failed.log` holds the failed boot.
 
 ## Driver
 
