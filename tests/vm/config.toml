@@ -1,0 +1,6 @@
+# Test disks only: a 10.5 GiB default root is too small for the declared system
+# Flatpaks (Firefox plus its runtime) and makes the preinstall fail on a test
+# machine that should be able to materialize them.
+[[customizations.filesystem]]
+mountpoint = "/"
+minsize = "24 GiB"
