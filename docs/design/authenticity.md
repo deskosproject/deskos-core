@@ -62,69 +62,76 @@ The design must answer:
 
 This is the part that cannot be solved by adding a JSON file and calling it done.
 
-## Lab result: registry signatures are not policy consumable (2026-10-25)
+## Working recipe and lab result (2026-10-25)
 
-A disposable lab on one host (Podman 5.8.9, containers/image from that Podman,
-cosign 3.1.3, a local `registry:2` over HTTP, `busybox`) produced:
+The combination was found after the first attempts failed for two avoidable
+reasons: cosign 3's default bundle is an OCI index that this containers/image
+does not fetch as an attachment, and a digest signature has no tag to satisfy
+`matchRepoDigestOrExact` when the image is pulled by tag. Signing in cosign's
+legacy referrers format and using `matchRepository` works.
 
-- **Positive:** signing the pushed digest with a generated key and verifying it
-  with `cosign verify --key` succeeds; both the legacy `.sig` tag and the v3
-  bundle tag are written to the registry.
-- **Negative:** `podman pull --signature-policy` with a `sigstoreSigned`
-  `keyPath` requirement rejects the same image with "A signature was required,
-  but no signature exists", for both tag and digest references.
-- **Why:** Podman's debug log shows it looks in the **local** sigstore store
-  (`.../containers/sigstore/lab/busybox@sha256=.../signature-1`) and prints
-  "Not looking for sigstore attachments: disabled by configuration". It does not
-  fetch the registry's `.sig` or bundle tag for this policy type.
-- A default policy (`"default": [{"type":"sigstoreSigned",...}]`) fails the same
-  way, so this is not a scope-matching mistake.
+**Image policy** (`/etc/containers/policy.json`), with the public key baked into
+the image:
 
-**Consequence:** on this version, the current registry-stored cosign signature
-is **not consumable** by containers/image policy without separately populating
-local signature storage. A consumer-enforcement design cannot assume that
-`cosign sign` plus `sigstoreSigned` is enough. The bootc install/switch/upgrade
-path uses the same containers/image code and must be tested separately; this lab
-does not prove or disprove it.
+```json
+{"default":[{"type":"sigstoreSigned",
+            "keyPath":"/etc/containers/cosign.pub",
+            "signedIdentity":{"type":"matchRepository"}}]}
+```
 
-This is a negative result, not a product defect: the signature is valid and
-cosign verifies it. The gap is between cosign's registry storage and the policy
-verifier's lookup.
+**Signature discovery** (`/etc/containers/registries.d/<name>.yaml`):
 
-## Lab result: bootc policy enforcement (2026-10-25)
+```yaml
+docker:
+  registry.example:5000:
+    use-sigstore-attachments: true
+```
 
-On an installed CS10 test disk (`bootc 1.17.1`, the same local HTTP registry,
-signed and unsigned derived images), with an SSH shell as root:
+**Signing** with cosign 3, then switch or upgrade normally:
 
-| Policy | Operation | Result |
-|---|---|---|
-| none | `bootc switch --enforce-container-sigpolicy …:b` | **rc 0** — the unsigned image was staged; the flag did not require a policy to exist |
-| `default: reject` | `bootc switch …:c` | rc 1, “rejected by policy” — the policy blocks |
-| `sigstoreSigned` + `keyPath`, image signed with cosign | `bootc switch …:c` | rc 1, “A signature was required, but no signature exists” |
-| `signedBy` GPG + `keyPath`, image signed by `skopeo --sign-by` | `bootc switch …:signed`, by tag and digest | rc 1, same “no signature exists” |
+```bash
+cosign sign --key cosign.key \
+  --new-bundle-format=false --use-signing-config=false --tlog-upload=false \
+  --registry-referrers-mode=legacy --yes \
+  registry.example:5000/os/image@sha256:<digest>
+```
 
-So enforcement can **block** (the reject case), but neither registry-stored
-cosign signature nor the simple-signing `.sig` tag was found by the verifier.
-`--enforce-container-sigpolicy` alone is not a control: it did not reject the
-unsigned switch when no policy was present. The missing piece is how a
-signature reaches the verifier (local sigstore storage, a configured lookaside,
-or a different mechanism), not merely adding a policy file.
+`--allow-http-registry` / `--allow-insecure-registry` were needed only for the
+lab's HTTP registry; they are not part of the recipe for a TLS registry.
 
-The positive acceptance cases therefore remain unproven: an authorized image
-must be accepted by the policy, not only rejected. The installer path was not
-tested in this lab.
+**Results on bootc 1.17.1, containers/image from Podman 5.8.9, cosign 3.1.3:**
 
-A follow-up enabled `use-sigstore-attachments: true` for the lab registry in
-`/etc/containers/registries.d/` and re-signed C with cosign 3's default bundle
-format. The switch still failed with “no signature exists”. The bundle tag
-(`sha256-<digest>`) is an **OCI index**, while containers/image's attachment
-lookup requested a manifest; the legacy `.sig` tag was not accepted either.
-This is a version-specific incompatibility between cosign 3's attachment shape
-and the containers/image in bootc 1.17.1, not proof that cosign signatures can
-never be consumed. Testing an older cosign bundle or a newer containers/image
-is the next concrete step.
+| Case | Result |
+|---|---|
+| signed with the pinned key, policy `sigstoreSigned` + `matchRepository` | **accepted and staged** (rc 0); `--enforce-container-sigpolicy` also rc 0 |
+| same, unsigned image | rejected: “A signature was required, but no signature exists” |
+| same, signed by another key | rejected: “cryptographic signature verification failed” |
+| signature identity `127.0.0.1:5000/…`, image pulled as `registry.lab:5000/…` | rejected: identity not accepted |
+| no policy, `--enforce-container-sigpolicy` | **accepted the unsigned image** (rc 0) |
+| `default: reject` | rejected |
+| cosign bundle copied into the local sigstore store | rejected: unrecognized signature format |
 
-## Prototype plan (disposable lab)
+So key-based enforcement works **only when all three pieces are present**: a
+policy that names the key and identity, `use-sigstore-attachments` for the
+registry, and a signature stored in the legacy referrers format that this
+containers/image reads. `--enforce-container-sigpolicy` alone is still not a
+control: with no policy it let an unsigned switch through.
+
+**Bluefin / Universal Blue** documents the same shape: a `sigstoreSigned`
+entry with a key and `use-sigstore-attachments`, plus the cosign 3
+compatibility flags (`--new-bundle-format=false`, `--registry-referrers-mode=legacy`).
+Its open issue is about keyless Fulcio identity, not about whether key-based
+policy works. No repository-wide identity regex is used as release authorization
+here.
+
+**Not yet tested:** the Anaconda `ostreecontainer` install path; keyless Fulcio
+(containers/image binds Fulcio identity by issuer and subject email, while a
+GitHub Actions certificate carries a URI SAN); both update paths (`bootc
+upgrade` timer and `deskos update`, which use the same library); offline
+verification; key rotation and loss of trust in a digest that previously
+verified.
+
+## Prototype plan (disposable lab)## Prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
    Sign a test image with that key; prove an unsigned image, a wrong key and a
