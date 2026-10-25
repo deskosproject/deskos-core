@@ -415,11 +415,14 @@ class Driver:
         name = f"journal-boot-{self.boots}-{step}.log"
         (self.work / name).write_text(journal)
 
-    def reboot(self):
+    def reboot(self, expect_ssh=True):
         self.guest("systemctl reboot", check=False)
         self.boots += 1
         time.sleep(15)
-        self.wait_ssh()
+        if expect_ssh:
+            self.wait_ssh()
+        else:
+            self.wait_no_ssh()
 
     def push_image(self, name, key):
         self.podman("push", "--tls-verify=false", f"localhost/deskos-lifecycle:{name}",
@@ -525,18 +528,14 @@ class Driver:
         self.say("boot the failed candidate")
         status = self.status()
         installed_verity = booted_verity(status)
-        candidate_verity = staged_verity(status)
-        if not installed_verity or not candidate_verity:
-            self.failure.append("booted or staged deployment has no composefs verity")
+        if not installed_verity:
+            self.failure.append("booted deployment has no composefs verity")
             return
-        self.kill_qemu()
+        # A clean shutdown lets bootc finalize the staged deployment and write
+        # its BLS entry. Killing QEMU here would leave the previous entry as
+        # default and the candidate would never be tried.
         try:
-            self.set_boot_default(verity=candidate_verity)
-        except (HarnessError, ValueError) as exc:
-            self.failure.append(f"could not select the candidate boot entry: {exc}")
-            return
-        try:
-            self.boot(expect_ssh=False)
+            self.reboot(expect_ssh=False)
         except HarnessError as exc:
             self.failure.append(str(exc))
         serial = (self.work / "serial.log").read_text()
