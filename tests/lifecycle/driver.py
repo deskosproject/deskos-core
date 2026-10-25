@@ -128,11 +128,6 @@ def booted_verity(status):
     return (booted.get("composefs") or {}).get("verity")
 
 
-def staged_verity(status):
-    staged = (status.get("status") or {}).get("staged") or {}
-    return (staged.get("composefs") or {}).get("verity")
-
-
 def image_b_containerfile():
     """The image B Containerfile: both markers in one RUN instruction.
 
@@ -444,17 +439,13 @@ class Driver:
                 return device
         raise HarnessError("no free nbd device")
 
-    def set_boot_default(self, value="1", verity=None, other=False):
+    def set_boot_default(self, value="1", verity=None):
         """Mount the installed root and set the GRUB default entry.
 
-        GRUB is not driven through QMP: the two BLS entries have identical
-        titles and a one-second timeout, so key injection is not deterministic.
-        The accepted recovery path is host-side: mount the disk, set the
-        previous entry as default, boot it.
-
-        When `verity` is given, find the entry that boots that deployment. With
-        `other`, set the other entry (the staged candidate) and return the
-        installed deployment's index for the recovery step.
+        GRUB is not driven through QMP: the BLS entries have identical titles
+        and a one-second timeout, so key injection is not deterministic. The
+        accepted recovery path is host-side: mount the disk, find the installed
+        entry by its composefs verity, set its index and boot it.
         """
         self.sh(*self.sudo, "modprobe", "nbd", check=False)
         nbd = self.free_nbd()
@@ -499,7 +490,7 @@ class Driver:
                                 options = line
                         entries.append((sort_key, options))
                     installed = grub_entry_index(entries, verity)
-                    value = str(1 if installed == 0 else 0) if other else str(installed)
+                    value = str(installed)
                 grubenv = mount / GRUBENV
                 raw = subprocess.run(
                     [*self.sudo, "cat", str(grubenv)], check=True,
