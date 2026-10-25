@@ -131,7 +131,7 @@ upgrade` timer and `deskos update`, which use the same library); offline
 verification; key rotation and loss of trust in a digest that previously
 verified.
 
-## Prototype plan (disposable lab)## Prototype plan (disposable lab)
+## Prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
    Sign a test image with that key; prove an unsigned image, a wrong key and a

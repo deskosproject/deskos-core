@@ -280,6 +280,15 @@ how-to: [supply-chain.md](supply-chain.md).
 Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
 its own.
 
+- **Signature identity for consumer enforcement (P0-03).** The lab verifies
+  that key-based `sigstoreSigned` policy blocks unsigned, wrong-key and
+  wrong-identity images on `bootc switch`. The keyless Fulcio certificate used
+  by CI cannot be pinned by containers/image, which matches issuer plus subject
+  email while a GitHub Actions certificate carries a URI SAN. Decision pending:
+  sign enforced Core images with a key, or wait for URI-SAN identity support.
+  Until that decision, CI signatures are manually verifiable but an installed
+  machine cannot enforce them. See
+  [authenticity.md](design/authenticity.md).
 - **Documentation restructure (in progress).** The platform matrix now has one
   home, [platforms.md](platforms.md), and the README states the
   `YAML → validate → compose → plan → Containerfile → image → disk` line. Still
