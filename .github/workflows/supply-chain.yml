@@ -550,8 +550,8 @@ jobs:
           if-no-files-found: warn
 
   evidence:
-    needs: build
-    if: inputs.publish && github.ref == 'refs/heads/main' && needs.build.result == 'success'
+    needs: publish
+    if: inputs.publish && github.ref == 'refs/heads/main' && needs.publish.result == 'success'
     runs-on: ubuntu-24.04
     environment: evidence-write
     permissions:
