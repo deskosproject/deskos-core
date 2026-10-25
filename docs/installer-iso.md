@@ -122,7 +122,7 @@ This repository does not build RHEL. The same steps apply in a downstream
 organization's repository on an entitled host logged in to
 `registry.redhat.io`, with
 `registry.redhat.io/rhel10/bootc-image-builder` instead of the CentOS
-builder. The DayTwo organization has built and installed a private RHEL 10
+builder. A downstream organization has built and installed a private RHEL 10
 ISO in KVM; that evidence belongs to its repository.
 
 > [!IMPORTANT]
@@ -141,11 +141,11 @@ updates through the `bootc switch` reference.
 
 **Not tested in CI:** no check installs the ISO; it is built, signed and
 published, and only a person has installed one. That gap reached a published
-ISO: on 2026-10-23 the DayTwo RHEL ISO carried `graphical --non-interactive`,
-which RHEL 10.2's Anaconda aborts at the progress screen, and the machine
-rebooted. The kickstart in this document no longer uses the flag. The test-only
-ISO was installed unattended in KVM on 2026-10-24 and reached GNOME Initial
-Setup; that is a manual run, not a CI check.
+ISO: on 2026-10-23 a downstream organization's RHEL ISO carried
+`graphical --non-interactive`, which RHEL 10.2's Anaconda aborts at the progress
+screen, and the machine rebooted. The kickstart in this document no longer uses
+the flag. The test-only ISO was installed unattended in KVM on 2026-10-24 and
+reached GNOME Initial Setup; that is a manual run, not a CI check.
 
 Because storage is interactive, this ISO cannot finish an install without a
 person: a QEMU check can assert that the installer reaches the hub with an
