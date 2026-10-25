@@ -111,10 +111,12 @@ Details in
 - **Tier C lifecycle (A -> B -> A):** designed and implemented
   (`tests/lifecycle/driver.py`), and it ran end to end on CS10 on 2026-10-24
   (install and stage, boot B, roll back, boot A; power loss mid-upgrade
-  recovered). It is **manual**: it needs rootful podman, qemu and `/dev/kvm`,
-  and the workflow that will call it is dispatch-only. It becomes a gate only
-  after it has been green on real builds for a while. The ostree-write
-  interruption window is still untested.
+  recovered). On 2026-10-25 it also staged a candidate that cannot boot,
+  confirmed it never reached SSH, and recovered the previous deployment by
+  its composefs verity. It is **manual**: it needs rootful podman, qemu,
+  `qemu-nbd` and `/dev/kvm`, and the workflow that will call it is
+  dispatch-only. It becomes a gate only after it has been green on real builds
+  for a while. The ostree-write interruption window is still untested.
 - **Installer ISO:** no check installs one. The ISO is built, signed and
   published, but nothing boots Anaconda and asserts it reaches the progress
   screen and installs. On 2026-10-23 an organization's RHEL ISO shipped a kickstart
