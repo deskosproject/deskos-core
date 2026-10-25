@@ -268,6 +268,13 @@ sleep 3
 echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
   --object-path /org/gnome/ScreenSaver \
   --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
+# The preinstall unit is Type=exec and starts after multi-user, so it can still
+# be downloading when the session appears. Wait for it to stop, bounded.
+for i in $(seq 1 60); do
+  [ "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" != active ] && break
+  sleep 2
+done
+echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
 """
 
 
@@ -951,6 +958,13 @@ def evaluate(values, plan, journal="", skel_rels=()):
         check("wallpaper as planned", values.get("picture_uri") == wp, f"got {values.get('picture_uri')} want {wp}")
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
+    declared_flatpaks = {a["id"] for a in
+                         plan.get("provisioning", {}).get("flatpakApplications") or []}
+    if declared_flatpaks:
+        installed = {a for a in (values.get("flatpak_apps") or "").split(",") if a}
+        missing = sorted(declared_flatpaks - installed)
+        check("declared system Flatpaks are installed", not missing,
+              f"missing={','.join(missing) or 'none'}")
     if any(p["name"] == "firefox" for p in plan.get("artifact", {}).get("rpmPackages", [])):
         check("Firefox runs headless", values.get("firefox_headless_exit") == "0" and values.get("firefox_screenshot") == "yes",
               f"exit={values.get('firefox_headless_exit')} screenshot={values.get('firefox_screenshot')}")
