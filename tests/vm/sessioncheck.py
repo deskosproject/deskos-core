@@ -21,6 +21,7 @@ unmodified boot whose overlay was kept (bootcheck.py --keep-overlay).
 
 import argparse
 import base64
+import re
 import hashlib
 import json
 import os
@@ -933,10 +934,16 @@ def evaluate(values, plan, journal="", skel_rels=()):
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")
+    # Only the ids the plan declares. The vendor's default favorite list can
+    # name applications Core does not install (GNOME Software, for one); that is
+    # not a DeskOS intent and this probe does not claim it.
+    declared_favorites = set(re.findall(r"'([^']+\.desktop)'", fav or ""))
     for key, value in values.items():
         if not key.startswith("favorite_entry_"):
             continue
         app, _, found = value.rpartition(":")
+        if app not in declared_favorites:
+            continue
         check(f"favorite entry {app}", found == "present",
               f"{app} is {'installed' if found == 'present' else 'not installed'}")
     wp = dconf_value(plan, "/org/gnome/desktop/background/picture-uri")
