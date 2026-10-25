@@ -36,6 +36,36 @@ class ImageBTests(unittest.TestCase):
         self.assertNotIn("\n &&", text)
 
 
+class ImageDTests(unittest.TestCase):
+    def test_the_candidate_removes_the_init_binary(self):
+        text = driver.image_d_containerfile()
+        self.assertIn("FROM localhost/deskos-lifecycle:a", text)
+        self.assertIn("RUN rm -f /usr/lib/systemd/systemd", text)
+
+
+class GrubEnvTests(unittest.TestCase):
+    ENV = "default=0\nsaved_entry=0\n" + "#" * 32 + "\n"
+
+    def test_sets_the_default_without_changing_the_block_size(self):
+        updated = driver.with_grub_default(self.ENV, "1")
+        self.assertIn("default=1\n", updated)
+        self.assertEqual(len(updated), len(self.ENV))
+
+    def test_inserts_a_default_when_the_environment_has_none(self):
+        text = "# GRUB Environment Block\n# WARNING: do not edit\n" + "#" * 64
+        updated = driver.with_grub_default(text, "1")
+        self.assertIn("default=1\n", updated)
+        self.assertEqual(len(updated), len(text))
+
+    def test_refuses_an_environment_with_no_padding(self):
+        with self.assertRaises(ValueError):
+            driver.with_grub_default("# GRUB Environment Block\n# WARNING: do not edit\n", "1")
+
+    def test_refuses_a_value_that_changes_the_block_size(self):
+        with self.assertRaises(ValueError):
+            driver.with_grub_default(self.ENV, "previous")
+
+
 class StatusTests(unittest.TestCase):
     STATUS = (
         'Some banner\n{"status": {"booted": {"image": {"imageDigest": "sha256:a"}},'

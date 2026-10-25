@@ -1,9 +1,10 @@
 name: lifecycle
 
 # Tier C: install a CS10 disk, stage a second deployment from a local registry,
-# reboot into it, roll back, and (optionally) lose power mid-upgrade. It needs
-# rootful podman, qemu and /dev/kvm, takes about 40 minutes with the image
-# build, and is **dispatch only**: a check, never a publish.
+# reboot into it, roll back, lose power mid-upgrade and (optionally) recover a
+# candidate that never boots. It needs rootful podman, qemu, qemu-nbd and
+# /dev/kvm, takes about 40 minutes with the image build, and is **dispatch only**:
+# a check, never a publish.
 #
 # See docs/design/lifecycle.md and tests/lifecycle/README.md. The driver stays
 # manual until it has been green here for a while; this workflow is how it gets
@@ -13,6 +14,10 @@ on:
     inputs:
       interrupt:
         description: Also interrupt an upgrade with a power loss
+        type: boolean
+        default: true
+      boot_failure:
+        description: Also stage a candidate that cannot boot and recover the previous entry
         type: boolean
         default: true
 
@@ -83,9 +88,11 @@ jobs:
       - name: Run the lifecycle driver
         env:
           INTERRUPT: ${{ inputs.interrupt }}
+          BOOT_FAILURE: ${{ inputs.boot_failure }}
         run: |
           args=(--image "$IMAGE" --workdir "$WORK/run" --disk-size-gb 14)
           if [ "$INTERRUPT" = "true" ]; then args+=(--interrupt); fi
+          if [ "$BOOT_FAILURE" = "true" ]; then args+=(--boot-failure); fi
           python3 tests/lifecycle/driver.py "${args[@]}"
 
       - name: Upload the evidence
@@ -97,6 +104,7 @@ jobs:
             ${{ env.WORK }}/run/lifecycle.json
             ${{ env.WORK }}/run/summary.md
             ${{ env.WORK }}/run/serial.log
+            ${{ env.WORK }}/run/serial-failed.log
             ${{ env.WORK }}/run/journal-*.log
           if-no-files-found: warn
           retention-days: 14

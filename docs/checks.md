@@ -13,7 +13,7 @@ not whether a branch protection rule is configured.
 | `artifacts.yml` | pull request, `main`, dispatch | declared URLs resolve and bytes match their checksums; repositories look like repositories | job log and summary |
 | `vm-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
 | `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots and (only on a `publish=true` dispatch from `main`) pushes and signs one digest | SBOMs, Grype report, digest, cosign verification, Plan, evidence directory |
-| `lifecycle.yml` | dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry | `lifecycle.json`, summary, serial log, one journal per boot |
+| `lifecycle.yml` | dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
 | `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | AlmaLinux and Fedora examples build and boot; not published | boot/session/first-boot evidence |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
@@ -85,7 +85,7 @@ it boots the disk as shipped.
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
-| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state | wrong deployment, lost `/var`, failed retry | unmodified, dispatch |
+| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, dispatch |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
 
 A missing result, an unreadable value or a `not measurable` count is a failure
@@ -102,8 +102,9 @@ behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
 - Bare metal, BIOS boot, Secure Boot and non-x86_64 are not tested.
 - No check installs the **published** ISO; its storage is interactive, so only a
   person completes it. The test-only ISO has the `installer-test` job.
-- The lifecycle check does not test a candidate that never boots, and rollback
-  is manual.
+- The lifecycle check recovers a failed candidate through the previous GRUB
+  entry from the host, not through a person selecting it in the menu. Rollback
+  after a candidate reaches userspace is still manual.
 - Bit-for-bit reproducibility of images is not claimed; compilation is
   deterministic, the image build is not yet bit-for-bit reproducible.
 - RHEL composition and rendering are tested here; the entitled build and boot
