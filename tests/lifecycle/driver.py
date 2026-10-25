@@ -158,7 +158,21 @@ def with_grub_default(text, value="1"):
             if len(result) != len(text):
                 raise ValueError("grubenv block size would change")
             return result
-    raise ValueError("grubenv has no default= line")
+    # A fresh grubenv has no default line: insert one before the # padding and
+    # take the same number of bytes from the padding to keep the 1024-byte block.
+    for index, line in enumerate(lines):
+        if line.startswith("#") and not line.startswith("# GRUB") and not line.startswith("# WARNING"):
+            addition = f"default={value}\n"
+            padding = line.rstrip("\n")
+            if len(padding) < len(addition):
+                raise ValueError("grubenv has no room for default")
+            lines[index] = padding[:-len(addition)] + ("\n" if line.endswith("\n") else "")
+            lines.insert(index, addition)
+            result = "".join(lines)
+            if len(result) != len(text):
+                raise ValueError("grubenv block size would change")
+            return result
+    raise ValueError("grubenv has no padding for default")
 
 
 def block(boot, step, digest, staged, rollback, marker, etc, image_etc):
@@ -465,6 +479,11 @@ class Driver:
         self.say("boot the failed candidate")
         self.kill_qemu()
         try:
+            self.set_boot_default("1")
+        except (HarnessError, ValueError) as exc:
+            self.failure.append(f"could not select the candidate boot entry: {exc}")
+            return
+        try:
             self.boot(expect_ssh=False)
         except HarnessError as exc:
             self.failure.append(str(exc))
@@ -476,7 +495,7 @@ class Driver:
 
         self.say("set the previous GRUB entry and boot it")
         try:
-            self.set_boot_default("1")
+            self.set_boot_default("0")
         except (HarnessError, ValueError) as exc:
             self.failure.append(f"could not set the previous boot entry: {exc}")
             return

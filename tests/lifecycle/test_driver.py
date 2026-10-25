@@ -51,9 +51,15 @@ class GrubEnvTests(unittest.TestCase):
         self.assertIn("default=1\n", updated)
         self.assertEqual(len(updated), len(self.ENV))
 
-    def test_refuses_an_environment_without_a_default(self):
+    def test_inserts_a_default_when_the_environment_has_none(self):
+        text = "# GRUB Environment Block\n# WARNING: do not edit\n" + "#" * 64
+        updated = driver.with_grub_default(text, "1")
+        self.assertIn("default=1\n", updated)
+        self.assertEqual(len(updated), len(text))
+
+    def test_refuses_an_environment_with_no_padding(self):
         with self.assertRaises(ValueError):
-            driver.with_grub_default("saved_entry=0\n", "1")
+            driver.with_grub_default("# GRUB Environment Block\n# WARNING: do not edit\n", "1")
 
     def test_refuses_a_value_that_changes_the_block_size(self):
         with self.assertRaises(ValueError):
