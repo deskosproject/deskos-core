@@ -365,23 +365,25 @@ jobs:
             --predicate ${{ matrix.exceptions }} "$ref"
           retry cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --predicate "$WORK/effective-exceptions.json" "$ref"
+          # Pin the release workflow, not the repository: another workflow in
+          # this repository must not be able to sign a published image.
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' | tee cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/sbom/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           # :latest moves only after the digest is signed and verified, and it
           # moves **by digest**: skopeo copies the manifest the signature is
