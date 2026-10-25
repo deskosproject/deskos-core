@@ -128,6 +128,11 @@ def booted_verity(status):
     return (booted.get("composefs") or {}).get("verity")
 
 
+def staged_verity(status):
+    staged = (status.get("status") or {}).get("staged") or {}
+    return (staged.get("composefs") or {}).get("verity")
+
+
 def image_b_containerfile():
     """The image B Containerfile: both markers in one RUN instruction.
 
@@ -518,14 +523,15 @@ class Driver:
         self.record("stage-d", collect=False)
 
         self.say("boot the failed candidate")
-        installed = None
-        verity = booted_verity(self.status())
-        if not verity:
-            self.failure.append("booted deployment has no composefs verity")
+        status = self.status()
+        installed_verity = booted_verity(status)
+        candidate_verity = staged_verity(status)
+        if not installed_verity or not candidate_verity:
+            self.failure.append("booted or staged deployment has no composefs verity")
             return
         self.kill_qemu()
         try:
-            installed = self.set_boot_default(verity=verity, other=True)
+            self.set_boot_default(verity=candidate_verity)
         except (HarnessError, ValueError) as exc:
             self.failure.append(f"could not select the candidate boot entry: {exc}")
             return
@@ -541,7 +547,7 @@ class Driver:
 
         self.say("set the previous GRUB entry and boot it")
         try:
-            self.set_boot_default(str(installed))
+            self.set_boot_default(verity=installed_verity)
         except (HarnessError, ValueError) as exc:
             self.failure.append(f"could not set the previous boot entry: {exc}")
             return
