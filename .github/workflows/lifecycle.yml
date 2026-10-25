@@ -90,7 +90,7 @@ jobs:
           INTERRUPT: ${{ inputs.interrupt }}
           BOOT_FAILURE: ${{ inputs.boot_failure }}
         run: |
-          args=(--image "$IMAGE" --workdir "$WORK/run" --disk-size-gb 14)
+          args=(--image "$IMAGE" --workdir "$WORK/run" --disk-size-gb 18)
           if [ "$INTERRUPT" = "true" ]; then args+=(--interrupt); fi
           if [ "$BOOT_FAILURE" = "true" ]; then args+=(--boot-failure); fi
           python3 tests/lifecycle/driver.py "${args[@]}"
