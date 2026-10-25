@@ -1,7 +1,7 @@
 # Durable evidence for a published digest
 
-**Status: design proposal, 2026-10-24. No storage or credential is created by
-this document.**
+**Status: decided, 2026-10-25.** R2 is selected; no bucket or credential is
+created by this document yet.
 
 P0-05 asks that a historical image digest's evidence can still be retrieved and
 verified after workflow artifacts expire. Today it cannot.
@@ -43,19 +43,28 @@ verified after workflow artifacts expire. Today it cannot.
 | **GitHub Release assets** | durable enough and easy to fetch | tied to a release tag, not every build; release authority is heavier than the gate |
 | **GitHub artifacts** | already produced | 14 days; explicitly not durable |
 
-## Recommendation
+## Decision (2026-10-25)
 
-Use an **object store keyed by digest**, with a small per-digest `index.json`
-listing every evidence object and its SHA-256. Keep the existing attestation
-naming the SBOM hash; the index resolves that hash to bytes. Publish Core
-evidence in a public bucket and RHEL evidence in the organization's private
-bucket. Upload from the publish workflow through a scoped token staged as a
-secret, never in `argv`.
+Use an **R2 object store keyed by image digest**, with a small per-digest
+`index.json` listing every evidence object and its SHA-256. Keep the existing
+attestation naming the SBOM hash; the index resolves that hash to bytes.
+
+- Core evidence is **public**; organization-owned evidence is **private**.
+- The upload token is scoped to the bucket or prefix and staged as a secret, never
+  in `argv` or the repository.
+- **Every published image digest is retained.** Garbage collection may delete
+  only temporary or unpublished objects, never evidence for a digest that was
+  published.
+- The index starts **unsigned**. The signed image attestation already names the
+  SBOM SHA-256, so replacing the index or an object fails the comparison. Signing
+  the index is a later hardening step, not a prerequisite.
+
+Still to provision: the bucket names, the public base URL, and the token owner
+and secret names. Until those exist, no upload runs.
 
 Start with **one digest** as a lab: upload the installed SBOM, scan report, Plan,
 identity record and a README; fetch them from a clean machine; verify hashes and
-the image signature. Only then decide retention, GC and whether OCI referrers
-become the secondary path.
+the image signature. Only then move the upload into the publish workflow.
 
 The index must not be authoritative by itself: if an object is missing or its
 hash differs, verification **fails**. A 404 is not "no known issues". The pair exists at
@@ -77,17 +86,16 @@ cosign verify <image@$digest> …       # identity policy from supply-chain.md
 # Compare the SBOM hash named by the attestation with the object fetched here.
 ```
 
-The exact base URL, bucket name and visibility are decisions, not assumptions.
+The bucket names, public base URL and token owner are still to provision; they
+are not assumptions in the commands above.
 
 ## Open decisions
 
-- Core public bucket name/URL and who owns its token; RHEL private bucket owner.
-- Whether the index is signed, and which key/identity signs it.
-- Retention: keep every digest forever, keep promoted digests, or time-box with
-  a published policy.
-- Garbage collection: never delete a digest that is still referenced by a
-  release, a channel or an exception record.
-- Whether to add OCI referrers later as a convenience; do not make both paths
+- Core public bucket name and URL; organization private bucket owner and names.
+- Who owns and rotates each upload token, and which environment secret carries
+  it.
+- Whether to sign `index.json` later, and with which identity.
+- Whether to add OCI referrers as a convenience; do not make both paths
   authoritative.
 - A signed source-to-binary attestation for release assets is a separate gap.
 

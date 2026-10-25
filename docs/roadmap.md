@@ -303,10 +303,14 @@ its own.
   (symptom → check → remedy). Nothing here documents a migration between
   versions: pre-1.0 there is no supported older version to migrate from. Keep
   `research-notes` a dated archive, not current status.
-- **Durable SBOM storage.** The publish attests the SBOM **by reference**
-  (Rekor caps an attestation at 100 KB; the installed SBOM is ~39 MB). The
-  full SBOM is a 14-day workflow artifact; publish it to durable,
-  digest-indexed storage. Test an OCI referrer in a real registry first.
+- **Durable SBOM storage (P0-05).** Decided 2026-10-25: R2, Core evidence
+  public and organization-owned evidence private, a token scoped to the bucket
+  or prefix, every published digest retained, and an unsigned `index.json`
+  initially. The publish attests the SBOM **by reference** (Rekor caps an
+  attestation at 100 KB; the installed SBOM is ~39 MB). Still to provision: the
+  bucket names, public base URL and token owner; then upload one digest and
+  fetch it from a clean machine. See
+  [evidence-retention.md](design/evidence-retention.md).
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app
   or action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
