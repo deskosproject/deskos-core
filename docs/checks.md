@@ -84,7 +84,7 @@ it boots the disk as shipped.
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
-| System Flatpaks materialize | `deskos-flatpak-preinstall` state and `flatpak list --system` | service succeeded and declared apps are installed | failed unit or missing app | instrumented |
+| System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state | wrong deployment, lost `/var`, failed retry | unmodified, dispatch |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
 
