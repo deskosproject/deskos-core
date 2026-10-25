@@ -268,6 +268,12 @@ sleep 3
 echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
   --object-path /org/gnome/ScreenSaver \
   --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
+# The preinstall unit is Type=exec and starts after multi-user, so it can still
+# be downloading when the session appears. Wait for it to stop, bounded.
+for i in $(seq 1 60); do
+  [ "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" != active ] && break
+  sleep 2
+done
 echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
 """
 
