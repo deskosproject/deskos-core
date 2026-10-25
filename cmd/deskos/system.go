@@ -66,7 +66,9 @@ func (s system) Booted() (evidence.Booted, error) {
 		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: unexpected shape: %w", err)
 	}
 	b := evidence.Booted{
-		IsBootc: status.Kind == "BootcHost" || status.Spec.Image.Image != "",
+		// spec.image is bootc's own test for a host that tracks an image. The
+		// marker only describes the ostree backend; composefs has none.
+		IsBootc: status.Spec.Image.Image != "",
 		Follows: status.Spec.Image.Image,
 	}
 	if d := status.Status.Booted; d != nil {
