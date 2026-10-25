@@ -309,9 +309,11 @@ its own.
   published digest retained, and an unsigned `index.json` initially. Keys are
   `<namespace>/<repository>/sha256/<hex>/`, independent of the registry host.
   The publish attests the SBOM **by reference** (Rekor caps an attestation at
-  100 KB; the installed SBOM is ~39 MB). Still to provision: the token owner and
-  the private bucket; then upload one digest and fetch it from a clean machine.
-  See [evidence-retention.md](design/evidence-retention.md).
+  100 KB; the installed SBOM is ~39 MB). The public bucket, domain, upload
+  token and uploader are in place; the separate evidence job verifies the
+  uploaded index and objects from `evidence.deskos.org`. The first real upload
+  waits for the next published digest; the organization's private bucket token
+  is separate. See [evidence-retention.md](design/evidence-retention.md).
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app
   or action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
