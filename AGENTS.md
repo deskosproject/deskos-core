@@ -103,6 +103,12 @@ Avoid unnecessary secondary labels and descriptions. Let the design do the expla
 
 ## Checks
 
+Core workflows run on **GitHub-hosted standard runners only**. A
+self-hosted or factory runner is never a fallback for Core: the public
+repository has free hosted minutes, and using another host would change the
+trust boundary. An organization may run its own private pipeline under its own
+rules; that is not a Core workflow.
+
     make check        # gofmt, go vet, go test, validate
     python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
     go test ./internal/compiler -update   # refresh goldens, then review the diff
