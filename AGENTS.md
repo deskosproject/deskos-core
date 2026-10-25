@@ -65,6 +65,32 @@ review comments. Write in English even when the maintainer writes in another
 language, and translate text you touch rather than adding more of it in
 another language.
 
+## Commits and pull requests
+
+Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
+for commit messages and pull-request titles:
+
+    type(scope): imperative summary
+
+- **Types:** `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`,
+  `ci`, `chore`, `revert`.
+- **Scope:** optional but preferred, and a noun from the area changed, such as
+  `cli`, `compiler`, `lifecycle`, `supply-chain`, `docs` or `ci`.
+- **Summary:** lowercase after the colon, imperative mood, no trailing period,
+  ideally 50 characters and never more than 72.
+- **Body:** one blank line after the summary; explain what changed and why,
+  wrapped at 72 characters. The diff already shows the mechanics.
+- **Footers:** one blank line before them, for example `Refs: #123` or
+  `Closes: #123`.
+- **Breaking changes:** mark the type/scope with `!` and add a
+  `BREAKING CHANGE: ...` footer when the migration needs explanation.
+
+The pull-request title uses the same form because a squash merge makes it the
+commit on `main`. The pull-request body follows
+[the template](.github/pull_request_template.md): summary, changes, testing
+and risks, with the issue linked. Do not use a vague title such as "fixes" or
+"update docs"; say what changed and where.
+
 ## Design
 
 Avoid unnecessary secondary labels and descriptions. Let the design do the explaining.
