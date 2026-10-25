@@ -91,6 +91,29 @@ This is a negative result, not a product defect: the signature is valid and
 cosign verifies it. The gap is between cosign's registry storage and the policy
 verifier's lookup.
 
+## Lab result: bootc policy enforcement (2026-10-25)
+
+On an installed CS10 test disk (`bootc 1.17.1`, the same local HTTP registry,
+signed and unsigned derived images), with an SSH shell as root:
+
+| Policy | Operation | Result |
+|---|---|---|
+| none | `bootc switch --enforce-container-sigpolicy …:b` | **rc 0** — the unsigned image was staged; the flag did not require a policy to exist |
+| `default: reject` | `bootc switch …:c` | rc 1, “rejected by policy” — the policy blocks |
+| `sigstoreSigned` + `keyPath`, image signed with cosign | `bootc switch …:c` | rc 1, “A signature was required, but no signature exists” |
+| `signedBy` GPG + `keyPath`, image signed by `skopeo --sign-by` | `bootc switch …:signed`, by tag and digest | rc 1, same “no signature exists” |
+
+So enforcement can **block** (the reject case), but neither registry-stored
+cosign signature nor the simple-signing `.sig` tag was found by the verifier.
+`--enforce-container-sigpolicy` alone is not a control: it did not reject the
+unsigned switch when no policy was present. The missing piece is how a
+signature reaches the verifier (local sigstore storage, a configured lookaside,
+or a different mechanism), not merely adding a policy file.
+
+The positive acceptance cases therefore remain unproven: an authorized image
+must be accepted by the policy, not only rejected. The installer path was not
+tested in this lab.
+
 ## Prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
