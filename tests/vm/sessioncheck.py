@@ -247,7 +247,7 @@ def session_probe():
     return r"""#!/bin/bash
 # Every declared favorite must name an installed desktop entry.
 i=0
-for id in $(gsettings get org.gnome.shell favorite-apps | tr -d "[]', "); do
+for id in $(gsettings get org.gnome.shell favorite-apps | tr -d "[]' " | tr ',' '\n'); do
   case "$id" in *.desktop) ;; *) continue ;; esac
   found=missing
   for d in /usr/share/applications /usr/local/share/applications \
