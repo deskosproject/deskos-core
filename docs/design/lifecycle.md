@@ -185,6 +185,28 @@ menu behavior; whether the rescue path can queue a rollback without a person;
 and whether a candidate that fails before reaching userspace is enough, or the
 lab also needs a failing userspace service after a successful login path.
 
+## Lab result: a candidate that does not boot (2026-10-25)
+
+On the disposable lab disk (24 GiB), A was installed and booted; D was built
+from A with `/usr/lib/systemd/systemd` removed, pushed to the tracked tag and
+staged with `bootc upgrade`. After the reboot:
+
+- D did not reach SSH; the screen stayed blank and the serial log stopped after
+  GRUB's "Booting CentOS Stream 10".
+- The disk had two BLS entries, **both titled** "CentOS Stream 10 (Coughlan)",
+  with a one-second GRUB timeout. QMP key events sent after reset did not
+  reliably select the other entry.
+- Setting the on-disk GRUB default to the previous entry (`grub2-editenv …
+  set default=1`, with the disk mounted) and booting recovered A: SSH returned
+  and `bootc status` reported A's digest, with systemd present again.
+
+So the previous boot entry does recover the machine, but the lab automated it by
+editing the bootloader environment from the host, not by a person choosing an
+entry. The menu automation gap is real: identical titles and a one-second
+timeout make blind key injection unsafe. A CI recipe needs either a unique menu
+title/timeout tied to the deployment or a documented manual step; until then
+this is lab evidence, not a test.
+
 ## Driver
 
 `tests/lifecycle/driver.py` implements the steps above and is the artifact the
