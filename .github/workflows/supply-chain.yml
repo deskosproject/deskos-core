@@ -28,6 +28,11 @@ on:
         description: Push the scanned and boot-checked image to quay.io and sign it (main only)
         type: boolean
         default: false
+      runner:
+        description: Where to run the publish and evidence jobs. self-hosted costs no GitHub minutes.
+        type: choice
+        options: [self-hosted, github-hosted]
+        default: self-hosted
 
 permissions:
   contents: read
@@ -54,7 +59,7 @@ env:
 
 jobs:
   publish:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.runner == 'self-hosted' && fromJSON('["self-hosted","linux","x64","rhel10","entitled"]') || 'ubuntu-24.04' }}
     # Build (40) + QCOW2 (30) + boot (15) + session (25) can exceed 90.
     timeout-minutes: 150
     strategy:
@@ -110,6 +115,8 @@ jobs:
 
       - name: Put container storage and the large artifacts on /mnt
         # The root disk is small; the same layout as vm-bootcheck.yml.
+        # On the factory /mnt is the same disk as the root but is large enough
+        # for this run after the preflight cleanup.
         run: |
           sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
           sudo mount --bind /mnt/containers /var/lib/containers
@@ -129,6 +136,7 @@ jobs:
           ls -l /dev/kvm
 
       - name: Install QEMU, OVMF and skopeo
+        if: runner.environment == 'github-hosted'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf skopeo
@@ -552,7 +560,7 @@ jobs:
   evidence:
     needs: build
     if: inputs.publish && github.ref == 'refs/heads/main' && needs.build.result == 'success'
-    runs-on: ubuntu-24.04
+    runs-on: ${{ inputs.runner == 'self-hosted' && fromJSON('["self-hosted","linux","x64","rhel10","entitled"]') || 'ubuntu-24.04' }}
     environment: evidence-write
     permissions:
       contents: read
