@@ -222,10 +222,10 @@ updates. That split, the verified recipe and the remaining limits are in
 # quay.io/deskos/deskos-core-centos-stream-10
 ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
-identity='^https://github\.com/deskosproject/deskos-core/'
+identity='https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
 
 cosign verify --certificate-oidc-issuer "$issuer" \
-  --certificate-identity-regexp "$identity" "$ref"
+  --certificate-identity "$identity" "$ref"
 
 for type in \
   https://deskos.org/supply-chain/sbom/v1 \
@@ -233,13 +233,13 @@ for type in \
   https://deskos.org/supply-chain/effective-exceptions/v1; do
   cosign verify-attestation --type "$type" \
     --certificate-oidc-issuer "$issuer" \
-    --certificate-identity-regexp "$identity" "$ref"
+    --certificate-identity "$identity" "$ref"
 done
 
 # The reference names the image digest and the SBOM's SHA-256; read it and
 # check the SBOM you obtained against it.
 cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
-  --certificate-oidc-issuer "$issuer" --certificate-identity-regexp "$identity" "$ref" \
+  --certificate-oidc-issuer "$issuer" --certificate-identity "$identity" "$ref" \
   | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
 ```
 
