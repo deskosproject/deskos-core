@@ -463,6 +463,7 @@ class Driver:
         self.record("stage-d", collect=False)
 
         self.say("boot the failed candidate")
+        self.kill_qemu()
         try:
             self.boot(expect_ssh=False)
         except HarnessError as exc:
