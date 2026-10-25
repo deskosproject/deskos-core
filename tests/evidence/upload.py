@@ -106,7 +106,20 @@ def main(argv=None):
         except (OSError, subprocess.CalledProcessError) as exc:
             print(f"evidence upload: {exc}", file=sys.stderr)
             return 1
-    print(f"uploaded {len(data['objects'])} object(s) for {args.digest}")
+
+    # The index is the entry point of the store; upload it last, so it never
+    # names an object that has not arrived.
+    index_key = object_key(args.namespace, args.repository, args.digest, "index.json")
+    if args.dry_run:
+        print(f"would upload {index_path} to {index_key}")
+    else:
+        try:
+            upload(endpoint, bucket, index_key, index_path,
+                   access_key, secret_key, region, args.public)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            print(f"evidence upload: {exc}", file=sys.stderr)
+            return 1
+    print(f"uploaded {len(data['objects']) + 1} object(s) for {args.digest}")
     return 0
 
 

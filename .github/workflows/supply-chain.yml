@@ -566,6 +566,7 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: supply-chain-durable-${{ matrix.token }}-attempt-${{ github.run_attempt }}
+          path: durable
       - name: Publish durable evidence
         env:
           EVIDENCE_S3_ENDPOINT: ${{ vars.EVIDENCE_S3_ENDPOINT }}
@@ -576,9 +577,9 @@ jobs:
           EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
-          digest="$(tr -d '\r\n' < digest.txt)"
+          digest="$(tr -d '\r\n' < durable/digest.txt)"
           test -n "$digest"
-          python3 tests/evidence/upload.py --dir . --digest "$digest" \
+          python3 tests/evidence/upload.py --dir durable --digest "$digest" \
             --namespace deskos --repository "deskos-core-${{ matrix.token }}" --public
           base="${EVIDENCE_PUBLIC_BASE_URL%/}/deskos/deskos-core-${{ matrix.token }}/sha256/${digest#sha256:}"
           tmp="$(mktemp -d)"
