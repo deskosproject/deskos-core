@@ -49,7 +49,12 @@ Use an **R2 object store keyed by image digest**, with a small per-digest
 `index.json` listing every evidence object and its SHA-256. Keep the existing
 attestation naming the SBOM hash; the index resolves that hash to bytes.
 
-- Core evidence is **public**; organization-owned evidence is **private**.
+- Core evidence is **public**, in `deskos-evidence-public`; organization-owned
+  evidence is **private**, in a bucket owned by that organization.
+- The object key is `<namespace>/<repository>/sha256/<hex>/`, for example
+  `deskos/deskos-core-centos-stream-10/sha256/<hex>/index.json`. The path is
+  independent of the registry host, so moving an image to another registry does
+  not move its evidence.
 - The upload token is scoped to the bucket or prefix and staged as a secret, never
   in `argv` or the repository.
 - **Every published image digest is retained.** Garbage collection may delete
@@ -59,8 +64,9 @@ attestation naming the SBOM hash; the index resolves that hash to bytes.
   SBOM SHA-256, so replacing the index or an object fails the comparison. Signing
   the index is a later hardening step, not a prerequisite.
 
-Still to provision: the bucket names, the public base URL, and the token owner
-and secret names. Until those exist, no upload runs.
+The public bucket is defined in `deskos-infrastructure`; the private bucket is
+still to be provisioned by the owning organization. Still to provision: the
+upload token owner and secret names. Until those exist, no upload runs.
 
 Start with **one digest** as a lab: upload the installed SBOM, scan report, Plan,
 identity record and a README; fetch them from a clean machine; verify hashes and
@@ -77,7 +83,7 @@ and duplicate names, and hashes every named object.
 
 ```bash
 digest=sha256:…
-base=https://evidence.deskos.org/$digest
+base=https://evidence.deskos.org/deskos/deskos-core-centos-stream-10/sha256/${digest#sha256:}
 curl -fsS "$base/index.json" -o index.json
 jq -r '.objects[] | "\(.sha256)  \(.name)"' index.json > SHA256SUMS
 # Fetch each named object, then:
@@ -86,12 +92,13 @@ cosign verify <image@$digest> …       # identity policy from supply-chain.md
 # Compare the SBOM hash named by the attestation with the object fetched here.
 ```
 
-The bucket names, public base URL and token owner are still to provision; they
-are not assumptions in the commands above.
+The public bucket and `evidence.deskos.org` are defined in
+`deskos-infrastructure`; the private bucket and token owner are still to
+provision. They are not assumptions in the commands above.
 
 ## Open decisions
 
-- Core public bucket name and URL; organization private bucket owner and names.
+- Organization private bucket owner and name.
 - Who owns and rotates each upload token, and which environment secret carries
   it.
 - Whether to sign `index.json` later, and with which identity.
