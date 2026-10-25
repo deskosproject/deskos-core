@@ -2,10 +2,11 @@
 """Drive the lifecycle A -> B -> A on an installed DeskOS disk.
 
 This is the driver behind docs/design/lifecycle.md. It runs on a Linux host
-with rootful podman, qemu, skopeo and /dev/kvm, and it is not part of CI yet:
-it installs a disk, boots it, upgrades it from a local registry and rolls it
-back. The pure parts (qemu arguments, status parsing, block building) are
-unit-tested; the run itself is the evidence.
+with rootful podman, qemu, qemu-nbd, skopeo and /dev/kvm, and it is not part of
+CI yet: it installs a disk, boots it, upgrades it from a local registry and rolls
+it back. The pure parts (qemu arguments, status parsing, block building) are
+unit-tested; the run itself is the evidence. `--boot-failure` adds a candidate
+that cannot boot and recovers the previous GRUB entry from the host.
 
 The test image is a fixture, never a resource: it carries a throwaway SSH key
 for root, enables sshd and marks 10.0.2.2:5000 as an insecure registry. B adds
@@ -38,6 +39,7 @@ MARKER_FILE = f"{MARKER_DIR}/marker"
 B_MARKER = "/usr/share/deskos/lifecycle-b"
 B_ETC = "/etc/deskos-lifecycle-image"
 LOCAL_ETC = "/etc/deskos-lifecycle-local"
+GRUBENV = "boot/grub2/grubenv"
 
 SHORT_SEQUENCE = lifecycle.SEQUENCE[:5]
 
@@ -133,6 +135,32 @@ def image_b_containerfile():
     )
 
 
+def image_d_containerfile():
+    """A candidate with one deliberate defect: the kernel cannot start init."""
+    return (
+        "FROM localhost/deskos-lifecycle:a\n"
+        "RUN rm -f /usr/lib/systemd/systemd\n"
+    )
+
+
+def with_grub_default(text, value="1"):
+    """Return `grubenv` with `default` set, keeping the block size.
+
+    GRUB reads a fixed-size environment block. Only the value of an existing
+    `default=` line is changed, so a caller cannot accidentally resize it.
+    """
+    lines = text.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        if line.startswith("default="):
+            ending = "\n" if line.endswith("\n") else ""
+            lines[index] = f"default={value}{ending}"
+            result = "".join(lines)
+            if len(result) != len(text):
+                raise ValueError("grubenv block size would change")
+            return result
+    raise ValueError("grubenv has no default= line")
+
+
 def block(boot, step, digest, staged, rollback, marker, etc, image_etc):
     """One report block, in the shape lifecycle.evaluate expects."""
     return {
@@ -169,10 +197,12 @@ class Driver:
         self.podman_cmd = parts
         self.sudo = parts[:-1]
         self.blocks = []
+        self.extra_blocks = []
         self.boots = 0
         self.images = {}
         self.marker_a = "A1"
         self.marker_b = "A2"
+        self.failure = []
         self.seq = lifecycle.SEQUENCE if args.interrupt else SHORT_SEQUENCE
 
     def sh(self, *cmd, **kw):
@@ -210,6 +240,14 @@ class Driver:
                 return
             time.sleep(5)
         raise HarnessError(f"guest ssh did not come up within {timeout}s")
+
+    def wait_no_ssh(self, timeout=60):
+        """Wait long enough for a failed candidate to show it cannot log in."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self.ssh("true").returncode == 0:
+                raise HarnessError("the failed candidate reached ssh")
+            time.sleep(5)
 
     def status(self):
         return parse_status(self.guest("bootc status --json"))
@@ -290,7 +328,7 @@ class Driver:
             "--filesystem", "ext4", "--allow-missing-verity",
         )
 
-    def boot(self):
+    def boot(self, expect_ssh=True):
         self.boots += 1
         self.say(f"boot {self.boots}")
         shutil.copy(self.ovmf_vars, self.work / "OVMF_VARS.fd")
@@ -298,7 +336,10 @@ class Driver:
         argv = qemu_argv(self.qemu, self.work, str(self.work / "disk.raw"),
                          self.ssh_port, self.ovmf_code, self.ovmf_vars)
         self.sh(*self.sudo, *argv)
-        self.wait_ssh()
+        if expect_ssh:
+            self.wait_ssh()
+        else:
+            self.wait_no_ssh()
 
     def read_local_etc(self):
         raw = self.guest(f"cat {LOCAL_ETC} 2>/dev/null || true").strip()
@@ -307,7 +348,7 @@ class Driver:
     def has_image_etc(self):
         return self.ssh(f"test -f {B_ETC}").returncode == 0
 
-    def record(self, step, write=None):
+    def record(self, step, write=None, collect=True):
         status = self.status()
         digest = booted_digest(status)
         marker = self.read_marker()
@@ -315,10 +356,11 @@ class Driver:
         image_etc = self.has_image_etc()
         if write:
             self.write_marker(write)
-        self.blocks.append(block(self.boots, step, digest,
-                                 bool(staged_digest(status)),
-                                 rollback_queued(status),
-                                 marker, local_etc, image_etc))
+        entry = block(self.boots, step, digest,
+                      bool(staged_digest(status)),
+                      rollback_queued(status),
+                      marker, local_etc, image_etc)
+        (self.blocks if collect else self.extra_blocks).append(entry)
         self.save_journal(step)
         print(f"boot {self.boots} {step}: booted {digest[:19]}… "
               f"staged={'yes' if staged_digest(status) else 'no'} "
@@ -351,9 +393,106 @@ class Driver:
         self.images[key] = digest
         return digest
 
+    def free_nbd(self):
+        for number in range(16):
+            device = f"/dev/nbd{number}"
+            if not Path(device).exists():
+                continue
+            pid = Path(f"/sys/block/nbd{number}/pid")
+            if not pid.exists() or not pid.read_text().strip():
+                return device
+        raise HarnessError("no free nbd device")
+
+    def set_boot_default(self, value="1"):
+        """Mount the installed root and set the GRUB default entry.
+
+        GRUB is not driven through QMP: the two BLS entries have identical
+        titles and a one-second timeout, so key injection is not deterministic.
+        The accepted recovery path is host-side: mount the disk, set the
+        previous entry as default, boot it.
+        """
+        self.sh(*self.sudo, "modprobe", "nbd", check=False)
+        nbd = self.free_nbd()
+        mount = self.work / "mnt"
+        mount.mkdir(exist_ok=True)
+        try:
+            self.sh(*self.sudo, "qemu-nbd", "--format=raw", "-c", nbd,
+                    str(self.work / "disk.raw"))
+            time.sleep(2)
+            root = None
+            listing = subprocess.run(
+                ["lsblk", "-ln", "-o", "NAME,TYPE"], check=True,
+                capture_output=True, text=True).stdout
+            for line in listing.splitlines():
+                name, _, kind = line.partition(" ")
+                if kind.strip() != "part" or not name.startswith(nbd.rsplit("/", 1)[1]):
+                    continue
+                path = f"/dev/{name}"
+                fstype = subprocess.run(
+                    [*self.sudo, "blkid", "-o", "value", "-s", "TYPE", path],
+                    check=False, capture_output=True, text=True).stdout.strip()
+                if fstype in ("ext4", "xfs"):
+                    root = path
+                    break
+            if root is None:
+                raise HarnessError("no ext4/xfs root partition on the disk")
+            self.sh(*self.sudo, "mount", "-o", "rw", root, str(mount))
+            try:
+                grubenv = mount / GRUBENV
+                raw = subprocess.run(
+                    [*self.sudo, "cat", str(grubenv)], check=True,
+                    capture_output=True, text=True).stdout
+                updated = with_grub_default(raw, value)
+                subprocess.run(
+                    [*self.sudo, "tee", str(grubenv)], input=updated,
+                    check=True, text=True, stdout=subprocess.DEVNULL)
+            finally:
+                self.sh(*self.sudo, "umount", str(mount), check=False)
+        finally:
+            self.sh(*self.sudo, "qemu-nbd", "-d", nbd, check=False)
+
+    def failure_scenario(self):
+        """Stage a candidate with no init, fail to boot it, recover the old entry."""
+        self.say("build and stage a candidate that cannot boot")
+        ctx = self.work / "ctx"
+        (ctx / "Containerfile.d").write_text(image_d_containerfile())
+        self.podman("build", "-q", "-t", "localhost/deskos-lifecycle:d",
+                    "-f", str(ctx / "Containerfile.d"), str(ctx))
+        self.push_image("d", "d")
+        self.guest("bootc upgrade")
+        self.record("stage-d", collect=False)
+
+        self.say("boot the failed candidate")
+        try:
+            self.boot(expect_ssh=False)
+        except HarnessError as exc:
+            self.failure.append(str(exc))
+        serial = (self.work / "serial.log").read_text()
+        (self.work / "serial-failed.log").write_text(serial)
+        if "Booting" not in serial:
+            self.failure.append("the failed candidate did not reach a boot")
+        self.kill_qemu()
+
+        self.say("set the previous GRUB entry and boot it")
+        try:
+            self.set_boot_default("1")
+        except (HarnessError, ValueError) as exc:
+            self.failure.append(f"could not set the previous boot entry: {exc}")
+            return
+        self.boot()
+        digest = self.record("recover-a", collect=False)
+        if digest != self.images.get("a"):
+            self.failure.append(
+                f"recovery booted {digest}, expected A {self.images.get('a')}")
+        if self.extra_blocks[-1]["marker"] != self.marker_b:
+            self.failure.append("recovery lost the /var marker")
+
     def run(self):
         self.say("preflight")
-        for tool in ("skopeo", "qemu-img"):
+        tools = ["skopeo", "qemu-img"]
+        if self.args.boot_failure:
+            tools.append("qemu-nbd")
+        for tool in tools:
             if not which(tool):
                 raise HarnessError(f"missing {tool}")
         if not Path("/dev/kvm").exists():
@@ -400,7 +539,11 @@ class Driver:
             self.guest("bootc upgrade")
             self.record("retry")
 
+        if self.args.boot_failure:
+            self.failure_scenario()
+
         failures = lifecycle.evaluate(self.blocks, seq=self.seq, images=self.images)
+        failures += self.failure
         self.write_report(failures)
         return failures
 
@@ -414,12 +557,14 @@ class Driver:
         report = {
             "sequence": [boot.step for boot in self.seq],
             "blocks": self.blocks,
+            "extra_blocks": self.extra_blocks,
+            "boot_failure": self.failure,
             "images": self.images,
             "failures": failures,
         }
         (self.work / "lifecycle.json").write_text(json.dumps(report, indent=2) + "\n")
         lines = ["# Lifecycle", "", f"Source: `{self.args.image}`", ""]
-        for entry in self.blocks:
+        for entry in self.blocks + self.extra_blocks:
             lines.append(f"- boot {entry['boot']} {entry['step']}: `{entry['image']}` "
                          f"staged={entry['staged']} rollback={entry['rollback']} "
                          f"marker={entry['marker']} etc={entry['etc']} "
@@ -458,6 +603,8 @@ def main(argv=None):
     parser.add_argument("--ovmf-vars", help="OVMF vars template; detected when omitted")
     parser.add_argument("--interrupt", action="store_true",
                         help="also interrupt an upgrade with a power loss")
+    parser.add_argument("--boot-failure", action="store_true",
+                        help="also stage an image with no init and recover the previous entry")
     parser.add_argument("--keep", action="store_true",
                         help="keep the disk, images and registry when done")
     args = parser.parse_args(argv)

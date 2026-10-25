@@ -1,8 +1,9 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
 **Status:** design, evaluator, driver and a dispatch-only workflow
-(2026-10-24). `lifecycle.yml` runs the driver on manual dispatch; no pull
-request and no schedule runs it. It first ran end to end on 2026-10-24:
+(2026-10-24; boot-failure recovery added 2026-10-25). `lifecycle.yml` runs the
+driver on manual dispatch; no pull request and no schedule runs it. It first ran
+end to end on 2026-10-24:
 install and stage on boot 1, B and rollback on boot 2, A on boot 3,
 evaluator `ok`.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
@@ -139,51 +140,41 @@ deployment, so the retry is meaningful.
 ## What this does not test
 
 - **Automatic recovery.** Step 4 recovers with `bootc rollback`. bootc keeps
-  the previous deployment but does not switch to it on its own: a candidate
-  that does not boot needs the previous boot entry or a rescue environment.
-  The driver does not exercise that path yet.
-- **A candidate that never boots.** The interrupted run loses power during the
-  download. It does not write a deployment that then fails to boot; the planned
-  fault-injection and boot-entry recovery is above.
+  the previous deployment but does not switch to it on its own. The driver
+  recovers a non-booting candidate by setting the previous GRUB entry from the
+  host; it does not test automatic recovery.
 - **Application data.** `/var` and local `/etc` edits survive a rollback
   because neither is snapshotted. An upgrade that migrates or rewrites data
   under `/var` is not undone by rolling back; the operator restores that data
   from their own backup. The image ships no backup tool, and the driver's
   marker is not an application migration.
 
-## Planned: a candidate that does not boot
+## Candidate that does not boot: accepted host-side recovery
 
-The run covers a power loss during download; it does not write a deployment
-that then fails to boot. Closing that gap needs a deterministic failure and a
-deterministic way back to the previous entry.
+The run covers a power loss during download; it also writes a deployment that
+fails before userspace and recovers the previous entry from the host.
 
 **Failure.** Build D from A with one deliberate, image-owned defect: remove the
-init binary the kernel executes (for example `/usr/lib/systemd/systemd`) so the
-kernel starts and then panics. That is more realistic than a missing kernel,
-which may fail during deployment rather than at boot. Stage D, reboot, and
-assert the machine never reaches SSH, with the panic in the serial log.
+init binary the kernel executes (`/usr/lib/systemd/systemd`) so the kernel
+starts and then panics. Stage D, reboot, and assert the machine never reaches
+SSH, with the failure in the serial log.
 
-**Recovery.** The only trusted path is the previous boot entry; `bootc rollback`
-cannot run because D never reaches a shell. The lab must select A in the
-bootloader (GRUB), then verify `bootc status` and the `/var` and local `/etc`
-markers. A rescue environment that mounts the disk and queues the rollback is
-the fallback if the boot menu cannot be driven deterministically.
+**Recovery.** GRUB is not driven through QMP. Both BLS entries have the same
+title and the timeout is one second, so blind key injection is neither
+repeatable nor safe. The accepted mechanism is **host-side bootloader
+recovery**: after the failed boot, the driver attaches the disk with
+`qemu-nbd`, mounts its root, sets `default=1` in `/boot/grub2/grubenv`, boots
+again, and verifies A. This tests the previous boot entry as the recovery path;
+it does not test a person selecting an entry in the menu.
 
-**Automation.** QEMU needs an input channel, not only the serial file, to select
-the previous entry; the driver currently has none. The entry names and timeout
-are also bootloader- and image-dependent. If selection cannot be made
-repeatable, the scenario stays a documented manual exercise and is not called a
-test.
+**Evidence.** `serial-failed.log` (the failed boot), the staged and recovered
+blocks in `lifecycle.json`, the recovered `bootc status`, and the same `/var`
+marker as the A→B→A run. A failure to reach a booted candidate, a recovery that
+boots the wrong digest, and a lost marker all fail the run.
 
-**Evidence.** The failed boot's serial log and panic, the chosen boot entry, the
-recovered deployment's `bootc status`, and the same local-state markers as the
-A→B→A run. The evaluator must distinguish "D failed to boot" from "no evidence
-was collected".
-
-**Open questions.** GRUB entry naming across two deployments; UEFI versus BIOS
-menu behavior; whether the rescue path can queue a rollback without a person;
-and whether a candidate that fails before reaching userspace is enough, or the
-lab also needs a failing userspace service after a successful login path.
+**Not covered.** UEFI firmware menu behavior, BIOS, a rescue environment that
+queues a rollback without a person, and a candidate that boots far enough to
+show a login screen but fails afterwards.
 
 ## Lab result: a candidate that does not boot (2026-10-25)
 
@@ -200,20 +191,20 @@ staged with `bootc upgrade`. After the reboot:
   set default=1`, with the disk mounted) and booting recovered A: SSH returned
   and `bootc status` reported A's digest, with systemd present again.
 
-So the previous boot entry does recover the machine, but the lab automated it by
+So the previous boot entry does recover the machine. The lab automated it by
 editing the bootloader environment from the host, not by a person choosing an
-entry. The menu automation gap is real: identical titles and a one-second
-timeout make blind key injection unsafe. A CI recipe needs either a unique menu
-title/timeout tied to the deployment or a documented manual step; until then
-this is lab evidence, not a test.
+entry. The driver now uses the same host-side mechanism: identical titles and a
+one-second timeout make blind QMP key injection unsafe. Menu behavior itself is
+not tested.
 
 ## Driver
 
 `tests/lifecycle/driver.py` implements the steps above and is the artifact the
 spikes were folded into: it builds A and B, pushes them to the local registry,
 installs with `bootc install to-disk`, boots, drives the guest over SSH and
-evaluates the record. `--interrupt` adds the power-loss run. It needs rootful
-podman, qemu, `skopeo` and `/dev/kvm`, takes about twenty minutes, and is
+evaluates the record. `--interrupt` adds the power-loss run; `--boot-failure`
+adds D and the host-side GRUB recovery. It needs rootful podman, qemu,
+`qemu-nbd`, `skopeo` and `/dev/kvm`, takes about thirty minutes, and is
 **dispatch-only**: `ci.yml` runs its unit tests, and `lifecycle.yml` runs the
 driver by hand until it has been green on real builds for a while.
 
