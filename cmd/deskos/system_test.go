@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -58,6 +60,29 @@ func TestBootcStatusShapeIsTheRealOne(t *testing.T) {
 	}
 	if status.Status.Staged != nil {
 		t.Errorf("nothing is staged in this sample, got %+v", status.Status.Staged)
+	}
+}
+
+func TestBootcStatusChecksTheBootedDeploymentWhenTheOstreeMarkerIsAbsent(t *testing.T) {
+	// composefs deployments do not create /run/ostree-booted. The marker must not
+	// decide whether the machine is a bootc host; bootc status must.
+	dir := t.TempDir()
+	script := filepath.Join(dir, "bootc")
+	body := "#!/bin/sh\ncat <<'EOF'\n" + bootcStatusSample + "\nEOF\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+"/usr/bin:/bin")
+
+	b, err := (system{root: t.TempDir()}).Booted()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !b.IsBootc {
+		t.Fatal("a bootc host without /run/ostree-booted was not recognised")
+	}
+	if b.Image != "quay.io/deskos/deskos-core-centos-stream-10:latest" || b.Digest != "sha256:39dff9371234" {
+		t.Errorf("booted = %+v", b)
 	}
 }
 

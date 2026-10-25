@@ -2,7 +2,6 @@
 [Unit]
 Description=Download and stage the next image without rebooting
 Documentation=man:bootc-upgrade(8)
-ConditionPathExists=/run/ostree-booted
 ConditionACPower=true
 Wants=network-online.target
 After=network-online.target

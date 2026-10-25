@@ -316,6 +316,9 @@ func TestUpdatePolicyApplyWindowLowering(t *testing.T) {
 	if !strings.Contains(svc, "ExecCondition=/usr/bin/deskos window --days wed,sun --start 03:00 --duration 2h") {
 		t.Errorf("apply service has the wrong window command:\n%s", svc)
 	}
+	if strings.Contains(svc, "/run/ostree-booted") {
+		t.Errorf("apply service requires the ostree-only boot marker:\n%s", svc)
+	}
 	timer := string(fileData(t, files, "rootfs/usr/lib/systemd/system/deskos-image-apply.timer"))
 	for _, want := range []string{
 		"OnCalendar=Wed,Sun *-*-* 03:00:00",

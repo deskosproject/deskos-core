@@ -55,11 +55,8 @@ type bootcDeployment struct {
 }
 
 func (s system) Booted() (evidence.Booted, error) {
-	// The marker ostree-based systems create at boot: without it this machine did not
-	// boot from a deployment at all, and there is nothing for bootc to read.
-	if _, err := os.Stat(path.Join(s.root, "/run/ostree-booted")); err != nil {
-		return evidence.Booted{}, nil
-	}
+	// bootc status is the backend-neutral answer: /run/ostree-booted only exists
+	// on the ostree backend, while composefs deployments do not create it.
 	out, err := exec.Command("bootc", "status", "--json").Output()
 	if err != nil {
 		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: %w", err)
@@ -69,7 +66,9 @@ func (s system) Booted() (evidence.Booted, error) {
 		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: unexpected shape: %w", err)
 	}
 	b := evidence.Booted{
-		IsBootc: status.Kind == "BootcHost" || true,
+		// spec.image is bootc's own test for a host that tracks an image. The
+		// marker only describes the ostree backend; composefs has none.
+		IsBootc: status.Spec.Image.Image != "",
 		Follows: status.Spec.Image.Image,
 	}
 	if d := status.Status.Booted; d != nil {

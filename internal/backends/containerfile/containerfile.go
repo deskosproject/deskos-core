@@ -646,7 +646,9 @@ func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 	case plan.UpdateImage:
 		desc, doc = "Download and stage the next image without rebooting", "man:bootc-upgrade(8)"
 		exec = "/usr/bin/bootc upgrade --quiet"
-		cond = "ConditionPathExists=/run/ostree-booted\n"
+		// No ConditionPathExists=/run/ostree-booted: only the ostree backend
+		// creates that file. These units ship in a bootc image, and bootc
+		// itself refuses a machine it cannot upgrade.
 	case plan.UpdateFlatpak:
 		desc, doc = "Update system Flatpak applications and runtimes", "man:flatpak-update(1)"
 		exec = "/usr/bin/flatpak update --system --noninteractive --assumeyes"
@@ -737,7 +739,7 @@ func applyUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 			return nil, nil, fmt.Errorf("scheduled apply: unknown time zone %q", u.Timezone)
 		}
 	}
-	cond := "ConditionPathExists=/run/ostree-booted\n"
+	cond := ""
 	if u.RequireACPower {
 		cond += "ConditionACPower=true\n"
 	}
