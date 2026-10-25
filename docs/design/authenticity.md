@@ -1,8 +1,10 @@
 # Consumer-side image authenticity
 
-**Status: research design, 2026-10-25. No image policy, key or install path is
-changed by this document.** The upstream mechanisms below are candidates; the
-repository has not run the prototype yet.
+**Status: research design, updated 2026-10-25.** A key-based enforcement recipe
+is verified in the lab; no image policy, key or install path is changed by this
+document. Core remains keyless, and the choice between key-based signing and
+waiting for URI-SAN support is **postponed**, so an installed machine still does
+not enforce signatures.
 
 CI verifies signatures with `cosign`. That proves the gate checked a digest; it
 does not prove an installer or an installed workstation rejects an unsigned or
@@ -14,6 +16,10 @@ wrongly signed image. This page defines what to test and where the limits are.
   for the workflow's OIDC identity and Rekor records the signature. Three
   attestations are attached (SBOM reference, reviewed exceptions, accepted
   matches).
+- **The enforcement decision is postponed (2026-10-25).** Core keeps keyless
+  signatures for now. Switching to key-based signing, or waiting for a
+  containers/image that can pin a GitHub URI-SAN, is revisited after the
+  Anaconda test. Meanwhile a machine cannot enforce authenticity.
 - DayTwo RHEL images are signed with a **key** kept outside its repository, with
   no transparency log.
 - No generated image currently ships a `/etc/containers/policy.json`; the
@@ -149,8 +155,8 @@ rotation (loss of trust is covered by the wrong-key case).
    record whether install is enforced or silently accepts.
 4. Test a keyless `fulcio` policy. Determine whether the workflow URL can be
    constrained at all; if the policy can only name an email, record that keyless
-   Core signatures cannot be pinned exactly by this mechanism and choose
-   key-based signing for the enforced path, or a different mechanism.
+   Core signatures cannot be pinned exactly by this mechanism. Enforcement
+   remains off until a mechanism is chosen.
 5. Cut the network to Fulcio/Rekor and repeat the key and keyless cases; record
    which verification still works offline.
 6. Test both update paths: the generated image timer (`bootc upgrade`) and
@@ -164,7 +170,9 @@ version and the containers/image version.
 ## Decisions this design does not make
 
 - Core keyless or key-based signatures for the enforced path; if key-based, the
-  key's custody, rotation and backup (P0-04).
+  key's custody, rotation and backup (P0-04). **Postponed 2026-10-25:** Core
+  stays keyless and enforcement stays off; revisit after the Anaconda test or
+  URI-SAN support.
 - Whether the policy is baked into the image, provisioned by the installer, or
   both; and how a compromised-release policy update is delivered.
 - Whether a DeskOS-specific verifier is acceptable, given that a manual
