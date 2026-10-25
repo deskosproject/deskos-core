@@ -79,6 +79,33 @@ hash differs, verification **fails**. A 404 is not "no known issues". The pair e
 sorted index and refuses symlinks, the other checks the index, rejects traversal
 and duplicate names, and hashes every named object.
 
+## CI configuration
+
+The publish job uses the GitHub environment `evidence-write`. Keep the
+non-sensitive configuration as environment variables and only the credential
+as secrets:
+
+**Variables**
+
+```text
+EVIDENCE_S3_ENDPOINT
+EVIDENCE_S3_REGION
+EVIDENCE_S3_BUCKET
+EVIDENCE_PUBLIC_BASE_URL
+```
+
+**Secrets**
+
+```text
+EVIDENCE_S3_ACCESS_KEY_ID
+EVIDENCE_S3_SECRET_ACCESS_KEY
+```
+
+The endpoint contains the account ID, the bucket name and the public base URL
+are public, and the region is `auto`. The access key ID is not usable alone,
+but it is kept as a secret so GitHub masks it in logs. The secret access key is
+the credential.
+
 ## Retrieval procedure (to test with the first digest)
 
 ```bash
