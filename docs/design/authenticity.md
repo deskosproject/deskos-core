@@ -124,6 +124,14 @@ and the containers/image in bootc 1.17.1, not proof that cosign signatures can
 never be consumed. Testing an older cosign bundle or a newer containers/image
 is the next concrete step.
 
+One more check fed cosign's downloaded bundle into the **local** store the
+verifier reads, at
+`/var/lib/containers/sigstore/deskos/lifecycle@sha256=…/signature-1`. The
+verifier then reported `unrecognized signature format, starting with binary
+0x7b` for the JSON, and `0x65` for its base64 form. The local store expects the
+binary signature format, not a cosign v0.3 bundle; copying the bundle there does
+not make it verifiable. Positive acceptance remains open.
+
 ## Prototype plan (disposable lab)
 
 1. Build a scratch image carrying a `sigstoreSigned` policy for a test key.
