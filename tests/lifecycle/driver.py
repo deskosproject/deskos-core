@@ -123,6 +123,11 @@ def rollback_queued(status):
     return bool((status.get("status") or {}).get("rollbackQueued"))
 
 
+def booted_verity(status):
+    booted = (status.get("status") or {}).get("booted") or {}
+    return (booted.get("composefs") or {}).get("verity")
+
+
 def image_b_containerfile():
     """The image B Containerfile: both markers in one RUN instruction.
 
@@ -173,6 +178,20 @@ def with_grub_default(text, value="1"):
                 raise ValueError("grubenv block size would change")
             return result
     raise ValueError("grubenv has no padding for default")
+
+
+def grub_entry_index(entries, verity):
+    """Return the menu index of the BLS entry whose options carry `verity`.
+
+    GRUB orders BLS entries by `sort-key` from high to low; that is why the
+    freshly installed image can be entry 1 after a rollback. Entries is a
+    sequence of (sort-key, options) pairs.
+    """
+    ordered = sorted(entries, key=lambda entry: entry[0], reverse=True)
+    for index, (_, options) in enumerate(ordered):
+        if verity and verity in options:
+            return index
+    raise ValueError(f"no boot entry carries verity {verity}")
 
 
 def block(boot, step, digest, staged, rollback, marker, etc, image_etc):
@@ -417,13 +436,17 @@ class Driver:
                 return device
         raise HarnessError("no free nbd device")
 
-    def set_boot_default(self, value="1"):
+    def set_boot_default(self, value="1", verity=None, other=False):
         """Mount the installed root and set the GRUB default entry.
 
         GRUB is not driven through QMP: the two BLS entries have identical
         titles and a one-second timeout, so key injection is not deterministic.
         The accepted recovery path is host-side: mount the disk, set the
         previous entry as default, boot it.
+
+        When `verity` is given, find the entry that boots that deployment. With
+        `other`, set the other entry (the staged candidate) and return the
+        installed deployment's index for the recovery step.
         """
         self.sh(*self.sudo, "modprobe", "nbd", check=False)
         nbd = self.free_nbd()
@@ -451,7 +474,24 @@ class Driver:
             if root is None:
                 raise HarnessError("no ext4/xfs root partition on the disk")
             self.sh(*self.sudo, "mount", "-o", "rw", root, str(mount))
+            installed = None
             try:
+                if verity:
+                    entries = []
+                    for entry in sorted((mount / "boot/loader/entries").glob("*.conf")):
+                        raw = subprocess.run(
+                            [*self.sudo, "cat", str(entry)], check=True,
+                            capture_output=True, text=True).stdout
+                        sort_key = ""
+                        options = ""
+                        for line in raw.splitlines():
+                            if line.startswith("sort-key "):
+                                sort_key = line.split(" ", 1)[1]
+                            elif line.startswith("options "):
+                                options = line
+                        entries.append((sort_key, options))
+                    installed = grub_entry_index(entries, verity)
+                    value = str(1 if installed == 0 else 0) if other else str(installed)
                 grubenv = mount / GRUBENV
                 raw = subprocess.run(
                     [*self.sudo, "cat", str(grubenv)], check=True,
@@ -462,6 +502,7 @@ class Driver:
                     check=True, text=True, stdout=subprocess.DEVNULL)
             finally:
                 self.sh(*self.sudo, "umount", str(mount), check=False)
+            return installed
         finally:
             self.sh(*self.sudo, "qemu-nbd", "-d", nbd, check=False)
 
@@ -477,9 +518,14 @@ class Driver:
         self.record("stage-d", collect=False)
 
         self.say("boot the failed candidate")
+        installed = None
+        verity = booted_verity(self.status())
+        if not verity:
+            self.failure.append("booted deployment has no composefs verity")
+            return
         self.kill_qemu()
         try:
-            self.set_boot_default("1")
+            installed = self.set_boot_default(verity=verity, other=True)
         except (HarnessError, ValueError) as exc:
             self.failure.append(f"could not select the candidate boot entry: {exc}")
             return
@@ -495,7 +541,7 @@ class Driver:
 
         self.say("set the previous GRUB entry and boot it")
         try:
-            self.set_boot_default("0")
+            self.set_boot_default(str(installed))
         except (HarnessError, ValueError) as exc:
             self.failure.append(f"could not set the previous boot entry: {exc}")
             return
