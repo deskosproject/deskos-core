@@ -1245,7 +1245,8 @@ def main():
         # What the fixture saw, not only what the guest said: the browser check
         # needs evidence that a browser made the request.
         values["browser_firefox_requests"] = str(
-            sum(1 for ua in server.hits if "firefox" in ua.lower()))
+            sum(1 for ua in server.hits
+                if "firefox" in ua.lower() or "gecko" in ua.lower()))
     with open(os.path.join(a.out, "journal.txt"), "w") as f:
         f.write(journal + "\n")
     result = {"mode": a.mode, "instrumented": True, "boot": summary["result"], "boot_failures": summary["failures"],
