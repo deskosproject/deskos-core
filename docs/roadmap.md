@@ -129,7 +129,8 @@ Details in
   window is still untested.
 - **Installer ISO:** the test-only ISO from `tests/installer/` installs
   unattended in QEMU (`installer-test.yml`, dispatch only; last green
-  2026-10-24) and requires the builder's "Install finished" marker. Nothing
+  2026-10-26, run `40266578605`, on the published `sha256:96fe80d3…`) and
+  requires the builder's "Install finished" marker. Nothing
   installs the **published** ISO: its storage is interactive, so only a person
   completes it. An organization's RHEL ISO is installed by hand; on 2026-10-23
   one shipped a `graphical --non-interactive` kickstart that RHEL 10.2's
