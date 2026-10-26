@@ -314,8 +314,9 @@ they cover.
     rule by validating what is declared;
   - the session check should prove a locked key **cannot be changed**, not only
     that the lock file was rendered;
-  - `deskos report` and `deskos check` should list the active locks and say
-    which are not enforced;
+  - **Done (2026-10-27):** `deskos report` lists the locks the plan declares and
+    says that enforcement is not its measurement; `deskos check` names the locks
+    in its scope and points at the instrumented session check;
   - an organization-facing guide: which locks fit a managed laptop, what they
     break (printing, saving files, online accounts), and how they interact with
     user and site settings.

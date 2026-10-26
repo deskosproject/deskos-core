@@ -260,3 +260,44 @@ func TestRollbackDryRunDoesNotRunBootc(t *testing.T) {
 		t.Fatal("dry-run executed bootc")
 	}
 }
+
+func TestReportListsLocksAndSaysEnforcementIsNotMeasured(t *testing.T) {
+	root := withPlan(t, map[string]any{
+		"artifact": map[string]any{
+			"baseImage": map[string]any{"image": "example.org/bootc:1"},
+			"files":     []any{},
+			"packages":  []any{},
+			"dconf": map[string]any{
+				"name":     "distro",
+				"defaults": []any{},
+				"locks": []any{map[string]any{
+					"key":     "/org/gnome/shell/favorite-apps",
+					"setting": "shell.favorites",
+				}},
+			},
+		},
+	})
+
+	code, out, errOut := runCLI(t, "report", "--root", root)
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	for _, want := range []string{
+		"Locks:       1 declared",
+		"/org/gnome/shell/favorite-apps (shell.favorites)",
+		"whether the running session enforces them is not",
+		"measured here",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("report lacks %q:\n%s", want, out)
+		}
+	}
+
+	code, out, errOut = runCLI(t, "check", "--root", root)
+	if code != 0 {
+		t.Fatalf("check exit %d: %s", code, errOut)
+	}
+	if !strings.Contains(out, "whether the session enforces the 1 dconf lock(s)") {
+		t.Errorf("check scope does not say the locks are not measured:\n%s", out)
+	}
+}

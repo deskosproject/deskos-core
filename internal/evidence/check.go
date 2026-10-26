@@ -80,9 +80,14 @@ func DeclaredScope(p *plan.Plan) Scope {
 		"the mode and the ownership of the files this plan installs: only their content is compared",
 		"the runtime state of services, units and timers, including whether a declared timer is on",
 		"whether the extensions the plan enables are really loaded: that is a session check",
-		"the dconf locks the plan declares, and its GSettings vendor defaults",
+		"the GSettings vendor defaults the plan declares",
 		"the kernel arguments the plan declares: whether the booted machine carries them",
 		"whether the running image is the one this plan was rendered for: the plan names its base, not the image built from it",
+	}
+	if db := a.Dconf; db != nil && len(db.Locks) > 0 {
+		s.NotChecked = append(s.NotChecked, fmt.Sprintf(
+			"whether the session enforces the %d dconf lock(s) the plan declares: the instrumented session check writes each key and expects failure",
+			len(db.Locks)))
 	}
 	if n := len(a.Binaries); n > 0 {
 		// The binaries are files the plan installs too, but not in the list above: they
