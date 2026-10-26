@@ -85,6 +85,7 @@ it boots the disk as shipped.
 | Each favorite resolves to a command | `sessioncheck.py` | the entry's `Exec` names a binary the image ships | the command is missing, or a Flatpak app, which the Flatpak check owns | instrumented |
 | Browser fetches harness content | `sessioncheck.py` | Firefox dumps the DOM of a page served by the harness, marker present, and screenshots it | fetch fails, marker missing or no screenshot | instrumented |
 | Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
+| Offline login | `sessioncheck.py --offline` (Core) | autologin reaches a session with no NIC and no default route | no session, or the boot kept a route | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
@@ -95,10 +96,11 @@ A missing result, an unreadable value or a `not measurable` count is a failure
 or an explicit unverified item, not a pass. The session row is an **instrumented
 autologin session**, not proof of an interactive GDM login.
 
-**Not proved by these probes:** an interactive GDM login and the Wayland session
-type through GDM; launching every declared favorite; offline login; Flatpak
-install after reconnection; suspend, battery, display and other hardware
-behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
+**Not proved by these probes:** an interactive GDM login (the probes autologin),
+so the Wayland session type through GDM is unproved too; launching every
+declared favorite; Flatpak install after reconnection; suspend, battery, display
+and other hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied
+claims.
 
 ## What is not covered
 

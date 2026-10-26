@@ -73,6 +73,7 @@ GOOD = {
     "favorite_exec_1": "org.gnome.Calculator.desktop:present",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
     "browser_exit": "0", "browser_content": "ok", "browser_screenshot": "yes",
+    "default_routes": "0",
     "system_failed_units": "", "user_failed_units": "",
     **reported(PLAN),
 }
@@ -293,6 +294,21 @@ class ParseEvaluateTest(unittest.TestCase):
         bad = dict(GOOD, browser_content="missing")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
         self.assertEqual(failed, {"Firefox fetches the harness page"})
+
+    def test_an_offline_boot_asserts_the_session_and_the_missing_route(self):
+        # The browser page and the Flatpak store need the network this boot
+        # lacks; the login and the absent route are what it claims.
+        values = dict(GOOD, browser_content="missing", flatpak_apps="")
+        checks = sc.evaluate(values, PLAN, offline=True)
+        names = {c["check"] for c in checks}
+        self.assertNotIn("Firefox fetches the harness page", names)
+        self.assertIn("the offline boot had no default route", names)
+        self.assertTrue(all(c["pass"] for c in checks))
+
+    def test_an_offline_boot_that_kept_a_route_fails(self):
+        bad = dict(GOOD, default_routes="1")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN, offline=True) if not c["pass"]}
+        self.assertEqual(failed, {"the offline boot had no default route"})
 
     def test_a_login_logo_whose_file_is_missing_fails(self):
         plan = copy.deepcopy(PLAN)

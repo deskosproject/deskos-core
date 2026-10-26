@@ -107,8 +107,9 @@ Details in
   image ships (`sessioncheck.py`). Launching the application itself is still a
   field item: a GUI app that starts and exits is not a deterministic check.
 - The browser fetches a page the harness serves on the host side of QEMU's
-  network and returns its marker, and the login logo's file exists in the
-  image (`sessioncheck.py`). Offline login is not covered yet.
+  network and returns its marker, the login logo's file exists in the image,
+  and Core boots once with no NIC to prove the session logs in offline
+  (`sessioncheck.py`).
 - Reboot and shutdown splash in the session run.
 - **Tier C lifecycle (A -> B -> A):** designed and implemented
   (`tests/lifecycle/driver.py`), and it ran end to end on CS10 on 2026-10-24
@@ -120,14 +121,15 @@ Details in
   failed candidate. It runs weekly on `main` and on dispatch, not on pull
   requests: it is too slow for every change. The ostree-write interruption
   window is still untested.
-- **Installer ISO:** no check installs one. The ISO is built, signed and
-  published, but nothing boots Anaconda and asserts it reaches the progress
-  screen and installs. On 2026-10-23 an organization's RHEL ISO shipped a kickstart
-  with `graphical --non-interactive`; RHEL 10.2's Anaconda aborted it at the
-  progress screen (`User interaction required on standalone spoke
-  ProgressSpoke`), and the machine rebooted, which reads as a hardware
-  failure. Boot the ISO in QEMU and follow the install, at least for the
-  CentOS Stream 10 preview.
+- **Installer ISO:** the test-only ISO from `tests/installer/` installs
+  unattended in QEMU (`installer-test.yml`, dispatch only; last green
+  2026-10-24) and requires the builder's "Install finished" marker. Nothing
+  installs the **published** ISO: its storage is interactive, so only a person
+  completes it. An organization's RHEL ISO is installed by hand; on 2026-10-23
+  one shipped a `graphical --non-interactive` kickstart that RHEL 10.2's
+  Anaconda aborted at the progress screen (`User interaction required on
+  standalone spoke ProgressSpoke`), and the machine rebooted, which read as a
+  hardware failure.
 - **Installer tree pinning:** the installer's own payload (Anaconda,
   lorax) comes from the distribution repositories when the ISO is built; it
   is not pinned the way the image is, so the same kickstart can behave

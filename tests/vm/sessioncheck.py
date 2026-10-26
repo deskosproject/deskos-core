@@ -411,7 +411,8 @@ login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | s
 if [ -n "$login_logo" ]; then
   test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
 fi
-{extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{tray}{binary_reads_fragment}echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
+echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -924,7 +925,7 @@ def check_status(c):
     return "PASS" if c["pass"] else "FAIL"
 
 
-def evaluate(values, plan, journal="", skel_rels=()):
+def evaluate(values, plan, journal="", skel_rels=(), offline=False):
     checks = []
 
     def check(name, ok, detail, skipped=False, coverage=None, unread=None):
@@ -939,6 +940,15 @@ def evaluate(values, plan, journal="", skel_rels=()):
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
           f"session_type={values.get('session_type')}")
+    if offline:
+        # The boot has no NIC, so a session here is a login that needed no
+        # network. The route count proves the harness really removed it: a VM
+        # that quietly kept user networking would make the claim untested.
+        check("the offline boot had no default route", values.get("default_routes") == "0",
+              f"default_routes={values.get('default_routes')}")
+        check("GDM autologin reaches a session without network",
+              values.get("session_type") in ("wayland", "x11"),
+              f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
     # Every binary the plan installs must be there, executable, and -- when the plan
@@ -1055,8 +1065,10 @@ def evaluate(values, plan, journal="", skel_rels=()):
               f"file={values.get('login_logo_file') or 'not read'}")
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
-    declared_flatpaks = {a["id"] for a in
-                         plan.get("provisioning", {}).get("flatpakApplications") or []}
+    # A first boot with no network cannot install what the preinstall unit
+    # downloads; the offline check claims the login, not the store.
+    declared_flatpaks = set() if offline else {a["id"] for a in
+                                              plan.get("provisioning", {}).get("flatpakApplications") or []}
     if declared_flatpaks:
         installed = {a for a in (values.get("flatpak_apps") or "").split(",") if a}
         missing = sorted(declared_flatpaks - installed)
@@ -1068,10 +1080,12 @@ def evaluate(values, plan, journal="", skel_rels=()):
         # The harness serves a page on the host side of QEMU's user network and
         # the browser must return its marker: this is the network path and the
         # renderer, where about:blank is only the binary starting.
-        check("Firefox fetches the harness page",
-              values.get("browser_content") == "ok" and values.get("browser_screenshot") == "yes",
-              f"exit={values.get('browser_exit')} content={values.get('browser_content')} "
-              f"screenshot={values.get('browser_screenshot')}")
+        # The harness page needs the network this boot deliberately lacks.
+        if not offline:
+            check("Firefox fetches the harness page",
+                  values.get("browser_content") == "ok" and values.get("browser_screenshot") == "yes",
+                  f"exit={values.get('browser_exit')} content={values.get('browser_content')} "
+                  f"screenshot={values.get('browser_screenshot')}")
     # Every default the plan declares is read back from the session, and each one
     # is two claims: what the image carries and what the session sees. The list is
     # the plan's, so a default declared later is asserted without editing this
@@ -1128,6 +1142,8 @@ def main():
     p.add_argument("--boot-timeout", type=int, default=900)
     p.add_argument("--shutdown-timeout", type=int, default=120)
     p.add_argument("--interval", type=float, default=3.0)
+    p.add_argument("--offline", action="store_true",
+                   help="boot with no network and assert the session still logs in")
     p.add_argument("--seed-skel", action="store_true",
                    help="copy /etc/skel into the test user's HOME, as useradd -m would, and check the generated seeds")
     p.add_argument("--app", help="open this command in the session so a captured frame shows the themed widgets")
@@ -1153,7 +1169,7 @@ def main():
     # The browser check needs a page served from the host for as long as the
     # guest is up; journal mode adds no session, so it serves nothing.
     server, browser_url = (None, "")
-    if a.mode == "session":
+    if a.mode == "session" and not a.offline:
         server, browser_url = browser_fixture()
 
     run_args = argparse.Namespace(
@@ -1166,7 +1182,7 @@ def main():
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
                                            browser_url)),
-        until_serial=MARK_END, guest_powers_off=True,
+        until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:
         summary = bootcheck.run(run_args)
@@ -1184,7 +1200,7 @@ def main():
     result = {"mode": a.mode, "instrumented": True, "boot": summary["result"], "boot_failures": summary["failures"],
               "values": values, "plan_workstation": plan.get("workstation", {}).get("name")}
     if a.mode == "session":
-        result["checks"] = evaluate(values, plan, journal, skel_rels)
+        result["checks"] = evaluate(values, plan, journal, skel_rels, offline=a.offline)
         result["plan_defaults"] = default_coverage(result["checks"])
         result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)

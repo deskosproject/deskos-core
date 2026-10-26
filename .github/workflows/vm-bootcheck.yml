@@ -257,6 +257,18 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session --disk "$WORK/output/qcow2/disk.qcow2" \
             --plan "$WORK/evidence/plan.json" --out "$WORK/session" --boot-timeout 900
 
+      - name: Offline login (the same disk booted with no NIC)
+        # Core only: a login that needs no network is the claim, and it is the
+        # same for both images. The guest reports whether it kept a default
+        # route, so a boot that quietly kept networking fails instead of
+        # passing as an offline login.
+        if: matrix.workstation == 'deskos-core-centos-stream-10'
+        timeout-minutes: 25
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session --offline \
+            --disk "$WORK/output/qcow2/disk.qcow2" --plan "$WORK/evidence/plan.json" \
+            --out "$WORK/session-offline" --boot-timeout 900
+
       - name: First-boot check (is the wizard the session, can an account log in)
         id: firstboot
         timeout-minutes: 25
@@ -325,6 +337,7 @@ jobs:
             ${{ env.WORK }}/bootcheck
             ${{ env.WORK }}/bootcheck-attempt1
             ${{ env.WORK }}/session
+            ${{ env.WORK }}/session-offline
             ${{ env.WORK }}/firstboot
             ${{ env.WORK }}/journal-failed-boot
             !${{ env.WORK }}/**/*.qcow2

@@ -101,6 +101,12 @@ Kernel arguments and Plymouth are unchanged, but this is an
 python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.json --out session-1
 ```
 
+`--offline` boots the same disk with **no NIC** and asserts the session still
+logs in: it checks that the guest has no default route, so a boot that quietly
+kept user networking fails instead of passing as an offline login. The browser
+page and the declared Flatpak store need the network, so both are skipped in
+that mode.
+
 Expected values come from the image's `plan.json`: the enabled
 extensions (including Dash to Dock), the favorites order, each favorite's
 desktop entry (system or Flatpak export) and the command that entry launches,
