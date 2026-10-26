@@ -223,6 +223,26 @@ Details in
 - Standalone (installer-created local user) and managed (FreeIPA or AD)
   models, per-machine emergency account.
 - Installer and kickstart integration; enrollment kept out of the image.
+- **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
+  must be able to stop users from changing chosen settings, following
+  [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
+  `GnomeProfile.spec.locks` already renders locks for the settings the model
+  declares — Core never locks (invariant 8) — but a corporate fleet needs more:
+  - the lock enum stops at the settings DeskOS models. The guide also locks
+    printing, file saving, online accounts, logout and user switching, and
+    `org.gnome.desktop.lockdown.*`. Decide between extending the enum and a
+    controlled list of dconf keys/prefixes; either keeps the "no escape hatch"
+    rule by validating what is declared;
+  - the session check should prove a locked key **cannot be changed**, not only
+    that the lock file was rendered;
+  - `deskos report` and `deskos check` should list the active locks and say
+    which are not enforced;
+  - an organization-facing guide: which locks fit a managed laptop, what they
+    break (printing, saving files, online accounts), and how they interact with
+    user and site settings.
+
+  This is an organization's policy layered like any other `GnomeProfile`; Core
+  provides no lock of its own.
 
 ## Milestone 6: compliance and supply chain
 
