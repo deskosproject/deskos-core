@@ -214,12 +214,10 @@ Details in
 - **Mission statement, non-goals and values.** The roadmap and the ADRs explain
   what DeskOS does, but a newcomer has no short answer to "what is this, and
   what is it deliberately not". Write a mission with explicit non-goals and a
-  values page, following the shape of Bluefin's
-  [mission](https://docs.projectbluefin.io/mission/#project-non-goals) and
-  [values](https://docs.projectbluefin.io/values/). The non-goals already exist
-  as invariants (ADR 0001, 0002, 0005, 0011): no fleet or runtime enforcement,
-  no escape hatches, no management of a user's `$HOME`, and no model in
-  compilation. Say them once, where they are read first.
+  values page. The non-goals already exist as invariants (ADR 0001, 0002, 0005,
+  0011): no fleet or runtime enforcement, no escape hatches, no management of a
+  user's `$HOME`, and no model in compilation. Say them once, where they are
+  read first.
 
 ### Secure Boot (proposed 2026-10-26)
 
