@@ -1,7 +1,9 @@
 # Promotion of one tested digest
 
-**Status: design proposal, 2026-10-25. No channel, registry tag or approval
-process is created by this document.**
+**Status: implemented, 2026-10-26.** The gate publishes `:candidate`;
+`promotion.yml` verifies the digest and its evidence, stores an approval record
+and moves `:stable` by digest. The first promotion is the next step, so the
+"exercised" claim comes with that run. No canary or pilot channel exists.
 
 P0-06 asks for build-once promotion: one image digest moves through stages
 without being rebuilt, carrying its evidence and a recorded human decision.
@@ -12,13 +14,18 @@ promotion is not recorded as an artifact.
 ## What is true today
 
 - The publish job builds **one** image per platform leg, boots that same
-  `$IMAGE`, pushes `:<commit>`, and moves `:latest` by digest after the checks.
+  `$IMAGE`, pushes `:<commit>`, and moves `:latest` and `:candidate` by digest
+  after the checks. `:stable` is not touched by the gate.
 - `:<commit>` is a naming convention, not registry-enforced immutability. A
   digest is the exact identity.
 - Evidence is a 14-day workflow artifact (attempt-suffixed) and, for a
   published digest, a durable digest-keyed index under `evidence.deskos.org`
   (P0-05, implemented 2026-10-26). The attestation names the SBOM hash; the
   index resolves it to bytes.
+- `promotion.yml` is the only writer of `:stable`. It verifies the keyless
+  signature (identity: `supply-chain.yml` on `main`), fetches and verifies every
+  object the digest's index names, records the approval, moves the tag by
+  digest, and verifies the tag resolves to the same digest.
 - Machines follow the reference they were installed from; `:latest` is mutable,
   a digest is not. `deskos update` stages whatever that reference now serves.
 - Publication requires a human dispatch; there is no second reviewer or
@@ -31,13 +38,12 @@ and it does not imply a rebuild.
 
 | Channel | Meaning | Entry | Exit |
 |---|---|---|---|
-| `candidate` | built and gate-checked, not recommended for general use | publish dispatch | evidence index complete, scan/boot green, human authorization |
-| `canary` | a small set of opted-in machines may update | candidate evidence plus a named canary owner | agreed observation window with no blocking regression |
-| `stable` | the channel the page and documentation recommend | canary result plus human authorization | replaced by a later digest, or withdrawn |
+| `candidate` | built and gate-checked, not recommended for general use | publish dispatch, by digest | evidence index complete, scan/boot green, human authorization |
+| `canary` | **not used**; documented for completeness | a named owner and opted-in machines | an agreed window with no blocking regression |
+| `stable` | the channel the page and documentation recommend | `promotion.yml`, by digest, with an approval record | replaced by a later digest, or withdrawn |
 
-All four stages are not mandatory at this project's scale. A platform may stop at
-`candidate → stable`; the important part is that every move names a digest, the
-evidence and a person.
+At this project's scale the path is `candidate → stable`, with no canary stage.
+The important part is that every move names a digest, the evidence and a person.
 
 ## Promotion is a move, not a build
 
@@ -46,11 +52,13 @@ evidence and a person.
 2. Check the stage's entry conditions: scan result, boot/session/first-boot
    results, SBOM/Plan hashes, exception record and review dates.
 3. Write an approval record: digest, from-channel, to-channel, person, time,
-   evidence index hash and a reason. Store it with the evidence.
+   previous stable digest, evidence index hash and a reason. It is stored in the
+   public evidence bucket under `approvals/<repository>/<channel>/…`, never
+   inside a digest's immutable prefix.
 4. Move the destination tag **by digest** (a registry-side tag update), never
    by rebuilding. `:<commit>` remains as the build record.
 5. Verify from a clean machine that the destination tag resolves to the same
-   digest and that its evidence is retrievable.
+   digest, that its signature verifies, and that its evidence is retrievable.
 
 A tag move is not magic: caches and already-staged machines keep what they have
 until they fetch. The approval record is the source of truth for what was
@@ -80,17 +88,25 @@ No channel switch is automatic. A machine that is offline, metered or on battery
 still follows its own update policy; promotion is not a fleet action (ADR 0001,
 no controller). There is no telemetry to prove who runs a canary.
 
-## Open decisions
+## Decisions (2026-10-26)
 
-- Channel names and whether they exist per platform repository.
-- Who authorizes each move, and whether a second person is required at this
-  scale (P0-04).
-- Canary selection without telemetry: opt-in machines and a named owner, or no
-  canary stage at all.
-- Retention: which digests/channels stay after a promotion; the previous stable
-  digest should remain for rollback and evidence.
-- Whether the approval record is a signed attestation, a file in the evidence
-  index, or both.
+- Channels exist per platform repository: `candidate` and `stable`. `:latest`
+  stays as the gate's pointer for machines and documents that already follow it;
+  retiring it is a separate change.
+- One person authorizes a move: the maintainer who dispatches `promotion.yml`.
+  The record names the actor and an approver (the actor by default).
+- No canary stage. Adding one needs opted-in machines and a named owner, and the
+  project has neither.
+- The previous stable digest is recorded in the approval record and remains
+  retrievable by its `:<commit>` tag and by digest.
+- The approval record is a JSON object in the evidence bucket, not a signed
+  attestation. Its `evidence_index_sha256` binds it to the evidence it was
+  approved against.
+
+## Open questions
+
+- Whether to sign the approval record, and with which identity.
+- Whether to retire `:latest` once `:stable` has been exercised.
 - How OCI referrers and the evidence store interact if both are kept.
 
 ## Non-goals

@@ -396,6 +396,13 @@ jobs:
           latest="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:latest")"
           printf '%s\n' "$latest" > latest-digest.txt
           [ "$latest" = "$digest" ] || { echo "::error::$DEST:latest is $latest, not the signed $digest"; exit 1; }
+          # The gate's own channel. :latest stays for machines and documents that
+          # already follow it; :stable is never moved here, only by a recorded
+          # promotion (promotion.yml), so "what the gate built" and "what a person
+          # promoted" are different tags.
+          sudo skopeo copy --preserve-digests "docker://$DEST@$digest" "docker://$DEST:candidate"
+          candidate="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$DEST:candidate")"
+          [ "$candidate" = "$digest" ] || { echo "::error::$DEST:candidate is $candidate, not the signed $digest"; exit 1; }
           # cosign v3 has no `logout`; the credentials live in the runner's
           # docker config, and podman logout clears the registry login.
           sudo podman logout quay.io

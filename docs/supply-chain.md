@@ -339,7 +339,16 @@ A digest moves forward only when, for that digest:
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.
 
-Steps 1–4 run in `supply-chain.yml` today; what is still open is promoting
-the same digest through channels (candidate, canary, pilot, stable) without
-rebuilding. This is the "factory" layer around the compiler — it never
-enters compiler semantics (see `AGENTS.md`, invariant 11).
+Steps 1–4 run in `supply-chain.yml`. Promotion is a separate, recorded move:
+
+- the gate publishes `:<commit>`, `:latest` and `:candidate`, all by digest;
+- `promotion.yml` is the only writer of `:stable`. It checks that `:candidate`
+  serves the digest, verifies the keyless signature, fetches and verifies every
+  object the digest's evidence index names, stores an approval record under
+  `approvals/<repository>/stable/` in the public evidence bucket, and only then
+  moves `:stable` by digest;
+- the record names the digest, the previous stable digest, the actor, the
+  approver, the reason, the evidence index hash and the run.
+
+This is the "factory" layer around the compiler — it never enters compiler
+semantics (see `AGENTS.md`, invariant 11). No canary or pilot channel exists.

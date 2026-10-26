@@ -371,7 +371,8 @@ account the upstream container image ships suppressing the wizard — is in
   published by the gate's `publish=true` dispatch (run `40247330799`, commit
   `0c6c42f`):
   `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:96fe80d3…`, with
-  `:latest` and the commit tag at the same digest. `cosign verify` with the
+  `:latest` and the commit tag at the same digest (the next gate run also
+  publishes `:candidate`). `cosign verify` with the
   workflow issuer and this repository's identity passes, with the SBOM,
   accepted-exception and effective-exception attestations bound to that
   digest. The 16 evidence objects for the digest were fetched back and
@@ -789,8 +790,9 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   produced them, are under
   [Validation status](#validation-status) on this page. Publishing is manual: the
   `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
-  and signs `:<commit>` and promotes `:latest` by digest. It is not published on
-  every green `main`; pin a digest in production.
+  and signs `:<commit>`, `:latest` and `:candidate` by digest. `:stable` moves
+  only through `promotion.yml`, which records who promoted which digest and
+  why. It is not published on every green `main`; pin a digest in production.
 - **A CentOS Stream 10 preview ISO** is published at
   <https://download.deskos.org/>. It is built from a published image, not from
   the current `main`, and it is a preview rather than a supported channel; the
@@ -799,8 +801,9 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   (see [example-platforms.md](example-platforms.md)). The CI builds a QCOW2 (the EL
   platforms) only as test input; an Ubuntu disk is written with
   `bootc install to-disk` by that platform's own repository.
-- **Planned:** promote the same digest through channels (candidate,
-  canary, pilot, stable) without rebuilding. A mirror on
+- **Implemented, not yet exercised:** `candidate → stable` promotion of one
+  digest without rebuilding, with an approval record in the evidence bucket
+  (`docs/design/promotion.md`). No canary or pilot channel. A mirror on
   `ghcr.io/deskosproject/deskos-core` is possible and not decided.
 
 `deskosctl` itself is released as a linux/amd64 binary on GitHub Releases
