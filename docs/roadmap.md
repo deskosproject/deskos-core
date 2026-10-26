@@ -232,6 +232,13 @@ Details in
   zero: image, deployment, update, rollback, and how a DeskOS plan becomes that
   image. The point is more screenshots and a beginner path that does not assume
   the vocabulary.
+- **Evidence on the site (proposed 2026-10-26).** The digest-keyed evidence
+  exists at `evidence.deskos.org`, but the site never uses it. Add an
+  `/evidence/` page generated from the index — digest, platform, what the boot
+  and session checks proved, the signature, and what was not measured — and a
+  strip on the home page that names the verified digest and links to it. Read
+  the public bucket only: an organization's private evidence never appears.
+  Generated, never hand-written, so a claim cannot drift from the record.
 
 ### Secure Boot (proposed 2026-10-26)
 
