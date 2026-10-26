@@ -1,7 +1,10 @@
 # The installer payload
 
-**Status: proposal, 2026-10-26. Nothing here is implemented; it exists to
-decide whether the installer's own tree is pinned or recorded as floating.**
+**Status: accepted, 2026-10-26.** The installer tree **floats**, and
+`installer-test.yml` is the guard: it installs the test-only ISO unattended and
+fails if Anaconda does not reach "Install finished". The pinned image is the
+installed system; the ISO is the delivery vehicle. This is a smaller promise
+than pinning, and it is the one we can keep today.
 
 The ISO is a delivery vehicle. What gets installed is an image digest; the
 installer decides how that image reaches a disk and what a person is asked on
@@ -31,9 +34,9 @@ holding the laptop.
 | **Record that it floats, guard with a test install** | no new mirror; a change that breaks the install shows up before a person meets it | the ISO is not reproducible; a test-only ISO is not the published one, so an interactive-only regression can still escape |
 | **Vendor a thin installer from a pinned image** | the installer is the image, so the pin covers it | a different install path (live image + `bootc install`), and the interactive storage story has to be rebuilt |
 
-## Recommendation
+## Decision
 
-Record that it floats for now, and make the guard explicit:
+Record that it floats, and make the guard explicit:
 
 1. the test-only ISO installs unattended in CI (`installer-test.yml`), which is
    the check that would have caught the ProgressSpoke abort;
@@ -45,7 +48,8 @@ Record that it floats for now, and make the guard explicit:
 
 This is a smaller promise than pinning: it says the **installed system** is the
 digest we tested, and the **installer** is whatever the vendor shipped that day,
-checked by an unattended install.
+checked by an unattended install. Revisit the vendored-installer option if a
+second installer regression reaches a person.
 
 ## What this does not decide
 
