@@ -274,6 +274,17 @@ firmware trusts every link from the ESP to the kernel:
 - Standalone (installer-created local user) and managed (FreeIPA or AD)
   models, per-machine emergency account.
 - Installer and kickstart integration; enrollment kept out of the image.
+- **Domain join against a disposable FreeIPA (proposed 2026-10-26).** Prove the
+  managed model end to end without a corporate directory: run FreeIPA in a
+  container on the test host, join a throwaway installed VM with
+  `ipa-client-install`, and log in as a directory user at GDM. It is the only
+  way to exercise DNS, Kerberos, SSSD, PAM and the home-directory policy
+  together, which unit tests cannot. It comes after the model exists — an
+  organization profile that installs `ipa-client`, enrollment kept out of the
+  image — and runs nightly or on demand, not on every pull request: it needs a
+  privileged container or a second VM and several minutes. The evidence records
+  the server version, the realm and the image digest; the container is a test
+  fixture, never a support claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
