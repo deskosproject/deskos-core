@@ -125,8 +125,9 @@ Details in
   its composefs verity. `lifecycle.yml` ran the full path on GitHub-hosted
   runners on 2026-10-26 and passed: 7 steps, A → B → A, power loss and the
   failed candidate. It runs weekly on `main` and on dispatch, not on pull
-  requests: it is too slow for every change. The ostree-write interruption
-  window is still untested.
+  requests: it is too slow for every change, and the first scheduled run
+  (2026-10-26, run `40305080925`) did the full path. The ostree-write
+  interruption window is still untested.
 - **Installer ISO:** the test-only ISO from `tests/installer/` installs
   unattended in QEMU (`installer-test.yml`, dispatch only; last green
   2026-10-26, run `40266578605`, on the published `sha256:96fe80d3…`) and
