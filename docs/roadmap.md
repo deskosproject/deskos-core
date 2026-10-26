@@ -168,7 +168,7 @@ Details in
   `.github/workflows/track-bst-sources.yml`; Renovate covers the rest.
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
-  [resources.md](resources.md#rpmrepository)).
+  [resources/software.md](resources/software.md#rpmrepository)).
 - ~~APT sources as their own kind~~ done: `AptRepository` renders a signed
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
@@ -413,11 +413,11 @@ its own.
   committed. Core's P0-03 is closed as "signed and manually verifiable"; an
   enforcing organization still owns the Anaconda install path and key rotation.
   See [authenticity.md](design/authenticity.md).
-- **Documentation restructure (in progress).** The platform matrix now has one
-  home, [platforms.md](platforms.md), and the README states the
-  `YAML → validate → compose → plan → Containerfile → image → disk` line.
-  [troubleshooting.md](troubleshooting.md) now covers symptom → check →
-  remedy. Still open: splitting `docs/resources.md` into
+- ~~Documentation restructure~~ done: [platforms.md](platforms.md) is the one
+  platform matrix, the README states the
+  `YAML → validate → compose → plan → Containerfile → image → disk` line,
+  [troubleshooting.md](troubleshooting.md) covers symptom → check → remedy, and
+  `docs/resources.md` is now an index over
   `resources/{core,software,desktop,system}.md`. Nothing here documents a
   migration between versions: pre-1.0 there is no supported older version to
   migrate from. Keep `research-notes` a dated archive, not current status.
