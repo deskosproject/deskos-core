@@ -394,6 +394,28 @@ how-to: [supply-chain.md](supply-chain.md).
   ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)); the
   commands read the files listed in ADR 0007. Still open: system Flatpak
   updates and fwupd checks from the same endpoint.
+- **`deskos etc` (proposed 2026-10-27).** Make the `/etc` three-way merge
+  visible and reversible. `deskos etc` compares the running `/etc` with the
+  booted image's baseline (`/usr/etc` on the ostree/bootc backend) and lists
+  modified, added and removed paths; when a deployment is staged, it can show
+  the next image's baseline too, so the three inputs of the merge — image,
+  local and next — stop being a black box. `deskos etc reset PATH…`, `--all`
+  and `--dry-run` copy the baseline back, keep a timestamped copy under
+  `/var/lib/deskos/etc-backup/`, and refuse a path the image does not own unless
+  asked; `--all` names the local additions it would delete before doing it. It
+  only works on a backend that keeps a baseline and merges `/etc`; elsewhere it
+  refuses and says why. It is also the way back after rebasing a machine from
+  another ostree distribution, where resetting all of `/etc` to the DeskOS
+  baseline is the point — a narrow case, but the same tool.
+  Runtime files the image cannot carry — NetworkManager connections,
+  machine-id, SSH host keys, printer and Bluetooth state, sockets, caches — are
+  ignored by default, and an organization can extend the list. The suggested
+  interface is `/etc/deskos/deskos.conf`, but how the organization declares it
+  is a decision: a `Profile` field or an image-owned default with layered
+  overrides, not a new escape hatch. Ignored paths are counted and named in a
+  summary, never silently dropped; content is shown only on request because
+  `/etc` holds secrets. No daemon, no reconciliation, no enforcement: a person
+  asks, and the tool reports or acts (ADR 0001, 0018).
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
 
