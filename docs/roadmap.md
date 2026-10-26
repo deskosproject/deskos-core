@@ -244,7 +244,9 @@ how-to: [supply-chain.md](supply-chain.md).
   evidence. With `publish` on `main` it also pushes the scanned image and
   signs it **keyless** with `cosign`, attaching the installed SBOM as a
   CycloneDX attestation.
-- Remaining for stage 3: channel promotion (candidate, canary, pilot, stable).
+- **Done (2026-10-26):** `candidate → stable` promotion of one digest without a
+  rebuild, with an approval record
+  ([design](design/promotion.md)). No canary or pilot channel.
   Key-based signing for RHEL moved to a downstream organization's pipeline,
   which owns the entitled build host and signs with no OIDC and no transparency
   log (2026-10-14).
@@ -260,7 +262,8 @@ how-to: [supply-chain.md](supply-chain.md).
 
 ## Milestone 7: release promotion and update UX
 
-- Channels (candidate, canary, pilot, stable) promoting one digest.
+- ~~Channels promoting one digest~~ done for `candidate → stable`; canary and
+  pilot are not planned at this scale.
 - **Done:** `UpdatePolicy`
   ([ADR 0007](adr/0007-updatepolicy.md)). Images stage the next image from a
   DeskOS timer, daily and on AC power in Core, and the bootc timer that reboots
