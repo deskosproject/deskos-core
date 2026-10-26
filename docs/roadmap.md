@@ -140,8 +140,9 @@ Details in
 - **Installer tree pinning:** the installer's own payload (Anaconda,
   lorax) comes from the distribution repositories when the ISO is built; it
   is not pinned the way the image is, so the same kickstart can behave
-  differently between builds. Decide whether to pin it or to record that it
-  floats.
+  differently between builds. [A proposal](design/installer-payload.md)
+  recommends recording that it floats and guarding it with the test-only
+  install; the decision is open.
 - RHEL: the build, boot and session checks run in
   a downstream organization's repository (GitHub-hosted); no reference
   matching or E2E.
