@@ -218,6 +218,17 @@ Details in
   0011): no fleet or runtime enforcement, no escape hatches, no management of a
   user's `$HOME`, and no model in compilation. Say them once, where they are
   read first.
+- **Website and documentation for two audiences.** The site explains the model
+  to a reader who already knows bootc and Flatpak. Restructure it around a
+  normal user and a developer: a task-oriented manual with a screenshot in
+  every chapter, an install page that shows the download, the checksum and how
+  to try the image in a VM, and a first-run path for someone who has never used
+  an image-based system. For the user, a plain page on installing software —
+  Flatpak through Bazaar and `flatpak`, mise for command-line tools — and
+  updates and rollback explained without jargon. For the developer, bootc from
+  zero: image, deployment, update, rollback, and how a DeskOS plan becomes that
+  image. The point is more screenshots and a beginner path that does not assume
+  the vocabulary.
 
 ### Secure Boot (proposed 2026-10-26)
 
