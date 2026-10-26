@@ -1,8 +1,9 @@
 # Durable evidence for a published digest
 
-**Status: implemented, 2026-10-25.** The R2 buckets, `evidence.deskos.org`,
-the public upload token and the uploader are in place. The first upload of a real
-published digest is pending.
+**Status: implemented and exercised, 2026-10-26.** The R2 buckets,
+`evidence.deskos.org`, the public upload token and the uploader are in place. The
+first real digest is stored and verified: 16 objects for
+`sha256:96fe80d33023bdd4b674b45288e13a0e4aaedb935b09e154bc4adbc132f3fab6`.
 
 P0-05 asks that a historical image digest's evidence can still be retrieved and
 verified after workflow artifacts expire. Today it cannot.
@@ -68,8 +69,8 @@ attestation naming the SBOM hash; the index resolves that hash to bytes.
 The public bucket and `evidence.deskos.org` are provisioned, and the
 `evidence-write` environment carries the public upload credential. The
 `tests/evidence/upload.py` uploader and a separate evidence job are merged. The
-first real upload waits for the next published digest; the organization's private
-bucket token is separate.
+first real digest was uploaded and all 16 objects were fetched back and verified
+from the public URL. The organization's private bucket token is separate.
 
 Start with **one digest** as a lab: upload the installed SBOM, scan report, Plan,
 identity record and a README; fetch them from a clean machine; verify hashes and

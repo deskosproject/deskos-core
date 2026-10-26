@@ -346,7 +346,9 @@ account the upstream container image ships suppressing the wizard — is in
   disk hash, and the published digest/reference and signature evidence when
   present. The record is uploaded even on failure, and a successful leg checks
   that it is complete. It is workflow evidence, not `/etc/os-release`; the
-  distribution identity stays the vendor's. Durable storage is still open.
+  distribution identity stays the vendor's. For a published digest it is also
+  stored under `evidence.deskos.org`, keyed by digest and verified from the
+  public URL.
 - **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
   classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
   wallpaper), and `sessioncheck.py` on the instrumented boot. What the session check
@@ -363,15 +365,18 @@ account the upstream container image ships suppressing the wizard — is in
   consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
   disk under nested KVM on the entitled factory VM (example wallpaper). Not in
   CI; no full E2E.
-- **Published and signed image (verified 2026-10-18).** The old single repository
-  (`quay.io/deskos/deskos-core`, run `37162282876`, commit `8ab0cc9`) is withdrawn and
-  replaced by one repository per shipped platform, published by the gate's `publish=true`
-  dispatch (run `39067812799`, commit `e21c4f7`):
-  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:39dff937…`, with `:latest`
-  and the commit tag at the same digest. `cosign verify` with the workflow issuer and
-  this repository's identity passes, with the SBOM, accepted-exception and
-  effective-exception attestations bound to that digest. RHEL-derived images are never
-  published (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
+- **Published, signed and durable evidence (verified 2026-10-26).** The old
+  single repository (`quay.io/deskos/deskos-core`, run `37162282876`, commit
+  `8ab0cc9`) is withdrawn and replaced by one repository per shipped platform,
+  published by the gate's `publish=true` dispatch (run `40247330799`, commit
+  `0c6c42f`):
+  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:96fe80d3…`, with
+  `:latest` and the commit tag at the same digest. `cosign verify` with the
+  workflow issuer and this repository's identity passes, with the SBOM,
+  accepted-exception and effective-exception attestations bound to that
+  digest. The 16 evidence objects for the digest were fetched back and
+  verified from `evidence.deskos.org`. RHEL-derived images are never published
+  (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
   Fedora are example platforms and publish nothing.
 - **Example AlmaLinux and Fedora platforms.** Their self-contained roots compose and
   render in CI, and `examples-weekly.yml` builds and boots them weekly without
