@@ -147,6 +147,12 @@ The first upload is the reason this path exists: it indexed the whole checkout
 instead of the durable artifact and never wrote `index.json`. Its digest,
 `sha256:36824c3e…`, was published, so the repair is a backfill, not a deletion.
 
+That repair was exercised on 2026-10-26: `prune` removed the 332 objects of the
+failed upload, and `backfill` published the 16 objects from run `40244202449`'s
+durable artifact. Fetching them back from `evidence.deskos.org` and running
+`verify.py` reported `verified 16 object(s)`. The evidence for
+`sha256:96fe80d3…` was not touched.
+
 ## Open decisions
 
 - Organization private bucket owner and name.
