@@ -358,6 +358,15 @@ echo "deskos_report_workstation=$(sed -n 's/^Workstation: //p' /var/tmp/deskos-q
 # crash; exit 2 would mean the tool could not be used.
 deskos check > /var/tmp/deskos-qa/deskos-check.txt 2>&1
 echo "deskos_check_exit=$?"
+# The login logo is a system dconf default: its file must exist, or GDM draws a
+# bare screen (the compiler copies only the effective logo).
+login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
+echo "login_logo=$login_logo"
+if [ -n "$login_logo" ]; then
+  test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
+fi
+# The offline check needs to prove the boot really had no network.
+echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 # Its own file: the browser block plus this script would exceed the cap.
 "$HOME/deskos-qa-browser.sh"
 """
@@ -421,17 +430,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-# The GDM login logo is a system dconf default, so the session reads the value
-# GDM would use. Its file must exist in the image: the compiler copies only the
-# effective logo, and a key that names a file the image does not carry leaves
-# the login screen bare (docs/checks.md).
-login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
-echo "login_logo=$login_logo"
-if [ -n "$login_logo" ]; then
-  test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
-fi
-{extensions}{tray}{binary_reads_fragment}echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
-echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
