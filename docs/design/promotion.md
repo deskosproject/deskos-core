@@ -15,8 +15,10 @@ promotion is not recorded as an artifact.
   `$IMAGE`, pushes `:<commit>`, and moves `:latest` by digest after the checks.
 - `:<commit>` is a naming convention, not registry-enforced immutability. A
   digest is the exact identity.
-- Evidence is a 14-day workflow artifact (attempt-suffixed); the attestation
-  names the SBOM hash, not the bytes. P0-05 proposes a digest-keyed index.
+- Evidence is a 14-day workflow artifact (attempt-suffixed) and, for a
+  published digest, a durable digest-keyed index under `evidence.deskos.org`
+  (P0-05, implemented 2026-10-26). The attestation names the SBOM hash; the
+  index resolves it to bytes.
 - Machines follow the reference they were installed from; `:latest` is mutable,
   a digest is not. `deskos update` stages whatever that reference now serves.
 - Publication requires a human dispatch; there is no second reviewer or
@@ -40,7 +42,7 @@ evidence and a person.
 ## Promotion is a move, not a build
 
 1. Resolve the source tag to a digest and verify the image signature and the
-   evidence index for that digest (P0-05).
+   evidence index for that digest.
 2. Check the stage's entry conditions: scan result, boot/session/first-boot
    results, SBOM/Plan hashes, exception record and review dates.
 3. Write an approval record: digest, from-channel, to-channel, person, time,
@@ -89,7 +91,7 @@ no controller). There is no telemetry to prove who runs a canary.
   digest should remain for rollback and evidence.
 - Whether the approval record is a signed attestation, a file in the evidence
   index, or both.
-- How OCI referrers (P0-05) and the evidence store interact if both are kept.
+- How OCI referrers and the evidence store interact if both are kept.
 
 ## Non-goals
 
