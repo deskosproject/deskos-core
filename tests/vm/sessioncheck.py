@@ -273,31 +273,38 @@ def browser_fixture():
     return server, f"http://{BROWSER_HOST}:{server.server_address[1]}/"
 
 
-def session_probe(url=""):
+# tmpfiles.d caps one argument at 4095 B, so the session's probes are split
+# across files that the autostart script calls in order.
+def session_browser_probe(url=""):
+    """The browser probe, delivered as its own file.
+
+    It fetches the page the harness serves on the host side of QEMU's user
+    network: about:blank only proves the binary starts (docs/checks.md).
+    """
+    if not url:
+        return "#!/bin/bash\n# this run has no harness page to fetch\n"
+    return (
+        "#!/bin/bash\n"
+        f'url={shlex.quote(url)}\n'
+        "dom=/var/tmp/deskos-qa/browser.html\n"
+        'timeout 120 firefox --headless --dump-dom "$url" > "$dom" 2>/dev/null\n'
+        'echo "browser_exit=$?"\n'
+        f'grep -q "{BROWSER_MARKER}" "$dom" && echo "browser_content=ok" '
+        '|| echo "browser_content=missing"\n'
+        'timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/browser.png '
+        '"$url" >/dev/null 2>&1\n'
+        'test -s /var/tmp/deskos-qa/browser.png && echo "browser_screenshot=yes" '
+        '|| echo "browser_screenshot=no"\n'
+    )
+
+
+def session_probe():
     """The helper script for probes that would push the main script past 4095 B.
 
-    tmpfiles.d caps one argument; the main session script was already close to
-    that. This helper resolves every declared favorite, asks the shell to lock,
-    waits for the Flatpak preinstall and, when the harness serves a page, has
-    the browser fetch it, so it can grow without making the autostart script
-    undeliverable.
+    It resolves every declared favorite and the command each launches, locks
+    the screen, waits for the Flatpak preinstall and runs the shipped runtime
+    tool, then calls the browser probe from its own file.
     """
-    browser = ""
-    if url:
-        browser = (
-            "# The browser must fetch the page the harness serves and render it:\n"
-            "# about:blank only proves the binary starts (docs/checks.md).\n"
-            f'url={shlex.quote(url)}\n'
-            "dom=/var/tmp/deskos-qa/browser.html\n"
-            'timeout 120 firefox --headless --dump-dom "$url" > "$dom" 2>/dev/null\n'
-            'echo "browser_exit=$?"\n'
-            f'grep -q "{BROWSER_MARKER}" "$dom" && echo "browser_content=ok" '
-            '|| echo "browser_content=missing"\n'
-            'timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/browser.png '
-            '"$url" >/dev/null 2>&1\n'
-            'test -s /var/tmp/deskos-qa/browser.png && echo "browser_screenshot=yes" '
-            '|| echo "browser_screenshot=no"\n'
-        )
     return r"""#!/bin/bash
 # Every declared favorite must name an installed desktop entry, and the command
 # that entry launches must exist: a correct id whose Exec names a binary this
@@ -351,7 +358,9 @@ echo "deskos_report_workstation=$(sed -n 's/^Workstation: //p' /var/tmp/deskos-q
 # crash; exit 2 would mean the tool could not be used.
 deskos check > /var/tmp/deskos-qa/deskos-check.txt 2>&1
 echo "deskos_check_exit=$?"
-""" + browser
+# Its own file: the browser block plus this script would exceed the cap.
+"$HOME/deskos-qa-browser.sh"
+"""
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
@@ -532,7 +541,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
             f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
             f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
-            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe(browser_url))}",
+            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe())}",
+            f"f {HOME}/deskos-qa-browser.sh 0755 {USER} {USER} - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
             # the autologin to both and creates each directory, so the check does

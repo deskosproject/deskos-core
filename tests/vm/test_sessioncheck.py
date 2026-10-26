@@ -231,11 +231,20 @@ class TmpfilesTest(unittest.TestCase):
 
     def test_session_credentials_carry_the_browser_url(self):
         c = sc.credentials("session", browser_url="http://10.0.2.2:8080/")
-        probe = next(l for l in c["tmpfiles.extra"].splitlines()
-                     if l.startswith(f"f {sc.HOME}/deskos-qa-probe.sh ")).replace("\\n", "\n")
-        self.assertIn("url=http://10.0.2.2:8080/", probe)
-        self.assertIn("--dump-dom", probe)
+        browser = next(l for l in c["tmpfiles.extra"].splitlines()
+                       if l.startswith(f"f {sc.HOME}/deskos-qa-browser.sh ")).replace("\\n", "\n")
+        self.assertIn("url=http://10.0.2.2:8080/", browser)
+        self.assertIn("--dump-dom", browser)
+        # The probe is a file of its own and calls the browser probe: together
+        # they do not fit one tmpfiles.d argument.
+        self.assertIn('"$HOME/deskos-qa-browser.sh"', sc.session_probe())
         self.assertNotIn("--dump-dom", sc.session_probe())
+
+    def test_the_probe_files_fit_one_tmpfiles_argument(self):
+        self.assertLess(len(sc.session_probe().encode()), sc.TMPFILES_ARG_MAX)
+        self.assertLess(len(sc.session_browser_probe("http://10.0.2.2:8080/").encode()),
+                        sc.TMPFILES_ARG_MAX)
+        self.assertLess(len(sc.REPORT_SESSION.encode()), sc.TMPFILES_ARG_MAX)
 
     def test_the_browser_fixture_serves_the_marker(self):
         server, url = sc.browser_fixture()
