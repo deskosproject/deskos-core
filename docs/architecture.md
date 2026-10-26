@@ -490,7 +490,16 @@ The unit is `WantedBy=multi-user.target`, `Type=exec`, and ordered after
 `multi-user.target` suppresses the implicit `After=` a target adds to
 units it wants (systemd v257 `unit_add_default_target_dependency`), so
 **DeskOS adds no network wait to any boot target**; `Type=exec` means
-nothing waits for the download itself. It does not restart.
+nothing waits for the download itself.
+
+Two first-boot failures are worth naming, and the unit handles both before
+each attempt: an interrupted pull can leave a ref that `flatpak preinstall` will
+not refresh (`flatpak repair` removes it), and a stale Flathub summary can
+report a declared app as "not found in the remote" (`flatpak update --appstream`
+refreshes it). It then **retries until it succeeds** (`Restart=on-failure`,
+`RestartSec=60`, no start limit), because a laptop may connect its network
+minutes after the unit starts; retrying is bounded per attempt, not per boot.
+Nothing else waits for it.
 
 A remote is OSTree by default. `transport: oci` makes it an index of
 Flatpak images in a container registry instead: the remote file carries
