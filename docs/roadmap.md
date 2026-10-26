@@ -74,8 +74,11 @@ each slice is reviewed on its own:
   and boots them weekly without publishing. Re-promotion requires a durable base
   (for Fedora, a mirrored digest in DeskOS Quay) and the checklist in
   [example-platforms.md](example-platforms.md).
-- **Open:** decide how to treat `bootc container lint` warnings from
-  packages.
+- **Decided (2026-10-24):** accept the three vendor-scriptlet warnings and keep
+  `bootc container lint` in report mode
+  ([architecture.md](architecture.md#lint-warnings)). A warning that originates
+  in a DeskOS `RUN` step is a defect and blocks; the vendors' are tracked
+  upstream.
 
 ## Milestone 3: VM boot and desktop tests
 
@@ -408,12 +411,12 @@ its own.
   See [authenticity.md](design/authenticity.md).
 - **Documentation restructure (in progress).** The platform matrix now has one
   home, [platforms.md](platforms.md), and the README states the
-  `YAML → validate → compose → plan → Containerfile → image → disk` line. Still
-  open: splitting `docs/resources.md` into
-  `resources/{core,software,desktop,system}.md` and a `troubleshooting.md`
-  (symptom → check → remedy). Nothing here documents a migration between
-  versions: pre-1.0 there is no supported older version to migrate from. Keep
-  `research-notes` a dated archive, not current status.
+  `YAML → validate → compose → plan → Containerfile → image → disk` line.
+  [troubleshooting.md](troubleshooting.md) now covers symptom → check →
+  remedy. Still open: splitting `docs/resources.md` into
+  `resources/{core,software,desktop,system}.md`. Nothing here documents a
+  migration between versions: pre-1.0 there is no supported older version to
+  migrate from. Keep `research-notes` a dated archive, not current status.
 - **Durable SBOM storage (P0-05).** Decided 2026-10-25: R2, public bucket
   `deskos-evidence-public` served at `evidence.deskos.org`, a private bucket
   owned by the organization, a token scoped to the bucket or prefix, every
