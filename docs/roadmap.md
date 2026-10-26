@@ -211,6 +211,24 @@ Details in
   image-based workstation whose store is Bazaar. Ship
   `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
   and assert in the first-boot check that the page is gone.
+- **Mission statement, non-goals and values.** The roadmap and the ADRs explain
+  what DeskOS does, but a newcomer has no short answer to "what is this, and
+  what is it deliberately not". Write a mission with explicit non-goals and a
+  values page. The non-goals already exist as invariants (ADR 0001, 0002, 0005,
+  0011): no fleet or runtime enforcement, no escape hatches, no management of a
+  user's `$HOME`, and no model in compilation. Say them once, where they are
+  read first.
+- **Website and documentation for two audiences.** The site explains the model
+  to a reader who already knows bootc and Flatpak. Restructure it around a
+  normal user and a developer: a task-oriented manual with a screenshot in
+  every chapter, an install page that shows the download, the checksum and how
+  to try the image in a VM, and a first-run path for someone who has never used
+  an image-based system. For the user, a plain page on installing software —
+  Flatpak through Bazaar and `flatpak`, mise for command-line tools — and
+  updates and rollback explained without jargon. For the developer, bootc from
+  zero: image, deployment, update, rollback, and how a DeskOS plan becomes that
+  image. The point is more screenshots and a beginner path that does not assume
+  the vocabulary.
 
 ### Secure Boot (proposed 2026-10-26)
 
