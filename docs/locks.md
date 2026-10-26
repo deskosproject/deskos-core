@@ -27,6 +27,48 @@ accumulate across the foundation, organization, role and workstation layers, so
 a higher layer cannot unlock what a lower one locked. Change the layer that
 declares the lock.
 
+## How it works
+
+Two different things, often confused:
+
+1. **Composition, at build time.** A `GnomeProfile` at any layer declares a
+   value under `defaults` and, separately, a setting under `locks`. The value
+   composes as usual: the highest layer wins. The lock is a set: it accumulates,
+   and a higher layer cannot remove it. A lock does **not** freeze the
+   composition: if a workstation above the organization declares another
+   wallpaper, the image ships the workstation's wallpaper — still locked. The
+   lock applies to the dconf key, not to the value or the layer. If an
+   organization needs one fixed value, it must own the profiles and workstations;
+   the model has no composition lock.
+   A lock needs an effective value: if no included profile sets the setting,
+   composition fails with “GNOME lock … has no effective value to lock”.
+2. **Runtime, in GNOME.** The backend writes the lock into the image's dconf
+   database. At login, dconf reads it; GNOME Settings and `gsettings set` answer
+   that the key is not writable, and a user, local or site value cannot override
+   it. There is no agent and no policy service: the image carries the lock.
+
+### Wallpaper, concretely
+
+`appearance.wallpaper` lowers to three keys — background light, background dark
+and screensaver — so a lock on the setting locks all three. Declare a wallpaper
+first (usually inherited from `deskos-look`), then lock it:
+
+```yaml
+spec:
+  defaults:
+    appearance:
+      wallpaper:
+        light: ../assets/org-wallpaper.svg
+  locks:
+    - appearance.wallpaper
+```
+
+The image ships that wallpaper locked: the Settings chooser and `gsettings`
+cannot change it. If a workstation includes this profile and sets another
+wallpaper, the image ships the other one, also locked; the lock is not a veto on
+composition. `appearance.loginLogo` is a different setting and is not covered by
+this lock; the login screen has its own profile.
+
 ## What can be locked
 
 The model knows these settings, so these are the names a lock accepts:

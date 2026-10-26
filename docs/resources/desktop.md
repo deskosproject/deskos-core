@@ -120,10 +120,12 @@ spec:
   locks: [shell.favorites, appearance.wallpaper]
 ```
 
-A lock is a dconf lock in the image's database, not a runtime agent. Core never
-locks (invariant 8); an organization's policy is explicit. See
-[locks.md](../locks.md) for what fits a managed laptop, what a lock breaks, and
-how it interacts with user and site values.
+A lock is a dconf lock in the image's database, not a runtime agent. It needs an
+effective value from some included profile, and it stops the running user from
+changing the key; it does not stop a higher layer from choosing a different
+composed value. Core never locks (invariant 8); an organization's policy is
+explicit. See [locks.md](../locks.md) for how the two planes work, what fits a
+managed laptop, and what a lock breaks.
 
 ## `Theme`
 
