@@ -75,5 +75,16 @@ class SerialHintTest(unittest.TestCase):
         self.assertTrue(got.endswith("x"))
 
 
+class NetworkTest(unittest.TestCase):
+    def test_a_normal_boot_carries_a_nic(self):
+        self.assertEqual(bootcheck.network_args(type("A", (), {})()),
+                         ["-nic", "user,model=virtio-net-pci"])
+
+    def test_an_offline_boot_carries_none(self):
+        # QEMU adds a user NIC when nothing is said, so silence is not offline.
+        self.assertEqual(bootcheck.network_args(type("A", (), {"network": False})()),
+                         ["-nic", "none"])
+
+
 if __name__ == "__main__":
     unittest.main()
