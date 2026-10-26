@@ -1,9 +1,9 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
-**Status:** design, evaluator, driver and a dispatch-only workflow
+**Status:** design, evaluator, driver and a workflow that runs weekly on `main`
 (2026-10-24; boot-failure recovery added 2026-10-25; full workflow green
-2026-10-26). `lifecycle.yml` runs the driver on manual dispatch; no pull
-request and no schedule runs it. It first ran end to end on 2026-10-24:
+2026-10-26). `lifecycle.yml` runs the driver on a weekly schedule and on manual
+dispatch; no pull request runs it. It first ran end to end on 2026-10-24:
 install and stage on boot 1, B and rollback on boot 2, A on boot 3,
 evaluator `ok`. The boot-failure run passed on 2026-10-25: D failed, the host
 selected A by its composefs verity, and the recovery boot held the marker. The
@@ -214,9 +214,9 @@ spikes were folded into: it builds A and B, pushes them to the local registry,
 installs with `bootc install to-disk`, boots, drives the guest over SSH and
 evaluates the record. `--interrupt` adds the power-loss run; `--boot-failure`
 adds D and the host-side GRUB recovery. It needs rootful podman, qemu,
-`qemu-nbd`, `skopeo` and `/dev/kvm`, takes about thirty minutes, and is
-**dispatch-only**: `ci.yml` runs its unit tests, and `lifecycle.yml` runs the
-driver by hand until it has been green on real builds for a while.
+`qemu-nbd`, `skopeo` and `/dev/kvm`, takes about thirty minutes, and is **not a
+pull-request gate**: `ci.yml` runs its unit tests, and `lifecycle.yml` runs the
+driver weekly on `main` and by hand.
 
 ## Markers and evaluation
 

@@ -85,7 +85,7 @@ it boots the disk as shipped.
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
-| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, dispatch |
+| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
 
 A missing result, an unreadable value or a `not measurable` count is a failure
