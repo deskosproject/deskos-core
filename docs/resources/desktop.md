@@ -110,6 +110,21 @@ spec:
 - **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
+### Locks
+
+A profile can make a setting read-only for the user with `spec.locks`, using the
+same semantic names as `defaults`:
+
+```yaml
+spec:
+  locks: [shell.favorites, appearance.wallpaper]
+```
+
+A lock is a dconf lock in the image's database, not a runtime agent. Core never
+locks (invariant 8); an organization's policy is explicit. See
+[locks.md](../locks.md) for what fits a managed laptop, what a lock breaks, and
+how it interacts with user and site values.
+
 ## `Theme`
 
 A **named, reusable look** — a palette mapped onto the surfaces GNOME
