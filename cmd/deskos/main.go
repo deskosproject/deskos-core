@@ -28,10 +28,18 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         dconf defaults it declares) with this machine, and publish which paths and
         states it checks and which it leaves out.
 
+  deskos status
+        Say what this machine is running: the image it follows, the booted
+        deployment, anything staged, and the rollback.
+
   deskos update [--apply] [--dry-run]
         Update this machine's image with a guard: it refuses when a condition prevents
         a safe update and reports the rest. It is not a reconciler, and it does not
         touch what a user changed.
+
+  deskos rollback [--dry-run]
+        Ask bootc to stage the previous deployment for the next boot. Nothing
+        changes until the machine reboots.
 
   deskos window --days mon,wed --at 03:00 [--grace 5m] [--timezone TZ]
   deskos window --days mon,wed --start 03:00 --duration 2h [--timezone TZ]
@@ -60,8 +68,12 @@ func run(args []string, out, errOut io.Writer) int {
 		return report(args[1:], out, errOut)
 	case "check":
 		return check(args[1:], out, errOut)
+	case "status":
+		return status(args[1:], out, errOut)
 	case "update":
 		return update(args[1:], out, errOut)
+	case "rollback":
+		return rollback(args[1:], out, errOut)
 	case "window":
 		return window(args[1:], out, errOut)
 	default:
@@ -159,5 +171,74 @@ func update(args []string, out, errOut io.Writer) int {
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
+	return 0
+}
+
+func status(args []string, out, errOut io.Writer) int {
+	fs := flag.NewFlagSet("status", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	h, err := (system{root: "/"}).Host()
+	if err != nil {
+		fmt.Fprintf(errOut, "deskos status: %v\n", err)
+		fmt.Fprintln(errOut, "hint: run `sudo deskos status`; bootc may need root to read the deployment")
+		return 1
+	}
+	fmt.Fprint(out, formatHost(h))
+	return 0
+}
+
+func formatHost(h hostStatus) string {
+	follows := h.Follows
+	if follows == "" {
+		follows = "unknown"
+	}
+	queued := "no"
+	if h.RollbackQueued {
+		queued = "yes"
+	}
+	return fmt.Sprintf("Follows:  %s\nBooted:   %s\nStaged:   %s\nRollback: %s\nRollback queued: %s\n",
+		follows, deploymentLine(h.Booted), deploymentLine(h.Staged), deploymentLine(h.Rollback), queued)
+}
+
+func deploymentLine(d *bootcDeployment) string {
+	if d == nil {
+		return "none"
+	}
+	line := d.Image.Image.Image
+	if d.Image.ImageDigest != "" {
+		line += " @ " + d.Image.ImageDigest
+	}
+	if d.Image.Version != "" {
+		line += " (" + d.Image.Version + ")"
+	}
+	if line == "" {
+		return "unknown"
+	}
+	return line
+}
+
+func rollback(args []string, out, errOut io.Writer) int {
+	fs := flag.NewFlagSet("rollback", flag.ContinueOnError)
+	fs.SetOutput(errOut)
+	dryRun := fs.Bool("dry-run", false, "say what would run, and change nothing")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+	if *dryRun {
+		fmt.Fprintln(out, "would run: bootc rollback")
+		return 0
+	}
+	if os.Geteuid() != 0 {
+		fmt.Fprintln(errOut, "deskos rollback: needs root to ask bootc to roll back; run `sudo deskos rollback`")
+		return 1
+	}
+	if err := systemRunner("bootc", "rollback"); err != nil {
+		fmt.Fprintf(errOut, "deskos rollback: %v\n", err)
+		return 1
+	}
+	fmt.Fprintln(out, "rollback staged; reboot to boot the previous deployment")
 	return 0
 }
