@@ -148,17 +148,30 @@ def tray_probe():
     promise that an icon is drawn for a real application; both are said plainly
     in the check names and in ADR 0021.
     """
+    call = (
+        "gdbus call --session --dest org.kde.StatusNotifierWatcher "
+        "--object-path /StatusNotifierWatcher "
+        "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
+        "/StatusNotifierItem"
+    )
     return (
         "if gdbus introspect --session --dest org.kde.StatusNotifierWatcher "
         "--object-path /StatusNotifierWatcher > /dev/null 2>&1; then\n"
         '  echo "tray_watcher=present"\n'
-        "  if gdbus call --session --dest org.kde.StatusNotifierWatcher "
-        "--object-path /StatusNotifierWatcher "
-        "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
-        "/StatusNotifierItem > /dev/null 2>&1; then\n"
+        # The extension registers its watcher a moment after the shell starts and
+        # can reject a registration while it settles. Retry instead of turning a
+        # startup race into a failed session; the last error is kept in the report.
+        '  ok=no\n'
+        '  err=""\n'
+        '  for i in 1 2 3 4 5; do\n'
+        '    err="$(' + call + ' 2>&1)" && { ok=yes; break; }\n'
+        '    sleep 2\n'
+        '  done\n'
+        '  if [ "$ok" = yes ]; then\n'
         '    echo "tray_register=accepted"\n'
         "  else\n"
         '    echo "tray_register=rejected"\n'
+        '    echo "tray_register_error=$err"\n'
         "  fi\n"
         "else\n"
         '  echo "tray_watcher=absent"\n'
