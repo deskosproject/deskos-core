@@ -409,13 +409,21 @@ how-to: [supply-chain.md](supply-chain.md).
   baseline is the point — a narrow case, but the same tool.
   Runtime files the image cannot carry — NetworkManager connections,
   machine-id, SSH host keys, printer and Bluetooth state, sockets, caches — are
-  ignored by default, and an organization can extend the list. The suggested
-  interface is `/etc/deskos/deskos.conf`, but how the organization declares it
-  is a decision: a `Profile` field or an image-owned default with layered
-  overrides, not a new escape hatch. Ignored paths are counted and named in a
-  summary, never silently dropped; content is shown only on request because
-  `/etc` holds secrets. No daemon, no reconciliation, no enforcement: a person
-  asks, and the tool reports or acts (ADR 0001, 0018).
+  ignored by default, and an organization can extend the list. The policy file
+  is **`/etc/deskos/deskos.json`**: an image-owned default rendered from the
+  organization's resource, not a hand-edited escape hatch. JSON is the
+  recommendation because the compiler emits it, the runtime parses it with the
+  Go standard library, and it needs no comments; a line-oriented `deskos.conf`
+  would win only if the list were meant to be edited on the machine, which is
+  not this design. How the organization declares it is still a decision (a
+  `Profile` field or a first-class resource), not a new shell. The tool ignores
+  `/etc/deskos/` in both the diff and the reset: the policy is not a managed
+  file. If it differs from the image, it says so separately and suggests
+  rebuilding the image; `reset --all` never touches it unless asked with
+  `--include-policy`. Ignored paths are counted and named in a summary, never
+  silently dropped; content is shown only on request because `/etc` holds
+  secrets. No daemon, no reconciliation, no enforcement: a person asks, and the
+  tool reports or acts (ADR 0001, 0018).
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
 
