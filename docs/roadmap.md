@@ -211,6 +211,24 @@ Details in
   image-based workstation whose store is Bazaar. Ship
   `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
   and assert in the first-boot check that the page is gone.
+- **Mission statement, non-goals and values.** The roadmap and the ADRs explain
+  what DeskOS does, but a newcomer has no short answer to "what is this, and
+  what is it deliberately not". Write a mission with explicit non-goals and a
+  values page. The non-goals already exist as invariants (ADR 0001, 0002, 0005,
+  0011): no fleet or runtime enforcement, no escape hatches, no management of a
+  user's `$HOME`, and no model in compilation. Say them once, where they are
+  read first.
+- **Website and documentation for two audiences.** The site explains the model
+  to a reader who already knows bootc and Flatpak. Restructure it around a
+  normal user and a developer: a task-oriented manual with a screenshot in
+  every chapter, an install page that shows the download, the checksum and how
+  to try the image in a VM, and a first-run path for someone who has never used
+  an image-based system. For the user, a plain page on installing software —
+  Flatpak through Bazaar and `flatpak`, mise for command-line tools — and
+  updates and rollback explained without jargon. For the developer, bootc from
+  zero: image, deployment, update, rollback, and how a DeskOS plan becomes that
+  image. The point is more screenshots and a beginner path that does not assume
+  the vocabulary.
 
 ### Secure Boot (proposed 2026-10-26)
 
@@ -267,6 +285,17 @@ they cover.
 - Standalone (installer-created local user) and managed (FreeIPA or AD)
   models, per-machine emergency account.
 - Installer and kickstart integration; enrollment kept out of the image.
+- **Domain join against a disposable FreeIPA (proposed 2026-10-26).** Prove the
+  managed model end to end without a corporate directory: run FreeIPA in a
+  container on the test host, join a throwaway installed VM with
+  `ipa-client-install`, and log in as a directory user at GDM. It is the only
+  way to exercise DNS, Kerberos, SSSD, PAM and the home-directory policy
+  together, which unit tests cannot. It comes after the model exists — an
+  organization profile that installs `ipa-client`, enrollment kept out of the
+  image — and runs nightly or on demand, not on every pull request: it needs a
+  privileged container or a second VM and several minutes. The evidence records
+  the server version, the realm and the image digest; the container is a test
+  fixture, never a support claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
