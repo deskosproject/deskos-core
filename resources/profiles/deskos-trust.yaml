@@ -6,8 +6,11 @@ spec:
   layer: foundation
   description: The trust store roots DeskOS refuses to trust.
   resources:
-    # The CA roots of the October 2026 eMudhra compromise, blocklisted while a
-    # platform's ca-certificates still ships them (RHSB-2026-012).
+    # The CA roots of the October 2026 eMudhra compromise (RHSB-2026-012).
+    # Only the AlmaLinux 10 pinned base still ships them (ca-certificates
+    # 2025.2.80-102.el10_1). CentOS Stream 10 (2026.2.92-100.1), RHEL 10.2
+    # (2026.2.92-100.3) and Fedora 45 (2026.2.92-2.fc45) no longer do, so their
+    # workstations do not select this profile.
     #
     # This is a profile and not part of deskos-core on purpose: a distrust needs
     # a platform trust store that has a blocklist (p11-kit), and a platform that
@@ -15,7 +18,7 @@ spec:
     # workstation adds it explicitly, and an organization may add its own
     # certificates at any layer.
     #
-    # Temporary: drop this profile from a workstation once every platform it
-    # builds on carries the vendor's fixed ca-certificates.
+    # Temporary: delete this profile and its resource when the AlmaLinux base
+    # moves to a ca-certificates that no longer ships the roots.
     - kind: TrustAnchor
       name: deskos-distrusted-roots

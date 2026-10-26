@@ -184,8 +184,8 @@
     },
     {
       "id": "CVE-2026-114406",
-      "kind": "accepted-risk-mitigated-in-image",
-      "reason": "Accepted by the owner on 2026-10-23 and re-reviewed on 2026-10-26 for the Stream 10 base move. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. Not a false positive: the base now carries 2026.2.92_v9.0.319-100.1, and the fixed build is 2026.2.92_v9.0.319-100.3.el10_2, which the compose does not serve yet. The image mitigates it: Profile deskos-trust blocklists emSign ECC Root CA - G3 and AAA Certificate Services in /etc/pki/ca-trust/source/blocklist, and the built image verifies that trust list has neither root, that the extracted bundle drops from 121 to 120 anchors, and that curl and dnf still work. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry and the profile when the compose carries ca-certificates-2026.2.92_v9.0.319-100.3.",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-23 and re-reviewed on 2026-10-26 for the Stream 10 base move. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base now carries 2026.2.92_v9.0.319-100.1, which no longer ships the two roots DeskOS blocklisted (verified in the base bundle), so the deskos-trust profile is no longer selected by this workstation; the remaining roots are what the fixed 2026.2.92_v9.0.319-100.3 build removes. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when the compose serves ca-certificates-2026.2.92_v9.0.319-100.3.",
       "matches": [
         {
           "package": "ca-certificates",
