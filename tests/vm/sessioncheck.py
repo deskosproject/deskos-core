@@ -63,6 +63,9 @@ BINARY_PATHS_PATH = "/var/lib/deskos-qa/binaries.keys"
 # session sees. The key list travels as a file of its own so the script that reads
 # it stays inside the tmpfiles.d argument cap (tests/vm/README.md) as plans grow.
 DCONF_KEYS_PATH = "/var/lib/deskos-qa/dconf-defaults.keys"
+# The dconf keys the plan locks. The session tries to write each one and must
+# fail: a rendered lock file is not evidence that the session enforces it.
+DCONF_LOCKS_PATH = "/var/lib/deskos-qa/dconf-locks.keys"
 # The plan's GSettings vendor defaults (the compiled `*.gschema.override` path)
 # travel as schema and key per line, tab separated, for the same reason.
 VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
@@ -245,6 +248,34 @@ def default_reads(image_database, vendor):
     )
 
 
+def lock_reads():
+    """The script fragment that tries to write every locked key.
+
+    Writing the value the key already has must fail when dconf enforces the lock;
+    an unlocked key accepts the write and reports so. The value is read again
+    after the attempt, so a lock that lets the write through is caught even if the
+    command exits zero for another reason.
+    """
+    return (
+        "# Every dconf key the plan locks: writing its current value must fail.\n"
+        f"mapfile -t lock_keys < {DCONF_LOCKS_PATH}\n"
+        'for i in "${!lock_keys[@]}"; do\n'
+        '  k="${lock_keys[$i]}"\n'
+        '  before=$(dconf read "$k" 2>/dev/null) || before="' + ERROR + '"\n'
+        '  if [ -z "$before" ] || [ "$before" = "' + ERROR + '" ]; then\n'
+        '    echo "lock_$i=unknown"\n'
+        '  elif dconf write "$k" "$before" 2>/dev/null; then\n'
+        '    echo "lock_$i=writable"\n'
+        '  else\n'
+        '    echo "lock_$i=locked"\n'
+        '  fi\n'
+        '  after=$(dconf read "$k" 2>/dev/null) || after="' + ERROR + '"\n'
+        '  echo "lock_before_$i=$before"\n'
+        '  echo "lock_after_$i=$after"\n'
+        "done\n"
+    )
+
+
 def browser_fixture():
     """Serve one page from the host for the guest's browser check.
 
@@ -381,7 +412,7 @@ echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
-                   binaries=()):
+                   binaries=(), dconf_locks=()):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -424,6 +455,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         name = os.path.basename(app.split()[0])
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
+    locks = lock_reads() if dconf_locks else ""
     extensions = extension_reads() if enabled_extensions else ""
     tray = tray_probe() if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
@@ -439,7 +471,7 @@ echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
-{reads}{skel}{appcheck}echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
+{reads}{locks}{skel}{appcheck}echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -529,7 +561,7 @@ def tmpfiles_arg(text):
 
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
-                enabled_extensions=(), binaries=(), browser_url=""):
+                enabled_extensions=(), binaries=(), browser_url="", locks=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -539,7 +571,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     creds = {}
     if mode == "session":
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
-                                binaries)
+                                binaries, locks)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -566,6 +598,11 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # 0755 directory; the session user is not root and must read it.
             tmpfiles.append(
                 f"f {DCONF_KEYS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(dconf_keys) + chr(10))}")
+        if locks:
+            # The keys the plan locks, one per line; the session tries to write
+            # each one and must fail.
+            tmpfiles.append(
+                f"f {DCONF_LOCKS_PATH} 0644 root root - {tmpfiles_arg(chr(10).join(locks) + chr(10))}")
         if binaries:
             # The destinations of the binaries the plan installs, one per line.
             tmpfiles.append(
@@ -737,6 +774,11 @@ def diagnostics_md(diag):
 def plan_defaults(plan):
     """The dconf defaults the plan declares, in the order the plan lists them."""
     return list((plan.get("artifact", {}).get("dconf") or {}).get("defaults") or [])
+
+
+def plan_locks(plan):
+    """The dconf keys the plan locks, in the order the plan lists them."""
+    return list((plan.get("artifact", {}).get("dconf") or {}).get("locks") or [])
 
 
 def dconf_value(plan, key):
@@ -1146,6 +1188,15 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False):
         ok, detail, skipped = default_verdict(difference_id("dconf", key), image, session, where)
         check(DEFAULT_CHECK_PREFIX + key, ok, detail, skipped=skipped,
               coverage={"source": "dconf", "key": key, "image": image[0], "session": session[0]})
+    # A lock is enforcement, not a rendered file: the session tries to write the
+    # key and must fail, and the value must be the one it had before the attempt.
+    for i, lock in enumerate(plan_locks(plan)):
+        state = values.get(f"lock_{i}", "missing")
+        before = values.get(f"lock_before_{i}")
+        after = values.get(f"lock_after_{i}")
+        check("plan lock " + lock["key"] + " cannot be changed",
+              state == "locked" and before == after and before not in (None, "", ERROR),
+              f"write={state} before={before} after={after}")
     for i, d in enumerate(plan_vendor_defaults(plan)):
         key, typ = d["key"], d.get("type")
         ident = difference_id("gsettings", d["schema"] + " " + key)
@@ -1209,6 +1260,7 @@ def main():
     # The plan's declared defaults drive the assertion list: their keys go to the
     # guest, and the same plan is compared with what the guest reads back.
     defaults = plan_defaults(plan)
+    locks = plan_locks(plan)
     vendor = plan_vendor_defaults(plan)
     dconf_db = (plan.get("artifact", {}).get("dconf") or {}).get("name")
 
@@ -1227,7 +1279,7 @@ def main():
                                            [[d["schema"], d["key"]] for d in vendor],
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
-                                           browser_url)),
+                                           browser_url, locks=[l["key"] for l in locks])),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:

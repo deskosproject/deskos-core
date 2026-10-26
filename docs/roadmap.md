@@ -312,8 +312,10 @@ they cover.
     `org.gnome.desktop.lockdown.*`. Decide between extending the enum and a
     controlled list of dconf keys/prefixes; either keeps the "no escape hatch"
     rule by validating what is declared;
-  - the session check should prove a locked key **cannot be changed**, not only
-    that the lock file was rendered;
+  - ~~the session check should prove a locked key cannot be changed, not only
+    that the lock file was rendered~~ done (2026-10-27): the example organization
+    locks `shell.favorites`, and the session writes the key, expects the write to
+    fail and the value to be unchanged;
   - `deskos report` and `deskos check` should list the active locks and say
     which are not enforced;
   - an organization-facing guide: which locks fit a managed laptop, what they
