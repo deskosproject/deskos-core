@@ -368,9 +368,9 @@ account the upstream container image ships suppressing the wizard — is in
 - **Published, signed and durable evidence (verified 2026-10-26).** The old
   single repository (`quay.io/deskos/deskos-core`, run `37162282876`, commit
   `8ab0cc9`) is withdrawn and replaced by one repository per shipped platform,
-  published by the gate's `publish=true` dispatch (run `40247330799`, commit
-  `0c6c42f`):
-  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:96fe80d3…`, with
+  published by the gate's `publish=true` dispatch (run `40407632381`, commit
+  `2936009`):
+  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:649aff75…`, with
   `:latest`, `:stable` and the commit tag at the same digest (the next gate run
   also publishes `:candidate`, the digest a promotion checks). `:latest` is the
   fast lane, not a second stable. `cosign verify` with the
@@ -816,8 +816,10 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 - **Exercised (2026-10-26):** `candidate → stable` promotion of one digest
   without rebuilding, with an approval record in the evidence bucket
   (`docs/design/promotion.md`). The first promotion moved
-  `sha256:96fe80d3…` to `:stable`; the record names the digest, the actor, the
-  approver, the reason and the evidence index hash. No canary or pilot channel.
+  `sha256:96fe80d3…` to `:stable`; a second, after the Stream 10 base bump,
+  moved `sha256:649aff75…` (run `40412048361`). The record names the digest,
+  the actor, the approver, the reason and the evidence index hash. No canary
+  or pilot channel.
   A mirror on `ghcr.io/deskosproject/deskos-core` is possible and not decided.
 
 `deskosctl` itself is released as a linux/amd64 binary on GitHub Releases
