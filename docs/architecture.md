@@ -371,8 +371,8 @@ account the upstream container image ships suppressing the wizard — is in
   published by the gate's `publish=true` dispatch (run `40247330799`, commit
   `0c6c42f`):
   `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:96fe80d3…`, with
-  `:latest` and the commit tag at the same digest (the next gate run also
-  publishes `:candidate`). `cosign verify` with the
+  `:latest`, `:stable` and the commit tag at the same digest (the next gate run
+  also publishes `:candidate`). `cosign verify` with the
   workflow issuer and this repository's identity passes, with the SBOM,
   accepted-exception and effective-exception attestations bound to that
   digest. The 16 evidence objects for the digest were fetched back and
@@ -801,10 +801,12 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   (see [example-platforms.md](example-platforms.md)). The CI builds a QCOW2 (the EL
   platforms) only as test input; an Ubuntu disk is written with
   `bootc install to-disk` by that platform's own repository.
-- **Implemented, not yet exercised:** `candidate → stable` promotion of one
-  digest without rebuilding, with an approval record in the evidence bucket
-  (`docs/design/promotion.md`). No canary or pilot channel. A mirror on
-  `ghcr.io/deskosproject/deskos-core` is possible and not decided.
+- **Exercised (2026-10-26):** `candidate → stable` promotion of one digest
+  without rebuilding, with an approval record in the evidence bucket
+  (`docs/design/promotion.md`). The first promotion moved
+  `sha256:96fe80d3…` to `:stable`; the record names the digest, the actor, the
+  approver, the reason and the evidence index hash. No canary or pilot channel.
+  A mirror on `ghcr.io/deskosproject/deskos-core` is possible and not decided.
 
 `deskosctl` itself is released as a linux/amd64 binary on GitHub Releases
 when a `vX.Y.Z` tag is pushed. GitHub Actions is the reference CI; it is
