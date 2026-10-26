@@ -1,9 +1,12 @@
 # Promotion of one tested digest
 
-**Status: implemented, 2026-10-26.** The gate publishes `:candidate`;
-`promotion.yml` verifies the digest and its evidence, stores an approval record
-and moves `:stable` by digest. The first promotion is the next step, so the
-"exercised" claim comes with that run. No canary or pilot channel exists.
+**Status: implemented and exercised, 2026-10-26.** The gate publishes
+`:candidate`; `promotion.yml` verifies the digest and its evidence, stores an
+approval record and moves `:stable` by digest. The first promotion moved
+`sha256:96fe80d3…` to `:stable` from `:latest` (run `40317904401`, because
+`:candidate` starts with the next gate run) and its record is
+`approvals/deskos-core-centos-stream-10/stable/20261026T115001Z-96fe80d3….json`.
+No canary or pilot channel exists.
 
 P0-06 asks for build-once promotion: one image digest moves through stages
 without being rebuilt, carrying its evidence and a recorded human decision.

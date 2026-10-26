@@ -244,9 +244,11 @@ how-to: [supply-chain.md](supply-chain.md).
   evidence. With `publish` on `main` it also pushes the scanned image and
   signs it **keyless** with `cosign`, attaching the installed SBOM as a
   CycloneDX attestation.
-- **Done (2026-10-26):** `candidate → stable` promotion of one digest without a
-  rebuild, with an approval record
-  ([design](design/promotion.md)). No canary or pilot channel.
+- **Done and exercised (2026-10-26):** `candidate → stable` promotion of one
+  digest without a rebuild, with an approval record
+  ([design](design/promotion.md)). The first promotion moved
+  `sha256:96fe80d3…` to `:stable` (run `40317904401`). No canary or pilot
+  channel.
   Key-based signing for RHEL moved to a downstream organization's pipeline,
   which owns the entitled build host and signs with no OIDC and no transparency
   log (2026-10-14).

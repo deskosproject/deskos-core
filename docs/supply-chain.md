@@ -342,8 +342,10 @@ A digest moves forward only when, for that digest:
 Steps 1–4 run in `supply-chain.yml`. Promotion is a separate, recorded move:
 
 - the gate publishes `:<commit>`, `:latest` and `:candidate`, all by digest;
-- `promotion.yml` is the only writer of `:stable`. It checks that `:candidate`
-  serves the digest, verifies the keyless signature, fetches and verifies every
+- `promotion.yml` is the only writer of `:stable`. The first promotion ran on
+  2026-10-26 (run `40317904401`): `sha256:96fe80d3…` moved to `:stable`, with
+  its record in `approvals/deskos-core-centos-stream-10/stable/`. It checks that
+  the source channel serves the digest, verifies the keyless signature, fetches and verifies every
   object the digest's evidence index names, stores an approval record under
   `approvals/<repository>/stable/` in the public evidence bucket, and only then
   moves `:stable` by digest;
