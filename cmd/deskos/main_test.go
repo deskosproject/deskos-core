@@ -183,3 +183,80 @@ func TestWindowCommand(t *testing.T) {
 		t.Errorf("UTC window at now: exit %d, %s", code, errOut)
 	}
 }
+
+const statusWithRollback = `{
+  "apiVersion": "org.containers.bootc/v1",
+  "kind": "BootcHost",
+  "spec": {"image": {"image": "quay.io/deskos/deskos-core-centos-stream-10:latest"}},
+  "status": {
+    "booted": {"image": {"image": {"image": "img:1"}, "version": "1", "imageDigest": "sha256:aa"}},
+    "staged": null,
+    "rollback": {"image": {"image": {"image": "img:0"}, "version": "0", "imageDigest": "sha256:00"}},
+    "rollbackQueued": false
+  }
+}`
+
+func TestStatusPrintsTheDeployments(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "bootc")
+	body := "#!/bin/sh\ncat <<'EOF'\n" + statusWithRollback + "\nEOF\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+"/usr/bin:/bin")
+
+	code, out, errOut := runCLI(t, "status")
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	for _, want := range []string{
+		"Follows:  quay.io/deskos/deskos-core-centos-stream-10:latest",
+		"Booted:   img:1 @ sha256:aa (1)",
+		"Staged:   none",
+		"Rollback: img:0 @ sha256:00 (0)",
+		"Rollback queued: no",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("status lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestStatusSaysHowToRetryWhenBootcFails(t *testing.T) {
+	dir := t.TempDir()
+	script := filepath.Join(dir, "bootc")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+"/usr/bin:/bin")
+
+	code, _, errOut := runCLI(t, "status")
+	if code != 1 {
+		t.Fatalf("exit %d, want 1", code)
+	}
+	if !strings.Contains(errOut, "hint: run `sudo deskos status`") {
+		t.Errorf("stderr = %q", errOut)
+	}
+}
+
+func TestRollbackDryRunDoesNotRunBootc(t *testing.T) {
+	dir := t.TempDir()
+	marker := filepath.Join(dir, "called")
+	script := filepath.Join(dir, "bootc")
+	body := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+"/usr/bin:/bin")
+
+	code, out, errOut := runCLI(t, "rollback", "--dry-run")
+	if code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	if !strings.Contains(out, "would run: bootc rollback") {
+		t.Errorf("out = %q", out)
+	}
+	if _, err := os.Stat(marker); err == nil {
+		t.Fatal("dry-run executed bootc")
+	}
+}

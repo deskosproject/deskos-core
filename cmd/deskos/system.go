@@ -33,8 +33,10 @@ type bootcStatus struct {
 	Kind   string `json:"kind"`
 	Spec   bootcSpec
 	Status struct {
-		Booted *bootcDeployment `json:"booted"`
-		Staged *bootcDeployment `json:"staged"`
+		Booted         *bootcDeployment `json:"booted"`
+		Staged         *bootcDeployment `json:"staged"`
+		Rollback       *bootcDeployment `json:"rollback"`
+		RollbackQueued bool             `json:"rollbackQueued"`
 	} `json:"status"`
 }
 
@@ -54,29 +56,55 @@ type bootcDeployment struct {
 	} `json:"image"`
 }
 
-func (s system) Booted() (evidence.Booted, error) {
+// hostStatus is the deployment view `deskos status` prints: what the machine
+// follows, what it booted, what is staged and what the rollback is.
+type hostStatus struct {
+	IsBootc        bool
+	Follows        string
+	Booted         *bootcDeployment
+	Staged         *bootcDeployment
+	Rollback       *bootcDeployment
+	RollbackQueued bool
+}
+
+func (s system) Host() (hostStatus, error) {
 	// bootc status is the backend-neutral answer: /run/ostree-booted only exists
 	// on the ostree backend, while composefs deployments do not create it.
 	out, err := exec.Command("bootc", "status", "--json").Output()
 	if err != nil {
-		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: %w", err)
+		return hostStatus{IsBootc: true}, fmt.Errorf("bootc status: %w", err)
 	}
 	var status bootcStatus
 	if err := json.Unmarshal(out, &status); err != nil {
-		return evidence.Booted{IsBootc: true}, fmt.Errorf("bootc status: unexpected shape: %w", err)
+		return hostStatus{IsBootc: true}, fmt.Errorf("bootc status: unexpected shape: %w", err)
 	}
-	b := evidence.Booted{
+	return hostStatus{
 		// spec.image is bootc's own test for a host that tracks an image. The
 		// marker only describes the ostree backend; composefs has none.
-		IsBootc: status.Spec.Image.Image != "",
-		Follows: status.Spec.Image.Image,
+		IsBootc:        status.Spec.Image.Image != "",
+		Follows:        status.Spec.Image.Image,
+		Booted:         status.Status.Booted,
+		Staged:         status.Status.Staged,
+		Rollback:       status.Status.Rollback,
+		RollbackQueued: status.Status.RollbackQueued,
+	}, nil
+}
+
+func (s system) Booted() (evidence.Booted, error) {
+	h, err := s.Host()
+	if err != nil {
+		return evidence.Booted{IsBootc: true}, err
 	}
-	if d := status.Status.Booted; d != nil {
+	b := evidence.Booted{
+		IsBootc: h.IsBootc,
+		Follows: h.Follows,
+	}
+	if d := h.Booted; d != nil {
 		b.Image = d.Image.Image.Image
 		b.Digest = d.Image.ImageDigest
 		b.Version = d.Image.Version
 	}
-	if d := status.Status.Staged; d != nil {
+	if d := h.Staged; d != nil {
 		b.StagedImage = d.Image.Image.Image
 		b.StagedDigest = d.Image.ImageDigest
 	}
