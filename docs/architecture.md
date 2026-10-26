@@ -499,7 +499,9 @@ report a declared app as "not found in the remote" (`flatpak update --appstream`
 refreshes it). It then **retries until it succeeds** (`Restart=on-failure`,
 `RestartSec=60`, no start limit), because a laptop may connect its network
 minutes after the unit starts; retrying is bounded per attempt, not per boot.
-Nothing else waits for it.
+It also stops within 20 s (`TimeoutStopSec=20`): a shutdown while the first
+boot is still pulling Flatpaks must not hang on the stop job for systemd's
+default 90 s. Nothing else waits for it.
 
 A remote is OSTree by default. `transport: oci` makes it an index of
 Flatpak images in a container registry instead: the remote file carries

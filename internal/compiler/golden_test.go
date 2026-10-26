@@ -144,8 +144,9 @@ func TestGoldenContainerfiles(t *testing.T) {
 }
 
 // The preinstall unit only materializes image-declared Flatpaks: it retries
-// until the network lets it succeed, and nothing orders a boot target or GDM
-// after it or after the network (see docs/architecture.md, System Flatpaks).
+// until the network lets it succeed, stops within 20 s so a shutdown does not
+// hang on it, and nothing orders a boot target or GDM after it or after the
+// network (see docs/architecture.md, System Flatpaks).
 func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
@@ -162,7 +163,7 @@ func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 	}
 	golden(t, "deskos-flatpak-preinstall.service", unit)
 	u := string(unit)
-	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/usr/bin/flatpak preinstall ", "Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=0", "flatpak update --appstream"} {
+	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/usr/bin/flatpak preinstall ", "Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=0", "TimeoutStopSec=20", "flatpak update --appstream"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("unit lacks %q", want)
 		}
