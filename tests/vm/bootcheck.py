@@ -195,6 +195,18 @@ def serial_hint(text, limit=400):
     return f"; the guest last said: {tail}"
 
 
+def network_args(args):
+    """The guest's NIC, or nothing for an offline boot.
+
+    The session check proves a login needs no network; a boot that quietly kept
+    user networking would make the claim untested.
+    """
+    # QEMU adds a user-mode NIC of its own when no network option is given, so
+    # an offline boot has to say `none`; leaving the argument out would keep the
+    # default NIC and make the offline claim untested.
+    return ["-nic", "user,model=virtio-net-pci"] if getattr(args, "network", True) else ["-nic", "none"]
+
+
 def run(args):
     if not os.access("/dev/kvm", os.R_OK | os.W_OK):
         raise HarnessError("/dev/kvm is not accessible")
@@ -231,7 +243,7 @@ def run(args):
         "-drive", f"if=pflash,format=raw,unit=1,file={vars_copy}",
         "-drive", f"if=virtio,format=qcow2,file={overlay}",
         "-device", "virtio-vga", "-display", "none",
-        "-nic", "user,model=virtio-net-pci",
+    ] + network_args(args) + [
         "-device", "virtio-rng-pci",
         "-serial", f"file:{os.path.join(out, 'serial.log')}",
         "-qmp", f"unix:{qmp_path},server=on,wait=off",
