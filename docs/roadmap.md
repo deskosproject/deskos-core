@@ -137,12 +137,11 @@ Details in
   Anaconda aborted at the progress screen (`User interaction required on
   standalone spoke ProgressSpoke`), and the machine rebooted, which read as a
   hardware failure.
-- **Installer tree pinning:** the installer's own payload (Anaconda,
-  lorax) comes from the distribution repositories when the ISO is built; it
-  is not pinned the way the image is, so the same kickstart can behave
-  differently between builds. [A proposal](design/installer-payload.md)
-  recommends recording that it floats and guarding it with the test-only
-  install; the decision is open.
+- **Installer tree pinning: decided (2026-10-26).** The installer's own payload
+  (Anaconda, lorax) floats; the guard is the unattended install of the test-only
+  ISO in `installer-test.yml`. The installed system is the pinned image digest;
+  the ISO is the delivery vehicle. See
+  [installer-payload.md](design/installer-payload.md).
 - RHEL: the build, boot and session checks run in
   a downstream organization's repository (GitHub-hosted); no reference
   matching or E2E.
