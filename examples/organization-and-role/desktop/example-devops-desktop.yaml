@@ -3,6 +3,10 @@ kind: GnomeProfile
 metadata:
   name: example-devops-desktop
 spec:
+  # A managed workstation that pins its favorites: the session check tries to
+  # write the key and must fail. Core never locks.
+  locks:
+    - shell.favorites
   defaults:
     shell:
       favorites:

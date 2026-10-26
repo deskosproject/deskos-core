@@ -22,7 +22,7 @@ PLAN = {
             {"key": "/org/gnome/desktop/session/idle-delay", "type": "u", "value": "uint32 600"},
             {"key": "/org/gnome/desktop/screensaver/lock-enabled", "type": "b", "value": "true"},
             {"key": "/org/gnome/software/download-updates", "type": "b", "value": "false"},
-        ]},
+        ], "locks": [{"key": "/org/gnome/shell/favorite-apps", "setting": "shell.favorites"}]},
         "enabledExtensions": ["dash-to-dock@micxgx.gmail.com"],
         "binaries": [
             {"artifact": "deskos", "version": "0.12.0", "destination": "/usr/bin/deskos",
@@ -57,6 +57,11 @@ def reported(plan):
     for i, b in enumerate(sc.plan_binaries(plan)):
         out[f"binary_{i}"] = b["sha256"]
         out[f"binary_mode_{i}"] = b["mode"]
+    for i, lock in enumerate(sc.plan_locks(plan)):
+        value = sc.dconf_value(plan, lock["key"])
+        out[f"lock_{i}"] = "locked"
+        out[f"lock_before_{i}"] = value
+        out[f"lock_after_{i}"] = value
     return out
 
 
@@ -147,7 +152,8 @@ class TmpfilesTest(unittest.TestCase):
         # own database so its value is read apart from the session's.
         keys = [d["key"] for d in sc.plan_defaults(PLAN)]
         vendor = [[d["schema"], d["key"]] for d in sc.plan_vendor_defaults(PLAN)]
-        c = sc.credentials("session", dconf_keys=keys, dconf_db="distro", vendor_keys=vendor)
+        locks = [l["key"] for l in sc.plan_locks(PLAN)]
+        c = sc.credentials("session", dconf_keys=keys, dconf_db="distro", vendor_keys=vendor, locks=locks)
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.DCONF_KEYS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "".join(k + "\n" for k in keys))
@@ -807,3 +813,28 @@ class KnownMcelogTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LockTest(unittest.TestCase):
+    """A lock is enforcement: the session must not be able to change the key."""
+
+    def lock_check(self, values):
+        return next(c for c in sc.evaluate(values, PLAN) if c["check"].startswith("plan lock "))
+
+    def test_a_locked_key_is_enforced(self):
+        check = self.lock_check(dict(GOOD))
+        self.assertTrue(check["pass"], check)
+        self.assertIn("write=locked", check["detail"])
+
+    def test_a_writable_key_fails(self):
+        check = self.lock_check(dict(GOOD, lock_0="writable"))
+        self.assertFalse(check["pass"], check)
+        self.assertIn("write=writable", check["detail"])
+
+    def test_a_lock_that_changes_the_value_fails(self):
+        check = self.lock_check(dict(GOOD, lock_after_0="['other.desktop']"))
+        self.assertFalse(check["pass"], check)
+
+    def test_a_key_that_cannot_be_read_is_not_a_pass(self):
+        check = self.lock_check(dict(GOOD, lock_0="unknown", lock_before_0=""))
+        self.assertFalse(check["pass"], check)

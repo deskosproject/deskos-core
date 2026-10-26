@@ -1019,7 +1019,20 @@
           ]
         }
       ],
-      "locks": null
+      "locks": [
+        {
+          "key": "/org/gnome/shell/favorite-apps",
+          "setting": "shell.favorites",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/example-devops-desktop",
+              "profile": "example-devops",
+              "layer": "role",
+              "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
+            }
+          ]
+        }
+      ]
     },
     "gsettingsVendorDefaults": [
       {
