@@ -128,7 +128,7 @@ RUN set -eu; \
 
 # Trust store certificates: the destination must not already exist
 RUN set -eu; \
-    for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt' '/etc/pki/ca-trust/source/blocklist/aaa-certificate-services.crt' '/etc/pki/ca-trust/source/blocklist/emsign-ecc-root-ca-g3.crt'; do \
+    for f in '/etc/pki/ca-trust/source/anchors/example-root-ca.crt'; do \
         [ ! -e "$f" ] || { echo "$f already exists in the image" >&2; exit 1; }; \
     done
 

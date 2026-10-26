@@ -4,10 +4,10 @@
 # 2026; six of them issued TLS certificates under the roots below, and two
 # code-signing intermediates under the eMudhra root (RHSB-2026-012,
 # CVE-2026-111943). The vendor fix removes those roots from the ca-certificates
-# package. Until every platform's base or compose carries it, the image adds the
-# roots to the trust store's blocklist, which p11-kit reads and update-ca-trust
-# honors: they leave every extracted bundle and a chain that ends at one is
-# rejected. Trust is removed, TLS itself is not weakened.
+# package. Until a platform's base or compose carries it, its workstation adds
+# the roots to the trust store's blocklist, which p11-kit reads and
+# update-ca-trust honors: they leave every extracted bundle and a chain that
+# ends at one is rejected. Trust is removed, TLS itself is not weakened.
 #
 # This is temporary and it is not a lock: an entry stops mattering as soon as
 # the platform's ca-certificates no longer ships that root, and it can be

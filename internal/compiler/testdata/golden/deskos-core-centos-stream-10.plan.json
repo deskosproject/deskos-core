@@ -45,11 +45,6 @@
       "source": "resources/profiles/deskos-reference-apps.yaml:1"
     },
     {
-      "name": "deskos-trust",
-      "layer": "foundation",
-      "source": "resources/profiles/deskos-trust.yaml:1"
-    },
-    {
       "name": "firefox",
       "layer": "foundation",
       "source": "resources/profiles/firefox.yaml:1"
@@ -294,7 +289,7 @@
       {
         "path": "/usr/share/deskos/image-info.json",
         "mode": "0644",
-        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"deskos-core-centos-stream-10\",\n  \"image-title\": \"DeskOS Core (CentOS Stream 10)\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:bbf1532ad64e9aa299dfa7a289e2a07d3116aa32cc38f1832fd43ac480aa6d6c\",\n  \"base-image-digest\": \"sha256:bbf1532ad64e9aa299dfa7a289e2a07d3116aa32cc38f1832fd43ac480aa6d6c\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-look\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-trust\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"deskos-core-centos-stream-10\",\n  \"image-title\": \"DeskOS Core (CentOS Stream 10)\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:bbf1532ad64e9aa299dfa7a289e2a07d3116aa32cc38f1832fd43ac480aa6d6c\",\n  \"base-image-digest\": \"sha256:bbf1532ad64e9aa299dfa7a289e2a07d3116aa32cc38f1832fd43ac480aa6d6c\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-look\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
         "provenance": [
           {
             "resource": "Workstation/deskos-core-centos-stream-10",
@@ -305,47 +300,7 @@
       }
     ],
     "trustAnchors": [],
-    "trustBlocklist": [
-      {
-        "name": "aaa-certificate-services",
-        "path": "/etc/pki/ca-trust/source/blocklist/aaa-certificate-services.crt",
-        "sha256": "a5ddabd1602ae1c66ce11ad078e734cc473dcb8e9f573037832d8536ae3de90b",
-        "asset": "resources/assets/ca/aaa-certificate-services.crt",
-        "provenance": [
-          {
-            "resource": "TrustAnchor/deskos-distrusted-roots",
-            "profile": "deskos-trust",
-            "layer": "foundation",
-            "source": "resources/system/trust-distrusted-roots.yaml:20"
-          }
-        ]
-      },
-      {
-        "name": "emsign-ecc-root-ca-g3",
-        "path": "/etc/pki/ca-trust/source/blocklist/emsign-ecc-root-ca-g3.crt",
-        "sha256": "36e68e205b53c67c7a013894e0d5c8583063468118d1ce78ecbc2200d1dd185c",
-        "asset": "resources/assets/ca/emsign-ecc-root-ca-g3.crt",
-        "provenance": [
-          {
-            "resource": "TrustAnchor/deskos-distrusted-roots",
-            "profile": "deskos-trust",
-            "layer": "foundation",
-            "source": "resources/system/trust-distrusted-roots.yaml:20"
-          }
-        ]
-      }
-    ],
-    "trustStore": {
-      "command": "update-ca-trust",
-      "provenance": [
-        {
-          "resource": "TrustAnchor/deskos-distrusted-roots",
-          "profile": "deskos-trust",
-          "layer": "foundation",
-          "source": "resources/system/trust-distrusted-roots.yaml:20"
-        }
-      ]
-    },
+    "trustBlocklist": [],
     "desktopEntries": [],
     "iconCaches": [],
     "dconf": {
