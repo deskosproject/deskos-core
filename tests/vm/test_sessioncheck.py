@@ -1,9 +1,11 @@
 import base64
+import copy
 import json
 import os
 import subprocess
 import tempfile
 import unittest
+import urllib.request
 
 import sessioncheck as sc
 
@@ -67,7 +69,10 @@ GOOD = {
     "flatpak_apps": "org.mozilla.firefox",
     "favorite_entry_0": "firefox.desktop:present",
     "favorite_entry_1": "org.gnome.Calculator.desktop:present",
+    "favorite_exec_0": "firefox.desktop:present",
+    "favorite_exec_1": "org.gnome.Calculator.desktop:present",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
+    "browser_exit": "0", "browser_content": "ok", "browser_screenshot": "yes",
     "system_failed_units": "", "user_failed_units": "",
     **reported(PLAN),
 }
@@ -221,6 +226,26 @@ class TmpfilesTest(unittest.TestCase):
         self.assertNotIn(sc.VENDOR_KEYS_PATH, c["tmpfiles.extra"])
         self.assertNotIn(sc.DCONF_PROFILE_PATH, c["tmpfiles.extra"])
 
+    def test_session_credentials_carry_the_browser_url(self):
+        c = sc.credentials("session", browser_url="http://10.0.2.2:8080/")
+        probe = next(l for l in c["tmpfiles.extra"].splitlines()
+                     if l.startswith(f"f {sc.HOME}/deskos-qa-probe.sh ")).replace("\\n", "\n")
+        self.assertIn("url=http://10.0.2.2:8080/", probe)
+        self.assertIn("--dump-dom", probe)
+        self.assertNotIn("--dump-dom", sc.session_probe())
+
+    def test_the_browser_fixture_serves_the_marker(self):
+        server, url = sc.browser_fixture()
+        # 10.0.2.2 is the guest's name for the host under QEMU's user network;
+        # on the host itself the same server answers on loopback.
+        try:
+            with urllib.request.urlopen(url.replace("10.0.2.2", "127.0.0.1"), timeout=5) as response:
+                body = response.read().decode()
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertIn(sc.BROWSER_MARKER, body)
+
     def test_smbios_round_trip(self):
         args = sc.smbios_args({"tmpfiles.extra": "x y\n"})
         self.assertEqual(args[0], "-smbios")
@@ -249,6 +274,37 @@ class ParseEvaluateTest(unittest.TestCase):
         bad = dict(GOOD, disable_user_extensions="true", extension_0="No/INITIALIZED")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
         self.assertEqual(failed, {"user extensions allowed", "extension loads (dash-to-dock@micxgx.gmail.com)"})
+
+    def test_a_favorite_entry_whose_command_is_missing_fails(self):
+        # The id can be installed and its Exec still name a binary this image
+        # does not ship; the entry alone does not open anything.
+        bad = dict(GOOD, favorite_exec_0="firefox.desktop:missing")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"favorite command firefox.desktop"})
+
+    def test_a_flatpak_favorite_command_is_delegated(self):
+        values = dict(GOOD, favorite_exec_0="firefox.desktop:flatpak")
+        c = next(c for c in sc.evaluate(values, PLAN) if c["check"] == "favorite command firefox.desktop")
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("the Flatpak application", c["unread"])
+
+    def test_a_browser_that_does_not_reach_the_page_fails(self):
+        bad = dict(GOOD, browser_content="missing")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"Firefox fetches the harness page"})
+
+    def test_a_login_logo_whose_file_is_missing_fails(self):
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/logo", "type": "s",
+             "value": "'/usr/share/deskos/branding/logo.svg'"})
+        good = dict(GOOD, login_logo="/usr/share/deskos/branding/logo.svg",
+                    login_logo_file="present", **reported(plan))
+        self.assertTrue(all(c["pass"] for c in sc.evaluate(good, plan)))
+        bad = dict(good, login_logo_file="missing")
+        failed = {c["check"] for c in sc.evaluate(bad, plan) if not c["pass"]}
+        self.assertEqual(failed, {"login logo file exists"})
 
     def test_an_extension_that_is_not_installed_fails(self):
         bad = dict(GOOD, extension_0="missing")

@@ -103,10 +103,12 @@ Details in
 
 **Remaining:**
 
-- Check that every declared favorite desktop id exists in
-  `/usr/share/applications` (the compiler cannot know package contents),
-  and that favorites launch.
-- Browser against harness-served content, offline login, GDM logo check.
+- Every declared favorite resolves to a desktop entry and to a command the
+  image ships (`sessioncheck.py`). Launching the application itself is still a
+  field item: a GUI app that starts and exits is not a deterministic check.
+- The browser fetches a page the harness serves on the host side of QEMU's
+  network and returns its marker, and the login logo's file exists in the
+  image (`sessioncheck.py`). Offline login is not covered yet.
 - Reboot and shutdown splash in the session run.
 - **Tier C lifecycle (A -> B -> A):** designed and implemented
   (`tests/lifecycle/driver.py`), and it ran end to end on CS10 on 2026-10-24

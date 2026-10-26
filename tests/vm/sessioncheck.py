@@ -21,12 +21,14 @@ unmodified boot whose overlay was kept (bootcheck.py --keep-overlay).
 
 import argparse
 import base64
-import re
 import hashlib
+import http.server
 import json
 import os
+import re
 import shlex
 import sys
+import threading
 
 import bootcheck
 
@@ -34,6 +36,11 @@ USER, UID = "deskos-qa", 1500
 HOME = f"/var/home/{USER}"
 RESULTS = "/var/tmp/deskos-qa/results.txt"
 MARK_BEGIN, MARK_JOURNAL, MARK_END = "DESKOS-QA-BEGIN", "DESKOS-QA-JOURNAL-BEGIN", "DESKOS-QA-END"
+# The page the guest's browser must fetch from the host side of QEMU's user
+# network. A headless Firefox on about:blank proves the binary starts; this
+# marker proves the network path and the renderer did something with real bytes.
+BROWSER_MARKER = "DESKOS-QA-BROWSER-OK"
+BROWSER_HOST = "10.0.2.2"
 MARK_MCE, MARK_AVC = "--- kernel mce/edac lines", "--- SELinux AVC denials"
 MCE_LINES = 100
 MCELOG_PROPS = ("LoadState", "ActiveState", "SubState", "Result", "ConditionResult", "ExecMainStatus")
@@ -238,29 +245,88 @@ def default_reads(image_database, vendor):
     )
 
 
-def session_probe():
+def browser_fixture():
+    """Serve one page from the host for the guest's browser check.
+
+    QEMU's user networking exposes the host as 10.0.2.2, so the guest fetches the
+    page over the same network path a real desktop uses, without a host port
+    mapping. Returns the server, already serving on a background thread, and the
+    URL the guest should open. The caller stops it.
+    """
+    body = ("<!doctype html><html><head><title>DeskOS QA</title></head>"
+            f"<body><h1>{BROWSER_MARKER}</h1></body></html>").encode()
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("", 0), Handler)
+    server.daemon_threads = True
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://{BROWSER_HOST}:{server.server_address[1]}/"
+
+
+def session_probe(url=""):
     """The helper script for probes that would push the main script past 4095 B.
 
     tmpfiles.d caps one argument; the main session script was already close to
-    that. This helper resolves every declared favorite and asks the shell to
-    lock, so it can grow without making the autostart script undeliverable.
+    that. This helper resolves every declared favorite, asks the shell to lock,
+    waits for the Flatpak preinstall and, when the harness serves a page, has
+    the browser fetch it, so it can grow without making the autostart script
+    undeliverable.
     """
+    browser = ""
+    if url:
+        browser = (
+            "# The browser must fetch the page the harness serves and render it:\n"
+            "# about:blank only proves the binary starts (docs/checks.md).\n"
+            f'url={shlex.quote(url)}\n'
+            "dom=/var/tmp/deskos-qa/browser.html\n"
+            'timeout 120 firefox --headless --dump-dom "$url" > "$dom" 2>/dev/null\n'
+            'echo "browser_exit=$?"\n'
+            f'grep -q "{BROWSER_MARKER}" "$dom" && echo "browser_content=ok" '
+            '|| echo "browser_content=missing"\n'
+            'timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/browser.png '
+            '"$url" >/dev/null 2>&1\n'
+            'test -s /var/tmp/deskos-qa/browser.png && echo "browser_screenshot=yes" '
+            '|| echo "browser_screenshot=no"\n'
+        )
     return r"""#!/bin/bash
-# Every declared favorite must name an installed desktop entry.
+# Every declared favorite must name an installed desktop entry, and the command
+# that entry launches must exist: a correct id whose Exec names a binary this
+# image does not ship still opens nothing.
 i=0
 for id in $(gsettings get org.gnome.shell favorite-apps | tr -d "[]' " | tr ',' '\n'); do
   case "$id" in *.desktop) ;; *) continue ;; esac
-  found=missing
+  found=missing; entry=""
   for d in /usr/share/applications /usr/local/share/applications \
            /var/lib/flatpak/exports/share/applications \
            "$HOME/.local/share/applications" \
            "$HOME/.local/share/flatpak/exports/share/applications"; do
-    if [ -f "$d/$id" ]; then found=present; break; fi
+    if [ -f "$d/$id" ]; then found=present; entry="$d/$id"; break; fi
   done
   echo "favorite_entry_$i=$id:$found"
+  if [ -n "$entry" ]; then
+    cmd=$(sed -n 's/^Exec=//p' "$entry" | head -n1 | sed 's/%[a-zA-Z]//g' | awk '{print $1}')
+    # A Flatpak entry runs `flatpak run <app>`; whether that app is installed is
+    # the Flatpak check's claim, not this one.
+    state=missing
+    if [ "$cmd" = flatpak ]; then state=flatpak
+    elif [ -n "$cmd" ] && { [ -x "$cmd" ] || command -v "$cmd" >/dev/null 2>&1; }; then state=present
+    fi
+    echo "favorite_exec_$i=$id:$state"
+  fi
   i=$((i+1))
 done
-# Lock last; the VM is disposable and the report unit reads the results.
+# Lock before the slow probes; the VM is disposable and the report unit reads
+# the results.
 gdbus call --session --dest org.gnome.ScreenSaver \
   --object-path /org/gnome/ScreenSaver \
   --method org.gnome.ScreenSaver.Lock >/dev/null 2>&1
@@ -275,7 +341,7 @@ for i in $(seq 1 60); do
   sleep 2
 done
 echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
-"""
+""" + browser
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
@@ -336,6 +402,15 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
+# The GDM login logo is a system dconf default, so the session reads the value
+# GDM would use. Its file must exist in the image: the compiler copies only the
+# effective logo, and a key that names a file the image does not carry leaves
+# the login screen bare (docs/checks.md).
+echo "login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')"
+login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
+if [ -n "$login_logo" ]; then
+  test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
+fi
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
@@ -426,7 +501,7 @@ def tmpfiles_arg(text):
 
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
-                enabled_extensions=(), binaries=()):
+                enabled_extensions=(), binaries=(), browser_url=""):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -446,7 +521,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
             f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
             f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
-            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe())}",
+            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
             # the autologin to both and creates each directory, so the check does
@@ -953,9 +1028,31 @@ def evaluate(values, plan, journal="", skel_rels=()):
             continue
         check(f"favorite entry {app}", found == "present",
               f"{app} is {'installed' if found == 'present' else 'not installed'}")
+    # The entry's Exec must resolve: a correct id that launches a binary this
+    # image does not ship opens nothing. A Flatpak entry delegates that to the
+    # Flatpak application, which the declared-Flatpak check owns.
+    for key, value in values.items():
+        if not key.startswith("favorite_exec_"):
+            continue
+        app, _, found = value.rpartition(":")
+        if app not in declared_favorites:
+            continue
+        if found == "flatpak":
+            check(f"favorite command {app}", True,
+                  f"{app} starts through flatpak; whether that application is "
+                  "installed is the Flatpak check's claim", skipped=True,
+                  unread=["the Flatpak application"])
+        else:
+            check(f"favorite command {app}", found == "present",
+                  f"{app} launches {'a command this image ships' if found == 'present' else 'a command this image does not ship'}")
     wp = dconf_value(plan, "/org/gnome/desktop/background/picture-uri")
     if wp:
         check("wallpaper as planned", values.get("picture_uri") == wp, f"got {values.get('picture_uri')} want {wp}")
+    logo = dconf_value(plan, "/org/gnome/login-screen/logo")
+    if logo:
+        check("login logo file exists", values.get("login_logo_file") == "present",
+              f"logo={values.get('login_logo') or 'unset'} "
+              f"file={values.get('login_logo_file') or 'not read'}")
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
     declared_flatpaks = {a["id"] for a in
@@ -968,6 +1065,13 @@ def evaluate(values, plan, journal="", skel_rels=()):
     if any(p["name"] == "firefox" for p in plan.get("artifact", {}).get("rpmPackages", [])):
         check("Firefox runs headless", values.get("firefox_headless_exit") == "0" and values.get("firefox_screenshot") == "yes",
               f"exit={values.get('firefox_headless_exit')} screenshot={values.get('firefox_screenshot')}")
+        # The harness serves a page on the host side of QEMU's user network and
+        # the browser must return its marker: this is the network path and the
+        # renderer, where about:blank is only the binary starting.
+        check("Firefox fetches the harness page",
+              values.get("browser_content") == "ok" and values.get("browser_screenshot") == "yes",
+              f"exit={values.get('browser_exit')} content={values.get('browser_content')} "
+              f"screenshot={values.get('browser_screenshot')}")
     # Every default the plan declares is read back from the session, and each one
     # is two claims: what the image carries and what the session sees. The list is
     # the plan's, so a default declared later is asserted without editing this
@@ -1046,6 +1150,12 @@ def main():
     vendor = plan_vendor_defaults(plan)
     dconf_db = (plan.get("artifact", {}).get("dconf") or {}).get("name")
 
+    # The browser check needs a page served from the host for as long as the
+    # guest is up; journal mode adds no session, so it serves nothing.
+    server, browser_url = (None, "")
+    if a.mode == "session":
+        server, browser_url = browser_fixture()
+
     run_args = argparse.Namespace(
         disk=a.disk, out=a.out, qemu=a.qemu, ovmf_code=a.ovmf_code, ovmf_vars=a.ovmf_vars,
         memory=a.memory, cpus=a.cpus, boot_timeout=a.boot_timeout, shutdown_timeout=a.shutdown_timeout,
@@ -1054,7 +1164,8 @@ def main():
                                            [d["key"] for d in defaults], dconf_db,
                                            [[d["schema"], d["key"]] for d in vendor],
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
-                                           [b["destination"] for b in plan_binaries(plan)])),
+                                           [b["destination"] for b in plan_binaries(plan)],
+                                           browser_url)),
         until_serial=MARK_END, guest_powers_off=True,
     )
     try:
@@ -1062,6 +1173,10 @@ def main():
     except bootcheck.HarnessError as e:
         print(f"sessioncheck: {e}", file=sys.stderr)
         return 2
+    finally:
+        if server is not None:
+            server.shutdown()
+            server.server_close()
 
     values, journal = parse_serial(os.path.join(a.out, "serial.log"))
     with open(os.path.join(a.out, "journal.txt"), "w") as f:

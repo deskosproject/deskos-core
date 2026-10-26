@@ -82,6 +82,9 @@ it boots the disk as shipped.
 | Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
+| Each favorite resolves to a command | `sessioncheck.py` | the entry's `Exec` names a binary the image ships | the command is missing, or a Flatpak app, which the Flatpak check owns | instrumented |
+| Browser fetches harness content | `sessioncheck.py` | Firefox dumps the DOM of a page served by the harness, marker present, and screenshots it | fetch fails, marker missing or no screenshot | instrumented |
+| Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |

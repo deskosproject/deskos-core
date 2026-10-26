@@ -103,9 +103,12 @@ python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.
 
 Expected values come from the image's `plan.json`: the enabled
 extensions (including Dash to Dock), the favorites order, each favorite's
-desktop entry (system or Flatpak export) and the wallpaper. The check also requires `disable-user-extensions` to be false,
-Firefox to run headless, every declared system Flatpak to be installed,
-no failed user units and no unexpected failed system units (see [the mcelog exception](#known-amd-guest-exception-mcelog)
+desktop entry (system or Flatpak export) and the command that entry launches,
+the login logo's file when the plan declares one, and the wallpaper. The check
+also requires `disable-user-extensions` to be false, Firefox to run headless
+and to fetch a page the harness serves on the host side of QEMU's user network
+(`10.0.2.2`), every declared system Flatpak to be installed, no failed user
+units and no unexpected failed system units (see [the mcelog exception](#known-amd-guest-exception-mcelog)
 below). Results are in `session.md`, `session.json` and `journal.txt`,
 with frames as for the boot check.
 
