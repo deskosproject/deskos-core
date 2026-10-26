@@ -8,7 +8,9 @@ install and stage on boot 1, B and rollback on boot 2, A on boot 3,
 evaluator `ok`. The boot-failure run passed on 2026-10-25: D failed, the host
 selected A by its composefs verity, and the recovery boot held the marker. The
 full `lifecycle.yml` run on 2026-10-26 passed all 7 steps, including the power
-loss and the failed candidate.
+loss and the failed candidate. The first **scheduled** run (run `40305080925`)
+did the same full path on 2026-10-26 without anyone dispatching it: 7 steps,
+power loss, failed candidate and recovery.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
 SSH, which the harness automates. `docs/roadmap.md` (Milestone 3) lists
 lifecycle as remaining; a staged update and a manual rollback were validated

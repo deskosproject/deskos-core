@@ -24,7 +24,8 @@ anything else is marked as **not verified**.
 [Comparable tools](#comparable-tools) ·
 [License history](#license-history) ·
 [Kernel warnings](#kernel-warnings-cnic--bnx2i-at-boot-tracking) ·
-[Distribution issues](#distribution-issues-seen-by-the-session-check-tracking)
+[Distribution issues](#distribution-issues-seen-by-the-session-check-tracking) ·
+[CentOS base ahead of its repo (2026-10-26)](#centos-stream-10-base-ahead-of-its-repository-2026-10-26)
 
 ## Base images
 
@@ -594,3 +595,50 @@ With the boot fixed, the first-boot check failed on a harness assumption, not on
 the image: Fedora names the wizard's loginctl session `gnome-initial-setup-2`
 (after its VT), and the check compared the session name exactly. It now accepts
 the suffixed name, and a unit test holds it.
+
+## CentOS Stream 10 base ahead of its repository (2026-10-26)
+
+A Renovate digest bump of `quay.io/centos-bootc/centos-bootc:stream10` could not
+build. The image build failed while installing the package groups:
+
+```text
+Problem: package rpm-libs-4.19.1.1-27.el10 from baseos requires rpm = 4.19.1.1-27.el10
+ - cannot install both rpm-4.19.1.1-27.el10 from baseos and rpm-4.19.1.1-28.el10 from @System
+```
+
+**Measured (2026-10-26, verified against the images and the repository metadata):**
+
+| Base digest | `rpm` installed | `10-stream` repo serves | Resolves |
+|---|---|---|---|
+| `1d61ba0` (the pin) | 4.19.1.1-27 | up to 4.19.1.1-27 | yes (`dnf group install --assumeno`) |
+| `bbf1532` (the bump) | 4.19.1.1-28 | up to 4.19.1.1-27 | no, conflict |
+
+- The new base carries `redhat.compose-id: CentOS-Stream-10-20261025.0`.
+- The BaseOS metadata of composes `20261025.0` and `20261026.0` contains
+  `rpm-4.19.1.1-28.el10`.
+- The rolling repository that `dnf` uses
+  (`mirror.stream.centos.org/10-stream/BaseOS/x86_64/os`) served up to
+  `rpm-4.19.1.1-27.el10` at 12:20 UTC.
+
+So the base image is **ahead of the repository it installs from**: a promotion
+or mirror skew, not a defect in the bump. The pinned base is consistent and
+still builds.
+
+The build also prints `no group 'base-graphical' from environment
+'workstation-product-environment'`. That reference is dangling in the CS10
+comps (the environment lists it; no group with that id exists in BaseOS or
+AppStream, in the composes or the rolling repo), but it is **not fatal**: dnf
+continues and resolves. It is a separate, older comps inconsistency worth
+reporting upstream, not the cause of this failure.
+
+**Decision:** keep the pinned base, leave the bump open and unmergeable until
+the repository serves `rpm-4.19.1.1-28` (or later); then rebase it, update the
+goldens (`go test ./internal/compiler -update`) and run `vm-bootcheck`.
+
+Re-check with:
+
+```bash
+base=https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os
+prim=$(curl -fsS "$base/repodata/repomd.xml" | sed -n 's/.*href="\([^"]*primary[^"]*\)".*/\1/p' | head -1)
+curl -fsS "$base/$prim" | zstd -dc | grep -o 'rpm-4\.19\.1\.1-[0-9]*\.el10\.x86_64\.rpm' | sort -u | tail
+```
