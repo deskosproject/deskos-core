@@ -63,7 +63,7 @@ the schedule, or turns automation off, in its own `UpdatePolicy`
 (`image.automatic`, `image.schedule`, `image.requireACPower`, and the
 `flatpak` equivalents). With `automatic: false` the service is still
 written, but no timer, so an operator (or `deskos update`) can run it
-on demand. The kind is documented in [resources.md](resources.md#updatepolicy).
+on demand. The kind is documented in [resources/system.md](resources/system.md#updatepolicy).
 
 An organization that enables `image.apply` accepts scheduled reboots. The
 apply timer is not persistent: if the machine is off during the window, it
