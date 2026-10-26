@@ -406,8 +406,8 @@ echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 # GDM would use. Its file must exist in the image: the compiler copies only the
 # effective logo, and a key that names a file the image does not carry leaves
 # the login screen bare (docs/checks.md).
-echo "login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')"
 login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
+echo "login_logo=$login_logo"
 if [ -n "$login_logo" ]; then
   test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
 fi
