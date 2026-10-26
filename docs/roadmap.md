@@ -387,13 +387,13 @@ how-to: [supply-chain.md](supply-chain.md).
   assets** instead of URLs (`gpgKeyFiles`; a deliberate break of v1alpha1).
 - A staged update skipped on battery waits for the next schedule; a
   catch-up run on AC connect (Bluefin's `uupd-on-ac.service`) is open.
-- A local endpoint command (`deskos status`, `deskos update`,
-  `deskos rollback`) that a user or administrator runs on one machine to
-  inspect the deployment and invoke bootc's own staged update and
-  rollback, system Flatpak updates and fwupd checks. **No controller,
-  reconciliation loop or automatic enforcement**
-  ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)). It
-  drives the units and reads the files listed in ADR 0007.
+- **Done (2026-10-26):** `deskos status`, `deskos update` and `deskos rollback`
+  let a user or administrator inspect one machine's deployment and invoke
+  bootc's own staged update and rollback. **No controller, reconciliation loop
+  or automatic enforcement**
+  ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)); the
+  commands read the files listed in ADR 0007. Still open: system Flatpak
+  updates and fwupd checks from the same endpoint.
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
 
