@@ -86,6 +86,8 @@ it boots the disk as shipped.
 | Browser fetches harness content | `sessioncheck.py` | Firefox dumps the DOM of a page served by the harness, marker present, and screenshots it | fetch fails, marker missing or no screenshot | instrumented |
 | Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
 | Offline login | `sessioncheck.py --offline` (Core) | autologin reaches a session with no NIC and no default route | no session, or the boot kept a route | instrumented |
+| Runtime tool reads the plan | `sessioncheck.py` | `deskos report` names the tested workstation | no report, or another workstation | instrumented |
+| Runtime checker runs | `sessioncheck.py` | `deskos check` exits 0 (clean) or 1 (it found a difference) | it exits 2 or cannot run | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |

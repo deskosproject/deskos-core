@@ -113,9 +113,10 @@ desktop entry (system or Flatpak export) and the command that entry launches,
 the login logo's file when the plan declares one, and the wallpaper. The check
 also requires `disable-user-extensions` to be false, Firefox to run headless
 and to fetch a page the harness serves on the host side of QEMU's user network
-(`10.0.2.2`), every declared system Flatpak to be installed, no failed user
-units and no unexpected failed system units (see [the mcelog exception](#known-amd-guest-exception-mcelog)
-below). Results are in `session.md`, `session.json` and `journal.txt`,
+(`10.0.2.2`), the shipped `deskos report` to name the tested workstation and
+`deskos check` to run (exit 0 or 1), every declared system Flatpak to be
+installed, no failed user units and no unexpected failed system units (see
+[the mcelog exception](#known-amd-guest-exception-mcelog) below). Results are in `session.md`, `session.json` and `journal.txt`,
 with frames as for the boot check.
 
 ### Every default the plan declares

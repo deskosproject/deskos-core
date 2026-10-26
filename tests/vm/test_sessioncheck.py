@@ -74,6 +74,8 @@ GOOD = {
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
     "browser_exit": "0", "browser_content": "ok", "browser_screenshot": "yes",
     "default_routes": "0",
+    "deskos_report_exit": "0", "deskos_report_workstation": "ws",
+    "deskos_check_exit": "0",
     "system_failed_units": "", "user_failed_units": "",
     **reported(PLAN),
 }
@@ -309,6 +311,16 @@ class ParseEvaluateTest(unittest.TestCase):
         bad = dict(GOOD, default_routes="1")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN, offline=True) if not c["pass"]}
         self.assertEqual(failed, {"the offline boot had no default route"})
+
+    def test_deskos_report_must_name_the_installed_workstation(self):
+        bad = dict(GOOD, deskos_report_workstation="other")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"deskos report names the installed workstation"})
+
+    def test_deskos_check_that_cannot_run_fails(self):
+        bad = dict(GOOD, deskos_check_exit="2")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"deskos check runs on the booted image"})
 
     def test_a_login_logo_whose_file_is_missing_fails(self):
         plan = copy.deepcopy(PLAN)

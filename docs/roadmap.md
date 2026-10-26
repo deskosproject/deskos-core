@@ -94,8 +94,10 @@ Details in
   adds a test
   user and GDM autologin through systemd credentials (SMBIOS type 11); a
   report unit writes the results and journal to the serial port. No SSH
-  or qecore. Checks the dock, favorites, wallpaper, headless Firefox and
-  failed units against the Plan; required checks *fail closed*.
+  or qecore. Checks the dock, favorites and the command each launches, the
+  wallpaper and login logo, headless Firefox against a page the harness serves,
+  offline login, the shipped `deskos report` and `deskos check`, and failed
+  units against the Plan; required checks *fail closed*.
 - **First boot, instrumented, no account:** `firstbootcheck.py` adds no
   account and no session, and asks the guest whether the first-boot wizard is
   the session that came up, whether an account could log in, and whether a

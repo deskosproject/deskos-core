@@ -341,6 +341,16 @@ for i in $(seq 1 60); do
   sleep 2
 done
 echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
+# The runtime tool the field checklist uses must read the plan this image
+# carries and name this workstation; a shipped binary that cannot is a defect
+# the hash check cannot see.
+deskos report > /var/tmp/deskos-qa/deskos-report.txt 2>&1
+echo "deskos_report_exit=$?"
+echo "deskos_report_workstation=$(sed -n 's/^Workstation: //p' /var/tmp/deskos-qa/deskos-report.txt | head -n1 | cut -d' ' -f1)"
+# `deskos check` exits 1 when it finds a difference, which is an answer, not a
+# crash; exit 2 would mean the tool could not be used.
+deskos check > /var/tmp/deskos-qa/deskos-check.txt 2>&1
+echo "deskos_check_exit=$?"
 """ + browser
 
 
@@ -1065,6 +1075,16 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False):
               f"file={values.get('login_logo_file') or 'not read'}")
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
+    # The runtime companion ships in the image; the field checklist runs it. It
+    # must load the plan the image carries and name the workstation it built.
+    if plan.get("workstation", {}).get("name"):
+        check("deskos report names the installed workstation",
+              values.get("deskos_report_workstation") == plan["workstation"]["name"],
+              f"got {values.get('deskos_report_workstation') or 'no report'} "
+              f"(exit={values.get('deskos_report_exit')})")
+        check("deskos check runs on the booted image",
+              values.get("deskos_check_exit") in ("0", "1"),
+              f"exit={values.get('deskos_check_exit')}")
     # A first boot with no network cannot install what the preinstall unit
     # downloads; the offline check claims the login, not the store.
     declared_flatpaks = set() if offline else {a["id"] for a in
