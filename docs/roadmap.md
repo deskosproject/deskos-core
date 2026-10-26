@@ -245,6 +245,17 @@ firmware trusts every link from the ESP to the kernel:
   Until the chain is signed and tested, the support statement stays: **Secure
   Boot off**, as `platforms.md` and `recovery.md` say.
 
+### Test organization (proposed 2026-10-26)
+
+QA stays next to what it tests for now: compiler determinism in Core, the built
+image in DayTwo, Ubuntu in its own repository. A separate `deskos-qa`
+repository starts when a nightly suite has to consume published digests from
+more than two repositories. It then consumes digests and never builds, is
+triggered by `workflow_run` or `repository_dispatch`, holds read-only pull
+credentials and no signing key, and writes evidence to the same digest-keyed
+bucket. Black-box tests move; unit and determinism tests stay with the code
+they cover.
+
 ## Milestone 4: workstation E2E
 
 - QEMU/KVM GNOME sessions tested through accessibility APIs, following
