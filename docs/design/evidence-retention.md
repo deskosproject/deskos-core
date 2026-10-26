@@ -127,6 +127,26 @@ The public bucket and `evidence.deskos.org` are defined in
 `deskos-infrastructure`; the private bucket and token owner are still to
 provision. They are not assumptions in the commands above.
 
+## Repair and deletion
+
+An upload can fail after the image is published. The durable artifact keeps the
+evidence for 14 days, so `evidence-maintenance.yml` can **backfill** the digest
+from that run's artifact and verify the stored copy from the public URL. The
+artifact names its own digest, and the job refuses a mismatch: a backfill cannot
+attach one run's evidence to another digest.
+
+Deletion is the other half of the retention rule. `tests/evidence/prune.py`
+lists and deletes one digest prefix; it is a dry run until `--apply`,
+`--confirm` must repeat the exact prefix, and a prefix that has an `index.json`
+is refused unless `--force` is given. Garbage collection may therefore remove
+only a prefix that never became valid, never the evidence of a published digest.
+The maintenance workflow takes the same digest, namespace and repository and
+requires `force` for the indexed case.
+
+The first upload is the reason this path exists: it indexed the whole checkout
+instead of the durable artifact and never wrote `index.json`. Its digest,
+`sha256:36824c3e…`, was published, so the repair is a backfill, not a deletion.
+
 ## Open decisions
 
 - Organization private bucket owner and name.
