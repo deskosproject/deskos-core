@@ -347,7 +347,8 @@ Steps 1–4 run in `supply-chain.yml`. Promotion is a separate, recorded move:
   the only tag `promotion.yml` writes;
 - `promotion.yml` is the only writer of `:stable`. The first promotion ran on
   2026-10-26 (run `40317904401`): `sha256:96fe80d3…` moved to `:stable`, with
-  its record in `approvals/deskos-core-centos-stream-10/stable/`. It checks that
+  its record in `approvals/deskos-core-centos-stream-10/stable/`. A second,
+  after the base bump (run `40412048361`), moved `sha256:649aff75…`. It checks that
   the source channel serves the digest, verifies the keyless signature, fetches and verifies every
   object the digest's evidence index names, stores an approval record under
   `approvals/<repository>/stable/` in the public evidence bucket, and only then

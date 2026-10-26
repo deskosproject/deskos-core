@@ -343,8 +343,9 @@ how-to: [supply-chain.md](supply-chain.md).
 - **Done and exercised (2026-10-26):** `candidate → stable` promotion of one
   digest without a rebuild, with an approval record
   ([design](design/promotion.md)). The first promotion moved
-  `sha256:96fe80d3…` to `:stable` (run `40317904401`). No canary or pilot
-  channel.
+  `sha256:96fe80d3…` to `:stable` (run `40317904401`); a second, after the
+  Stream 10 base bump, moved `sha256:649aff75…` (run `40412048361`). No canary
+  or pilot channel.
   Key-based signing for RHEL moved to a downstream organization's pipeline,
   which owns the entitled build host and signs with no OIDC and no transparency
   log (2026-10-14).
