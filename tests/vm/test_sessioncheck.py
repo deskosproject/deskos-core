@@ -12,7 +12,6 @@ import sessioncheck as sc
 PLAN = {
     "workstation": {"name": "ws"},
     "artifact": {
-        "rpmPackages": [{"name": "firefox"}],
         "dconf": {"name": "distro", "defaults": [
             {"key": "/org/gnome/shell/enabled-extensions", "type": "as",
              "value": "['background-logo@fedorahosted.org', 'dash-to-dock@micxgx.gmail.com']"},
@@ -71,8 +70,10 @@ GOOD = {
     "favorite_entry_1": "org.gnome.Calculator.desktop:present",
     "favorite_exec_0": "firefox.desktop:present",
     "favorite_exec_1": "org.gnome.Calculator.desktop:present",
+    "firefox_present": "yes",
     "firefox_headless_exit": "0", "firefox_screenshot": "yes",
-    "browser_exit": "0", "browser_content": "ok", "browser_screenshot": "yes",
+    "browser_fetch": "ok", "browser_content": "ok", "browser_screenshot": "yes",
+    "browser_firefox_requests": "2",
     "default_routes": "0",
     "deskos_report_exit": "0", "deskos_report_workstation": "ws",
     "deskos_check_exit": "0",
@@ -234,11 +235,12 @@ class TmpfilesTest(unittest.TestCase):
         browser = next(l for l in c["tmpfiles.extra"].splitlines()
                        if l.startswith(f"f {sc.HOME}/deskos-qa-browser.sh ")).replace("\\n", "\n")
         self.assertIn("url=http://10.0.2.2:8080/", browser)
-        self.assertIn("--dump-dom", browser)
+        self.assertIn("curl -fsS", browser)
+        self.assertIn("--screenshot", browser)
         # The probe is a file of its own and calls the browser probe: together
         # they do not fit one tmpfiles.d argument.
         self.assertIn('"$HOME/deskos-qa-browser.sh"', sc.session_probe())
-        self.assertNotIn("--dump-dom", sc.session_probe())
+        self.assertNotIn("--screenshot", sc.session_probe())
 
     def test_the_probe_files_fit_one_tmpfiles_argument(self):
         self.assertLess(len(sc.session_probe().encode()), sc.TMPFILES_ARG_MAX)
@@ -305,6 +307,24 @@ class ParseEvaluateTest(unittest.TestCase):
         bad = dict(GOOD, browser_content="missing")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
         self.assertEqual(failed, {"Firefox fetches the harness page"})
+
+    def test_a_screenshot_without_a_browser_request_fails(self):
+        # The page was served and a screenshot exists, but no browser asked for
+        # it: the file proves nothing about the network.
+        bad = dict(GOOD, browser_firefox_requests="0")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"Firefox fetches the harness page"})
+
+    def test_an_image_without_firefox_skips_the_browser_checks(self):
+        values = dict(GOOD, firefox_present="no")
+        names = {c["check"] for c in sc.evaluate(values, PLAN)}
+        self.assertNotIn("Firefox runs headless", names)
+        self.assertNotIn("Firefox fetches the harness page", names)
+
+    def test_a_guest_that_does_not_say_whether_firefox_is_installed_fails(self):
+        values = {k: v for k, v in GOOD.items() if k != "firefox_present"}
+        failed = {c["check"] for c in sc.evaluate(values, PLAN) if not c["pass"]}
+        self.assertIn("the guest says whether Firefox is installed", failed)
 
     def test_an_offline_boot_asserts_the_session_and_the_missing_route(self):
         # The browser page and the Flatpak store need the network this boot

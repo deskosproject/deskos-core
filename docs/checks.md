@@ -83,13 +83,13 @@ it boots the disk as shipped.
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
 | Each favorite resolves to a command | `sessioncheck.py` | the entry's `Exec` names a binary the image ships | the command is missing, or a Flatpak app, which the Flatpak check owns | instrumented |
-| Browser fetches harness content | `sessioncheck.py` | Firefox dumps the DOM of a page served by the harness, marker present, and screenshots it | fetch fails, marker missing or no screenshot | instrumented |
+| Browser fetches harness content | `sessioncheck.py` | the guest fetches the harness page, the marker is in it, the fixture saw a Firefox request and a screenshot exists | fetch fails, marker missing, no browser request or no screenshot | instrumented |
 | Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
 | Offline login | `sessioncheck.py --offline` (Core) | autologin reaches a session with no NIC and no default route | no session, or the boot kept a route | instrumented |
 | Runtime tool reads the plan | `sessioncheck.py` | `deskos report` names the tested workstation | no report, or another workstation | instrumented |
 | Runtime checker runs | `sessioncheck.py` | `deskos check` exits 0 (clean) or 1 (it found a difference) | it exits 2 or cannot run | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
-| Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
+| Firefox runs | `sessioncheck.py` headless probe | the guest reports Firefox installed, headless exit 0 and a non-empty screenshot | non-zero or no screenshot; an image without Firefox says so | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |

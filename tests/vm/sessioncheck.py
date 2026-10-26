@@ -256,8 +256,11 @@ def browser_fixture():
     body = ("<!doctype html><html><head><title>DeskOS QA</title></head>"
             f"<body><h1>{BROWSER_MARKER}</h1></body></html>").encode()
 
+    hits = []
+
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
+            hits.append(self.headers.get("User-Agent", ""))
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -269,6 +272,7 @@ def browser_fixture():
 
     server = http.server.ThreadingHTTPServer(("", 0), Handler)
     server.daemon_threads = True
+    server.hits = hits
     threading.Thread(target=server.serve_forever, daemon=True).start()
     return server, f"http://{BROWSER_HOST}:{server.server_address[1]}/"
 
@@ -286,11 +290,15 @@ def session_browser_probe(url=""):
     return (
         "#!/bin/bash\n"
         f'url={shlex.quote(url)}\n'
-        "dom=/var/tmp/deskos-qa/browser.html\n"
-        'timeout 120 firefox --headless --dump-dom "$url" > "$dom" 2>/dev/null\n'
-        'echo "browser_exit=$?"\n'
-        f'grep -q "{BROWSER_MARKER}" "$dom" && echo "browser_content=ok" '
+        "page=/var/tmp/deskos-qa/browser.html\n"
+        # curl proves the network path and the bytes, without the browser's own
+        # profile and sandbox in the way.
+        'curl -fsS --max-time 60 "$url" -o "$page" 2>/dev/null '
+        '&& echo "browser_fetch=ok" || echo "browser_fetch=failed"\n'
+        f'grep -q "{BROWSER_MARKER}" "$page" 2>/dev/null && echo "browser_content=ok" '
         '|| echo "browser_content=missing"\n'
+        # Firefox proves the renderer; the fixture records that the request came
+        # from a browser, so a screenshot cannot pass on its own.
         'timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/browser.png '
         '"$url" >/dev/null 2>&1\n'
         'test -s /var/tmp/deskos-qa/browser.png && echo "browser_screenshot=yes" '
@@ -431,7 +439,8 @@ echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
-{reads}{skel}{appcheck}timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
+{reads}{skel}{appcheck}echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
+timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
 "$HOME/deskos-qa-probe.sh"
@@ -1103,17 +1112,25 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False):
         missing = sorted(declared_flatpaks - installed)
         check("declared system Flatpaks are installed", not missing,
               f"missing={','.join(missing) or 'none'}")
-    if any(p["name"] == "firefox" for p in plan.get("artifact", {}).get("rpmPackages", [])):
+    # The plan has no rpmPackages key, so presence is asked of the guest: an
+    # image that ships Firefox gets the checks, one that does not says so, and a
+    # guest that answers neither fails instead of skipping in silence.
+    firefox = values.get("firefox_present")
+    check("the guest says whether Firefox is installed", firefox in ("yes", "no"),
+          f"firefox_present={firefox}")
+    if firefox == "yes":
         check("Firefox runs headless", values.get("firefox_headless_exit") == "0" and values.get("firefox_screenshot") == "yes",
               f"exit={values.get('firefox_headless_exit')} screenshot={values.get('firefox_screenshot')}")
-        # The harness serves a page on the host side of QEMU's user network and
-        # the browser must return its marker: this is the network path and the
-        # renderer, where about:blank is only the binary starting.
-        # The harness page needs the network this boot deliberately lacks.
+        # The harness page needs the network this boot deliberately lacks. The
+        # fixture records the browser's own request, so a leftover screenshot
+        # cannot pass for a fetch.
         if not offline:
             check("Firefox fetches the harness page",
-                  values.get("browser_content") == "ok" and values.get("browser_screenshot") == "yes",
-                  f"exit={values.get('browser_exit')} content={values.get('browser_content')} "
+                  values.get("browser_content") == "ok"
+                  and values.get("browser_firefox_requests", "0") not in ("", "0")
+                  and values.get("browser_screenshot") == "yes",
+                  f"fetch={values.get('browser_fetch')} content={values.get('browser_content')} "
+                  f"requests={values.get('browser_firefox_requests')} "
                   f"screenshot={values.get('browser_screenshot')}")
     # Every default the plan declares is read back from the session, and each one
     # is two claims: what the image carries and what the session sees. The list is
@@ -1224,6 +1241,11 @@ def main():
             server.server_close()
 
     values, journal = parse_serial(os.path.join(a.out, "serial.log"))
+    if server is not None:
+        # What the fixture saw, not only what the guest said: the browser check
+        # needs evidence that a browser made the request.
+        values["browser_firefox_requests"] = str(
+            sum(1 for ua in server.hits if "firefox" in ua.lower()))
     with open(os.path.join(a.out, "journal.txt"), "w") as f:
         f.write(journal + "\n")
     result = {"mode": a.mode, "instrumented": True, "boot": summary["result"], "boot_failures": summary["failures"],
