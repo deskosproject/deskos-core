@@ -4,11 +4,15 @@ Description=Install operating system Flatpaks declared in preinstall.d
 Documentation=man:flatpak-preinstall(1)
 Wants=network-online.target
 After=network-online.target multi-user.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=exec
 ExecStartPre=-/usr/bin/flatpak repair --system
+ExecStartPre=-/usr/bin/flatpak update --appstream --system
 ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
+Restart=on-failure
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target

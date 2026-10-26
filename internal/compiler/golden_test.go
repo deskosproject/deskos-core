@@ -143,9 +143,9 @@ func TestGoldenContainerfiles(t *testing.T) {
 	}
 }
 
-// The preinstall unit only materializes image-declared Flatpaks: no restart
-// loop, and no ordering that makes boot targets or GDM wait for it or for the
-// network (see docs/architecture.md, System Flatpaks).
+// The preinstall unit only materializes image-declared Flatpaks: it retries
+// until the network lets it succeed, and nothing orders a boot target or GDM
+// after it or after the network (see docs/architecture.md, System Flatpaks).
 func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
 	if err != nil {
@@ -162,12 +162,12 @@ func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 	}
 	golden(t, "deskos-flatpak-preinstall.service", unit)
 	u := string(unit)
-	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/usr/bin/flatpak preinstall "} {
+	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/usr/bin/flatpak preinstall ", "Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=0", "flatpak update --appstream"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("unit lacks %q", want)
 		}
 	}
-	for _, bad := range []string{"Type=oneshot", "Restart=", "Before=", "Requires=", "RequiredBy=", "graphical.target", "display-manager", "gdm", "Timer", "OnCalendar"} {
+	for _, bad := range []string{"Type=oneshot", "Before=", "Requires=", "RequiredBy=", "graphical.target", "display-manager", "gdm", "Timer", "OnCalendar"} {
 		if strings.Contains(u, bad) {
 			t.Errorf("unit contains %q", bad)
 		}

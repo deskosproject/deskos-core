@@ -588,22 +588,29 @@ func preinstallFile(a plan.FlatpakPreinstall) []byte {
 // after multi-user.target stops that target from waiting on network-online for
 // it, Type=exec avoids waiting for downloads, and GDM is not ordered after it.
 //
-// A first boot whose pull was interrupted can leave a non-deployed ref that
-// `flatpak preinstall` does not refresh; it fails with "Couldn't find file
-// object" on every later attempt. `flatpak repair` removes that ref before the
-// attempt, so the next boot (or a manual restart) recovers. There is still no
-// restart loop: a machine with no network does not retry forever.
+// First boots fail for two reasons that a second boot cures: a pull interrupted
+// mid-download leaves a ref `flatpak preinstall` will not refresh, and the
+// Flathub summary can be stale enough that a declared app is "not found in the
+// remote". `flatpak repair` removes the broken ref and `flatpak update
+// --appstream` refreshes the summary before each attempt. The unit then retries
+// until it succeeds, because a laptop may connect its network minutes after the
+// unit starts; there is no start limit, so it keeps retrying (once per minute)
+// instead of waiting for the next boot. Nothing else waits for it.
 func preinstallUnit() []byte {
 	return []byte(generatedHeader + `[Unit]
 Description=Install operating system Flatpaks declared in preinstall.d
 Documentation=man:flatpak-preinstall(1)
 Wants=network-online.target
 After=network-online.target multi-user.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=exec
 ExecStartPre=-/usr/bin/flatpak repair --system
+ExecStartPre=-/usr/bin/flatpak update --appstream --system
 ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
+Restart=on-failure
+RestartSec=60
 
 [Install]
 WantedBy=multi-user.target
