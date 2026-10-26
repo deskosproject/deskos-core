@@ -107,7 +107,11 @@ Details in
   `/usr/share/applications` (the compiler cannot know package contents),
   and that favorites launch.
 - Browser against harness-served content, offline login, GDM logo check.
-- Reboot and shutdown splash in the session run.
+- **Reboot and shutdown splash:** the harness records every frame during
+  shutdown, and the session run powers off in about **0.4 s** with a single
+  frame captured. An assertion would depend on catching that frame, so it is
+  recorded evidence, not a check; a reboot splash needs a boot that reboots
+  instead of powering off.
 - **Tier C lifecycle (A -> B -> A):** designed and implemented
   (`tests/lifecycle/driver.py`), and it ran end to end on CS10 on 2026-10-24
   (install and stage, boot B, roll back, boot A; power loss mid-upgrade
