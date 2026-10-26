@@ -82,8 +82,14 @@ it boots the disk as shipped.
 | Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
+| Each favorite resolves to a command | `sessioncheck.py` | the entry's `Exec` names a binary the image ships | the command is missing, or a Flatpak app, which the Flatpak check owns | instrumented |
+| Browser fetches harness content | `sessioncheck.py` | the guest fetches the harness page, the marker is in it, the fixture saw a Firefox request and a screenshot exists | fetch fails, marker missing, no browser request or no screenshot | instrumented |
+| Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
+| Offline login | `sessioncheck.py --offline` (Core) | autologin reaches a session with no NIC and no default route | no session, or the boot kept a route | instrumented |
+| Runtime tool reads the plan | `sessioncheck.py` | `deskos report` names the tested workstation | no report, or another workstation | instrumented |
+| Runtime checker runs | `sessioncheck.py` | `deskos check` exits 0 (clean) or 1 (it found a difference) | it exits 2 or cannot run | instrumented |
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
-| Firefox runs | `sessioncheck.py --app`/headless probe | headless exit 0 and a non-empty screenshot | non-zero or no screenshot | instrumented |
+| Firefox runs | `sessioncheck.py` headless probe | the guest reports Firefox installed, headless exit 0 and a non-empty screenshot | non-zero or no screenshot; an image without Firefox says so | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
@@ -92,10 +98,11 @@ A missing result, an unreadable value or a `not measurable` count is a failure
 or an explicit unverified item, not a pass. The session row is an **instrumented
 autologin session**, not proof of an interactive GDM login.
 
-**Not proved by these probes:** an interactive GDM login and the Wayland session
-type through GDM; launching every declared favorite; offline login; Flatpak
-install after reconnection; suspend, battery, display and other hardware
-behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
+**Not proved by these probes:** an interactive GDM login (the probes autologin),
+so the Wayland session type through GDM is unproved too; launching every
+declared favorite; Flatpak install after reconnection; suspend, battery, display
+and other hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied
+claims.
 
 ## What is not covered
 
