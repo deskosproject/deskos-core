@@ -113,10 +113,10 @@ Details in
   (install and stage, boot B, roll back, boot A; power loss mid-upgrade
   recovered). On 2026-10-25 it also staged a candidate that cannot boot,
   confirmed it never reached SSH, and recovered the previous deployment by
-  its composefs verity. It is **manual**: it needs rootful podman, qemu,
-  `qemu-nbd` and `/dev/kvm`, and the workflow that will call it is
-  dispatch-only. It becomes a gate only after it has been green on real builds
-  for a while. The ostree-write interruption window is still untested.
+  its composefs verity. `lifecycle.yml` ran the full path on GitHub-hosted
+  runners on 2026-10-26 and passed: 7 steps, A → B → A, power loss and the
+  failed candidate. It is still **dispatch-only**, not a pull-request gate;
+  the ostree-write interruption window is still untested.
 - **Installer ISO:** no check installs one. The ISO is built, signed and
   published, but nothing boots Anaconda and asserts it reaches the progress
   screen and installs. On 2026-10-23 an organization's RHEL ISO shipped a kickstart

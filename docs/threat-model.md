@@ -52,7 +52,7 @@ maintainer approval").
 | Branch and tag protection | **unverified here** | GitHub setting, not in the repository |
 | Registry and GitHub audit-log retention | **unverified here** | external settings |
 | Evidence survives a re-run | improved: artifacts carry the run attempt | `docs/checks.md`; `-attempt-${github.run_attempt}` |
-| Evidence survives 14 days | **gap** | artifact retention and no durable index (P0-05) |
+| Evidence survives 14 days | **done** | digest-keyed R2 evidence; the first real digest and 16 objects verified from `evidence.deskos.org` |
 
 ## Prioritized remediation
 
@@ -62,7 +62,7 @@ maintainer approval").
 | 1 | Pin first-party actions by commit SHA | repository maintainer | Core workflows use `uses: owner/action@<sha> # vX`; an organization remains |
 | 2 | Verify and record branch/tag protection and required checks | repository owner | exported GitHub settings or an audit screenshot attached to this page's issue |
 | 2 | Add a second reviewer or environment approval for `publish=true` and signing, or record why one person is acceptable at this scale | maintainer | environment protection settings; a dispatch audit |
-| 3 | Durable evidence index (P0-05) | maintainer | a historical digest's evidence retrievable after 14 days |
+| 3 | Durable evidence index (P0-05) | maintainer | **done:** `evidence.deskos.org` stores and verifies the objects for a published digest |
 | 3 | Consumer-side authenticity enforcement (P0-03) | Core maintainer; organization maintainer | **Core:** keyless signatures, manual verification, no enforcement (accepted 2026-10-25); **Organization:** key-based signing with the policy recipe tested on bootc 1.17.1; its policy, installer path and key rotation remain |
 | 4 | Rotate and back up the organization's signing key and registry/R2 credentials on a schedule | key holder | rotation record; no secret in the repository |
 

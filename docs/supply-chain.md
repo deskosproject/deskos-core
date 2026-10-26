@@ -187,8 +187,9 @@ without pretending that a local OCI archive digest and a registry manifest
 digest are the same bytes: compression and registry conversion can change the
 latter, and the record names each one separately.
 
-The record is workflow evidence with the same 14-day retention as the rest of
-the evidence until durable digest-indexed storage is designed.
+The record is workflow evidence. The workflow artifact keeps its 14-day
+retention; for a published digest the same evidence is also stored under
+`evidence.deskos.org`, keyed by digest.
 
 ## Signing and provenance
 
@@ -203,7 +204,9 @@ accepted.
 Rekor's public instance caps an attestation at 100 KB, and an SBOM is far
 larger, so the SBOM itself is not attached: the signed statement names its
 exact SHA-256, and the digest is the unit of promotion. The SBOM travels as
-workflow evidence; durable, digest-indexed storage for it is [an open design](design/evidence-retention.md).
+workflow evidence and, for a published digest, in the digest-keyed
+`evidence.deskos.org` store; see
+[the evidence design](design/evidence-retention.md).
 
 **Verify a digest.** Checking the signature is necessary but not sufficient:
 require the three attestation types, pin the issuer and the workflow
@@ -287,8 +290,8 @@ versions and the matching package, type, version and location:
    authority remains with the release owner.
 
 The raw report and the effective exceptions belong with the issue; artifact
-retention is 14 days, so copy anything the decision depends on somewhere
-durable.
+retention is 14 days, so use the digest-keyed evidence under
+`evidence.deskos.org` for a published image.
 
 **RHEL builds** run in a downstream organization's pipeline, which owns the
 entitled build host, with no OIDC: they are signed with a cosign **key** kept

@@ -1,12 +1,14 @@
 # Lifecycle A → B → A on CentOS Stream 10
 
 **Status:** design, evaluator, driver and a dispatch-only workflow
-(2026-10-24; boot-failure recovery added and passed 2026-10-25).
-`lifecycle.yml` runs the driver on manual dispatch; no pull request and no
-schedule runs it. It first ran end to end on 2026-10-24:
+(2026-10-24; boot-failure recovery added 2026-10-25; full workflow green
+2026-10-26). `lifecycle.yml` runs the driver on manual dispatch; no pull
+request and no schedule runs it. It first ran end to end on 2026-10-24:
 install and stage on boot 1, B and rollback on boot 2, A on boot 3,
 evaluator `ok`. The boot-failure run passed on 2026-10-25: D failed, the host
-selected A by its composefs verity, and the recovery boot held the marker.
+selected A by its composefs verity, and the recovery boot held the marker. The
+full `lifecycle.yml` run on 2026-10-26 passed all 7 steps, including the power
+loss and the failed candidate.
 Nothing installs itself yet: the spike built a disk by hand and drove it over
 SSH, which the harness automates. `docs/roadmap.md` (Milestone 3) lists
 lifecycle as remaining; a staged update and a manual rollback were validated
