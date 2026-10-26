@@ -3,13 +3,18 @@ name: lifecycle
 # Tier C: install a CS10 disk, stage a second deployment from a local registry,
 # reboot into it, roll back, lose power mid-upgrade and (optionally) recover a
 # candidate that never boots. It needs rootful podman, qemu, qemu-nbd and
-# /dev/kvm, takes about 40 minutes with the image build, and is **dispatch only**:
-# a check, never a publish.
+# /dev/kvm, takes about 40 minutes with the image build, and runs weekly on
+# `main` plus manual dispatch: a check, never a publish.
 #
-# See docs/design/lifecycle.md and tests/lifecycle/README.md. The driver stays
-# manual until it has been green here for a while; this workflow is how it gets
-# there.
+# See docs/design/lifecycle.md and tests/lifecycle/README.md. It is not a
+# pull-request gate: it is too slow for every change, and the weekly run on main
+# is where a change that only a real install, update and rollback reveals shows
+# up. The weekly run does the full path, power loss and failed candidate
+# included; a dispatch can turn either part off.
 on:
+  schedule:
+    # Monday 04:17 UTC. One run a week is enough to catch drift.
+    - cron: "17 4 * * 1"
   workflow_dispatch:
     inputs:
       interrupt:
@@ -90,6 +95,10 @@ jobs:
           INTERRUPT: ${{ inputs.interrupt }}
           BOOT_FAILURE: ${{ inputs.boot_failure }}
         run: |
+          # A scheduled run has no inputs, so it does the full path: power loss
+          # and the failed candidate included.
+          if [ -z "${INTERRUPT:-}" ]; then INTERRUPT=true; fi
+          if [ -z "${BOOT_FAILURE:-}" ]; then BOOT_FAILURE=true; fi
           args=(--image "$IMAGE" --workdir "$WORK/run" --disk-size-gb 18)
           if [ "$INTERRUPT" = "true" ]; then args+=(--interrupt); fi
           if [ "$BOOT_FAILURE" = "true" ]; then args+=(--boot-failure); fi
