@@ -187,6 +187,7 @@ flow, with the exact commands, is in
 | **Operate one** | [**Operations**](docs/operations.md): how updates stage, apply and roll back; [**Recovery**](docs/recovery.md) when they do not |
 | **Fix a machine** | [**Troubleshooting**](docs/troubleshooting.md): the symptom, the check that distinguishes it, and the remedy |
 | **Choose a platform** | [**Platforms**](docs/platforms.md): the canonical matrix and what is verified on each |
+| **Understand the project** | [**Mission**](docs/mission.md): what it is for, and what it is deliberately not |
 | **Author resources** | [**Resources**](docs/resources.md): every kind with an example |
 | **Understand the design** | [**Architecture**](docs/architecture.md): the pipeline, the Plan, the backend, and the evidence behind the claims |
 | **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing |

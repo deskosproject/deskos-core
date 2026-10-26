@@ -214,13 +214,9 @@ Details in
   image-based workstation whose store is Bazaar. Ship
   `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
   and assert in the first-boot check that the page is gone.
-- **Mission statement, non-goals and values.** The roadmap and the ADRs explain
-  what DeskOS does, but a newcomer has no short answer to "what is this, and
-  what is it deliberately not". Write a mission with explicit non-goals and a
-  values page. The non-goals already exist as invariants (ADR 0001, 0002, 0005,
-  0011): no fleet or runtime enforcement, no escape hatches, no management of a
-  user's `$HOME`, and no model in compilation. Say them once, where they are
-  read first.
+- ~~Mission statement, non-goals and values~~ done: [mission.md](mission.md)
+  states the mission, the non-goals that already exist as invariants (ADR 0001,
+  0002, 0005, 0011), and the values. The README links it.
 - **Website and documentation for two audiences.** The site explains the model
   to a reader who already knows bootc and Flatpak. Restructure it around a
   normal user and a developer: a task-oriented manual with a screenshot in
