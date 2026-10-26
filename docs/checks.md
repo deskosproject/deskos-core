@@ -106,6 +106,10 @@ claims.
 
 ## What is not covered
 
+- The shutdown splash is captured in the session run's frame list but not
+  asserted: the guest powered off in 0.4 s and only one frame was captured, so
+  the assertion would be a race. A reboot splash needs a boot that reboots.
+
 - Bare metal, BIOS boot, Secure Boot and non-x86_64 are not tested.
 - No check installs the **published** ISO; its storage is interactive, so only a
   person completes it. The test-only ISO has the `installer-test` job.
