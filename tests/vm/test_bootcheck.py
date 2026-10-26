@@ -81,7 +81,9 @@ class NetworkTest(unittest.TestCase):
                          ["-nic", "user,model=virtio-net-pci"])
 
     def test_an_offline_boot_carries_none(self):
-        self.assertEqual(bootcheck.network_args(type("A", (), {"network": False})()), [])
+        # QEMU adds a user NIC when nothing is said, so silence is not offline.
+        self.assertEqual(bootcheck.network_args(type("A", (), {"network": False})()),
+                         ["-nic", "none"])
 
 
 if __name__ == "__main__":

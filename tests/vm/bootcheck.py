@@ -201,7 +201,10 @@ def network_args(args):
     The session check proves a login needs no network; a boot that quietly kept
     user networking would make the claim untested.
     """
-    return ["-nic", "user,model=virtio-net-pci"] if getattr(args, "network", True) else []
+    # QEMU adds a user-mode NIC of its own when no network option is given, so
+    # an offline boot has to say `none`; leaving the argument out would keep the
+    # default NIC and make the offline claim untested.
+    return ["-nic", "user,model=virtio-net-pci"] if getattr(args, "network", True) else ["-nic", "none"]
 
 
 def run(args):
