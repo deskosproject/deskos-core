@@ -372,7 +372,8 @@ account the upstream container image ships suppressing the wizard — is in
   `0c6c42f`):
   `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:96fe80d3…`, with
   `:latest`, `:stable` and the commit tag at the same digest (the next gate run
-  also publishes `:candidate`). `cosign verify` with the
+  also publishes `:candidate`, the digest a promotion checks). `:latest` is the
+  fast lane, not a second stable. `cosign verify` with the
   workflow issuer and this repository's identity passes, with the SBOM,
   accepted-exception and effective-exception attestations bound to that
   digest. The 16 evidence objects for the digest were fetched back and
