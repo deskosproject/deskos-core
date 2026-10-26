@@ -48,6 +48,22 @@ and it does not imply a rebuild.
 At this project's scale the path is `candidate → stable`, with no canary stage.
 The important part is that every move names a digest, the evidence and a person.
 
+### Tag map
+
+| Tag | Role | Written by |
+|---|---|---|
+| `:<commit>` | build record; immutable by convention | the gate, by digest |
+| `:candidate` | the digest the gate produced; the source a promotion checks | the gate, by digest |
+| `:latest` | fast lane: the same digest as `:candidate`, for whoever wants the newest build | the gate, by digest |
+| `:stable` | recommended for machines and the download page | `promotion.yml` only |
+
+Keeping `:latest` next to `:candidate` is deliberate. `candidate` names what the
+gate produced and is the tag `promotion.yml` checks; `latest` is the familiar
+fast-lane name, and it is not a second stable. This follows the peers: Bluefin
+keeps `latest` next to `stable`, and Utah and Dakota move `stable` from
+`testing` after their gate. Fedora Silverblue has no promotion channel at all;
+its `latest` means the current stable release, which is a different idea.
+
 ## Promotion is a move, not a build
 
 1. Resolve the source tag to a digest and verify the image signature and the
@@ -94,8 +110,8 @@ no controller). There is no telemetry to prove who runs a canary.
 ## Decisions (2026-10-26)
 
 - Channels exist per platform repository: `candidate` and `stable`. `:latest`
-  stays as the gate's pointer for machines and documents that already follow it;
-  retiring it is a separate change.
+  stays as the **fast lane** next to `stable`, not as a second stable, and
+  `:candidate` is the promotion source. Retiring `:latest` is not planned.
 - One person authorizes a move: the maintainer who dispatches `promotion.yml`.
   The record names the actor and an approver (the actor by default).
 - No canary stage. Adding one needs opted-in machines and a named owner, and the
@@ -109,7 +125,6 @@ no controller). There is no telemetry to prove who runs a canary.
 ## Open questions
 
 - Whether to sign the approval record, and with which identity.
-- Whether to retire `:latest` once `:stable` has been exercised.
 - How OCI referrers and the evidence store interact if both are kept.
 
 ## Non-goals
