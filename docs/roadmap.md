@@ -212,6 +212,39 @@ Details in
   `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
   and assert in the first-boot check that the page is gone.
 
+### Secure Boot (proposed 2026-10-26)
+
+Today every installation runs with Secure Boot **off**: the field checklist says
+so, the recovery page says so, and no check covers it. Supporting it means the
+firmware trusts every link from the ESP to the kernel:
+
+- **The chain.** shim, signed by the Microsoft UEFI CA (or by the owner's db) →
+  GRUB, signed by the distro or owner key and verified by shim → kernel, signed
+  and verified by GRUB. The initramfs is not signed by this chain; a **unified
+  kernel image** (kernel, initramfs and command line under one signature) is the
+  alternative that closes it.
+- **Who signs.** Core can rely on the platform vendor: RHEL 10 ships a
+  Microsoft-signed shim and signed GRUB and kernel. **CentOS Stream 10 does not
+  boot with Secure Boot on today** — its shim is blocked on Microsoft review
+  (CentOS Stream 10 release notes, Known issues) — so the CS10 platform cannot
+  claim support until that lands. An organization that wants its own key needs a
+  named owner, enrollment in firmware db or MOK, signed GRUB/kernel/UKI, and
+  Microsoft signing if it uses the default trust instead of a custom db.
+- **The installer.** The ISO's shim and GRUB must be signed and the test-only
+  install must boot with Secure Boot on; the published ISO's instructions stop
+  telling people to turn it off only after that test exists.
+- **Out-of-tree modules.** NVIDIA, `v4l2loopback` and similar are not signed by
+  the vendor. With Secure Boot on they need MOK enrollment and per-kernel
+  signing, or they will not load; an image that ships them must say which.
+- **Tests.** QEMU/OVMF with Secure Boot on and the vendor keys: a positive test
+  (the published image installs and boots) and a negative one (an unsigned
+  kernel is refused). Extend `bootcheck.py`, `installer-test.yml` and the
+  lifecycle disk. `mokutil --sb-state` is already collected by the field report.
+- **Decision.** Vendor chain only, or a DeskOS key with an owner and a rotation
+  plan (the signing side of P0-03, separate from the image `cosign` signature).
+  Until the chain is signed and tested, the support statement stays: **Secure
+  Boot off**, as `platforms.md` and `recovery.md` say.
+
 ## Milestone 4: workstation E2E
 
 - QEMU/KVM GNOME sessions tested through accessibility APIs, following
