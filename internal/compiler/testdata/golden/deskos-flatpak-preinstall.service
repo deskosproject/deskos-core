@@ -13,6 +13,11 @@ ExecStartPre=-/usr/bin/flatpak update --appstream --system
 ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
 Restart=on-failure
 RestartSec=60
+# A shutdown during the first-boot download must not wait systemd's default
+# 90 s: the container image's own boot check sends ACPI powerdown while the
+# unit is still pulling, and the boot hangs on the stop job. The next boot
+# repairs and retries what was interrupted.
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target

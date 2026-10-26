@@ -595,7 +595,9 @@ func preinstallFile(a plan.FlatpakPreinstall) []byte {
 // --appstream` refreshes the summary before each attempt. The unit then retries
 // until it succeeds, because a laptop may connect its network minutes after the
 // unit starts; there is no start limit, so it keeps retrying (once per minute)
-// instead of waiting for the next boot. Nothing else waits for it.
+// instead of waiting for the next boot. It stops within 20 s (TimeoutStopSec),
+// so a shutdown during the first-boot download does not hang on the stop job.
+// Nothing else waits for it.
 func preinstallUnit() []byte {
 	return []byte(generatedHeader + `[Unit]
 Description=Install operating system Flatpaks declared in preinstall.d
@@ -611,6 +613,11 @@ ExecStartPre=-/usr/bin/flatpak update --appstream --system
 ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
 Restart=on-failure
 RestartSec=60
+# A shutdown during the first-boot download must not wait systemd's default
+# 90 s: the container image's own boot check sends ACPI powerdown while the
+# unit is still pulling, and the boot hangs on the stop job. The next boot
+# repairs and retries what was interrupted.
+TimeoutStopSec=20
 
 [Install]
 WantedBy=multi-user.target
