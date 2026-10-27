@@ -66,6 +66,9 @@ DCONF_KEYS_PATH = "/var/lib/deskos-qa/dconf-defaults.keys"
 # The dconf keys the plan locks. The session tries to write each one and must
 # fail: a rendered lock file is not evidence that the session enforces it.
 DCONF_LOCKS_PATH = "/var/lib/deskos-qa/dconf-locks.keys"
+# The tray probe is its own script for the same reason: the report is close to
+# systemd's 4095 B tmpfiles argument limit, and the retry loop pushed it over.
+TRAY_SCRIPT_PATH = "/var/lib/deskos-qa/tray-check.sh"
 # The plan's GSettings vendor defaults (the compiled `*.gschema.override` path)
 # travel as schema and key per line, tab separated, for the same reason.
 VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
@@ -470,7 +473,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     locks = lock_reads() if dconf_locks else ""
     extensions = extension_reads() if enabled_extensions else ""
-    tray = tray_probe() if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
+    tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
@@ -626,6 +629,9 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             tmpfiles.append(
                 f"f {ENABLED_EXTENSIONS_PATH} 0644 root root - "
                 f"{tmpfiles_arg(chr(10).join(enabled_extensions) + chr(10))}")
+            if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions:
+                tmpfiles.append(
+                    f"f {TRAY_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(tray_probe())}")
         if vendor_keys:
             # The plan's GSettings vendor defaults, schema and key per line.
             tmpfiles.append(
