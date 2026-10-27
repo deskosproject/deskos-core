@@ -46,6 +46,9 @@ spec:
     requireACPower: true
 ```
 
+`requireACPower` also installs a udev rule that starts the staging service when
+AC comes online; the daily timer remains the schedule.
+
 Core sets the **image** policy only. `flatpak:` is deliberately absent from it
 ([`resources/system/deskos-core-updates.yaml`](../../resources/system/deskos-core-updates.yaml)):
 declaring it in the foundation would impose an application channel on every
