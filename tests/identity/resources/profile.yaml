@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: identity-client
+spec:
+  layer: organization
+  description: FreeIPA client packages, without a realm or a join.
+  resources:
+    - kind: PackageSet
+      name: identity-client

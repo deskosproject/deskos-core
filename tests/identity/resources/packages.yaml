@@ -1,0 +1,11 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: identity-client
+spec:
+  # The client side only. The image never carries a realm, a principal or a
+  # password: joining is a runtime act, performed on the machine by a person or
+  # by configuration management.
+  packages:
+    - ipa-client
+    - oddjob-mkhomedir

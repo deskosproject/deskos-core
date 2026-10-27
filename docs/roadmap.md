@@ -296,12 +296,16 @@ they cover.
   container on the test host, join a throwaway installed VM with
   `ipa-client-install`, and log in as a directory user at GDM. It is the only
   way to exercise DNS, Kerberos, SSSD, PAM and the home-directory policy
-  together, which unit tests cannot. It comes after the model exists — an
-  organization profile that installs `ipa-client`, enrollment kept out of the
-  image — and runs nightly or on demand, not on every pull request: it needs a
-  privileged container or a second VM and several minutes. The evidence records
-  the server version, the realm and the image digest; the container is a test
-  fixture, never a support claim.
+  together, which unit tests cannot.
+  - **Done (2026-10-27):** `tests/identity/` carries the organization client
+    profile (`ipa-client`, `oddjob-mkhomedir`, no realm or credentials), a
+    disposable FreeIPA container fixture and the join script; `make check`
+    validates the workstation.
+  - **Next:** automate the join and the GDM login as a nightly or on-demand
+    check, not on every pull request: it needs a privileged container or a
+    second VM and several minutes. The evidence records the server version, the
+    realm and the image digest; the container is a test fixture, never a support
+    claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).

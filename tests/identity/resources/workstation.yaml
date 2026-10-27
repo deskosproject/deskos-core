@@ -1,0 +1,16 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: identity-client-centos-stream-10
+spec:
+  displayName: Identity client (CentOS Stream 10)
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - identity-client
+    - deskos-gnome
+    - rhel-family
+    - deskos-look
+    - deskos-reference-apps
+    - firefox
+    - deskos-dock
