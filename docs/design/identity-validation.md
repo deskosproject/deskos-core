@@ -7,9 +7,19 @@ check is in [#238](https://github.com/deskosproject/deskos-core/pull/238).
 FreeIPA run `40450471210` and AD run `40539508281` are the evidence quoted
 below.
 
+**This is a test rig, not a product capability.** DeskOS does not enrol
+machines: *Enrollment is reserved in the Plan and not implemented*
+([architecture.md](../architecture.md#provisioning-and-enrollment)), and keeping
+running machines in a state belongs to configuration management, not to the
+artifact. What follows is how the **test** proves that a DeskOS image can be
+joined and used, by doing the enrolment a person or a management plane would do
+otherwise. Nothing here ships in an image, and no DeskOS command joins a
+machine.
+
 Joining a Linux machine to a directory is not interesting. Any distribution can
-do it once, by hand, on a machine someone is sitting in front of. What a managed
-fleet needs is different, and it is the part this repository validates:
+do it once, by hand, on a machine someone is sitting in front of — and any
+distribution can ship a script that does it. What a managed fleet needs is
+different, and it is the part this repository validates:
 
 - the machine joins **without a person at the console**, before the greeter
   appears;
@@ -108,6 +118,33 @@ between a correct artifact and a usable workstation.
 It is also deliberately small: throwaway realm, one user, one machine, no
 published artifact, no support claim. The container is a fixture.
 
+## What real enrolment needs
+
+The harness takes the shortcut a test may take: a throwaway realm, an
+administrator password generated in the job, and `--force` because the fixture's
+FreeIPA has no DNS. A real fleet cannot take any of those shortcuts, and none of
+the following lives in Core:
+
+- **A per-host credential, never a shared secret in the image or the ISO.** FreeIPA
+  issues one with `ipa host-add --random` and the client consumes it with
+  `ipa-client-install -w <otp>`; AD uses a credential from a service account or an
+  offline-join blob. The provisioning system (Satellite, Foreman, Ansible, an MDM)
+  delivers it to that machine, once.
+- **A resolvable name and DNS.** The machine needs an FQDN before it joins, and the
+  realm needs an A and a **PTR** record for it: Kerberos and `sssd` expect the
+  name to resolve forward and back. With integrated DNS the client updates its own
+  record after joining (`ipa-client-install --enable-dns-updates`); without it,
+  somebody owns those records. `--force` exists for fixtures without DNS, not for
+  fleets.
+- **A place to run the join.** The installer's kickstart `%post`, a first-boot
+  unit shipped by the organization, or configuration management after provisioning.
+  Core compiles a baseline and never runs shell, so the hook belongs to the
+  organization that owns the realm.
+
+Getting those three right is the difference between "the image can be joined" —
+what this check proves — and "the machine joined itself", which DeskOS does not
+do.
+
 ## What this does not prove
 
 - **Not Windows.** Samba AD is a real AD implementation, but Group Policy
@@ -119,6 +156,9 @@ published artifact, no support claim. The container is a fixture.
   which exercises PAM's session phase, the greeter and the home policy, but no
   password is typed. Driving QEMU input would cover it.
 - **Not a production directory.** Throwaway realm, one account, no hardening.
+- **Not enrolment automation.** The check joins the machine itself; how a real
+  machine receives a per-host credential, a name and DNS records is the
+  organization's provisioning step, not this artifact's.
 
 ## Reusing the pattern
 
