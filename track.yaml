@@ -1,0 +1,18 @@
+# How to read a version out of an upstream release tag.
+#
+# `deskosctl track --fresh` asks GitHub for the newest release of each pinned
+# artifact. Turning that tag into a version is not something the tool can guess:
+# the same project may tag `v0.17.2` for version `0.17.2`, and a GNOME extension
+# tags `extensions.gnome.org-v110` for version `110`. This file is the curated
+# list, and it only ever moves a pin whose repository is named here.
+#
+# Adding a repository pin means adding its rule in the same change.
+rules:
+  # deskosctl and the runtime companion share a release: v0.17.2 -> 0.17.2.
+  - match: github.com/deskosproject/deskos-core
+    version_from_tag: v
+  # The extension is released under its extensions.gnome.org version.
+  - match: github.com/micheleg/dash-to-dock
+    version_from_tag: extensions.gnome.org-v
+  - match: github.com/ubuntu/gnome-shell-extension-appindicator
+    version_from_tag: v
