@@ -11,6 +11,8 @@ deskos check         # compare the plan's declared scope with the machine, and s
 deskos etc           # what differs between /etc and the image's baseline
 deskos status        # what the host follows, what it booted, what is staged, what the rollback is
 sudo deskos update   # update the image, after a guard that refuses only what is unsafe
+sudo deskos update --flatpak   # update system Flatpak applications, then the image
+sudo deskos update --all       # image, Flatpak applications and a firmware check
 sudo deskos rollback # stage the previous deployment for the next boot
 sudo deskos etc reset --all   # put /etc back to the image, with a backup
 ```
@@ -26,6 +28,12 @@ publishes the asset, and the pin is bumped to it deliberately.
 
 `update` runs `bootc upgrade` underneath, which changes the deployment the machine
 boots from, so it needs root. `report` and `check` only read and need none.
+
+`update --flatpak` runs a system Flatpak update before the image; `--firmware`
+lists firmware updates with `fwupdmgr get-updates` and never applies them;
+`--all` is the image, the Flatpak applications and the firmware check. These are
+the on-demand side of the timers above, for one machine and one person; they add
+no policy.
 
 `check` measures **what the artifact declares** — the files it installs and
 generates, the dconf defaults it sets — and prints its scope on every run. It is
