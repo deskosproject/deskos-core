@@ -44,6 +44,7 @@ validate: build
 # Fedora 45 is a shipped platform (resources/platforms/); the example root
 # references it by name like the other per-platform examples.
 	$(BIN) validate ./examples/fedora-45
+	$(BIN) validate tests/identity/resources
 
 plan-centos: build
 	$(BIN) plan --workstation deskos-core-centos-stream-10
