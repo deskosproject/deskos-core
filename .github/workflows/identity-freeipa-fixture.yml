@@ -8,6 +8,12 @@ on:
   schedule:
     - cron: '17 4 * * *'
   workflow_dispatch:
+  # Identity-only paths, so the fixture can be exercised before it is merged
+  # and when the fixture itself changes; it is not a per-pull-request check.
+  pull_request:
+    paths:
+      - .github/workflows/identity-freeipa-fixture.yml
+      - tests/identity/**
 
 permissions:
   contents: read
