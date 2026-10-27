@@ -135,9 +135,16 @@ job and `--force` because its FreeIPA has no DNS; that is what a test may do.
 
 ## What this does not prove
 
-- **Not Windows.** Samba AD is a real AD implementation, but Group Policy
-  processing, Windows DC replication and Microsoft-specific extensions are
-  untested and unclaimed.
+- **Not Windows AD.** For the client, joining the Samba DC is equivalent to
+  joining a Microsoft Windows AD domain: the same Kerberos, LDAP, DNS and
+  `sssd-ad` path runs. It is not the same product — no Group Policy, no Windows
+  replication, no Microsoft-specific behaviour — and it is a stand-in **for
+  testing only**, never a support statement.
+- **A check, not a recommendation.** Which directory a fleet runs is the
+  organization's decision. FreeIPA is the one this project validates first,
+  because it models Unix identity, host-based access and `sudo` policy natively;
+  AD is the reality in many organizations, and the client path for it is
+  verified here.
 - **Not a trust yet.** FreeIPA ↔ AD needs both realms reachable at once, with DNS
   delegation; it is the next step, not a claim.
 - **Not an interactive password login.** The check autologs the directory user,
