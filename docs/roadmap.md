@@ -166,6 +166,14 @@ Details in
   maintenance step, not part of compilation. Modeled on BuildStream's
   `track:` and `bst source track`, which Bluefin's Dakota runs daily in
   `.github/workflows/track-bst-sources.yml`; Renovate covers the rest.
+  - **Done (2026-10-27):** `deskosctl track [--fresh] ROOT...` finds every pin in
+    the tree, downloads the pinned URL and compares its sha256, and with
+    `--fresh` reports a newer GitHub release. It lives in `cmd/deskosctl/track`
+    because `internal/` may not reach the network, and it never changes a Plan.
+  - **Next:** the curated tag-to-version rule so a pin can be moved, the scheduled
+    workflow and its bundle pull request with one commit per resource, and the
+    golden update in the same change. See
+    [tracking.md](design/tracking.md).
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
   [resources/software.md](resources/software.md#rpmrepository)).
