@@ -1,9 +1,8 @@
 # Identity client fixture (FreeIPA)
 
-Status: **phase 2, join automated**. The image side exists and
-`identity-freeipa.yml` joins a booted VM to a disposable realm daily; logging in
-at GDM as the directory user is still manual. This is a test fixture, never a
-support claim.
+Status: **phase 2, automated**. `identity-freeipa.yml` joins a booted VM to a
+disposable realm daily and logs in at GDM as the directory user. This is a test
+fixture, never a support claim.
 
 ## What this proves
 
@@ -123,24 +122,36 @@ pull-request gate. It starts the pinned server, builds the identity image and
 disk, boots the VM and runs the instrumented session. The join unit runs before
 GDM with the realm, server and admin password injected at runtime, and the
 session asserts the join completed, SSSD is active and the directory user
-resolves through it. Verified on 2026-10-27: `join_ok=yes`,
-`join_sssd=active`, `join_user=qa:…:/home/qa:/bin/sh`, and `sssctl
-user-checks qa` resolves the user through NSS and InfoPipe.
+resolves through it, and then logs in at GDM as that user. Verified on
+2026-10-27: `join_ok=yes`, `join_sssd=active`,
+`join_user=qa:…:/home/qa:/bin/sh`, `session_user=qa`, `oddjobd=active`, and the
+home was `missing` before the login and owned by the uid SSSD resolved after it
+— that is `oddjob-mkhomedir` creating it at login, not a directory prepared in
+advance.
 
-Two details that cost runs and are worth keeping:
+The login is **autologin**: PAM's session phase, the greeter and the home policy
+run, but no password is typed. An interactive GDM login is still unproven.
+
+Three details that cost runs and are worth keeping:
 
 - `ipa-server-install` rejects a single-label domain, so the fixture uses
   `lab.test`, and it must be told `-U` or it prompts and dies on a detached
   container;
 - the join unit starts in `init_t`, so it runs the script through `/bin/bash`:
-  a file under `/var` is `var_lib_t`, which `init_t` may read but not execute.
+  a file under `/var` is `var_lib_t`, which `init_t` may read but not execute;
+- a directory user's home does not exist before its first login, so the session
+  probes live in `/var/lib/deskos-qa` and start from `/etc/xdg/autostart`, and
+  the initial-setup marker travels in `/etc/skel` so `oddjob-mkhomedir` still
+  creates the home.
 
-## Still manual
+## Still unproven
 
-- log in at GDM as the directory user (autologin or the password prompt) and
-  assert the session is that user with a home created by `oddjob-mkhomedir`;
-- record the server image digest, realm and client digest in the evidence, and
-  destroy the container and the VM afterwards.
+- an interactive GDM login: a person typing the directory password at the
+  greeter, rather than autologin;
+- AD instead of FreeIPA, and a realm with its own DNS (this fixture has none);
+- the server image digest and realm are recorded in the evidence, and the
+  container and VM are destroyed afterwards, but the realm is throwaway and
+  says nothing about a production directory.
 
 The container is a fixture; the test says nothing about AD, production FreeIPA
 or a corporate fleet.
