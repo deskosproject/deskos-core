@@ -170,10 +170,11 @@ Details in
     the tree, downloads the pinned URL and compares its sha256, and with
     `--fresh` reports a newer GitHub release. It lives in `cmd/deskosctl/track`
     because `internal/` may not reach the network, and it never changes a Plan.
-  - **Next:** the curated tag-to-version rule so a pin can be moved, the scheduled
-    workflow and its bundle pull request with one commit per resource, and the
-    golden update in the same change. See
-    [tracking.md](design/tracking.md).
+  - **Done (2026-10-27):** `track.yaml` holds the curated tag-to-version rule per
+    repository, `--write` moves a pin on its own line (indentation, quoting and
+    trailing comment intact), and `track.yml` opens a weekly bundle with one
+    commit per resource plus the regenerated goldens. A person reviews and
+    merges; nothing is published. See [tracking.md](design/tracking.md).
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
   [resources/software.md](resources/software.md#rpmrepository)).
