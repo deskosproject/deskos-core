@@ -11,9 +11,11 @@ set -euo pipefail
 
 name=deskos-freeipa
 volume=deskos-freeipa-data
-hostname=${IPA_SERVER_HOSTNAME:-ipa.test}
-domain=${IPA_SERVER_DOMAIN:-test}
-realm=${IPA_SERVER_REALM:-TEST}
+# A single-label domain such as test is rejected by ipa-server-install; the
+# fixture uses a two-label domain that cannot collide with a real one.
+hostname=${IPA_SERVER_HOSTNAME:-ipa.lab.test}
+domain=${IPA_SERVER_DOMAIN:-lab.test}
+realm=${IPA_SERVER_REALM:-LAB.TEST}
 
 usage() {
   sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'

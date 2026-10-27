@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Join this guest to the disposable realm. Run as root inside the VM.
 #
-#   IPA_DOMAIN=test IPA_REALM=TEST IPA_SERVER=ipa.test \
+#   IPA_DOMAIN=lab.test IPA_REALM=LAB.TEST IPA_SERVER=ipa.lab.test \
 #   IPA_PRINCIPAL=admin IPA_PASSWORD=… ./join.sh
 set -euo pipefail
 

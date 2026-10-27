@@ -841,7 +841,7 @@ class LockTest(unittest.TestCase):
 
 
 JOIN = {
-    "domain": "test", "realm": "TEST", "server": "ipa.test",
+    "domain": "lab.test", "realm": "LAB.TEST", "server": "ipa.lab.test",
     "principal": "admin", "password": "throwaway", "user": "qa",
 }
 
@@ -861,7 +861,7 @@ class JoinTest(unittest.TestCase):
         files = c["tmpfiles.extra"]
         self.assertIn(sc.JOIN_SCRIPT_PATH, files)
         self.assertIn(sc.JOIN_ENV_PATH, files)
-        self.assertIn("IPA_DOMAIN=test", files)
+        self.assertIn("IPA_DOMAIN=lab.test", files)
         self.assertIn(sc.JOIN_STATUS_PATH, files)
 
     def join_checks(self, **extra):

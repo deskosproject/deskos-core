@@ -126,6 +126,13 @@ jobs:
               sudo podman inspect deskos-freeipa \
                 --format 'exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' >&2 || true
               sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
+              # The installer writes to its own log inside the container and only
+              # reports "configuration failed" on the console, so carry the log
+              # into the job output where it can be read without the artifact.
+              for f in /var/log/ipa-server-configure-first.log /var/log/ipaserver-install.log /run/ipa/exit_code; do
+                echo "===== $f" >&2
+                sudo podman cp "deskos-freeipa:$f" - 2>/dev/null | tail -60 >&2 || true
+              done
               exit 1
             fi
             sleep 10
@@ -151,7 +158,7 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session \
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
-            --join-domain test --join-realm TEST --join-server ipa.test \
+            --join-domain lab.test --join-realm LAB.TEST --join-server ipa.lab.test \
             --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa
 
       - name: Collect evidence
@@ -170,6 +177,9 @@ jobs:
           sudo podman cp deskos-freeipa:/run/ipa/exit_code evidence/exit_code.txt >> evidence/cp.log 2>&1 || true
           sudo -E tests/identity/freeipa.sh status > evidence/ipactl.txt 2>&1 || true
           sudo podman exec deskos-freeipa ipa user-show qa > evidence/user.txt 2>&1 || true
+          # The container's log tree is root-owned and has directories the runner
+          # cannot read; the artifact upload fails on the first of them.
+          sudo chown -R "$(id -u):$(id -g)" evidence 2>/dev/null || true
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()

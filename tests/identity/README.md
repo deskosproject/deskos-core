@@ -32,29 +32,29 @@ above. The identity workstation is not published.
 
 ## Start a disposable FreeIPA
 
-Pin the server image you tested; do not float a tag. The fixture needs
-`podman`, a privileged container with systemd, and host networking. The script
-passes `-U` and the realm and domain to `ipa-server-install`: the image runs the
-installer interactively by default, which fails on a detached container.
+Pin the server image you tested; do not float a tag. The fixture needs `podman`
+and a container running systemd. The image does **not** support privileged mode
+or host networking, so the script runs it on the bridge network and publishes
+the realm ports (80, 88, 389, 443, 464, 636). It also passes `-U` and the realm
+and domain to `ipa-server-install`: the image runs the installer interactively
+by default, which fails on a detached container.
 
 ```bash
 export FREEIPA_IMAGE='freeipa/freeipa-server@sha256:…'
 export FREEIPA_PASSWORD='a throwaway Directory Manager password'
-export IPA_SERVER_HOSTNAME=ipa.test
-export IPA_SERVER_DOMAIN=test
-export IPA_SERVER_REALM=TEST
+export IPA_SERVER_HOSTNAME=ipa.lab.test
+export IPA_SERVER_DOMAIN=lab.test
+export IPA_SERVER_REALM=LAB.TEST
 
 sudo -E tests/identity/freeipa.sh start
 ```
 
-The host must resolve the server's own name, because its certificate names it:
-
-```text
-127.0.0.1 ipa.test
-```
-
-in `/etc/hosts` on the host. Wait until `sudo tests/identity/freeipa.sh status`
-answers, then create the directory user:
+The domain needs at least two labels — `ipa-server-install` rejects a
+single-label domain such as `test` — so this fixture uses `lab.test`, which
+cannot collide with a real realm. On the bridge the container resolves its own
+name to its own address; the certificate names `ipa.lab.test`, and the guest
+reaches it through the published ports. Wait until
+`sudo tests/identity/freeipa.sh status` answers, then create the directory user:
 
 ```bash
 export FREEIPA_USER=qa
@@ -72,11 +72,11 @@ Log in as the local installer account (the identity image is not enrolled yet),
 copy [join.sh](join.sh) to the guest, and run it as root:
 
 ```bash
-sudo IPA_DOMAIN=test IPA_REALM=TEST IPA_SERVER=ipa.test \
+sudo IPA_DOMAIN=lab.test IPA_REALM=LAB.TEST IPA_SERVER=ipa.lab.test \
   IPA_PRINCIPAL=admin IPA_PASSWORD='…' ./join.sh
 ```
 
-The script pins `ipa.test` to `10.0.2.2` in the guest's `/etc/hosts`, then runs
+The script pins `ipa.lab.test` to `10.0.2.2` in the guest's `/etc/hosts`, then runs
 `ipa-client-install` with `--force`, a host name inside the realm and
 `--mkhomedir --no-ntp --force-join`. The server certificate and the host name
 match. The fixture realm has **no integrated DNS** (port 53 belongs to the
