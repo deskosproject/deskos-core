@@ -301,11 +301,20 @@ they cover.
     profile (`ipa-client`, `oddjob-mkhomedir`, no realm or credentials), a
     disposable FreeIPA container fixture and the join script; `make check`
     validates the workstation.
-  - **Next:** automate the join and the GDM login as a nightly or on-demand
-    check, not on every pull request: it needs a container running systemd (the
-    FreeIPA image does not support privileged or host networking), a booted VM
-    and several minutes. The evidence records the server version, the realm and
-    the image digest; the container is a test fixture, never a support claim.
+  - **Done (2026-10-27):** `.github/workflows/identity-freeipa.yml` runs daily
+    and on demand, never on every pull request: it starts the pinned FreeIPA
+    container (on the bridge network — the image supports neither privileged
+    mode nor host networking), builds the identity image and disk, boots the VM
+    and joins it from a unit before GDM with runtime credentials. The session
+    asserts the join completed, SSSD is active and the directory user resolves;
+    the run of 2026-10-27 reports `join_ok=yes`, `join_sssd=active` and
+    `join_user=qa:…:/home/qa:/bin/sh`.
+  - **Next:** log in at GDM as the directory user — autologin or the password
+    prompt — and assert the session is that user with a home created by
+    `oddjob-mkhomedir`. Booting and joining are proven; this is the step that
+    exercises PAM, the greeter and the home policy together. The evidence
+    records the server version, the realm and the image digest; the container is
+    a test fixture, never a support claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).

@@ -292,6 +292,12 @@ if ipa-client-install --unattended --force --hostname="$join_host" \
     --mkhomedir --no-ntp --force-join >"$join_log" 2>&1; then
   ok=yes
 fi
+# sssd can still be activating when the installer returns; the session must not
+# call a join failed because it looked a second too early.
+for _ in $(seq 1 30); do
+  [ "$(systemctl is-active sssd 2>/dev/null || true)" = active ] && break
+  sleep 2
+done
 {
   echo "join_ok=$ok"
   echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"

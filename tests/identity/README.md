@@ -1,7 +1,9 @@
 # Identity client fixture (FreeIPA)
 
-Status: **phase 1**. The image side exists; the automated join and GDM login are
-phase 2. This is a test fixture, never a support claim.
+Status: **phase 2, join automated**. The image side exists and
+`identity-freeipa.yml` joins a booted VM to a disposable realm daily; logging in
+at GDM as the directory user is still manual. This is a test fixture, never a
+support claim.
 
 ## What this proves
 
@@ -114,17 +116,29 @@ by `oddjob-mkhomedir` on first login.
 Keep the passwords and the realm private. The fixture is not a production
 directory and carries no support statement.
 
-## Phase 2
+## The daily check
 
-Automate the same path so it can run nightly or on demand, never on every pull
-request:
+`.github/workflows/identity-freeipa.yml` runs daily and on demand, never as a
+pull-request gate. It starts the pinned server, builds the identity image and
+disk, boots the VM and runs the instrumented session. The join unit runs before
+GDM with the realm, server and admin password injected at runtime, and the
+session asserts the join completed, SSSD is active and the directory user
+resolves through it. Verified on 2026-10-27: `join_ok=yes`,
+`join_sssd=active`, `join_user=qa:…:/home/qa:/bin/sh`, and `sssctl
+user-checks qa` resolves the user through NSS and InfoPipe.
 
-- pass the join inputs as systemd credentials and run `ipa-client-install` in a
-  first-boot unit;
-- configure GDM autologin for the directory user (or drive the GDM password
-  prompt) and run the instrumented session check;
-- assert the session is the directory user, the home was created by oddjob, and
-  SSSD is healthy;
+Two details that cost runs and are worth keeping:
+
+- `ipa-server-install` rejects a single-label domain, so the fixture uses
+  `lab.test`, and it must be told `-U` or it prompts and dies on a detached
+  container;
+- the join unit starts in `init_t`, so it runs the script through `/bin/bash`:
+  a file under `/var` is `var_lib_t`, which `init_t` may read but not execute.
+
+## Still manual
+
+- log in at GDM as the directory user (autologin or the password prompt) and
+  assert the session is that user with a home created by `oddjob-mkhomedir`;
 - record the server image digest, realm and client digest in the evidence, and
   destroy the container and the VM afterwards.
 
