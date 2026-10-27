@@ -388,3 +388,36 @@ func TestUpdatePolicyUnits(t *testing.T) {
 		}
 	}
 }
+
+func TestUpdatePolicyStartsAStagingRunWhenACComesOnline(t *testing.T) {
+	files, err := containerfile.Render(mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rule := string(fileData(t, files, "rootfs/usr/lib/udev/rules.d/60-deskos-update-on-ac.rules"))
+	for _, want := range []string{
+		`SUBSYSTEM=="power_supply"`,
+		`ATTR{online}=="1"`,
+		`ENV{SYSTEMD_WANTS}+="deskos-image-update.service"`,
+	} {
+		if !strings.Contains(rule, want) {
+			t.Errorf("AC catch-up rule lacks %q:\n%s", want, rule)
+		}
+	}
+
+	// A policy without requireACPower keeps the daily timer only: there is
+	// nothing to catch up when a run was never skipped.
+	noAC := updateFiles.with(fixture{
+		"ws.yaml":     workstation("ws", "core"),
+		"u-core.yaml": updatePolicy("core", "  image: {automatic: true, schedule: daily}\n"),
+	}).dir(t)
+	a, err := containerfile.Render(mustPlan(t, "ws", noAC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range a {
+		if f.Path == "rootfs/usr/lib/udev/rules.d/60-deskos-update-on-ac.rules" {
+			t.Errorf("a policy without requireACPower rendered the AC catch-up rule")
+		}
+	}
+}

@@ -388,8 +388,9 @@ how-to: [supply-chain.md](supply-chain.md).
 - **This release (v0.9.0):** the `Theme` kind and the `deskos-theme` applier
   ([ADR 0013](adr/0013-theme.md)), and repository signing keys as **local
   assets** instead of URLs (`gpgKeyFiles`; a deliberate break of v1alpha1).
-- A staged update skipped on battery waits for the next schedule; a
-  catch-up run on AC connect (Bluefin's `uupd-on-ac.service`) is open.
+- **Done (2026-10-27):** a staged update skipped on battery catches up when AC
+  comes online: the image carries a udev rule that starts the same staging
+  service, which still checks `ConditionACPower`.
 - **Done (2026-10-26):** `deskos status`, `deskos update` and `deskos rollback`
   let a user or administrator inspect one machine's deployment and invoke
   bootc's own staged update and rollback. **No controller, reconciliation loop

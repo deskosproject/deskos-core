@@ -114,6 +114,10 @@ the schedule, or turns automation off, in its own `UpdatePolicy`
 written, but no timer, so an operator (or `deskos update`) can run it
 on demand. The kind is documented in [resources/system.md](resources/system.md#updatepolicy).
 
+When `image.requireACPower` is set, the image also carries a udev rule that
+starts the staging service when AC comes online, so a run skipped on battery
+does not wait for the next day. The service still checks `ConditionACPower`.
+
 An organization that enables `image.apply` accepts scheduled reboots. The
 apply timer is not persistent: if the machine is off during the window, it
 waits for the next one. The service first runs `deskos window`, which checks
