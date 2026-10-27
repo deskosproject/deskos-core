@@ -35,7 +35,13 @@
             "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
             "clock.showWeekday", "clock.format",
             "keyboard.numLock", "keyboard.terminal", "keyboard.xkbOptions",
-            "power.buttonAction"
+            "power.buttonAction",
+            "lockdown.disablePrinting", "lockdown.disablePrintSetup",
+            "lockdown.disableSaveToDisk", "lockdown.disableLogOut",
+            "lockdown.disableUserSwitching", "lockdown.disableApplicationHandlers",
+            "lockdown.disableCommandLine", "lockdown.disableShowPassword",
+            "lockdown.disableLockScreen", "lockdown.mountRemovableStorageReadOnly",
+            "lockdown.disableUserAdministration"
           ] }
         }
       }
@@ -149,6 +155,23 @@
           "additionalProperties": false,
           "properties": {
             "buttonAction": { "enum": ["nothing", "suspend", "hibernate", "interactive"] }
+          }
+        },
+        "lockdown": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "disablePrinting": { "type": "boolean" },
+            "disablePrintSetup": { "type": "boolean" },
+            "disableSaveToDisk": { "type": "boolean" },
+            "disableLogOut": { "type": "boolean" },
+            "disableUserSwitching": { "type": "boolean" },
+            "disableApplicationHandlers": { "type": "boolean" },
+            "disableCommandLine": { "type": "boolean" },
+            "disableShowPassword": { "type": "boolean" },
+            "disableLockScreen": { "type": "boolean" },
+            "mountRemovableStorageReadOnly": { "type": "boolean" },
+            "disableUserAdministration": { "type": "boolean" }
           }
         },
         "clock": {

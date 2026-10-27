@@ -307,20 +307,23 @@ they cover.
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
   `GnomeProfile.spec.locks` already renders locks for the settings the model
   declares — Core never locks (invariant 8) — but a corporate fleet needs more:
-  - the lock enum stops at the settings DeskOS models. The guide also locks
-    printing, file saving, online accounts, logout and user switching, and
-    `org.gnome.desktop.lockdown.*`. Decide between extending the enum and a
-    controlled list of dconf keys/prefixes; either keeps the "no escape hatch"
-    rule by validating what is declared;
+  - **Done (2026-10-27):** the `org.gnome.desktop.lockdown.*` capabilities are
+    modeled as a `lockdown` block in `GnomeProfile.defaults` — printing, print
+    setup, save to disk, logout, user switching, application handlers, command
+    line, password reveal, lock screen, removable storage read-only and user
+    administration — and their semantic keys are lockable like any other.
+    Online accounts and repartitioning are not modeled: they are separate
+    mechanisms, not one boolean key;
   - **Done (2026-10-27):** the session check proves a locked key cannot be
     changed, not only that the lock file was rendered. The example organization
     locks `shell.favorites`; the session writes the key, expects the write to
     fail and the value to be unchanged;
-  - `deskos report` and `deskos check` should list the active locks and say
-    which are not enforced;
-  - an organization-facing guide: which locks fit a managed laptop, what they
-    break (printing, saving files, online accounts), and how they interact with
-    user and site settings.
+  - **Done (2026-10-27):** `deskos report` lists the locks the plan declares and
+    says that enforcement is not its measurement; `deskos check` names the locks
+    in its scope and points at the instrumented session check;
+  - **Done (2026-10-27):** [locks.md](locks.md) covers which locks fit a managed
+    laptop, what they break, and how they interact with user and site settings;
+    `resources/desktop.md` links it from the `GnomeProfile` section.
 
   This is an organization's policy layered like any other `GnomeProfile`; Core
   provides no lock of its own.
@@ -394,6 +397,36 @@ how-to: [supply-chain.md](supply-chain.md).
   ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)); the
   commands read the files listed in ADR 0007. Still open: system Flatpak
   updates and fwupd checks from the same endpoint.
+- **`deskos etc` (proposed 2026-10-27).** Make the `/etc` three-way merge
+  visible and reversible. `deskos etc` compares the running `/etc` with the
+  booted image's baseline (`/usr/etc` on the ostree/bootc backend) and lists
+  modified, added and removed paths; when a deployment is staged, it can show
+  the next image's baseline too, so the three inputs of the merge — image,
+  local and next — stop being a black box. `deskos etc reset PATH…`, `--all`
+  and `--dry-run` copy the baseline back, keep a timestamped copy under
+  `/var/lib/deskos/etc-backup/`, and refuse a path the image does not own unless
+  asked; `--all` names the local additions it would delete before doing it. It
+  only works on a backend that keeps a baseline and merges `/etc`; elsewhere it
+  refuses and says why. It is also the way back after rebasing a machine from
+  another ostree distribution, where resetting all of `/etc` to the DeskOS
+  baseline is the point — a narrow case, but the same tool.
+  Runtime files the image cannot carry — NetworkManager connections,
+  machine-id, SSH host keys, printer and Bluetooth state, sockets, caches — are
+  ignored by default, and an organization can extend the list. The policy file
+  is **`/etc/deskos/deskos.json`**: an image-owned default rendered from the
+  organization's resource, not a hand-edited escape hatch. JSON is the
+  recommendation because the compiler emits it, the runtime parses it with the
+  Go standard library, and it needs no comments; a line-oriented `deskos.conf`
+  would win only if the list were meant to be edited on the machine, which is
+  not this design. How the organization declares it is still a decision (a
+  `Profile` field or a first-class resource), not a new shell. The tool ignores
+  `/etc/deskos/` in both the diff and the reset: the policy is not a managed
+  file. If it differs from the image, it says so separately and suggests
+  rebuilding the image; `reset --all` never touches it unless asked with
+  `--include-policy`. Ignored paths are counted and named in a summary, never
+  silently dropped; content is shown only on request because `/etc` holds
+  secrets. No daemon, no reconciliation, no enforcement: a person asks, and the
+  tool reports or acts (ADR 0001, 0018).
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
 

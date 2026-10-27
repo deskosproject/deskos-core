@@ -70,6 +70,21 @@ const (
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
 	KeyPowerButton     = "power.buttonAction"
+
+	// The GNOME lockdown keys. Setting one to true disables the capability;
+	// locking it makes the choice read-only. The names mirror the dconf keys so
+	// an administrator can map them to the GNOME system administration guide.
+	KeyLockdownDisablePrinting            = "lockdown.disablePrinting"
+	KeyLockdownDisablePrintSetup          = "lockdown.disablePrintSetup"
+	KeyLockdownDisableSaveToDisk          = "lockdown.disableSaveToDisk"
+	KeyLockdownDisableLogOut              = "lockdown.disableLogOut"
+	KeyLockdownDisableUserSwitching       = "lockdown.disableUserSwitching"
+	KeyLockdownDisableApplicationHandlers = "lockdown.disableApplicationHandlers"
+	KeyLockdownDisableCommandLine         = "lockdown.disableCommandLine"
+	KeyLockdownDisableShowPassword        = "lockdown.disableShowPassword"
+	KeyLockdownDisableLockScreen          = "lockdown.disableLockScreen"
+	KeyLockdownRemovableStorageReadOnly   = "lockdown.mountRemovableStorageReadOnly"
+	KeyLockdownDisableUserAdministration  = "lockdown.disableUserAdministration"
 )
 
 // extensionKeyPrefix names one extension decision in the composed settings. Each
@@ -97,6 +112,12 @@ var knownKeys = map[string]bool{
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
 	KeyPowerButton: true, KeyExtensions: true,
+	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
+	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
+	KeyLockdownDisableUserSwitching: true, KeyLockdownDisableApplicationHandlers: true,
+	KeyLockdownDisableCommandLine: true, KeyLockdownDisableShowPassword: true,
+	KeyLockdownDisableLockScreen: true, KeyLockdownRemovableStorageReadOnly: true,
+	KeyLockdownDisableUserAdministration: true,
 }
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
@@ -131,6 +152,25 @@ type Settings struct {
 	Clock        *Clock        `json:"clock,omitempty"`
 	Keyboard     *Keyboard     `json:"keyboard,omitempty"`
 	Power        *Power        `json:"power,omitempty"`
+	Lockdown     *Lockdown     `json:"lockdown,omitempty"`
+}
+
+// Lockdown is the set of GNOME capabilities a managed profile can turn off.
+// Every field maps to one org.gnome.desktop.lockdown key; a nil field leaves
+// the key alone. Setting a field and listing its semantic key under locks is
+// what makes the value read-only.
+type Lockdown struct {
+	DisablePrinting               *bool `json:"disablePrinting,omitempty"`
+	DisablePrintSetup             *bool `json:"disablePrintSetup,omitempty"`
+	DisableSaveToDisk             *bool `json:"disableSaveToDisk,omitempty"`
+	DisableLogOut                 *bool `json:"disableLogOut,omitempty"`
+	DisableUserSwitching          *bool `json:"disableUserSwitching,omitempty"`
+	DisableApplicationHandlers    *bool `json:"disableApplicationHandlers,omitempty"`
+	DisableCommandLine            *bool `json:"disableCommandLine,omitempty"`
+	DisableShowPassword           *bool `json:"disableShowPassword,omitempty"`
+	DisableLockScreen             *bool `json:"disableLockScreen,omitempty"`
+	MountRemovableStorageReadOnly *bool `json:"mountRemovableStorageReadOnly,omitempty"`
+	DisableUserAdministration     *bool `json:"disableUserAdministration,omitempty"`
 }
 
 // Power is the hardware power button's action.
@@ -627,6 +667,29 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			bad("%s: expected %s, got %q", KeyPowerButton, strings.Join(powerButtonActions, ", "), pw.ButtonAction)
 		}
 		set(KeyPowerButton, pw.ButtonAction, pw.ButtonAction)
+	}
+
+	if ld := s.Lockdown; ld != nil {
+		for _, b := range []struct {
+			key string
+			val *bool
+		}{
+			{KeyLockdownDisablePrinting, ld.DisablePrinting},
+			{KeyLockdownDisablePrintSetup, ld.DisablePrintSetup},
+			{KeyLockdownDisableSaveToDisk, ld.DisableSaveToDisk},
+			{KeyLockdownDisableLogOut, ld.DisableLogOut},
+			{KeyLockdownDisableUserSwitching, ld.DisableUserSwitching},
+			{KeyLockdownDisableApplicationHandlers, ld.DisableApplicationHandlers},
+			{KeyLockdownDisableCommandLine, ld.DisableCommandLine},
+			{KeyLockdownDisableShowPassword, ld.DisableShowPassword},
+			{KeyLockdownDisableLockScreen, ld.DisableLockScreen},
+			{KeyLockdownRemovableStorageReadOnly, ld.MountRemovableStorageReadOnly},
+			{KeyLockdownDisableUserAdministration, ld.DisableUserAdministration},
+		} {
+			if b.val != nil {
+				set(b.key, *b.val, strconv.FormatBool(*b.val))
+			}
+		}
 	}
 
 	seenLock := map[string]bool{}

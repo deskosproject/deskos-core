@@ -56,6 +56,15 @@ func Report(w io.Writer, p *plan.Plan, present *Booted) {
 	if db := a.Dconf; db != nil {
 		pf("GNOME:       %d dconf default(s) in the %q database, %d lock(s)\n",
 			len(db.Defaults), db.Name, len(db.Locks))
+		if len(db.Locks) > 0 {
+			pf("Locks:       %d declared\n", len(db.Locks))
+			for _, lock := range db.Locks {
+				pf("  %s (%s)\n", lock.Key, lock.Setting)
+			}
+			pf("  declared in the image; whether the running session enforces them is not\n")
+			pf("  measured here. The instrumented session check writes each key and expects\n")
+			pf("  the write to fail.\n")
+		}
 	}
 	pf("Extensions:  %s\n", enabledExtensions(a.EnabledExtensions))
 	if len(a.KernelArguments) > 0 {

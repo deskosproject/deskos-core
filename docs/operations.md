@@ -31,6 +31,11 @@ boots from, so it needs root. `report` and `check` only read and need none.
 generates, the dconf defaults it sets — and prints its scope on every run. It is
 not an audit of everything the machine has become.
 
+`report` lists the dconf locks the plan declares and says that whether the
+running session enforces them is not its measurement. `check` names the same
+limit in its scope. The instrumented session check is the proof: it writes each
+locked key and expects the write to fail.
+
 ## What changed in /etc
 
 On a deployment that merges `/etc`, `deskos etc` compares the running `/etc`
@@ -59,6 +64,7 @@ unless you pass `--include-policy`.
 This is the same three-way merge an ostree-derived system does at boot, made
 visible: the image's baseline, the local file, and the next image's baseline
 when a deployment is staged.
+
 
 When an install, a first boot or an update does not work, start with
 [recovery.md](recovery.md): it lists the symptom, the evidence to collect and
