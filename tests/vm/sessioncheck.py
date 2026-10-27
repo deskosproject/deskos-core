@@ -617,6 +617,14 @@ echo "login_logo=$login_logo"
 if [ -n "$login_logo" ]; then
   test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
 fi
+# Read the same key through the profile the greeter uses. A login-screen default
+# written to the session's database is installed and never shown, and only this
+# read tells the two apart (issue #246).
+echo "login_logo_greeter=$(DCONF_PROFILE=gdm dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')"
+# Report only, not an assertion: an /etc merge can rewrite fstab at boot after
+# the generator ran, and the field bug is what the numbers explain.
+echo "fstab_mtime=$(stat -c %Y /etc/fstab 2>/dev/null || echo missing)"
+echo "fstab_verify=$(findmnt --verify 2>&1 | tr '\n' '|' | cut -c1-400)"
 # The offline check needs to prove the boot really had no network.
 echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 # Its own file: the browser block plus this script would exceed the cap.
@@ -1483,6 +1491,13 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         check("login logo file exists", values.get("login_logo_file") == "present",
               f"logo={values.get('login_logo') or 'unset'} "
               f"file={values.get('login_logo_file') or 'not read'}")
+        if any(d.get("key") == "/org/gnome/login-screen/logo" for d in plan_defaults(plan)):
+            # Installed is not shown: the greeter reads its own database, so the
+            # key has to be readable through the gdm profile as well.
+            check("the greeter reads the login logo",
+                  values.get("login_logo_greeter") == values.get("login_logo"),
+                  f"greeter={values.get('login_logo_greeter') or 'unset'} "
+                  f"session={values.get('login_logo') or 'unset'}")
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
     # The runtime companion ships in the image; the field checklist runs it. It

@@ -127,12 +127,18 @@ type GnomePlatform struct {
 	// would not reach a session. DeskOS writes none here, and composition
 	// records each GNOME default a profile asked for and did not get.
 	KeepsVendorDefaults bool `json:"keepsVendorDefaults,omitempty"`
-	// LoginScreen reports that GDM's dconf profile reads DconfDatabase, so
-	// org.gnome.login-screen defaults written there reach the login screen.
-	LoginScreen       bool             `json:"loginScreen,omitempty"`
-	EnabledExtensions []string         `json:"enabledExtensions,omitempty"`
-	Extensions        []GnomeExtension `json:"extensions,omitempty"`
-	AppLauncher       *AppLauncher     `json:"appLauncher,omitempty"`
+	// LoginScreen reports that the platform runs GDM and can carry a login
+	// screen customization. GDM reads its own dconf profile, which on the EL
+	// family is the "gdm" database, not the one a session reads: a login-screen
+	// key written to DconfDatabase never reaches the greeter.
+	LoginScreen bool `json:"loginScreen,omitempty"`
+	// LoginScreenDatabase is the database GDM reads (system-db in
+	// /etc/dconf/profile/gdm). It is required when LoginScreen is set, and
+	// org.gnome.login-screen defaults are written there.
+	LoginScreenDatabase string           `json:"loginScreenDatabase,omitempty"`
+	EnabledExtensions   []string         `json:"enabledExtensions,omitempty"`
+	Extensions          []GnomeExtension `json:"extensions,omitempty"`
+	AppLauncher         *AppLauncher     `json:"appLauncher,omitempty"`
 	// AppFolders reports that GNOME Shell keeps app folders from the dconf defaults.
 	AppFolders bool `json:"appFolders,omitempty"`
 }
@@ -406,6 +412,14 @@ func (platformProvider) Decode(res *model.Resource) error {
 			}
 		case !model.ValidName(g.DconfDatabase):
 			errs.Add(model.Errorf(res, "gnome.dconfDatabase %q is not a valid database name", g.DconfDatabase))
+		}
+		switch {
+		case g.LoginScreen && !model.ValidName(g.LoginScreenDatabase):
+			// The greeter's database cannot be assumed: it is the platform's fact,
+			// and guessing "gdm" would hide the next platform that differs.
+			errs.Add(model.Errorf(res, "gnome.loginScreen needs gnome.loginScreenDatabase (the database GDM reads, for example \"gdm\")"))
+		case !g.LoginScreen && g.LoginScreenDatabase != "":
+			errs.Add(model.Errorf(res, "gnome.loginScreenDatabase %q is declared although the platform declares no login screen", g.LoginScreenDatabase))
 		}
 		seenExtension := map[string]bool{}
 		for _, e := range g.Extensions {

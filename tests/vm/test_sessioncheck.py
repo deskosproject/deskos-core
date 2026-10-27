@@ -363,11 +363,54 @@ class ParseEvaluateTest(unittest.TestCase):
             {"key": "/org/gnome/login-screen/logo", "type": "s",
              "value": "'/usr/share/deskos/branding/logo.svg'"})
         good = dict(GOOD, login_logo="/usr/share/deskos/branding/logo.svg",
+                    login_logo_greeter="/usr/share/deskos/branding/logo.svg",
                     login_logo_file="present", **reported(plan))
         self.assertTrue(all(c["pass"] for c in sc.evaluate(good, plan)))
         bad = dict(good, login_logo_file="missing")
         failed = {c["check"] for c in sc.evaluate(bad, plan) if not c["pass"]}
         self.assertEqual(failed, {"login logo file exists"})
+
+    def test_a_login_logo_the_greeter_cannot_read_fails(self):
+        # Issue #246: the key was installed in the session's database, so the
+        # session read it and the login screen did not.
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/logo", "type": "s",
+             "value": "'/usr/share/deskos/branding/logo.svg'"})
+        good = dict(GOOD, login_logo="/usr/share/deskos/branding/logo.svg",
+                    login_logo_greeter="", login_logo_file="present", **reported(plan))
+        checks = {c["check"]: c for c in sc.evaluate(good, plan)}
+        self.assertFalse(checks["the greeter reads the login logo"]["pass"])
+
+    def test_deskos_check_that_cannot_run_fails(self):
+        bad = dict(GOOD, deskos_check_exit="2")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"deskos check runs on the booted image"})
+
+    def test_a_login_logo_whose_file_is_missing_fails(self):
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/logo", "type": "s",
+             "value": "'/usr/share/deskos/branding/logo.svg'"})
+        good = dict(GOOD, login_logo="/usr/share/deskos/branding/logo.svg",
+                    login_logo_greeter="/usr/share/deskos/branding/logo.svg",
+                    login_logo_file="present", **reported(plan))
+        self.assertTrue(all(c["pass"] for c in sc.evaluate(good, plan)))
+        bad = dict(good, login_logo_file="missing")
+        failed = {c["check"] for c in sc.evaluate(bad, plan) if not c["pass"]}
+        self.assertEqual(failed, {"login logo file exists"})
+
+    def test_a_login_logo_the_greeter_cannot_read_fails(self):
+        # Issue #246: the key was installed in the session's database, so the
+        # session read it and the login screen did not.
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/logo", "type": "s",
+             "value": "'/usr/share/deskos/branding/logo.svg'"})
+        good = dict(GOOD, login_logo="/usr/share/deskos/branding/logo.svg",
+                    login_logo_greeter="", login_logo_file="present", **reported(plan))
+        checks = {c["check"]: c for c in sc.evaluate(good, plan)}
+        self.assertFalse(checks["the greeter reads the login logo"]["pass"])
 
     def test_an_extension_that_is_not_installed_fails(self):
         bad = dict(GOOD, extension_0="missing")

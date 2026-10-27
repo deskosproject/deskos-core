@@ -52,6 +52,8 @@ spec:
   gnome:
     dconfDatabase: distro
     loginScreen: true
+    # GDM reads its own profile; the EL family and Fedora use the gdm database.
+    loginScreenDatabase: gdm
     # Default of org.gnome.shell enabled-extensions on this family.
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:

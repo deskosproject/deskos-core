@@ -38,6 +38,9 @@ spec:
   displayManager: gdm.service
   gnome:
     dconfDatabase: distro
+    # GDM reads its own profile (/etc/dconf/profile/gdm), whose system
+    # database is gdm: a login-screen key in distro never reaches the greeter.
+    loginScreenDatabase: gdm
     # GDM's dconf profile (user, gdm, local, site, distro) reads it too.
     loginScreen: true
     enabledExtensions: [background-logo@fedorahosted.org]

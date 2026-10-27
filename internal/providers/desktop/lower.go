@@ -83,7 +83,10 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if pl.Gnome == nil {
 		return fmt.Errorf("%s declares no GNOME integration, but the composition contains GNOME settings", c.Platform.ID())
 	}
-	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{Name: pl.Gnome.DconfDatabase}, bySett: map[string][]string{}}
+	l := &lowering{c: c, p: p, db: &plan.DconfDatabase{
+		Name:        pl.Gnome.DconfDatabase,
+		LoginScreen: pl.Gnome.LoginScreenDatabase,
+	}, bySett: map[string][]string{}}
 	if pl.Gnome.KeepsVendorDefaults {
 		// The platform's base ships no system dconf profile, so DeskOS writes no
 		// default and no lock for it: its desktop is the vendor's (ADR 0016). A

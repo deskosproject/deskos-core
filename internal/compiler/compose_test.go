@@ -674,7 +674,8 @@ func TestAssetsStayInsideRoot(t *testing.T) {
 }
 
 func TestLoginLogo(t *testing.T) {
-	gdmPlatform := strings.Replace(platformYAML, "    dconfDatabase: distro\n", "    dconfDatabase: distro\n    loginScreen: true\n", 1)
+	gdmPlatform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
+		"    dconfDatabase: distro\n    loginScreen: true\n    loginScreenDatabase: gdm\n", 1)
 	logo := func(name, file string) string {
 		return gnome(name, "    appearance:\n      loginLogo: "+file+"\n")
 	}

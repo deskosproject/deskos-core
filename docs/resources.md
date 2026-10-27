@@ -147,6 +147,13 @@ writes no GNOME default or lock for it, and **any** GNOME setting a profile decl
 there fails composition with the reason, at any layer. A platform with the fact must
 also not declare `gnome.loginScreen`.
 
+A platform that runs GDM and carries a login-screen customization declares
+`gnome.loginScreen: true` **and** `gnome.loginScreenDatabase`: the database GDM
+reads (on the EL family and Fedora, `gdm`). The greeter has its own dconf profile,
+so `org.gnome.login-screen` defaults are written to that database, not to the one
+a session reads — writing them beside the desktop defaults installs a key the
+login screen never shows (issue #246).
+
 That is why DeskOS's own GNOME defaults live in the `deskos-gnome` foundation profile
 rather than in `deskos-core`: a workstation whose platform DeskOS can write to selects
 it, and one whose platform ships its own desktop does not. A platform that declares the

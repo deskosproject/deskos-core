@@ -250,7 +250,7 @@ func TestNoLockCanBeDeclaredOnAPlatformThatKeepsItsVendorDesktop(t *testing.T) {
 
 func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {
 	platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
-		"    keepsVendorDefaults: true\n    loginScreen: true\n", 1)
+		"    keepsVendorDefaults: true\n    loginScreen: true\n    loginScreenDatabase: gdm\n", 1)
 	dir := fixture{"platform.yaml": platform}.with(fixture{
 		"ws.yaml":   workstation("ws", "core"),
 		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),

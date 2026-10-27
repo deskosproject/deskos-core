@@ -36,6 +36,9 @@ spec:
     # /etc/dconf/profile/user from the dconf package reads user, local, site
     # and distro; distro is the vendor-defaults slot, below local and site.
     dconfDatabase: distro
+    # GDM reads its own profile (/etc/dconf/profile/gdm), whose system
+    # database is gdm: a login-screen key in distro never reaches the greeter.
+    loginScreenDatabase: gdm
     # GDM's dconf profile (user, gdm, local, site, distro) reads it too.
     loginScreen: true
     # Default of org.gnome.shell enabled-extensions on this platform.
