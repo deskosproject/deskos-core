@@ -1,6 +1,8 @@
 // Command deskosctl validates, plans and renders DeskOS workstation
-// definitions. It is the artifact-factory CLI; it never builds, pushes or
-// touches running endpoints.
+// definitions. It is the artifact-factory CLI: it never builds, pushes or
+// touches running endpoints. `track` is the one subcommand that reads the
+// network, and it is a maintenance step for a person to act on: it never
+// changes a Plan by itself.
 package main
 
 import (
@@ -11,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/deskosproject/deskos-core/cmd/deskosctl/track"
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 	"github.com/deskosproject/deskos-core/internal/compiler"
 	"github.com/deskosproject/deskos-core/internal/compose"
@@ -27,6 +30,7 @@ Usage:
   deskosctl plan [--no-core] ROOT... --workstation NAME [--format text|json]
   deskosctl render [--no-core] ROOT... --workstation NAME --backend containerfile --output DIR
   deskosctl sbom [--no-core] ROOT... --workstation NAME [--output FILE]
+  deskosctl track [--fresh] [--token TOKEN] ROOT...
   deskosctl core export DIR
   deskosctl version
 
@@ -69,6 +73,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		err = cmdRender(args[1:], stdout)
 	case "sbom":
 		err = cmdSBOM(args[1:], stdout)
+	case "track":
+		err = cmdTrack(args[1:], stdout)
 	case "core":
 		err = cmdCore(args[1:], stdout)
 	case "version":
@@ -91,6 +97,52 @@ func run(args []string, stdout, stderr io.Writer) int {
 		reportError(stderr, err)
 		return exitInvalid
 	}
+}
+
+// cmdTrack checks every checksum-pinned resource against what upstream serves.
+// It is a maintenance command: it reads the network, never writes a resource,
+// and its answers are for a person to act on. Moving a pin stays a reviewed
+// change.
+func cmdTrack(args []string, stdout io.Writer) error {
+	fs := newFlags("track")
+	fresh := fs.Bool("fresh", false, "also ask GitHub whether a newer release exists")
+	token := fs.String("token", os.Getenv("GITHUB_TOKEN"), "token for the GitHub API (default $GITHUB_TOKEN)")
+	roots, err := parse(fs, args)
+	if err != nil {
+		return err
+	}
+	if len(roots) == 0 {
+		return usageError{"track needs at least one resource root"}
+	}
+	results, err := track.Check(roots, track.Options{Fresh: *fresh, Token: *token})
+	if err != nil {
+		return err
+	}
+	if len(results) == 0 {
+		fmt.Fprintln(stdout, "no checksum-pinned resources found")
+		return nil
+	}
+	var drifted int
+	for _, r := range results {
+		where := fmt.Sprintf("%s:%d", r.Pin.File, r.Pin.Line)
+		switch {
+		case r.HashErr != nil:
+			drifted++
+			fmt.Fprintf(stdout, "%s %s sha256 MISMATCH: %v\n", where, r.Pin.Version, r.HashErr)
+		default:
+			fmt.Fprintf(stdout, "%s %s sha256 ok\n", where, r.Pin.Version)
+		}
+		if r.FreshErr != nil {
+			fmt.Fprintf(stdout, "%s upstream unknown: %v\n", where, r.FreshErr)
+		} else if r.Newer() {
+			drifted++
+			fmt.Fprintf(stdout, "%s upstream has %s\n", where, r.LatestTag)
+		}
+	}
+	if drifted > 0 {
+		return fmt.Errorf("%d pin(s) need attention", drifted)
+	}
+	return nil
 }
 
 func reportError(w io.Writer, err error) {

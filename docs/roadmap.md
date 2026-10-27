@@ -166,12 +166,56 @@ Details in
   maintenance step, not part of compilation. Modeled on BuildStream's
   `track:` and `bst source track`, which Bluefin's Dakota runs daily in
   `.github/workflows/track-bst-sources.yml`; Renovate covers the rest.
+  - **Done (2026-10-27):** `deskosctl track [--fresh] ROOT...` finds every pin in
+    the tree, downloads the pinned URL and compares its sha256, and with
+    `--fresh` reports a newer GitHub release. It lives in `cmd/deskosctl/track`
+    because `internal/` may not reach the network, and it never changes a Plan.
+  - **Next:** the curated tag-to-version rule so a pin can be moved, the scheduled
+    workflow and its bundle pull request with one commit per resource, and the
+    golden update in the same change. See
+    [tracking.md](design/tracking.md).
 - ~~Immutable identity for RPM repository GPG keys~~ done: `RpmRepository`
   keys are local assets read into the plan (see
   [resources/software.md](resources/software.md#rpmrepository)).
 - ~~APT sources as their own kind~~ done: `AptRepository` renders a signed
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
+- **Enterprise use cases: what we claim and how we say it (proposed
+  2026-10-27, separate spike).** The documentation is where adoption is won or
+  lost, and the risk is a sentence that reads "DeskOS comes with an EDR". It does
+  not. The pipeline proves that an organization's software fits a DeskOS baseline
+  and that the machine stays healthy; it does not ship that software and it is
+  not how a fleet is deployed.
+  - **Never "DeskOS comes with X".** DeskOS composes a declarative baseline; the
+    organization declares its software in its own layer. EDR, antivirus, VPN and
+    proxy settings are organization software, never Core (invariant 7).
+  - **What a check may claim:** the software installs from the declared source,
+    the machine boots, the session works, and an update leaves it working. Not
+    vendor support, not a licence, not the production deployment method.
+  - **How it is deployed in real life:** configuration management — typically
+    Ansible — and the software's own console, outside these repositories. The
+    same is true of enrolment: a real machine receives a per-host credential at
+    provisioning time. Nothing about that belongs in an ISO.
+  - **No secrets in the ISO, and no per-laptop ISO.** A shared credential baked
+    into an image compromises every machine that ever uses it; an ISO prepared
+    per laptop is not a fleet artifact. Enrolment and configuration are runtime
+    acts, and the artifact carries neither.
+  - **Deliverables:** `docs/use-cases/` pages for identity, EDR, antivirus, VPN
+    and the corporate proxy, each split into "what DeskOS does", "what it does
+    not" and "how it is validated"; an FAQ for "does DeskOS ship an EDR?"; and a
+    pointer from every claim to a run or a page. A claim with neither is not
+    made.
+  - **Positioning:** a fleet artifact proves what a machine can do after it boots,
+    and proving it in CI is the part few projects do. Compare on method and
+    evidence, never on the reputation of another project.
+- **Model a network proxy, or leave it to configuration management (decision
+  pending, 2026-10-27).** Nothing in the compiler describes a proxy today: dnf,
+  Flatpak and `deskos update` behind a corporate proxy cannot be expressed, only
+  the CA trust (`TrustAnchor`) and the desktop settings (`GnomeProfile`). If a
+  machine needs the proxy to reach its own repositories, the proxy is baseline
+  and deserves a resource of its own — a new kind, which needs an ADR and an
+  explicit decision (invariant 4). If it is environment, Ansible owns it. The
+  proxy check starts with what can be expressed today and leaves this open.
 - A decision by the example organization on the `virt-manager` gap.
 - **Example AlmaLinux and Fedora platforms:** their image builds move to the
   weekly `examples-weekly.yml` check, with no publication. This is not a support
@@ -320,6 +364,20 @@ they cover.
     and a realm with its own DNS, remain separate paths. The evidence records
     the server version, the realm and the image digest; the container is a test
     fixture, never a support claim.
+- **AD membership (proposed 2026-10-27).** The managed model also means AD, and
+  the identity fixture can prove the client path without Windows: a Samba AD DC
+  in a container, `realm`/`adcli`/`sssd-ad` in the VM, DNS pointed at the realm,
+  and a login at GDM as an AD user. Samba AD is a real AD implementation but not
+  Windows: Group Policy and Windows-specific behaviour stay unclaimed.
+  - **How it is validated:** [identity-validation.md](design/identity-validation.md)
+    explains the shape — disposable realm, credentials at runtime, join before
+    GDM, session and home asserted, watchdog for a boot that never reports — and
+    why that, not the join itself, is the fleet property.
+  - **Done (2026-10-27):** `tests/identity/samba/` builds the DC and
+    `identity-ad.yml` runs daily and on demand. The check joins the VM through
+    the realm's own DNS, logs in at GDM as `qa@ad.lab.test`, and asserts the home
+    was created at that login and `oddjobd` is active. An AD trust (FreeIPA ↔
+    AD) is a later step and needs both realms reachable at once.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
