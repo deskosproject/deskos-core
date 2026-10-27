@@ -280,9 +280,16 @@ if ! grep -qE "[[:space:]]${IPA_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
   printf '10.0.2.2 %s\n' "$IPA_SERVER" >> /etc/hosts
 fi
 ok=no
-if ipa-client-install --unattended --domain="$IPA_DOMAIN" --realm="$IPA_REALM" \
+# No DNS in this fixture: the realm has no integrated DNS and the guest maps the
+# server in /etc/hosts. --force skips the checks that expect a resolvable host
+# name, and --hostname gives the guest a name inside the realm instead of
+# whatever the image happens to have. The log is kept so a failed join says why.
+join_host="${IPA_JOIN_HOSTNAME:-deskos-qa.$IPA_DOMAIN}"
+join_log=/var/lib/deskos-qa/join.log
+if ipa-client-install --unattended --force --hostname="$join_host" \
+    --domain="$IPA_DOMAIN" --realm="$IPA_REALM" \
     --server="$IPA_SERVER" --principal="$IPA_PRINCIPAL" --password="$IPA_PASSWORD" \
-    --mkhomedir --no-ntp --force-join; then
+    --mkhomedir --no-ntp --force-join >"$join_log" 2>&1; then
   ok=yes
 fi
 {
@@ -290,6 +297,7 @@ fi
   echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"
   echo "join_user=$(getent passwd "$IPA_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
   echo "join_sssctl=$(sssctl user-checks "$IPA_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
 } > /var/lib/deskos-qa/join.status
 chmod 0644 /var/lib/deskos-qa/join.status
 """

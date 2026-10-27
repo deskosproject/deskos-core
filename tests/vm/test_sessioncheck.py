@@ -847,6 +847,11 @@ JOIN = {
 
 
 class JoinTest(unittest.TestCase):
+    def test_the_join_tolerates_a_realm_without_dns(self):
+        script = sc.JOIN_SCRIPT
+        for want in ["--force ", "--hostname=", "--server=", "--force-join", "join_log"]:
+            self.assertIn(want, script)
+
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)
         unit = c["systemd.extra-unit.deskos-qa-join.service"]
