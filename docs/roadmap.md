@@ -200,6 +200,14 @@ Details in
   - **Positioning:** a fleet artifact proves what a machine can do after it boots,
     and proving it in CI is the part few projects do. Compare on method and
     evidence, never on the reputation of another project.
+- **Model a network proxy, or leave it to configuration management (decision
+  pending, 2026-10-27).** Nothing in the compiler describes a proxy today: dnf,
+  Flatpak and `deskos update` behind a corporate proxy cannot be expressed, only
+  the CA trust (`TrustAnchor`) and the desktop settings (`GnomeProfile`). If a
+  machine needs the proxy to reach its own repositories, the proxy is baseline
+  and deserves a resource of its own — a new kind, which needs an ADR and an
+  explicit decision (invariant 4). If it is environment, Ansible owns it. The
+  proxy check starts with what can be expressed today and leaves this open.
 - A decision by the example organization on the `virt-manager` gap.
 - **Example AlmaLinux and Fedora platforms:** their image builds move to the
   weekly `examples-weekly.yml` check, with no publication. This is not a support
