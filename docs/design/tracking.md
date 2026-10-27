@@ -1,7 +1,8 @@
 # Tracking the checksum-pinned resources
 
-**Status:** the read-only half is implemented (2026-10-27). A resource pin can be
-found, downloaded and checked; moving it is still a person's edit.
+**Status:** implemented (2026-10-27). A pin can be found, checked, and moved when
+a curated rule says how to read its version out of the release tag. The weekly
+workflow opens the bundle; a person merges it.
 
 A `BinaryArtifact` and a GNOME extension source name an upstream file, a version
 and a sha256. Renovate keeps base-image digests and Actions current, but nothing
@@ -43,15 +44,25 @@ spec:
     sha256: 3e60…
 ```
 
-## What is not here yet
+## Moving a pin
 
-- **Moving the pin.** Rewriting needs the curated rule: the release tag does not
-  always carry the version (`extensions.gnome.org-v110` for version `110`), so
-  the tool cannot derive one from the other without being told. Until then it
-  reports, and a person edits.
-- **The scheduled workflow** with a curated list and one bundle pull request, one
-  commit per resource. It runs `--fresh`, opens the bundle, and a person merges;
-  nothing is published.
-- **The goldens.** A moved pin changes the rendered context, so the same change
-  carries `go test ./internal/compiler -update` in a second commit, reviewed like
-  any other.
+The release tag does not always carry the version (`extensions.gnome.org-v110`
+for version `110`), so `track.yaml` holds the curated rule per repository: the
+repository to match and the prefix to strip from the tag. `--write` only touches
+a pin whose repository is named there, and it rewrites the three scalars on their
+own lines, keeping indentation, quoting and any trailing comment. Everything else
+in the file stays byte for byte.
+
+## The weekly workflow
+
+`track.yml` runs on Monday, or on dispatch: it builds the tool, runs
+`track --fresh --write --rules track.yaml resources`, regenerates the goldens,
+and opens one pull request with **a commit per resource** and the goldens in a
+commit of their own. Nothing is published and nothing is merged.
+
+Two things a reviewer should know:
+
+- a bundle opened with `GITHUB_TOKEN` does not trigger other workflows, so its
+  checks run only when a person re-runs or pushes to it;
+- if a candidate asset is missing or has no hash, the pin is reported and left
+  alone rather than moved on an assumption.

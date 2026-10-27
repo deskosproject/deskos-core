@@ -30,7 +30,7 @@ Usage:
   deskosctl plan [--no-core] ROOT... --workstation NAME [--format text|json]
   deskosctl render [--no-core] ROOT... --workstation NAME --backend containerfile --output DIR
   deskosctl sbom [--no-core] ROOT... --workstation NAME [--output FILE]
-  deskosctl track [--fresh] [--token TOKEN] ROOT...
+  deskosctl track [--fresh] [--write] [--rules FILE] [--token TOKEN] ROOT...
   deskosctl core export DIR
   deskosctl version
 
@@ -106,6 +106,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 func cmdTrack(args []string, stdout io.Writer) error {
 	fs := newFlags("track")
 	fresh := fs.Bool("fresh", false, "also ask GitHub whether a newer release exists")
+	write := fs.Bool("write", false, "move the pins that resolve to a newer release")
+	rulesPath := fs.String("rules", "track.yaml", "curated tag-to-version rules")
 	token := fs.String("token", os.Getenv("GITHUB_TOKEN"), "token for the GitHub API (default $GITHUB_TOKEN)")
 	roots, err := parse(fs, args)
 	if err != nil {
@@ -114,7 +116,20 @@ func cmdTrack(args []string, stdout io.Writer) error {
 	if len(roots) == 0 {
 		return usageError{"track needs at least one resource root"}
 	}
-	results, err := track.Check(roots, track.Options{Fresh: *fresh, Token: *token})
+	var rules []track.Rule
+	if *write || *fresh {
+		// A newer release is only a candidate when the list says how to read its
+		// version. Without the file the check still verifies hashes.
+		if _, statErr := os.Stat(*rulesPath); statErr == nil {
+			rules, err = track.LoadRules(*rulesPath)
+			if err != nil {
+				return err
+			}
+		} else if *write {
+			return usageError{"--write needs " + *rulesPath}
+		}
+	}
+	results, err := track.Check(roots, track.Options{Fresh: *fresh, Token: *token, Rules: rules})
 	if err != nil {
 		return err
 	}
@@ -124,7 +139,7 @@ func cmdTrack(args []string, stdout io.Writer) error {
 	}
 	var drifted int
 	for _, r := range results {
-		where := fmt.Sprintf("%s:%d", r.Pin.File, r.Pin.Line)
+		where := fmt.Sprintf("%s:%d", r.Pin.File, r.Pin.VersionLine())
 		switch {
 		case r.HashErr != nil:
 			drifted++
@@ -135,9 +150,21 @@ func cmdTrack(args []string, stdout io.Writer) error {
 		if r.FreshErr != nil {
 			fmt.Fprintf(stdout, "%s upstream unknown: %v\n", where, r.FreshErr)
 		} else if r.Newer() {
-			drifted++
-			fmt.Fprintf(stdout, "%s upstream has %s\n", where, r.LatestTag)
+			if r.Movable() {
+				drifted++
+				fmt.Fprintf(stdout, "%s upstream has %s (version %s)\n", where, r.LatestTag, r.LatestVersion)
+			} else {
+				fmt.Fprintf(stdout, "%s upstream has %s: %s\n", where, r.LatestTag, r.Note)
+			}
 		}
+	}
+	if *write {
+		moved, err := track.Apply(results)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(stdout, "moved %d pin(s)\n", moved)
+		drifted -= moved
 	}
 	if drifted > 0 {
 		return fmt.Errorf("%d pin(s) need attention", drifted)

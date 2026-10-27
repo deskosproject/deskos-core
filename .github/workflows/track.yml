@@ -1,0 +1,81 @@
+name: track
+
+# Weekly: resolve the checksum-pinned resources against upstream, move the ones
+# the curated list covers, and open one pull request with a commit per resource.
+# A person reviews and merges; nothing is published from here.
+#
+# The pins live in resources, where Renovate cannot see them: a BinaryArtifact
+# and a GNOME extension source carry a URL, a version and a sha256, and moving
+# one is a decision, not a dependency bump.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: track
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Build the tool
+        run: go build -o bin/deskosctl ./cmd/deskosctl
+
+      - name: Move every pin a rule covers
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./bin/deskosctl track --fresh --write --rules track.yaml resources
+
+      - name: Regenerate the goldens the new pins change
+        # A moved pin changes the rendered plan, so the goldens move with it. This
+        # is its own commit in the bundle: a reviewer reads it as a consequence.
+        run: go test ./internal/compiler -update
+
+      - name: Open one pull request with a commit per resource
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "no pin moved"
+            exit 0
+          fi
+          branch="track/pins-$(date -u +%Y%m%d)"
+          git config user.name "deskos-track"
+          git config user.email "track@deskos.org"
+          git checkout -b "$branch"
+          # One commit per file, so a reviewer can read or drop each resource on
+          # its own; the goldens follow in a commit of their own.
+          for f in $(git diff --name-only -- 'resources/*.yaml' 'resources/**/*.yaml'); do
+            git add "$f"
+            git commit -m "chore(pins): track $(basename "$f")"
+          done
+          git add -A
+          git commit -m "test(compiler): regenerate goldens for the moved pins" || true
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore(pins): track the checksum-pinned resources" \
+            --body "$(cat <<'EOF'
+          Resolved every checksum-pinned resource against upstream and moved the
+          ones `track.yaml` covers. One commit per resource, then the goldens.
+
+          What a reviewer checks:
+
+          - every moved pin names a newer release than the one it replaced;
+          - the sha256 is the bytes of the new asset, not a copy of the old one;
+          - the scheme changes nothing else: no kind, field or Plan shape.
+
+          Opened by `track.yml`. It never publishes and never merges.
+          EOF
+          )"
