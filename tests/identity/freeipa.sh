@@ -29,9 +29,17 @@ case "${1:-}" in
     # 53 on the host belongs to the host resolver. The log driver keeps the
     # whole install log, which is the evidence when the install fails.
     opts="-U -r $realm -n $domain --no-ntp --skip-mem-check"
-    podman run -d --name "$name" --hostname "$hostname" \
-      --network host --privileged --systemd=always \
+    # The upstream image is documented for a plain (bridge) container, not for
+    # host networking or privileged mode: privileged setup is explicitly not
+    # supported. On the bridge the container resolves its own name to its own
+    # address rather than to loopback, which is what the installer expects. The
+    # guest reaches every published port through the host at 10.0.2.2, and the
+    # server certificate still names the host.
+    ports=(-p 80:80 -p 443:443 -p 389:389 -p 636:636
+           -p 88:88 -p 88:88/udp -p 464:464 -p 464:464/udp)
+    podman run -d --name "$name" --hostname "$hostname" --systemd=always \
       --log-driver=k8s-file --log-opt=max-size=50mb \
+      "${ports[@]}" \
       -e PASSWORD="$FREEIPA_PASSWORD" \
       -e IPA_SERVER_INSTALL_OPTS="$opts" \
       -v "$volume:/data:Z" "$FREEIPA_IMAGE"

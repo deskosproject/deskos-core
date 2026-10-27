@@ -123,6 +123,8 @@ jobs:
             state=$(sudo podman inspect --format '{{.State.Status}}' deskos-freeipa 2>/dev/null || echo missing)
             if [ "$state" != running ]; then
               echo "container deskos-freeipa is $state, not running" >&2
+              sudo podman inspect deskos-freeipa \
+                --format 'exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}} finished={{.State.FinishedAt}}' >&2 || true
               sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
               exit 1
             fi
@@ -159,14 +161,13 @@ jobs:
           cp -a "$WORK/session" evidence/ 2>/dev/null || true
           cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa \
-            --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
+            --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} started={{.State.StartedAt}} finished={{.State.FinishedAt}} error={{.State.Error}}' \
             > evidence/container-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
           # The container's own install log is the one that says why the realm
-          # did not come up; the console log is a truncated copy of it.
-          for f in /var/log/ipaserver-install.log /var/log/ipa-server-configure-first.log; do
-            sudo podman cp "deskos-freeipa:$f" "evidence/$(basename "$f")" 2>/dev/null || true
-          done
+          # did not come up; the console log is not always a copy of it.
+          sudo podman cp deskos-freeipa:/var/log evidence/container-var-log > evidence/cp.log 2>&1 || true
+          sudo podman cp deskos-freeipa:/run/ipa/exit_code evidence/exit_code.txt >> evidence/cp.log 2>&1 || true
           sudo -E tests/identity/freeipa.sh status > evidence/ipactl.txt 2>&1 || true
           sudo podman exec deskos-freeipa ipa user-show qa > evidence/user.txt 2>&1 || true
 
