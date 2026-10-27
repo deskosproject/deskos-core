@@ -325,9 +325,11 @@ they cover.
   in a container, `realm`/`adcli`/`sssd-ad` in the VM, DNS pointed at the realm,
   and a login at GDM as an AD user. Samba AD is a real AD implementation but not
   Windows: Group Policy and Windows-specific behaviour stay unclaimed.
-  - **In progress:** `tests/identity/samba/` and `identity-ad.yml`. No claim
-    until the daily run passes; an AD trust (FreeIPA ↔ AD) is a later step and
-    needs both realms reachable at once.
+  - **Done (2026-10-27):** `tests/identity/samba/` builds the DC and
+    `identity-ad.yml` runs daily and on demand. The check joins the VM through
+    the realm's own DNS, logs in at GDM as `qa@ad.lab.test`, and asserts the home
+    was created at that login and `oddjobd` is active. An AD trust (FreeIPA ↔
+    AD) is a later step and needs both realms reachable at once.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).

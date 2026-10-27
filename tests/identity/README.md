@@ -146,7 +146,21 @@ Two things the fixture depends on:
 
 The domain is provisioned with `--use-rfc2307`, so `uidNumber`, `gidNumber`,
 `unixHomeDirectory` and `loginShell` live in the directory and the Unix identity
-comes from the realm.
+comes from the realm. Verified on 2026-10-27: the daily check joins the VM, GDM
+logs in as `qa@ad.lab.test`, the home is created at that login and `oddjobd` is
+active.
+
+Three things the join has to do that are easy to miss:
+
+- **The realm's DNS is the source of truth** for the DC's address. The guest
+  reaches the container network through user networking, so pointing the DC at
+  the published host instead breaks the join with `Insufficient permissions`.
+- **`access_provider = ad` with no rule denies every account.** `realm permit
+  --all` exits zero without writing one, so the fixture sets
+  `access_provider = permit`; a real organization narrows this to groups.
+- **sssd starts at boot, before the join points the guest at the realm DNS**, so
+  it can come up already offline. The check restarts it once the realm is
+  configured, pins `ad_server`, and waits for the domain to report online.
 
 **One machine, one realm.** A disk that has joined FreeIPA keeps `krb5.conf`,
 `sssd.conf`, the machine keytab, the default realm and the `authselect` state;
