@@ -309,12 +309,17 @@ they cover.
     asserts the join completed, SSSD is active and the directory user resolves;
     the run of 2026-10-27 reports `join_ok=yes`, `join_sssd=active` and
     `join_user=qa:…:/home/qa:/bin/sh`.
-  - **Next:** log in at GDM as the directory user — autologin or the password
-    prompt — and assert the session is that user with a home created by
-    `oddjob-mkhomedir`. Booting and joining are proven; this is the step that
-    exercises PAM, the greeter and the home policy together. The evidence
-    records the server version, the realm and the image digest; the container is
-    a test fixture, never a support claim.
+  - **Done (2026-10-27):** the same check logs in at GDM as the directory user
+    and asserts the session is that user, that `oddjobd` is active and that the
+    home did not exist before the login and belongs to the uid SSSD resolved
+    afterwards — `oddjob-mkhomedir` created it, rather than a directory prepared
+    in advance. Autologin exercises PAM's session phase, the greeter and the
+    home policy together.
+  - **Next:** an interactive GDM login, with a person typing the directory
+    password at the greeter; autologin does not prove the password prompt. AD,
+    and a realm with its own DNS, remain separate paths. The evidence records
+    the server version, the realm and the image digest; the container is a test
+    fixture, never a support claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).

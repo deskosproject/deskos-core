@@ -77,6 +77,13 @@ TRAY_SCRIPT_PATH = "/var/lib/deskos-qa/tray-check.sh"
 JOIN_SCRIPT_PATH = "/var/lib/deskos-qa/join.sh"
 JOIN_ENV_PATH = "/var/lib/deskos-qa/join.env"
 JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
+# The probes live outside the home: with a directory user the home does not
+# exist until first login, so nothing can be seeded there in advance. A
+# system-wide autostart runs them in whichever account GDM logs in.
+QA_SCRIPT_PATH = "/var/lib/deskos-qa/deskos-qa-check.sh"
+QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
+QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
+AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
 # The plan's GSettings vendor defaults (the compiled `*.gschema.override` path)
 # travel as schema and key per line, tab separated, for the same reason.
 VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
@@ -304,6 +311,13 @@ done
   echo "join_user=$(getent passwd "$IPA_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
   echo "join_sssctl=$(sssctl user-checks "$IPA_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
   echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
+  join_home=$(getent passwd "$IPA_USER" | cut -d: -f6)
+  echo "join_home=$join_home"
+  if [ -n "$join_home" ] && [ -d "$join_home" ]; then
+    echo "join_home_before=present"
+  else
+    echo "join_home_before=missing"
+  fi
 } > /var/lib/deskos-qa/join.status
 chmod 0644 /var/lib/deskos-qa/join.status
 """
@@ -480,7 +494,7 @@ fi
 # The offline check needs to prove the boot really had no network.
 echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 # Its own file: the browser block plus this script would exceed the cap.
-"$HOME/deskos-qa-browser.sh"
+""" + QA_BROWSER_PATH + """
 """
 
 
@@ -545,6 +559,11 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
 out={RESULTS}
 {{
 echo "session_type=$XDG_SESSION_TYPE"
+echo "session_user=$(id -un)"
+echo "session_uid=$(id -u)"
+echo "session_home=$(getent passwd "$(id -un)" | cut -d: -f6)"
+echo "home_owner=$(stat -c %u:%g "$HOME" 2>/dev/null || echo missing)"
+echo "oddjobd=$(systemctl is-active oddjobd 2>/dev/null || true)"
 {join_status}echo "gnome_shell=$(gnome-shell --version)"
 echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-extensions)"
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
@@ -555,17 +574,18 @@ echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
-"$HOME/deskos-qa-probe.sh"
+"{QA_PROBE_PATH}"
 }} > "$out.tmp"
 mv "$out.tmp" "$out"
 """
 
-GDM_CONF = f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={USER}\n"
+def gdm_conf(user):
+    return f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={user}\n"
 
 AUTOSTART = f"""[Desktop Entry]
 Type=Application
 Name=DeskOS QA session check
-Exec=/bin/bash {HOME}/deskos-qa-check.sh
+Exec=/bin/bash {QA_SCRIPT_PATH}
 NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """
@@ -641,7 +661,7 @@ def tmpfiles_arg(text):
 
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
-                enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None):
+                enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None, gdm_user=None):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -658,20 +678,31 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"d {HOME} 0700 {USER} {USER} -",
             f"d {HOME}/.config 0755 {USER} {USER} -",
             f"f {HOME}/.config/gnome-initial-setup-done 0644 {USER} {USER} - yes",
-            f"d {HOME}/.config/autostart 0755 {USER} {USER} -",
-            f"f {HOME}/.config/autostart/deskos-qa-check.desktop 0644 {USER} {USER} - {tmpfiles_arg(AUTOSTART)}",
-            f"f {HOME}/deskos-qa-check.sh 0755 {USER} {USER} - {tmpfiles_arg(script)}",
-            f"f {HOME}/deskos-qa-probe.sh 0755 {USER} {USER} - {tmpfiles_arg(session_probe())}",
-            f"f {HOME}/deskos-qa-browser.sh 0755 {USER} {USER} - {tmpfiles_arg(session_browser_probe(browser_url))}",
+            # The probes are outside the home and start for any account: with a
+            # directory user nothing can be placed in its home before first login,
+            # because the home does not exist until the login creates it.
+            "d /etc/xdg/autostart 0755 root root -",
+            f"f {AUTOSTART_PATH} 0644 root root - {tmpfiles_arg(AUTOSTART)}",
+            f"f {QA_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(script)}",
+            f"f {QA_PROBE_PATH} 0755 root root - {tmpfiles_arg(session_probe())}",
+            f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
             # the autologin to both and creates each directory, so the check does
             # not hardcode one distribution's layout; the guest's GDM reads its own.
             "d /etc/gdm 0755 root root -",
-            f"f+ /etc/gdm/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
+            f"f+ /etc/gdm/custom.conf 0644 root root - {tmpfiles_arg(gdm_conf(gdm_user or USER))}",
             "d /etc/gdm3 0755 root root -",
-            f"f+ /etc/gdm3/custom.conf 0644 root root - {tmpfiles_arg(GDM_CONF)}",
+            f"f+ /etc/gdm3/custom.conf 0644 root root - {tmpfiles_arg(gdm_conf(gdm_user or USER))}",
         ]
+        if gdm_user:
+            # A directory user's home is created at its first login. The marker
+            # that stops the initial-setup wizard has to come with the skeleton,
+            # or the wizard covers the session this check is about.
+            tmpfiles += [
+                "d /etc/skel/.config 0755 root root -",
+                "f /etc/skel/.config/gnome-initial-setup-done 0644 root root - yes",
+            ]
         if dconf_keys:
             # The plan's defaults, one key per line, so the session script reads the
             # plan's list rather than carrying it. The file is world-readable in a
@@ -1102,7 +1133,7 @@ def check_status(c):
     return "PASS" if c["pass"] else "FAIL"
 
 
-def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=None):
+def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=None, gdm_user=None):
     checks = []
 
     def check(name, ok, detail, skipped=False, coverage=None, unread=None):
@@ -1124,6 +1155,21 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
               f"join_sssd={values.get('join_sssd')}")
         check("directory user resolves", join_user in (values.get("join_user") or ""),
               f"join_user={values.get('join_user')}")
+    if gdm_user:
+        # The session itself must belong to the directory, not to a local
+        # stand-in: this is what PAM, the greeter and the home policy meet.
+        check("the session is the directory user", values.get("session_user") == gdm_user,
+              f"session_user={values.get('session_user')}")
+        # The uid the guest resolved for that user, not one the harness assumes.
+        resolved = values.get("join_user") or ""
+        uid = resolved.split(":")[1] if ":" in resolved else None
+        owner = (values.get("home_owner") or "").split(":")[0]
+        check("the login created the home for that user",
+              values.get("join_home_before") == "missing" and uid is not None and owner == uid,
+              f"join_home_before={values.get('join_home_before')} "
+              f"home_owner={values.get('home_owner')} uid={uid}")
+        check("oddjobd is active", values.get("oddjobd") == "active",
+              f"oddjobd={values.get('oddjobd')}")
     if offline:
         # The boot has no NIC, so a session here is a login that needed no
         # network. The route count proves the harness really removed it: a VM
@@ -1361,6 +1407,8 @@ def main():
     p.add_argument("--join-principal", help="principal that joins (for example admin)")
     p.add_argument("--join-password", help="password of the join principal; runtime only")
     p.add_argument("--join-user", help="directory user the join must make resolvable")
+    p.add_argument("--join-gdm", action="store_true",
+                   help="log in at GDM as the directory user and check that session")
     p.add_argument("--seed-skel", action="store_true",
                    help="copy /etc/skel into the test user's HOME, as useradd -m would, and check the generated seeds")
     p.add_argument("--app", help="open this command in the session so a captured frame shows the themed widgets")
@@ -1386,6 +1434,9 @@ def main():
             "password": a.join_password,
             "user": a.join_user,
         }
+    if a.join_gdm and not join:
+        p.error("--join-gdm needs the --join-* values")
+    gdm_user = join["user"] if (join and a.join_gdm) else None
     plan = json.load(open(a.plan)) if a.plan else {}
     skel_rels = []
     if a.seed_skel:
@@ -1415,7 +1466,8 @@ def main():
                                            [[d["schema"], d["key"]] for d in vendor],
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
-                                           browser_url, locks=[l["key"] for l in locks], join=join)),
+                                           browser_url, locks=[l["key"] for l in locks], join=join,
+                                           gdm_user=gdm_user)),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:
@@ -1441,7 +1493,7 @@ def main():
               "values": values, "plan_workstation": plan.get("workstation", {}).get("name")}
     if a.mode == "session":
         result["checks"] = evaluate(values, plan, journal, skel_rels, offline=a.offline,
-                                    join_user=join["user"] if join else None)
+                                    join_user=join["user"] if join else None, gdm_user=gdm_user)
         result["plan_defaults"] = default_coverage(result["checks"])
         result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
