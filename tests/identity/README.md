@@ -33,7 +33,9 @@ above. The identity workstation is not published.
 ## Start a disposable FreeIPA
 
 Pin the server image you tested; do not float a tag. The fixture needs
-`podman`, a privileged container with systemd, and host networking.
+`podman`, a privileged container with systemd, and host networking. The script
+passes `-U` and the realm and domain to `ipa-server-install`: the image runs the
+installer interactively by default, which fails on a detached container.
 
 ```bash
 export FREEIPA_IMAGE='freeipa/freeipa-server@sha256:…'
@@ -75,9 +77,12 @@ sudo IPA_DOMAIN=test IPA_REALM=TEST IPA_SERVER=ipa.test \
 ```
 
 The script pins `ipa.test` to `10.0.2.2` in the guest's `/etc/hosts`, then runs
-`ipa-client-install --unattended --mkhomedir --no-ntp --force-join`. The server
-certificate and the host name match; DNS is the client's hosts file in this
-fixture.
+`ipa-client-install` with `--force`, a host name inside the realm and
+`--mkhomedir --no-ntp --force-join`. The server certificate and the host name
+match. The fixture realm has **no integrated DNS** (port 53 belongs to the
+host resolver): the client reaches the server through its hosts file, and
+`--force` skips the checks that expect a resolvable name. A realm with DNS is a
+different setup, not this fixture.
 
 A password in argv is visible to the guest's process list. This directory is
 throwaway; never do it on a real realm.
