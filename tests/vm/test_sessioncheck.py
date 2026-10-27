@@ -838,3 +838,44 @@ class LockTest(unittest.TestCase):
     def test_a_key_that_cannot_be_read_is_not_a_pass(self):
         check = self.lock_check(dict(GOOD, lock_0="unknown", lock_before_0=""))
         self.assertFalse(check["pass"], check)
+
+
+JOIN = {
+    "domain": "test", "realm": "TEST", "server": "ipa.test",
+    "principal": "admin", "password": "throwaway", "user": "qa",
+}
+
+
+class JoinTest(unittest.TestCase):
+    def test_credentials_install_the_join_before_gdm(self):
+        c = sc.credentials("session", join=JOIN)
+        unit = c["systemd.extra-unit.deskos-qa-join.service"]
+        for want in ["Before=gdm.service", f"EnvironmentFile={sc.JOIN_ENV_PATH}", sc.JOIN_SCRIPT_PATH]:
+            self.assertIn(want, unit)
+        self.assertIn("deskos-qa-join.service", c["systemd.unit-dropin.graphical.target"])
+        files = c["tmpfiles.extra"]
+        self.assertIn(sc.JOIN_SCRIPT_PATH, files)
+        self.assertIn(sc.JOIN_ENV_PATH, files)
+        self.assertIn("IPA_DOMAIN=test", files)
+        self.assertIn(sc.JOIN_STATUS_PATH, files)
+
+    def join_checks(self, **extra):
+        values = dict(GOOD)
+        values.update(join_ok="yes", join_sssd="active",
+                      join_user="qa:1500:/home/qa:/bin/bash")
+        values.update(extra)
+        return {c["check"]: c for c in sc.evaluate(values, PLAN, join_user="qa")}
+
+    def test_a_successful_join_passes(self):
+        checks = self.join_checks()
+        for name in ["domain join completed", "SSSD is active after the join", "directory user resolves"]:
+            self.assertTrue(checks[name]["pass"], checks[name])
+
+    def test_a_failed_join_fails(self):
+        self.assertFalse(self.join_checks(join_ok="no")["domain join completed"]["pass"])
+
+    def test_inactive_sssd_fails(self):
+        self.assertFalse(self.join_checks(join_sssd="inactive")["SSSD is active after the join"]["pass"])
+
+    def test_a_missing_directory_user_fails(self):
+        self.assertFalse(self.join_checks(join_user="")["directory user resolves"]["pass"])
