@@ -109,6 +109,14 @@ by `oddjob-mkhomedir` on first login.
 Keep the passwords and the realm private. The fixture is not a production
 directory and carries no support statement.
 
+## Daily fixture check
+
+`.github/workflows/identity-freeipa-fixture.yml` runs the server side daily: it
+starts the pinned image, waits for `ipactl`, creates one directory user and
+keeps the logs. It does **not** boot the identity image or join a guest; a red
+run means the fixture or the container image changed, not that a workstation
+failed. The join and the GDM login are phase 2.
+
 ## Phase 2
 
 Automate the same path so it can run nightly or on demand, never on every pull
