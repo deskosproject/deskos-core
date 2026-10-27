@@ -72,6 +72,11 @@ LOCK_SCRIPT_PATH = "/var/lib/deskos-qa/lock-check.sh"
 # The tray probe is its own script for the same reason; its retry loop pushed
 # the report over the limit too.
 TRAY_SCRIPT_PATH = "/var/lib/deskos-qa/tray-check.sh"
+# The domain join runs before GDM, from runtime credentials; the session report
+# reads the status file it leaves behind.
+JOIN_SCRIPT_PATH = "/var/lib/deskos-qa/join.sh"
+JOIN_ENV_PATH = "/var/lib/deskos-qa/join.env"
+JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
 # The plan's GSettings vendor defaults (the compiled `*.gschema.override` path)
 # travel as schema and key per line, tab separated, for the same reason.
 VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
@@ -267,6 +272,55 @@ def default_reads(image_database, vendor):
     )
 
 
+JOIN_SCRIPT = """#!/bin/bash
+set -u
+# QEMU user networking exposes the host as 10.0.2.2; the server certificate
+# names the host, so the guest resolves that name to the host.
+if ! grep -qE "[[:space:]]${IPA_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
+  printf '10.0.2.2 %s\n' "$IPA_SERVER" >> /etc/hosts
+fi
+ok=no
+# No DNS in this fixture: the realm has no integrated DNS and the guest maps the
+# server in /etc/hosts. --force skips the checks that expect a resolvable host
+# name, and --hostname gives the guest a name inside the realm instead of
+# whatever the image happens to have. The log is kept so a failed join says why.
+join_host="${IPA_JOIN_HOSTNAME:-deskos-qa.$IPA_DOMAIN}"
+join_log=/var/lib/deskos-qa/join.log
+if ipa-client-install --unattended --force --hostname="$join_host" \
+    --domain="$IPA_DOMAIN" --realm="$IPA_REALM" \
+    --server="$IPA_SERVER" --principal="$IPA_PRINCIPAL" --password="$IPA_PASSWORD" \
+    --mkhomedir --no-ntp --force-join >"$join_log" 2>&1; then
+  ok=yes
+fi
+# sssd can still be activating when the installer returns; the session must not
+# call a join failed because it looked a second too early.
+for _ in $(seq 1 30); do
+  [ "$(systemctl is-active sssd 2>/dev/null || true)" = active ] && break
+  sleep 2
+done
+{
+  echo "join_ok=$ok"
+  echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"
+  echo "join_user=$(getent passwd "$IPA_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
+  echo "join_sssctl=$(sssctl user-checks "$IPA_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
+} > /var/lib/deskos-qa/join.status
+chmod 0644 /var/lib/deskos-qa/join.status
+"""
+
+
+def join_environment(join):
+    lines = [
+        ("IPA_DOMAIN", join["domain"]),
+        ("IPA_REALM", join["realm"]),
+        ("IPA_SERVER", join["server"]),
+        ("IPA_PRINCIPAL", join["principal"]),
+        ("IPA_PASSWORD", join["password"]),
+        ("IPA_USER", join["user"]),
+    ]
+    return "".join(f"{key}={value}\n" for key, value in lines)
+
+
 def lock_reads():
     """The script fragment that tries to write every locked key.
 
@@ -431,7 +485,7 @@ echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
-                   binaries=(), dconf_locks=()):
+                   binaries=(), dconf_locks=(), join=None):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -475,6 +529,13 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         appcheck = f'echo "app_running=$(pgrep -x {shlex.quote(name)} | wc -l)"\n'
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     locks = f". {LOCK_SCRIPT_PATH}\n" if dconf_locks else ""
+    join_status = ""
+    if join:
+        join_status = (
+            f'if [ -r {JOIN_STATUS_PATH} ]; then\n'
+            f'  cat {JOIN_STATUS_PATH}\n'
+            'fi\n'
+        )
     extensions = extension_reads() if enabled_extensions else ""
     tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
@@ -484,7 +545,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
 out={RESULTS}
 {{
 echo "session_type=$XDG_SESSION_TYPE"
-echo "gnome_shell=$(gnome-shell --version)"
+{join_status}echo "gnome_shell=$(gnome-shell --version)"
 echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-extensions)"
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
@@ -580,7 +641,7 @@ def tmpfiles_arg(text):
 
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
-                enabled_extensions=(), binaries=(), browser_url="", locks=()):
+                enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -590,7 +651,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     creds = {}
     if mode == "session":
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
-                                binaries, locks)
+                                binaries, locks, join)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -650,6 +711,25 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 "d /etc/dconf/profile 0755 root root -",
                 f"f {DCONF_PROFILE_PATH} 0644 root root - {tmpfiles_arg(f'system-db:{dconf_db}' + chr(10))}",
             ]
+        if join:
+            # The join must finish before GDM: the directory user and sssd have to
+            # exist when the greeter starts. The admin password is root-only and
+            # injected at runtime; it is never part of the image.
+            # /bin/bash runs the script instead of exec'ing it: a file under /var
+            # is var_lib_t, and the unit runs as init_t, which may read it but not
+            # execute it (an exec is an AVC denial and 203/EXEC).
+            tmpfiles += [
+                f"f {JOIN_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_SCRIPT)}",
+                f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
+            ]
+            creds["systemd.extra-unit.deskos-qa-join.service"] = (
+                "[Unit]\nDescription=Join the disposable FreeIPA realm (DeskOS QA)\n"
+                "Wants=network-online.target\nAfter=network-online.target\nBefore=gdm.service\n"
+                f"ConditionPathExists={JOIN_ENV_PATH}\n\n"
+                "[Service]\nType=oneshot\nRemainAfterExit=yes\n"
+                f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart=/bin/bash {JOIN_SCRIPT_PATH}\n"
+                "StandardOutput=journal+console\nStandardError=journal+console\n"
+            )
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
@@ -662,7 +742,10 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
         "[Service]\nType=oneshot\nStandardOutput=journal+console\nStandardError=journal+console\n"
         "ExecStart=/bin/bash /var/lib/deskos-qa/report.sh\n"
     )
-    creds[f"systemd.unit-dropin.{target}"] = "[Unit]\nWants=deskos-qa-report.service\n"
+    wants = "deskos-qa-report.service"
+    if join:
+        wants += " deskos-qa-join.service"
+    creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
     return creds
 
 
@@ -1019,7 +1102,7 @@ def check_status(c):
     return "PASS" if c["pass"] else "FAIL"
 
 
-def evaluate(values, plan, journal="", skel_rels=(), offline=False):
+def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=None):
     checks = []
 
     def check(name, ok, detail, skipped=False, coverage=None, unread=None):
@@ -1034,6 +1117,13 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False):
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
           f"session_type={values.get('session_type')}")
+    if join_user:
+        check("domain join completed", values.get("join_ok") == "yes",
+              f"join_ok={values.get('join_ok')}")
+        check("SSSD is active after the join", values.get("join_sssd") == "active",
+              f"join_sssd={values.get('join_sssd')}")
+        check("directory user resolves", join_user in (values.get("join_user") or ""),
+              f"join_user={values.get('join_user')}")
     if offline:
         # The boot has no NIC, so a session here is a login that needed no
         # network. The route count proves the harness really removed it: a VM
@@ -1265,6 +1355,12 @@ def main():
     p.add_argument("--interval", type=float, default=3.0)
     p.add_argument("--offline", action="store_true",
                    help="boot with no network and assert the session still logs in")
+    p.add_argument("--join-domain", help="FreeIPA domain for the join unit")
+    p.add_argument("--join-realm", help="FreeIPA realm for the join unit")
+    p.add_argument("--join-server", help="FreeIPA server host name for the join unit")
+    p.add_argument("--join-principal", help="principal that joins (for example admin)")
+    p.add_argument("--join-password", help="password of the join principal; runtime only")
+    p.add_argument("--join-user", help="directory user the join must make resolvable")
     p.add_argument("--seed-skel", action="store_true",
                    help="copy /etc/skel into the test user's HOME, as useradd -m would, and check the generated seeds")
     p.add_argument("--app", help="open this command in the session so a captured frame shows the themed widgets")
@@ -1274,6 +1370,22 @@ def main():
     a = p.parse_args()
     if a.mode == "session" and not a.plan:
         p.error("--plan is required for --mode session")
+    join_values = [a.join_domain, a.join_realm, a.join_server, a.join_principal, a.join_password, a.join_user]
+    join = None
+    if any(join_values):
+        if not all(join_values):
+            p.error("--join-domain, --join-realm, --join-server, --join-principal, --join-password and --join-user go together")
+        for value in join_values:
+            if "\n" in value or "\r" in value:
+                p.error("a --join value contains a newline")
+        join = {
+            "domain": a.join_domain,
+            "realm": a.join_realm,
+            "server": a.join_server,
+            "principal": a.join_principal,
+            "password": a.join_password,
+            "user": a.join_user,
+        }
     plan = json.load(open(a.plan)) if a.plan else {}
     skel_rels = []
     if a.seed_skel:
@@ -1303,7 +1415,7 @@ def main():
                                            [[d["schema"], d["key"]] for d in vendor],
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
-                                           browser_url, locks=[l["key"] for l in locks])),
+                                           browser_url, locks=[l["key"] for l in locks], join=join)),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:
@@ -1328,7 +1440,8 @@ def main():
     result = {"mode": a.mode, "instrumented": True, "boot": summary["result"], "boot_failures": summary["failures"],
               "values": values, "plan_workstation": plan.get("workstation", {}).get("name")}
     if a.mode == "session":
-        result["checks"] = evaluate(values, plan, journal, skel_rels, offline=a.offline)
+        result["checks"] = evaluate(values, plan, journal, skel_rels, offline=a.offline,
+                                    join_user=join["user"] if join else None)
         result["plan_defaults"] = default_coverage(result["checks"])
         result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)

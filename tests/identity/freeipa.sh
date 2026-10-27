@@ -11,9 +11,11 @@ set -euo pipefail
 
 name=deskos-freeipa
 volume=deskos-freeipa-data
-hostname=${IPA_SERVER_HOSTNAME:-ipa.test}
-domain=${IPA_SERVER_DOMAIN:-test}
-realm=${IPA_SERVER_REALM:-TEST}
+# A single-label domain such as test is rejected by ipa-server-install; the
+# fixture uses a two-label domain that cannot collide with a real one.
+hostname=${IPA_SERVER_HOSTNAME:-ipa.lab.test}
+domain=${IPA_SERVER_DOMAIN:-lab.test}
+realm=${IPA_SERVER_REALM:-LAB.TEST}
 
 usage() {
   sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
@@ -23,12 +25,25 @@ case "${1:-}" in
   start)
     : "${FREEIPA_IMAGE:?set FREEIPA_IMAGE to a pinned server image}"
     : "${FREEIPA_PASSWORD:?set FREEIPA_PASSWORD for the throwaway Directory Manager}"
-    podman run -d --name "$name" --hostname "$hostname" \
-      --network host --privileged --systemd=always \
+    # -U is required: without it ipa-server-install prompts for the DNS and
+    # domain questions, reads EOF from a detached container and fails. No
+    # integrated DNS: the fixture realm is reached through /etc/hosts, and port
+    # 53 on the host belongs to the host resolver. The log driver keeps the
+    # whole install log, which is the evidence when the install fails.
+    opts="-U -r $realm -n $domain --no-ntp --skip-mem-check"
+    # The upstream image is documented for a plain (bridge) container, not for
+    # host networking or privileged mode: privileged setup is explicitly not
+    # supported. On the bridge the container resolves its own name to its own
+    # address rather than to loopback, which is what the installer expects. The
+    # guest reaches every published port through the host at 10.0.2.2, and the
+    # server certificate still names the host.
+    ports=(-p 80:80 -p 443:443 -p 389:389 -p 636:636
+           -p 88:88 -p 88:88/udp -p 464:464 -p 464:464/udp)
+    podman run -d --name "$name" --hostname "$hostname" --systemd=always \
+      --log-driver=k8s-file --log-opt=max-size=50mb \
+      "${ports[@]}" \
       -e PASSWORD="$FREEIPA_PASSWORD" \
-      -e IPA_SERVER_HOSTNAME="$hostname" \
-      -e IPA_SERVER_DOMAIN="$domain" \
-      -e IPA_SERVER_REALM="$realm" \
+      -e IPA_SERVER_INSTALL_OPTS="$opts" \
       -v "$volume:/data:Z" "$FREEIPA_IMAGE"
     echo "started; wait for: sudo $0 status"
     ;;
@@ -40,6 +55,11 @@ case "${1:-}" in
     podman volume rm "$volume"
     ;;
   status)
+    state=$(podman inspect --format '{{.State.Status}}' "$name" 2>/dev/null || echo missing)
+    if [ "$state" != running ]; then
+      echo "container $name is $state" >&2
+      exit 1
+    fi
     podman exec "$name" ipactl status
     ;;
   user)

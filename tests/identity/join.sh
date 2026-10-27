@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Join this guest to the disposable realm. Run as root inside the VM.
 #
-#   IPA_DOMAIN=test IPA_REALM=TEST IPA_SERVER=ipa.test \
+#   IPA_DOMAIN=lab.test IPA_REALM=LAB.TEST IPA_SERVER=ipa.lab.test \
 #   IPA_PRINCIPAL=admin IPA_PASSWORD=… ./join.sh
 set -euo pipefail
 
@@ -11,7 +11,7 @@ set -euo pipefail
 if ! grep -qE "[[:space:]]${IPA_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
   printf '10.0.2.2 %s\n' "$IPA_SERVER" >> /etc/hosts
 fi
-ipa-client-install --unattended \
+ipa-client-install --unattended --force --hostname="${IPA_JOIN_HOSTNAME:-deskos-qa.$IPA_DOMAIN}" \
   --domain="$IPA_DOMAIN" --realm="$IPA_REALM" --server="$IPA_SERVER" \
   --principal="$IPA_PRINCIPAL" --password="$IPA_PASSWORD" \
   --mkhomedir --no-ntp --force-join

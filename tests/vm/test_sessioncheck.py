@@ -838,3 +838,52 @@ class LockTest(unittest.TestCase):
     def test_a_key_that_cannot_be_read_is_not_a_pass(self):
         check = self.lock_check(dict(GOOD, lock_0="unknown", lock_before_0=""))
         self.assertFalse(check["pass"], check)
+
+
+JOIN = {
+    "domain": "lab.test", "realm": "LAB.TEST", "server": "ipa.lab.test",
+    "principal": "admin", "password": "throwaway", "user": "qa",
+}
+
+
+class JoinTest(unittest.TestCase):
+    def test_the_join_tolerates_a_realm_without_dns(self):
+        script = sc.JOIN_SCRIPT
+        for want in ["--force ", "--hostname=", "--server=", "--force-join", "join_log"]:
+            self.assertIn(want, script)
+
+    def test_credentials_install_the_join_before_gdm(self):
+        c = sc.credentials("session", join=JOIN)
+        unit = c["systemd.extra-unit.deskos-qa-join.service"]
+        # /bin/bash, not the script: under /var the file is var_lib_t and the
+        # unit runs as init_t, so exec'ing it is denied and only reading works.
+        self.assertIn(f"ExecStart=/bin/bash {sc.JOIN_SCRIPT_PATH}", unit)
+        for want in ["Before=gdm.service", f"EnvironmentFile={sc.JOIN_ENV_PATH}", sc.JOIN_SCRIPT_PATH]:
+            self.assertIn(want, unit)
+        self.assertIn("deskos-qa-join.service", c["systemd.unit-dropin.graphical.target"])
+        files = c["tmpfiles.extra"]
+        self.assertIn(sc.JOIN_SCRIPT_PATH, files)
+        self.assertIn(sc.JOIN_ENV_PATH, files)
+        self.assertIn("IPA_DOMAIN=lab.test", files)
+        self.assertIn(sc.JOIN_STATUS_PATH, files)
+
+    def join_checks(self, **extra):
+        values = dict(GOOD)
+        values.update(join_ok="yes", join_sssd="active",
+                      join_user="qa:1500:/home/qa:/bin/bash")
+        values.update(extra)
+        return {c["check"]: c for c in sc.evaluate(values, PLAN, join_user="qa")}
+
+    def test_a_successful_join_passes(self):
+        checks = self.join_checks()
+        for name in ["domain join completed", "SSSD is active after the join", "directory user resolves"]:
+            self.assertTrue(checks[name]["pass"], checks[name])
+
+    def test_a_failed_join_fails(self):
+        self.assertFalse(self.join_checks(join_ok="no")["domain join completed"]["pass"])
+
+    def test_inactive_sssd_fails(self):
+        self.assertFalse(self.join_checks(join_sssd="inactive")["SSSD is active after the join"]["pass"])
+
+    def test_a_missing_directory_user_fails(self):
+        self.assertFalse(self.join_checks(join_user="")["directory user resolves"]["pass"])
