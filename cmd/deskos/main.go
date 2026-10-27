@@ -9,10 +9,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/deskosproject/deskos-core/internal/evidence"
 )
@@ -40,10 +43,12 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         Say what this machine is running: the image it follows, the booted
         deployment, anything staged, and the rollback.
 
-  deskos update [--apply] [--dry-run]
+  deskos update [--apply] [--dry-run] [--flatpak] [--firmware] [--all]
         Update this machine's image with a guard: it refuses when a condition prevents
         a safe update and reports the rest. It is not a reconciler, and it does not
-        touch what a user changed.
+        touch what a user changed. --flatpak updates system Flatpak applications
+        before the image; --firmware lists firmware updates without applying them;
+        --all does the image, the Flatpak applications and the firmware check.
 
   deskos rollback [--dry-run]
         Ask bootc to stage the previous deployment for the next boot. Nothing
@@ -151,6 +156,9 @@ func update(args []string, out, errOut io.Writer) int {
 	// tree's plan while asking the host's bootc to upgrade would mix two machines.
 	apply := fs.Bool("apply", false, "apply now, instead of staging until the next reboot")
 	dryRun := fs.Bool("dry-run", false, "say what would run, and change nothing")
+	flatpak := fs.Bool("flatpak", false, "update system Flatpak applications before the image")
+	firmware := fs.Bool("firmware", false, "list firmware updates; do not apply them")
+	all := fs.Bool("all", false, "the image, the Flatpak applications and the firmware check")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -177,11 +185,51 @@ func update(args []string, out, errOut io.Writer) int {
 		}
 		fmt.Fprintf(out, "  [%s] %s: %s\n", mark, c.Name, c.Detail)
 	}
+	// Extras run before the image: with --apply the image command reboots, and
+	// a Flatpak update queued after it would never run.
+	if err := runExtras(out, systemRunner, updateExtras(*flatpak, *firmware, *all), *dryRun); err != nil {
+		fmt.Fprintf(errOut, "deskos update: %v\n", err)
+		return 1
+	}
 	if err := evidence.Update(out, conditions, systemRunner, *apply, *dryRun); err != nil {
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
 	return 0
+}
+
+// updateExtras is the on-demand side of the same work the image's timers do.
+// It is not a new policy: an administrator asked for it on this machine.
+func updateExtras(flatpak, firmware, all bool) [][]string {
+	var cmds [][]string
+	if flatpak || all {
+		cmds = append(cmds, []string{"flatpak", "update", "--system", "--noninteractive", "--assumeyes"})
+	}
+	if firmware || all {
+		cmds = append(cmds, []string{"fwupdmgr", "get-updates"})
+	}
+	return cmds
+}
+
+func runExtras(out io.Writer, runner func(string, ...string) error, cmds [][]string, dryRun bool) error {
+	for _, cmd := range cmds {
+		line := strings.Join(cmd, " ")
+		if dryRun {
+			fmt.Fprintf(out, "would run: %s\n", line)
+			continue
+		}
+		if err := runner(cmd[0], cmd[1:]...); err != nil {
+			// fwupdmgr exits 2 when there are no updates; that is a successful check,
+			// not a failure to update.
+			var exit *exec.ExitError
+			if cmd[0] == "fwupdmgr" && errors.As(err, &exit) && exit.ExitCode() == 2 {
+				fmt.Fprintln(out, "No firmware updates available.")
+				continue
+			}
+			return fmt.Errorf("%s: %w", line, err)
+		}
+	}
+	return nil
 }
 
 func status(args []string, out, errOut io.Writer) int {
