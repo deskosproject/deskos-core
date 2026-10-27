@@ -141,9 +141,9 @@ job and `--force` because its FreeIPA has no DNS; that is what a test may do.
   replication, no Microsoft-specific behaviour — and it is a stand-in **for
   testing only**, never a support statement.
 - **A check, not a recommendation.** Which directory a fleet runs is the
-  organization's decision. FreeIPA is the one this project validates first,
-  because it models Unix identity, host-based access and `sudo` policy natively;
-  AD is the reality in many organizations, and the client path for it is
+  organization's decision. For a Linux fleet, FreeIPA is the better fit: it
+  models Unix identity, host-based access and `sudo` policy natively. AD is
+  supported because organizations already have it, and the client path for it is
   verified here.
 - **Not a trust yet.** FreeIPA ↔ AD needs both realms reachable at once, with DNS
   delegation; it is the next step, not a claim.
