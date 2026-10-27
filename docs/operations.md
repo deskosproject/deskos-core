@@ -8,9 +8,11 @@ the fallback.
 ```bash
 deskos report        # what this machine was built from, read from the plan it carries
 deskos check         # compare the plan's declared scope with the machine, and say what it leaves out
+deskos etc           # what differs between /etc and the image's baseline
 deskos status        # what the host follows, what it booted, what is staged, what the rollback is
 sudo deskos update   # update the image, after a guard that refuses only what is unsafe
 sudo deskos rollback # stage the previous deployment for the next boot
+sudo deskos etc reset --all   # put /etc back to the image, with a backup
 ```
 
 `deskos` is the runtime companion to `deskosctl`: it reads the plan the image
@@ -33,6 +35,36 @@ not an audit of everything the machine has become.
 running session enforces them is not its measurement. `check` names the same
 limit in its scope. The instrumented session check is the proof: it writes each
 locked key and expects the write to fail.
+
+## What changed in /etc
+
+On a deployment that merges `/etc`, `deskos etc` compares the running `/etc`
+with the image's baseline at `/usr/etc` and lists modified, added and removed
+paths. It is read-only and needs no root. On a machine that does not keep that
+baseline it refuses and says why.
+
+Runtime state is not an edit: NetworkManager connections, machine-id, SSH host
+keys, printer and Bluetooth state, sockets and caches are ignored by default.
+An organization adds patterns in `/etc/deskos/deskos.json`; the tool ignores
+`/etc/deskos/` itself and reports a policy difference separately instead of
+mixing it with the user's files.
+
+```bash
+deskos etc                     # the differences, with a count of what was ignored
+deskos etc --ignored           # name the ignored paths too
+sudo deskos etc reset /etc/foo # put one path back to the image's version
+sudo deskos etc reset --all    # every difference; local additions are removed
+sudo deskos etc reset --all --dry-run
+```
+
+`reset` copies the baseline back and keeps a timestamped copy of what it
+replaced under `/var/lib/deskos/etc-backup/`. It never touches `/etc/deskos/`
+unless you pass `--include-policy`.
+
+This is the same three-way merge an ostree-derived system does at boot, made
+visible: the image's baseline, the local file, and the next image's baseline
+when a deployment is staged.
+
 
 When an install, a first boot or an update does not work, start with
 [recovery.md](recovery.md): it lists the symptom, the evidence to collect and

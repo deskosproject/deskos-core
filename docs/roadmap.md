@@ -397,12 +397,10 @@ how-to: [supply-chain.md](supply-chain.md).
   ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)); the
   commands read the files listed in ADR 0007. Still open: system Flatpak
   updates and fwupd checks from the same endpoint.
-- **`deskos etc` (proposed 2026-10-27).** Make the `/etc` three-way merge
-  visible and reversible. `deskos etc` compares the running `/etc` with the
-  booted image's baseline (`/usr/etc` on the ostree/bootc backend) and lists
-  modified, added and removed paths; when a deployment is staged, it can show
-  the next image's baseline too, so the three inputs of the merge — image,
-  local and next — stop being a black box. `deskos etc reset PATH…`, `--all`
+- **Done (2026-10-27):** `deskos etc` makes the `/etc` three-way merge visible
+  and reversible. It compares the running `/etc` with the booted image's
+  baseline (`/usr/etc` on the ostree/bootc backend) and lists modified, added
+  and removed paths. `deskos etc reset PATH…`, `--all`
   and `--dry-run` copy the baseline back, keep a timestamped copy under
   `/var/lib/deskos/etc-backup/`, and refuse a path the image does not own unless
   asked; `--all` names the local additions it would delete before doing it. It
@@ -413,13 +411,13 @@ how-to: [supply-chain.md](supply-chain.md).
   Runtime files the image cannot carry — NetworkManager connections,
   machine-id, SSH host keys, printer and Bluetooth state, sockets, caches — are
   ignored by default, and an organization can extend the list. The policy file
-  is **`/etc/deskos/deskos.json`**: an image-owned default rendered from the
-  organization's resource, not a hand-edited escape hatch. JSON is the
-  recommendation because the compiler emits it, the runtime parses it with the
-  Go standard library, and it needs no comments; a line-oriented `deskos.conf`
+  is **`/etc/deskos/deskos.json`**: an image-owned default, not a hand-edited
+  escape hatch. JSON was chosen because the runtime parses it with the Go
+  standard library and it needs no comments; a line-oriented `deskos.conf`
   would win only if the list were meant to be edited on the machine, which is
-  not this design. How the organization declares it is still a decision (a
-  `Profile` field or a first-class resource), not a new shell. The tool ignores
+  not this design. How an organization ships the file (a `Profile` field or a
+  first-class resource) is still open; the runtime reads it when it is there.
+  The tool ignores
   `/etc/deskos/` in both the diff and the reset: the policy is not a managed
   file. If it differs from the image, it says so separately and suggests
   rebuilding the image; `reset --all` never touches it unless asked with
