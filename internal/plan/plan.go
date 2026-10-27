@@ -292,9 +292,12 @@ type IconCacheUpdate struct {
 
 // DconfDatabase is a system dconf database carrying defaults and locks.
 type DconfDatabase struct {
-	Name     string         `json:"name"`
-	Defaults []DconfDefault `json:"defaults"`
-	Locks    []DconfLock    `json:"locks"`
+	Name string `json:"name"`
+	// LoginScreen is the database the greeter reads. Login-screen keys go there,
+	// because GDM does not read the session's database.
+	LoginScreen string         `json:"loginScreen,omitempty"`
+	Defaults    []DconfDefault `json:"defaults"`
+	Locks       []DconfLock    `json:"locks"`
 }
 
 // DconfDefault is one key default. Value is GVariant text format.

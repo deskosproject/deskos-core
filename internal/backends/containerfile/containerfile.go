@@ -170,8 +170,18 @@ func Render(p *plan.Plan) ([]File, error) {
 		r.addImage(gsettingsOverridePath, 0o644, gsettingsOverride(p.Artifact.GSettings))
 	}
 	if db := p.Artifact.Dconf; db != nil {
+		// The greeter does not read the session's database: GDM has its own dconf
+		// profile, so a login-screen key written beside the desktop defaults is
+		// installed and never shown. Split the keys where each reader looks.
+		session, greeter := splitLoginScreen(db.Defaults)
 		dir := path.Join("/etc/dconf/db", db.Name+".d")
-		r.addImage(path.Join(dir, dconfFileName), 0o644, dconfKeyfile(db))
+		if len(session) > 0 {
+			r.addImage(path.Join(dir, dconfFileName), 0o644, dconfKeyfile(session))
+		}
+		if len(greeter) > 0 {
+			gdDir := path.Join("/etc/dconf/db", db.LoginScreen+".d")
+			r.addImage(path.Join(gdDir, dconfFileName), 0o644, dconfKeyfile(greeter))
+		}
 		if len(db.Locks) > 0 {
 			r.addImage(path.Join(dir, "locks", dconfFileName), 0o644, dconfLocks(db))
 		}
@@ -384,9 +394,26 @@ func desktopFile(e plan.DesktopEntry) []byte {
 // whitespace, which need the other escapes, are rejected upstream.
 func desktopEscape(s string) string { return strings.ReplaceAll(s, `\`, `\\`) }
 
-func dconfKeyfile(db *plan.DconfDatabase) []byte {
+// loginScreenPrefix is the settings tree GDM reads, and the session does not.
+const loginScreenPrefix = "/org/gnome/login-screen/"
+
+// splitLoginScreen separates the keys the greeter reads from the rest. A key
+// under the login-screen tree belongs to the database GDM reads, not to the
+// session's.
+func splitLoginScreen(defaults []plan.DconfDefault) (session, greeter []plan.DconfDefault) {
+	for _, d := range defaults {
+		if strings.HasPrefix(d.Key, loginScreenPrefix) {
+			greeter = append(greeter, d)
+			continue
+		}
+		session = append(session, d)
+	}
+	return session, greeter
+}
+
+func dconfKeyfile(defaults []plan.DconfDefault) []byte {
 	groups := map[string][]string{}
-	for _, d := range db.Defaults {
+	for _, d := range defaults {
 		dir, key := path.Split(d.Key)
 		g := strings.Trim(dir, "/")
 		groups[g] = append(groups[g], key+"="+d.Value)

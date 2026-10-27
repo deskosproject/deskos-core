@@ -423,3 +423,47 @@ func TestUnknownPackageManagerFails(t *testing.T) {
 		t.Errorf("Render = %v, want an unsupported package manager error", err)
 	}
 }
+
+// The greeter does not read the session's database: a login-screen default has
+// to land in the database GDM reads, and the session's defaults must not.
+func TestLoginScreenDefaultsGoToTheGreeterDatabase(t *testing.T) {
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
+	p.Artifact.Dconf = &plan.DconfDatabase{
+		Name:        "distro",
+		LoginScreen: "gdm",
+		Defaults: []plan.DconfDefault{
+			{Key: "/org/gnome/login-screen/logo", Type: "s", Value: "'/usr/share/deskos/branding/deskos-login-logo.svg'"},
+			{Key: "/org/gnome/desktop/background/picture-uri", Type: "s", Value: "'file:///x.svg'"},
+		},
+	}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := map[string]string{}
+	for _, f := range files {
+		content[f.Path] = string(f.Data)
+	}
+	greeter, ok := content["rootfs/etc/dconf/db/gdm.d/50-deskos"]
+	if !ok {
+		t.Fatalf("no greeter database in the render; files: %v", keys(content))
+	}
+	if !strings.Contains(greeter, "logo='/usr/share/deskos/branding/deskos-login-logo.svg'") {
+		t.Errorf("the greeter database does not carry the logo:\n%s", greeter)
+	}
+	session := content["rootfs/etc/dconf/db/distro.d/50-deskos"]
+	if strings.Contains(session, "login-screen") {
+		t.Errorf("the session database carries a login-screen key:\n%s", session)
+	}
+	if !strings.Contains(session, "picture-uri") {
+		t.Errorf("the session database lost the desktop default:\n%s", session)
+	}
+}
+
+func keys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}

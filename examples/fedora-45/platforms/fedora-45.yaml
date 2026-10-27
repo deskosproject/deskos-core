@@ -80,6 +80,8 @@ spec:
     # DeskOS writes to.
     dconfDatabase: distro
     loginScreen: true
+    # GDM reads its own profile; the EL family and Fedora use the gdm database.
+    loginScreenDatabase: gdm
     # Default of org.gnome.shell enabled-extensions on this base, measured in
     # /usr/share/glib-2.0/schemas/org.gnome.shell.gschema.override:
     # background-logo@fedorahosted.org (installed as

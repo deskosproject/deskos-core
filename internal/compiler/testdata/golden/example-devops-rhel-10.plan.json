@@ -674,6 +674,7 @@
     "iconCaches": [],
     "dconf": {
       "name": "distro",
+      "loginScreen": "gdm",
       "defaults": [
         {
           "key": "/org/gnome/desktop/background/picture-uri",

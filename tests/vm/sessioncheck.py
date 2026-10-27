@@ -612,11 +612,19 @@ deskos check > /var/tmp/deskos-qa/deskos-check.txt 2>&1
 echo "deskos_check_exit=$?"
 # The login logo is a system dconf default: its file must exist, or GDM draws a
 # bare screen (the compiler copies only the effective logo).
-login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
-echo "login_logo=$login_logo"
-if [ -n "$login_logo" ]; then
-  test -f "$login_logo" && echo "login_logo_file=present" || echo "login_logo_file=missing"
+# A login-screen key belongs to the greeter's database, not the session's: read
+# it through the profile GDM uses, which is what decides whether the logo is
+# shown (issue #246). The session read is kept for the record.
+echo "login_logo=$(dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')"
+login_logo_greeter=$(DCONF_PROFILE=gdm dconf read /org/gnome/login-screen/logo 2>/dev/null | tr -d "'" | sed 's|^file://||')
+echo "login_logo_greeter=$login_logo_greeter"
+if [ -n "$login_logo_greeter" ]; then
+  test -f "$login_logo_greeter" && echo "login_logo_file=present" || echo "login_logo_file=missing"
 fi
+# Report only, not an assertion: an /etc merge can rewrite fstab at boot after
+# the generator ran, and the field bug is what the numbers explain.
+echo "fstab_mtime=$(stat -c %Y /etc/fstab 2>/dev/null || echo missing)"
+echo "fstab_verify=$(findmnt --verify 2>&1 | tr '\n' '|' | cut -c1-400)"
 # The offline check needs to prove the boot really had no network.
 echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 # Its own file: the browser block plus this script would exceed the cap.
@@ -1480,9 +1488,15 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         check("wallpaper as planned", values.get("picture_uri") == wp, f"got {values.get('picture_uri')} want {wp}")
     logo = dconf_value(plan, "/org/gnome/login-screen/logo")
     if logo:
+        want = logo.strip("'").removeprefix("file://")
+        got = values.get("login_logo_greeter") or ""
+        state = "verified" if got == want else (f"unexpected: {got}" if got else "unread")
         check("login logo file exists", values.get("login_logo_file") == "present",
-              f"logo={values.get('login_logo') or 'unset'} "
-              f"file={values.get('login_logo_file') or 'not read'}")
+              f"greeter={got or 'unset'} file={values.get('login_logo_file') or 'not read'}")
+        check("the greeter reads the login logo", got == want,
+              f"greeter={got or 'unset'} plan={want}",
+              coverage={"source": "dconf", "key": "/org/gnome/login-screen/logo",
+                        "image": state, "session": state})
     check("screen locks on request", values.get("screen_locked") == "true",
           f"screen_locked={values.get('screen_locked')}")
     # The runtime companion ships in the image; the field checklist runs it. It
@@ -1533,6 +1547,10 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
     where = f"the image's {db} database"
     for i, d in enumerate(plan_defaults(plan)):
         key, typ = d["key"], d.get("type")
+        if key.startswith("/org/gnome/login-screen/"):
+            # The greeter has its own database and its own check; asserting it
+            # against the session's would fail on an image that is correct.
+            continue
         image = read_state(d["value"], values.get(f"dconfdb_{i}"), key, typ, "carries")
         session = read_state(d["value"], values.get(f"dconf_{i}"), key, typ, "sees")
         ok, detail, skipped = default_verdict(difference_id("dconf", key), image, session, where)
