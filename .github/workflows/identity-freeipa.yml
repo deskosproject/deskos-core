@@ -109,13 +109,27 @@ jobs:
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
       - name: Wait for FreeIPA
+        timeout-minutes: 40
         run: |
           set -euo pipefail
-          for i in $(seq 1 90); do
-            if sudo tests/identity/freeipa.sh status; then exit 0; fi
+          # The first install builds the CA and the directory, which is slow on a
+          # two-core runner; a dead container is reported at once instead of
+          # waiting out the whole loop.
+          for i in $(seq 1 120); do
+            if sudo -E tests/identity/freeipa.sh status; then
+              echo "the realm answers after $((i * 10))s"
+              exit 0
+            fi
+            state=$(sudo podman inspect --format '{{.State.Status}}' deskos-freeipa 2>/dev/null || echo missing)
+            if [ "$state" != running ]; then
+              echo "container deskos-freeipa is $state, not running" >&2
+              sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
+              exit 1
+            fi
             sleep 10
           done
-          sudo podman logs deskos-freeipa || true
+          echo "the realm did not answer within 20 minutes" >&2
+          sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
           exit 1
 
       - name: Create the directory user
@@ -144,8 +158,16 @@ jobs:
           mkdir -p evidence
           cp -a "$WORK/session" evidence/ 2>/dev/null || true
           cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
+          sudo podman inspect deskos-freeipa \
+            --format 'status={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' \
+            > evidence/container-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
-          sudo tests/identity/freeipa.sh status > evidence/ipactl.txt 2>&1 || true
+          # The container's own install log is the one that says why the realm
+          # did not come up; the console log is a truncated copy of it.
+          for f in /var/log/ipaserver-install.log /var/log/ipa-server-configure-first.log; do
+            sudo podman cp "deskos-freeipa:$f" "evidence/$(basename "$f")" 2>/dev/null || true
+          done
+          sudo -E tests/identity/freeipa.sh status > evidence/ipactl.txt 2>&1 || true
           sudo podman exec deskos-freeipa ipa user-show qa > evidence/user.txt 2>&1 || true
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

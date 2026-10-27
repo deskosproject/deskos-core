@@ -23,12 +23,17 @@ case "${1:-}" in
   start)
     : "${FREEIPA_IMAGE:?set FREEIPA_IMAGE to a pinned server image}"
     : "${FREEIPA_PASSWORD:?set FREEIPA_PASSWORD for the throwaway Directory Manager}"
+    # -U is required: without it ipa-server-install prompts for the DNS and
+    # domain questions, reads EOF from a detached container and fails. No
+    # integrated DNS: the fixture realm is reached through /etc/hosts, and port
+    # 53 on the host belongs to the host resolver. The log driver keeps the
+    # whole install log, which is the evidence when the install fails.
+    opts="-U -r $realm -n $domain --no-ntp --skip-mem-check"
     podman run -d --name "$name" --hostname "$hostname" \
       --network host --privileged --systemd=always \
+      --log-driver=k8s-file --log-opt=max-size=50mb \
       -e PASSWORD="$FREEIPA_PASSWORD" \
-      -e IPA_SERVER_HOSTNAME="$hostname" \
-      -e IPA_SERVER_DOMAIN="$domain" \
-      -e IPA_SERVER_REALM="$realm" \
+      -e IPA_SERVER_INSTALL_OPTS="$opts" \
       -v "$volume:/data:Z" "$FREEIPA_IMAGE"
     echo "started; wait for: sudo $0 status"
     ;;
@@ -40,6 +45,11 @@ case "${1:-}" in
     podman volume rm "$volume"
     ;;
   status)
+    state=$(podman inspect --format '{{.State.Status}}' "$name" 2>/dev/null || echo missing)
+    if [ "$state" != running ]; then
+      echo "container $name is $state" >&2
+      exit 1
+    fi
     podman exec "$name" ipactl status
     ;;
   user)
