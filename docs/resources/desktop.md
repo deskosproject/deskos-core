@@ -110,6 +110,23 @@ spec:
 - **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
+### Locks
+
+A profile can make a setting read-only for the user with `spec.locks`, using the
+same semantic names as `defaults`:
+
+```yaml
+spec:
+  locks: [shell.favorites, appearance.wallpaper]
+```
+
+A lock is a dconf lock in the image's database, not a runtime agent. It needs an
+effective value from some included profile, and it stops the running user from
+changing the key; it does not stop a higher layer from choosing a different
+composed value. Core never locks (invariant 8); an organization's policy is
+explicit. See [locks.md](../locks.md) for how the two planes work, what fits a
+managed laptop, and what a lock breaks.
+
 ### Lockdown
 
 GNOME has a set of capabilities a managed profile can turn off. Each is a
@@ -147,6 +164,7 @@ The value is a default, not a lock: set it, then list the semantic key under
 only when another mechanism locks the session. Online accounts and
 repartitioning are not in this block: the first is per-provider configuration
 and the second is a polkit/udisks policy, not one boolean.
+
 
 ## `Theme`
 
