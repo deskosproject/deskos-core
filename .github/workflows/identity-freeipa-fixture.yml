@@ -43,6 +43,7 @@ jobs:
           password="$(openssl rand -hex 24)"
           echo "::add-mask::$password"
           echo "FREEIPA_PASSWORD=$password" >> "$GITHUB_ENV"
+          export FREEIPA_PASSWORD="$password"
           sudo -E tests/identity/freeipa.sh start
 
       - name: Wait for the server
@@ -64,6 +65,7 @@ jobs:
           user_password="$(openssl rand -hex 24)"
           echo "::add-mask::$user_password"
           echo "FREEIPA_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
+          export FREEIPA_USER_PASSWORD="$user_password"
           sudo -E tests/identity/freeipa.sh user
           sudo podman exec deskos-freeipa ipa user-show qa
 
