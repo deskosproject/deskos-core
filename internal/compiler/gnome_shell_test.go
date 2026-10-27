@@ -236,3 +236,33 @@ func TestAppFoldersNeedPlatformSupport(t *testing.T) {
 	mustFail(t, err, "Platform/test-platform does not keep app folders from the DeskOS dconf database; shell.appFolders cannot be applied",
 		"organization GnomeProfile/g")
 }
+
+func TestGnomeLockdownSettingsAndLocks(t *testing.T) {
+	dir := launcherPlatform.with(fixture{
+		"ws.yaml": workstation("ws", "org"),
+		"o.yaml":  profile("org", "organization", "GnomeProfile/g"),
+		"g.yaml": gnome("g", "    lockdown:\n      disablePrinting: true\n      disableSaveToDisk: true\n"+
+			"  locks:\n    - lockdown.disablePrinting\n"),
+	}).dir(t)
+	out, err := containerfile.Render(mustPlan(t, "ws", dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{}
+	for _, f := range out {
+		files[f.Path] = string(f.Data)
+	}
+	keyfile := files["rootfs/etc/dconf/db/distro.d/50-deskos"]
+	for _, want := range []string{"disable-printing=true\n", "disable-save-to-disk=true\n"} {
+		if !strings.Contains(keyfile, want) {
+			t.Errorf("dconf keyfile lacks %q:\n%s", want, keyfile)
+		}
+	}
+	locks := files["rootfs/etc/dconf/db/distro.d/locks/50-deskos"]
+	if !strings.Contains(locks, "/org/gnome/desktop/lockdown/disable-printing\n") {
+		t.Errorf("dconf locks lack disable-printing:\n%s", locks)
+	}
+	if strings.Contains(locks, "disable-save-to-disk") {
+		t.Errorf("a lockdown value that was not listed under locks must not be locked:\n%s", locks)
+	}
+}

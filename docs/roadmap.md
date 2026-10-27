@@ -307,11 +307,13 @@ they cover.
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
   `GnomeProfile.spec.locks` already renders locks for the settings the model
   declares — Core never locks (invariant 8) — but a corporate fleet needs more:
-  - the lock enum stops at the settings DeskOS models. The guide also locks
-    printing, file saving, online accounts, logout and user switching, and
-    `org.gnome.desktop.lockdown.*`. Decide between extending the enum and a
-    controlled list of dconf keys/prefixes; either keeps the "no escape hatch"
-    rule by validating what is declared;
+  - **Done (2026-10-27):** the `org.gnome.desktop.lockdown.*` capabilities are
+    modeled as a `lockdown` block in `GnomeProfile.defaults` — printing, print
+    setup, save to disk, logout, user switching, application handlers, command
+    line, password reveal, lock screen, removable storage read-only and user
+    administration — and their semantic keys are lockable like any other.
+    Online accounts and repartitioning are not modeled: they are separate
+    mechanisms, not one boolean key;
   - **Done (2026-10-27):** the session check proves a locked key cannot be
     changed, not only that the lock file was rendered. The example organization
     locks `shell.favorites`; the session writes the key, expects the write to
