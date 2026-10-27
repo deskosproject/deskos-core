@@ -200,6 +200,15 @@ Details in
   - **Positioning:** a fleet artifact proves what a machine can do after it boots,
     and proving it in CI is the part few projects do. Compare on method and
     evidence, never on the reputation of another project.
+  - **Ideas to evaluate later**, each one only if a check can say something
+    honest about it: EDR agent interfaces (eBPF, fanotify, out-of-tree modules)
+    against the kernel and the immutable root; antivirus with `clamonacc` and the
+    EICAR file; always-on VPN before the greeter; Kerberos SSO in the browser
+    over the identity realm that already runs; a Kerberos home on NFS; TPM2 disk
+    unlock; wired 802.1X; an OpenSCAP profile as evidence; IPP printing; device
+    control with USBGuard. The corporate proxy has a fixture at
+    [tests/proxy/](../tests/proxy/); its workflow and the session assertions are
+    pending.
 - **Model a network proxy, or leave it to configuration management (decision
   pending, 2026-10-27).** Nothing in the compiler describes a proxy today: dnf,
   Flatpak and `deskos update` behind a corporate proxy cannot be expressed, only
