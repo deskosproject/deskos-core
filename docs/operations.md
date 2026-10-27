@@ -8,13 +8,17 @@ the fallback.
 ```bash
 deskos report        # what this machine was built from, read from the plan it carries
 deskos check         # compare the plan's declared scope with the machine, and say what it leaves out
+deskos status        # what the host follows, what it booted, what is staged, what the rollback is
 sudo deskos update   # update the image, after a guard that refuses only what is unsafe
+sudo deskos rollback # stage the previous deployment for the next boot
 ```
 
 `deskos` is the runtime companion to `deskosctl`: it reads the plan the image
 carries, so a machine can be asked what it was built from. It is **not** a
-controller and has no reconciliation loop (ADR 0001), and it deliberately has no
-`status` or `rollback` subcommand — `bootc` already owns those. The pin is
+controller and has no reconciliation loop (ADR 0001). `status` and `rollback`
+are thin front ends to `bootc`: `status` reads `bootc status --json`, and
+`rollback` asks bootc to stage the previous deployment for the next boot. `bootc`
+remains underneath and is the fallback. The pin is
 `resources/software/deskos.yaml`, and it moves like any other pin: a release
 publishes the asset, and the pin is bumped to it deliberately.
 
@@ -24,6 +28,11 @@ boots from, so it needs root. `report` and `check` only read and need none.
 `check` measures **what the artifact declares** — the files it installs and
 generates, the dconf defaults it sets — and prints its scope on every run. It is
 not an audit of everything the machine has become.
+
+`report` lists the dconf locks the plan declares and says that whether the
+running session enforces them is not its measurement. `check` names the same
+limit in its scope. The instrumented session check is the proof: it writes each
+locked key and expects the write to fail.
 
 When an install, a first boot or an update does not work, start with
 [recovery.md](recovery.md): it lists the symptom, the evidence to collect and

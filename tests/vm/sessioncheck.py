@@ -69,6 +69,9 @@ DCONF_LOCKS_PATH = "/var/lib/deskos-qa/dconf-locks.keys"
 # The lock probe is its own script: the session report is close to systemd's
 # 4095 B tmpfiles argument limit, and adding the probe inline pushed it over.
 LOCK_SCRIPT_PATH = "/var/lib/deskos-qa/lock-check.sh"
+# The tray probe is its own script for the same reason; its retry loop pushed
+# the report over the limit too.
+TRAY_SCRIPT_PATH = "/var/lib/deskos-qa/tray-check.sh"
 # The plan's GSettings vendor defaults (the compiled `*.gschema.override` path)
 # travel as schema and key per line, tab separated, for the same reason.
 VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
@@ -151,17 +154,30 @@ def tray_probe():
     promise that an icon is drawn for a real application; both are said plainly
     in the check names and in ADR 0021.
     """
+    call = (
+        "gdbus call --session --dest org.kde.StatusNotifierWatcher "
+        "--object-path /StatusNotifierWatcher "
+        "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
+        "/StatusNotifierItem"
+    )
     return (
         "if gdbus introspect --session --dest org.kde.StatusNotifierWatcher "
         "--object-path /StatusNotifierWatcher > /dev/null 2>&1; then\n"
         '  echo "tray_watcher=present"\n'
-        "  if gdbus call --session --dest org.kde.StatusNotifierWatcher "
-        "--object-path /StatusNotifierWatcher "
-        "--method org.kde.StatusNotifierWatcher.RegisterStatusNotifierItem "
-        "/StatusNotifierItem > /dev/null 2>&1; then\n"
+        # The extension registers its watcher a moment after the shell starts and
+        # can reject a registration while it settles. Retry instead of turning a
+        # startup race into a failed session; the last error is kept in the report.
+        '  ok=no\n'
+        '  err=""\n'
+        '  for i in 1 2 3 4 5; do\n'
+        '    err="$(' + call + ' 2>&1)" && { ok=yes; break; }\n'
+        '    sleep 2\n'
+        '  done\n'
+        '  if [ "$ok" = yes ]; then\n'
         '    echo "tray_register=accepted"\n'
         "  else\n"
         '    echo "tray_register=rejected"\n'
+        '    echo "tray_register_error=$err"\n'
         "  fi\n"
         "else\n"
         '  echo "tray_watcher=absent"\n'
@@ -460,7 +476,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
     reads = default_reads(dconf_db, bool(vendor_keys)) if (dconf_keys or vendor_keys) else ""
     locks = f". {LOCK_SCRIPT_PATH}\n" if dconf_locks else ""
     extensions = extension_reads() if enabled_extensions else ""
-    tray = tray_probe() if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
+    tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
@@ -618,6 +634,9 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             tmpfiles.append(
                 f"f {ENABLED_EXTENSIONS_PATH} 0644 root root - "
                 f"{tmpfiles_arg(chr(10).join(enabled_extensions) + chr(10))}")
+            if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions:
+                tmpfiles.append(
+                    f"f {TRAY_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(tray_probe())}")
         if vendor_keys:
             # The plan's GSettings vendor defaults, schema and key per line.
             tmpfiles.append(
