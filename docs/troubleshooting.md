@@ -129,6 +129,40 @@ If it is not there, install it from Bazaar or with `flatpak install`. An
 application that must exist before login, or for every user, belongs in the
 image, not in a user install.
 
+## An AD-joined machine cannot log in
+
+The join can succeed and still no account can log in. Three things cause it,
+in this order:
+
+1. **The machine is not using the realm's DNS.** An AD client finds its domain
+   controller through DNS; if `/etc/resolv.conf` points somewhere else, the
+   join may fail with `Insufficient permissions` or the domain stays offline.
+   `resolvectl status` or NetworkManager must show the realm's resolver.
+
+2. **`realm join` leaves `access_provider = ad` with no rule, and that denies
+   everyone.** `getent passwd user@domain` resolves and `sssctl user-checks`
+   answers `pam_acct_mgmt: Permission denied`. Admit accounts explicitly:
+
+   ```bash
+   sudo realm permit --all          # or: realm permit --groups 'linux-users'
+   ```
+
+   A managed fleet should use a group; allowing the whole realm is a test
+   convenience, not a policy.
+
+3. **`sssd` started before the machine knew the realm.** It comes up marked
+   offline and does not discover the controller again on its own. Restart it
+   after the network is configured:
+
+   ```bash
+   sudo systemctl restart sssd
+   sssctl domain-status ad.example.com   # "Online status: Online"
+   ```
+
+If the domain is online, the user resolves and access is granted, the login is
+PAM's business from there: `journalctl -b -u sssd` and `journalctl -b -u gdm`
+say the rest.
+
 ## What to send
 
 ```bash
