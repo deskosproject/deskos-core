@@ -110,6 +110,62 @@ spec:
 - **`welcomeTour`** (default `true`) controls GNOME Shell's first-run
   welcome dialog, which offers the desktop tour. `false` suppresses it.
 
+### Locks
+
+A profile can make a setting read-only for the user with `spec.locks`, using the
+same semantic names as `defaults`:
+
+```yaml
+spec:
+  locks: [shell.favorites, appearance.wallpaper]
+```
+
+A lock is a dconf lock in the image's database, not a runtime agent. It needs an
+effective value from some included profile, and it stops the running user from
+changing the key; it does not stop a higher layer from choosing a different
+composed value. Core never locks (invariant 8); an organization's policy is
+explicit. See [locks.md](../locks.md) for how the two planes work, what fits a
+managed laptop, and what a lock breaks.
+
+### Lockdown
+
+GNOME has a set of capabilities a managed profile can turn off. Each is a
+boolean under `lockdown`, and a lock makes the chosen value read-only:
+
+```yaml
+spec:
+  defaults:
+    lockdown:
+      disablePrinting: true
+      disableSaveToDisk: true
+  locks:
+    - lockdown.disablePrinting
+    - lockdown.disableSaveToDisk
+```
+
+The fields map to `org.gnome.desktop.lockdown`:
+
+| Field | GNOME key | Effect |
+|---|---|---|
+| `disablePrinting` | `disable-printing` | printing is unavailable |
+| `disablePrintSetup` | `disable-print-setup` | the print setup dialog is unavailable |
+| `disableSaveToDisk` | `disable-save-to-disk` | Save and Save As are disabled |
+| `disableLogOut` | `disable-log-out` | the user cannot log out |
+| `disableUserSwitching` | `disable-user-switching` | the user cannot switch users |
+| `disableApplicationHandlers` | `disable-application-handlers` | applications cannot be launched by handlers |
+| `disableCommandLine` | `disable-command-line` | the command line is disabled |
+| `disableShowPassword` | `disable-show-password` | password reveal is disabled |
+| `disableLockScreen` | `disable-lock-screen` | the user cannot lock the screen |
+| `mountRemovableStorageReadOnly` | `mount-removable-storage-devices-as-read-only` | removable storage mounts read-only |
+| `disableUserAdministration` | `user-administration-disabled` | user administration is disabled |
+
+The value is a default, not a lock: set it, then list the semantic key under
+`locks`. `disableLockScreen` is a lockdown flag but it weakens security; use it
+only when another mechanism locks the session. Online accounts and
+repartitioning are not in this block: the first is per-provider configuration
+and the second is a polkit/udisks policy, not one boolean.
+
+
 ## `Theme`
 
 A **named, reusable look** — a palette mapped onto the surfaces GNOME
