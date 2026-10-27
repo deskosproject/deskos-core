@@ -234,6 +234,23 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if v, ok := get(KeyPowerButton); ok {
 		l.set(KeyPowerButton, "/org/gnome/settings-daemon/plugins/power/power-button-action", "s", gvString(v.Value.(string)), v.Provenance)
 	}
+	for key, gkey := range map[string]string{
+		KeyLockdownDisablePrinting:            "/org/gnome/desktop/lockdown/disable-printing",
+		KeyLockdownDisablePrintSetup:          "/org/gnome/desktop/lockdown/disable-print-setup",
+		KeyLockdownDisableSaveToDisk:          "/org/gnome/desktop/lockdown/disable-save-to-disk",
+		KeyLockdownDisableLogOut:              "/org/gnome/desktop/lockdown/disable-log-out",
+		KeyLockdownDisableUserSwitching:       "/org/gnome/desktop/lockdown/disable-user-switching",
+		KeyLockdownDisableApplicationHandlers: "/org/gnome/desktop/lockdown/disable-application-handlers",
+		KeyLockdownDisableCommandLine:         "/org/gnome/desktop/lockdown/disable-command-line",
+		KeyLockdownDisableShowPassword:        "/org/gnome/desktop/lockdown/disable-show-password",
+		KeyLockdownDisableLockScreen:          "/org/gnome/desktop/lockdown/disable-lock-screen",
+		KeyLockdownRemovableStorageReadOnly:   "/org/gnome/desktop/lockdown/mount-removable-storage-devices-as-read-only",
+		KeyLockdownDisableUserAdministration:  "/org/gnome/desktop/lockdown/user-administration-disabled",
+	} {
+		if v, ok := get(key); ok {
+			l.set(key, gkey, "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
+		}
+	}
 
 	l.lowerShell(get)
 	l.lowerApplications(get)
