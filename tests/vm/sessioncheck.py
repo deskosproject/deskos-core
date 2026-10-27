@@ -386,6 +386,10 @@ echo "dc address: $(getent hosts "$REALM_SERVER" | awk '{print $1}' | paste -sd,
 echo "srv: $(dig +short SRV "_ldap._tcp.$REALM_DOMAIN" | paste -sd, -)"
 echo "a: $(dig +short A "$REALM_SERVER" | paste -sd, -)"
 printf '%s\n' "$JOIN_PASSWORD" | realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN" || exit 1
+# realmd leaves sssd with access_provider = ad and no rule, which denies every
+# account: the join succeeds, the user resolves, and pam_acct_mgmt says no.
+# A real organization narrows this to groups; the fixture admits the realm.
+realm permit --all || exit 1
 # realmd configures sssd but not the home policy nor oddjob.
 authselect select sssd with-mkhomedir --force || true
 systemctl enable --now oddjobd || true

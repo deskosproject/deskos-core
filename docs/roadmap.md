@@ -320,6 +320,14 @@ they cover.
     and a realm with its own DNS, remain separate paths. The evidence records
     the server version, the realm and the image digest; the container is a test
     fixture, never a support claim.
+- **AD membership (proposed 2026-10-27).** The managed model also means AD, and
+  the identity fixture can prove the client path without Windows: a Samba AD DC
+  in a container, `realm`/`adcli`/`sssd-ad` in the VM, DNS pointed at the realm,
+  and a login at GDM as an AD user. Samba AD is a real AD implementation but not
+  Windows: Group Policy and Windows-specific behaviour stay unclaimed.
+  - **In progress:** `tests/identity/samba/` and `identity-ad.yml`. No claim
+    until the daily run passes; an AD trust (FreeIPA ↔ AD) is a later step and
+    needs both realms reachable at once.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
