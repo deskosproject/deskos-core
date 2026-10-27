@@ -318,9 +318,9 @@ they cover.
     fail and the value to be unchanged;
   - `deskos report` and `deskos check` should list the active locks and say
     which are not enforced;
-  - an organization-facing guide: which locks fit a managed laptop, what they
-    break (printing, saving files, online accounts), and how they interact with
-    user and site settings.
+  - **Done (2026-10-27):** [locks.md](locks.md) covers which locks fit a managed
+    laptop, what they break, and how they interact with user and site settings;
+    `resources/desktop.md` links it from the `GnomeProfile` section.
 
   This is an organization's policy layered like any other `GnomeProfile`; Core
   provides no lock of its own.
