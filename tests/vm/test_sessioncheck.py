@@ -163,7 +163,7 @@ class TmpfilesTest(unittest.TestCase):
         profile = next(l for l in lines if l.startswith(f"f {sc.DCONF_PROFILE_PATH} "))
         self.assertTrue(profile.endswith("system-db:distro\\n"))
         # The script reads the keys from the files, and so carries none of them.
-        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
         for k in keys:
             self.assertNotIn(k, script)
         # A vendor key a named check does not read is in no script literal either.
@@ -207,7 +207,7 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.ENABLED_EXTENSIONS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "a@b\nc@d\n")
-        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
         self.assertIn(f"mapfile -t enabled_extensions < {sc.ENABLED_EXTENSIONS_PATH}", script)
         self.assertIn('gnome-extensions info "$u"', script)
 
@@ -222,7 +222,7 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/bin/deskos\n")
-        script = next(l for l in lines if l.startswith(f"f {sc.HOME}/deskos-qa-check.sh ")).replace("\\n", "\n")
+        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
         self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
         self.assertIn("sha256sum", script)
 
@@ -239,13 +239,13 @@ class TmpfilesTest(unittest.TestCase):
     def test_session_credentials_carry_the_browser_url(self):
         c = sc.credentials("session", browser_url="http://10.0.2.2:8080/")
         browser = next(l for l in c["tmpfiles.extra"].splitlines()
-                       if l.startswith(f"f {sc.HOME}/deskos-qa-browser.sh ")).replace("\\n", "\n")
+                       if l.startswith(f"f {sc.QA_BROWSER_PATH} ")).replace("\\n", "\n")
         self.assertIn("url=http://10.0.2.2:8080/", browser)
         self.assertIn("curl -fsS", browser)
         self.assertIn("--screenshot", browser)
         # The probe is a file of its own and calls the browser probe: together
         # they do not fit one tmpfiles.d argument.
-        self.assertIn('"$HOME/deskos-qa-browser.sh"', sc.session_probe())
+        self.assertIn(sc.QA_BROWSER_PATH, sc.session_probe())
         self.assertNotIn("--screenshot", sc.session_probe())
 
     def test_the_probe_files_fit_one_tmpfiles_argument(self):
@@ -887,3 +887,56 @@ class JoinTest(unittest.TestCase):
 
     def test_a_missing_directory_user_fails(self):
         self.assertFalse(self.join_checks(join_user="")["directory user resolves"]["pass"])
+
+    def test_gdm_autologin_names_the_directory_user(self):
+        c = sc.credentials("session", join=JOIN, gdm_user="qa")
+        files = c["tmpfiles.extra"]
+        for path in ("/etc/gdm/custom.conf", "/etc/gdm3/custom.conf"):
+            entry = next(l for l in files.split("\n") if l.startswith(f"f+ {path} "))
+            self.assertIn("AutomaticLogin=qa", entry.replace("\\n", "\n"))
+            self.assertNotIn(f"AutomaticLogin={sc.USER}", entry.replace("\\n", "\n"))
+
+    def test_the_probes_run_from_outside_the_home(self):
+        c = sc.credentials("session", join=JOIN, gdm_user="qa")
+        files = c["tmpfiles.extra"]
+        # A directory user's home does not exist before its first login, so a
+        # probe placed there would never run; the autostart is system-wide.
+        for path in (sc.QA_SCRIPT_PATH, sc.QA_PROBE_PATH, sc.QA_BROWSER_PATH):
+            self.assertIn(f"f {path} ", files)
+            self.assertNotIn(f"f {sc.HOME}/{path.rsplit('/', 1)[-1]} ", files)
+        self.assertIn(f"f {sc.AUTOSTART_PATH} ", files)
+        self.assertIn("Exec=/bin/bash " + sc.QA_SCRIPT_PATH, files)
+
+    def test_a_directory_home_gets_the_initial_setup_marker_from_skel(self):
+        c = sc.credentials("session", join=JOIN, gdm_user="qa")
+        self.assertIn("/etc/skel/.config/gnome-initial-setup-done", c["tmpfiles.extra"])
+        plain = sc.credentials("session", join=JOIN)
+        self.assertNotIn("/etc/skel/.config/gnome-initial-setup-done", plain["tmpfiles.extra"])
+
+    def gdm_checks(self, **extra):
+        values = dict(GOOD)
+        values.update(join_ok="yes", join_sssd="active",
+                      join_user="qa:1388400003:/home/qa:/bin/sh",
+                      join_home_before="missing", session_user="qa", session_uid="1388400003",
+                      session_home="/home/qa", home_owner="1388400003:1388400003",
+                      oddjobd="active")
+        values.update(extra)
+        return {c["check"]: c for c in sc.evaluate(values, PLAN, join_user="qa", gdm_user="qa")}
+
+    def test_a_directory_session_passes(self):
+        checks = self.gdm_checks()
+        for name in ["the session is the directory user", "the login created the home for that user",
+                     "oddjobd is active"]:
+            self.assertTrue(checks[name]["pass"], checks[name])
+
+    def test_a_local_session_is_not_a_directory_session(self):
+        self.assertFalse(self.gdm_checks(session_user="deskos-qa")["the session is the directory user"]["pass"])
+
+    def test_a_pre_existing_home_is_not_created_at_login(self):
+        self.assertFalse(self.gdm_checks(join_home_before="present")["the login created the home for that user"]["pass"])
+
+    def test_a_home_owned_by_another_uid_fails(self):
+        self.assertFalse(self.gdm_checks(home_owner="0:0")["the login created the home for that user"]["pass"])
+
+    def test_inactive_oddjobd_fails(self):
+        self.assertFalse(self.gdm_checks(oddjobd="inactive")["oddjobd is active"]["pass"])

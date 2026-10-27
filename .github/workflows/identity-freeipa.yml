@@ -159,7 +159,8 @@ jobs:
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
             --join-domain lab.test --join-realm LAB.TEST --join-server ipa.lab.test \
-            --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa
+            --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa \
+            --join-gdm
 
       - name: Collect evidence
         if: always()
