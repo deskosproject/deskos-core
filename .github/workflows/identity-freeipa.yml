@@ -1,0 +1,161 @@
+name: identity-freeipa
+
+# Once a day, and on demand: build the identity client image, boot it, join a
+# disposable FreeIPA server running on the runner, and ask the session whether
+# the join happened. It is not a pull-request gate: it needs a privileged
+# container and a VM, and it is slow.
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+  # Identity-only paths exercise the workflow before it is merged and when the
+  # fixture or the harness changes; it is not a per-pull-request check.
+  pull_request:
+    paths:
+      - .github/workflows/identity-freeipa.yml
+      - tests/identity/**
+      - tests/vm/sessioncheck.py
+      - tests/vm/test_sessioncheck.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-freeipa
+  cancel-in-progress: false
+
+env:
+  WORK: /mnt/deskos-work
+  BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
+  WS: identity-client-centos-stream-10
+  IMAGE: localhost/identity-client-centos-stream-10:ci
+
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install podman, QEMU, OVMF and openssl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends podman openssl qemu-system-x86 qemu-utils ovmf
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Start the disposable FreeIPA
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "FREEIPA_PASSWORD=$password" >> "$GITHUB_ENV"
+          export FREEIPA_PASSWORD="$password"
+          sudo -E tests/identity/freeipa.sh start
+
+      - name: Render the identity image
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render tests/identity/resources --workstation "$WS" --output ctx
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Pull the base and the builder
+        run: |
+          set -euo pipefail
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref" >&2; exit 1; }
+          done
+
+      - name: Build the identity image
+        timeout-minutes: 40
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
+
+      - name: Build a QCOW2
+        timeout-minutes: 30
+        run: |
+          mkdir -p "$WORK/output"
+          sudo podman run --rm --privileged --pull=never \
+            --security-opt label=type:unconfined_t \
+            -v "$WORK/output:/output" \
+            -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --config /config.toml --no-default-kernel-args \
+            --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
+
+      - name: Wait for FreeIPA
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 90); do
+            if sudo tests/identity/freeipa.sh status; then exit 0; fi
+            sleep 10
+          done
+          sudo podman logs deskos-freeipa || true
+          exit 1
+
+      - name: Create the directory user
+        run: |
+          set -euo pipefail
+          export FREEIPA_USER=qa
+          user_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$user_password"
+          echo "FREEIPA_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
+          export FREEIPA_USER_PASSWORD="$user_password"
+          sudo -E tests/identity/freeipa.sh user
+          sudo podman exec deskos-freeipa ipa user-show qa
+
+      - name: Join the identity VM and check the session
+        timeout-minutes: 30
+        run: |
+          python3 tests/vm/sessioncheck.py --mode session \
+            --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
+            --out "$WORK/session" --boot-timeout 900 \
+            --join-domain test --join-realm TEST --join-server ipa.test \
+            --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa
+
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p evidence
+          cp -a "$WORK/session" evidence/ 2>/dev/null || true
+          cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
+          sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
+          sudo tests/identity/freeipa.sh status > evidence/ipactl.txt 2>&1 || true
+          sudo podman exec deskos-freeipa ipa user-show qa > evidence/user.txt 2>&1 || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: identity-freeipa-evidence
+          path: evidence
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Stop the disposable server
+        if: always()
+        run: sudo tests/identity/freeipa.sh purge || true
