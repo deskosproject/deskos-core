@@ -709,6 +709,9 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # The join must finish before GDM: the directory user and sssd have to
             # exist when the greeter starts. The admin password is root-only and
             # injected at runtime; it is never part of the image.
+            # /bin/bash runs the script instead of exec'ing it: a file under /var
+            # is var_lib_t, and the unit runs as init_t, which may read it but not
+            # execute it (an exec is an AVC denial and 203/EXEC).
             tmpfiles += [
                 f"f {JOIN_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_SCRIPT)}",
                 f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
@@ -718,7 +721,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 "Wants=network-online.target\nAfter=network-online.target\nBefore=gdm.service\n"
                 f"ConditionPathExists={JOIN_ENV_PATH}\n\n"
                 "[Service]\nType=oneshot\nRemainAfterExit=yes\n"
-                f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart={JOIN_SCRIPT_PATH}\n"
+                f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart=/bin/bash {JOIN_SCRIPT_PATH}\n"
                 "StandardOutput=journal+console\nStandardError=journal+console\n"
             )
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"

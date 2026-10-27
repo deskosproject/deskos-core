@@ -855,6 +855,9 @@ class JoinTest(unittest.TestCase):
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)
         unit = c["systemd.extra-unit.deskos-qa-join.service"]
+        # /bin/bash, not the script: under /var the file is var_lib_t and the
+        # unit runs as init_t, so exec'ing it is denied and only reading works.
+        self.assertIn(f"ExecStart=/bin/bash {sc.JOIN_SCRIPT_PATH}", unit)
         for want in ["Before=gdm.service", f"EnvironmentFile={sc.JOIN_ENV_PATH}", sc.JOIN_SCRIPT_PATH]:
             self.assertIn(want, unit)
         self.assertIn("deskos-qa-join.service", c["systemd.unit-dropin.graphical.target"])
