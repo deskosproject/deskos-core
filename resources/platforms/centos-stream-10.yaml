@@ -10,7 +10,7 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/centos-bootc/centos-bootc:stream10
-    # x86_64 manifest (config sha256:3207aab5...), created 2026-10-25; move it deliberately.
+    # x86_64 manifest (config sha256:e2e05764...), created 2026-10-26; move it deliberately.
     digest: sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11
   distribution:
     redistributable: true
