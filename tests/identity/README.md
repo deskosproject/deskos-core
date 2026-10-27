@@ -120,8 +120,11 @@ directory and carries no support statement.
 `tests/identity/samba/` builds a Samba AD DC and `samba-ad.sh` runs it. It is a
 real AD implementation — Kerberos, LDAP, DNS, `samba-tool` — not a mock, so the
 AD client path (`realm`, `adcli`, `sssd-ad`) can be exercised without Windows.
-It is **not** Windows: Group Policy processing, Windows DC replication and
-Microsoft-specific extensions are out of scope and nothing here claims them.
+For the client this is **equivalent to joining a Microsoft Windows AD domain**:
+the same Kerberos, LDAP, DNS and `sssd-ad` code path runs, which is what makes
+the check meaningful. It is **not the same product**, and it is here **for
+testing only**: no Group Policy, no Windows replication, none of the
+Microsoft-specific behaviour, and no support statement for Windows AD.
 
 ```bash
 sudo podman build -t localhost/deskos-ad:test tests/identity/samba
