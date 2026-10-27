@@ -400,8 +400,11 @@ how-to: [supply-chain.md](supply-chain.md).
   bootc's own staged update and rollback. **No controller, reconciliation loop
   or automatic enforcement**
   ([ADR 0001](adr/0001-artifact-factory-not-configuration-management.md)); the
-  commands read the files listed in ADR 0007. Still open: system Flatpak
-  updates and fwupd checks from the same endpoint.
+  commands read the files listed in ADR 0007. **Done (2026-10-27):**
+  `deskos update --flatpak` updates system Flatpak applications before the
+  image; `--firmware` lists firmware updates and never applies them; `--all`
+  does both plus the image. The next release carries the companion that knows
+  them.
 - **Done (2026-10-27):** `deskos etc` makes the `/etc` three-way merge visible
   and reversible. It compares the running `/etc` with the booted image's
   baseline (`/usr/etc` on the ostree/bootc backend) and lists modified, added
