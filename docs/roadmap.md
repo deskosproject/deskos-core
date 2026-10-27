@@ -302,10 +302,10 @@ they cover.
     disposable FreeIPA container fixture and the join script; `make check`
     validates the workstation.
   - **Next:** automate the join and the GDM login as a nightly or on-demand
-    check, not on every pull request: it needs a privileged container or a
-    second VM and several minutes. The evidence records the server version, the
-    realm and the image digest; the container is a test fixture, never a support
-    claim.
+    check, not on every pull request: it needs a container running systemd (the
+    FreeIPA image does not support privileged or host networking), a booted VM
+    and several minutes. The evidence records the server version, the realm and
+    the image digest; the container is a test fixture, never a support claim.
 - **Corporate dconf lockdown (proposed 2026-10-26).** A managed workstation
   must be able to stop users from changing chosen settings, following
   [GNOME's dconf lockdown](https://help.gnome.org/system-admin-guide/dconf-lockdown.html).
