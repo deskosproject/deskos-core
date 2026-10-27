@@ -28,6 +28,14 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         dconf defaults it declares) with this machine, and publish which paths and
         states it checks and which it leaves out.
 
+  deskos etc [diff] [--root DIR] [--ignored]
+        Compare /etc with the image's baseline (/usr/etc): what a person edited,
+        what the image added, and the runtime paths the policy ignores.
+
+  deskos etc reset PATH... [--root DIR] [--all] [--dry-run] [--include-policy]
+        Put a path, a directory or every difference back to the image's version,
+        with a timestamped backup. --all also removes local additions.
+
   deskos status
         Say what this machine is running: the image it follows, the booted
         deployment, anything staged, and the rollback.
@@ -68,6 +76,8 @@ func run(args []string, out, errOut io.Writer) int {
 		return report(args[1:], out, errOut)
 	case "check":
 		return check(args[1:], out, errOut)
+	case "etc":
+		return etcCommand(args[1:], out, errOut)
 	case "status":
 		return status(args[1:], out, errOut)
 	case "update":
