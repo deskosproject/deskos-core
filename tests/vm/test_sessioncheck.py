@@ -848,9 +848,23 @@ JOIN = {
 
 class JoinTest(unittest.TestCase):
     def test_the_join_tolerates_a_realm_without_dns(self):
-        script = sc.JOIN_SCRIPT
-        for want in ["--force ", "--hostname=", "--server=", "--force-join", "join_log"]:
-            self.assertIn(want, script)
+        client = sc.join_client_script("ipa")
+        for want in ["--force ", "--hostname=", "--server=", "--force-join"]:
+            self.assertIn(want, client)
+        for kind in ("ipa", "ad"):
+            # The driver is what waits for the client and reports.
+            self.assertIn("join-client.sh", sc.join_script())
+
+    def test_a_boot_that_never_reports_still_leaves_evidence(self):
+        c = sc.credentials("session", join=JOIN)
+        self.assertIn(sc.WATCHDOG_SCRIPT_PATH, c["tmpfiles.extra"])
+        self.assertIn("OnBootSec=11min", c["systemd.extra-unit.deskos-qa-watchdog.timer"])
+        self.assertIn(sc.WATCHDOG_SCRIPT_PATH,
+                      c["systemd.extra-unit.deskos-qa-watchdog.service"])
+        self.assertIn("deskos-qa-watchdog.timer", c["systemd.unit-dropin.timers.target"])
+        # It must not overwrite a real report, and it must say what stalled.
+        self.assertIn("session_results=missing", sc.WATCHDOG_SCRIPT)
+        self.assertIn("join.status", sc.WATCHDOG_SCRIPT)
 
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)
@@ -864,7 +878,7 @@ class JoinTest(unittest.TestCase):
         files = c["tmpfiles.extra"]
         self.assertIn(sc.JOIN_SCRIPT_PATH, files)
         self.assertIn(sc.JOIN_ENV_PATH, files)
-        self.assertIn("IPA_DOMAIN=lab.test", files)
+        self.assertIn("REALM_DOMAIN=lab.test", files)
         self.assertIn(sc.JOIN_STATUS_PATH, files)
 
     def join_checks(self, **extra):
@@ -913,6 +927,33 @@ class JoinTest(unittest.TestCase):
         plain = sc.credentials("session", join=JOIN)
         self.assertNotIn("/etc/skel/.config/gnome-initial-setup-done", plain["tmpfiles.extra"])
 
+    def test_an_ad_join_carries_its_kind_and_dns(self):
+        ad = dict(JOIN, kind="ad", dns="10.0.2.2", user="qa@ad.lab.test")
+        files = sc.credentials("session", join=ad, gdm_user="qa@ad.lab.test")["tmpfiles.extra"]
+        self.assertIn("JOIN_KIND=ad", files)
+        self.assertIn("JOIN_DNS=10.0.2.2", files)
+        self.assertIn("JOIN_USER=qa@ad.lab.test", files)
+        # Only the branch the guest runs is delivered: together they do not fit
+        # one tmpfiles argument.
+        self.assertIn("realm join", sc.join_client_script("ad"))
+        self.assertNotIn("ipa-client-install", sc.join_client_script("ad"))
+        self.assertIn("ipa-client-install", sc.join_client_script("ipa"))
+        self.assertNotIn("realm join", sc.join_client_script("ipa"))
+        # The driver names no client: it runs whichever one was delivered.
+        self.assertIn("join-client.sh", sc.join_script())
+        self.assertNotIn("realm join", sc.join_script())
+
+    def test_a_joined_machine_is_not_joined_to_a_second_realm(self):
+        # One machine, one realm: the guard runs before either client.
+        for kind in ("ipa", "ad"):
+            self.assertIn("already joined", sc.join_script())
+            self.assertIn("realm list", sc.join_script())
+
+    def test_an_ipa_join_has_no_dns_to_set(self):
+        files = sc.credentials("session", join=JOIN)["tmpfiles.extra"]
+        self.assertIn("JOIN_KIND=ipa", files)
+        self.assertNotIn("JOIN_DNS=", files)
+
     def gdm_checks(self, **extra):
         values = dict(GOOD)
         values.update(join_ok="yes", join_sssd="active",
@@ -940,3 +981,16 @@ class JoinTest(unittest.TestCase):
 
     def test_inactive_oddjobd_fails(self):
         self.assertFalse(self.gdm_checks(oddjobd="inactive")["oddjobd is active"]["pass"])
+
+    def test_an_ad_session_may_report_the_short_name(self):
+        # sssd can answer with the short name while GDM was configured with the
+        # qualified one; it is the same account, resolved in the guest.
+        checks = self.gdm_checks(session_user="qa", join_user="qa:10000:/home/qa:/bin/bash")
+        self.assertTrue(checks["the session is the directory user"]["pass"], checks["the session is the directory user"])
+
+    def test_an_ad_session_with_the_qualified_name_passes(self):
+        checks = self.gdm_checks(session_user="qa@ad.lab.test",
+                                 join_user="qa@ad.lab.test:10000:/home/qa:/bin/bash",
+                                 home_owner="10000:10000")
+        self.assertTrue(checks["the session is the directory user"]["pass"])
+        self.assertTrue(checks["the login created the home for that user"]["pass"])
