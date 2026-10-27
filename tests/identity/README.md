@@ -115,6 +115,65 @@ by `oddjob-mkhomedir` on first login.
 Keep the passwords and the realm private. The fixture is not a production
 directory and carries no support statement.
 
+## The other model: a disposable Samba AD DC
+
+`tests/identity/samba/` builds a Samba AD DC and `samba-ad.sh` runs it. It is a
+real AD implementation — Kerberos, LDAP, DNS, `samba-tool` — not a mock, so the
+AD client path (`realm`, `adcli`, `sssd-ad`) can be exercised without Windows.
+For the client this is **equivalent to joining a Microsoft Windows AD domain**:
+the same Kerberos, LDAP, DNS and `sssd-ad` code path runs, which is what makes
+the check meaningful. It is **not the same product**, and it is here **for
+testing only**: no Group Policy, no Windows replication, none of the
+Microsoft-specific behaviour, and no support statement for Windows AD.
+
+```bash
+sudo podman build -t localhost/deskos-ad:test tests/identity/samba
+export AD_IMAGE=localhost/deskos-ad:test
+export ADMIN_PASSWORD='a throwaway Administrator password'
+sudo -E tests/identity/samba-ad.sh start
+sudo tests/identity/samba-ad.sh status
+export AD_USER=qa AD_USER_PASSWORD='a throwaway user password'
+sudo -E tests/identity/samba-ad.sh user
+```
+
+Two things the fixture depends on:
+
+- **Run it as root.** Provisioning needs real ownership and `security.*` xattrs;
+  a rootless container panics in `set_nt_acl` with `Security context active token
+  stack underflow`.
+- **The client must use the DC's DNS before it joins.** `identity-ad.yml` points
+  NetworkManager at the realm's resolver through `JOIN_DNS`; the DC is published
+  on the host loopback and QEMU user networking exposes it as `10.0.2.2`. With a
+  trust in front (FreeIPA), the client would point at FreeIPA instead and
+  FreeIPA would forward the AD zone.
+
+The domain is provisioned with `--use-rfc2307`, so `uidNumber`, `gidNumber`,
+`unixHomeDirectory` and `loginShell` live in the directory and the Unix identity
+comes from the realm. Verified on 2026-10-27: the daily check joins the VM, GDM
+logs in as `qa@ad.lab.test`, the home is created at that login and `oddjobd` is
+active.
+
+Three things the join has to do that are easy to miss:
+
+- **The realm's DNS is the source of truth** for the DC's address. The guest
+  reaches the container network through user networking, so pointing the DC at
+  the published host instead breaks the join with `Insufficient permissions`.
+- **`access_provider = ad` with no rule denies every account.** `realm permit
+  --all` exits zero without writing one, so the fixture sets
+  `access_provider = permit`; a real organization narrows this to groups.
+- **sssd starts at boot, before the join points the guest at the realm DNS**, so
+  it can come up already offline. The check restarts it once the realm is
+  configured, pins `ad_server`, and waits for the domain to report online.
+
+**One machine, one realm.** A disk that has joined FreeIPA keeps `krb5.conf`,
+`sssd.conf`, the machine keytab, the default realm and the `authselect` state;
+joining it to AD afterwards is a schema conflict, not a change of provider. The
+two checks therefore never share a VM, a disk, a workspace or an image tag:
+`identity-freeipa.yml` works in `/mnt/deskos-ipa-work` and
+`identity-ad.yml` in `/mnt/deskos-ad-work`, each building its own QCOW2 from
+its own image. Reproducing one by hand on a disk left over from the other is
+not a supported path.
+
 ## The daily check
 
 `.github/workflows/identity-freeipa.yml` runs daily and on demand, never as a

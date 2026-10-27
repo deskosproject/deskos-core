@@ -75,6 +75,9 @@ TRAY_SCRIPT_PATH = "/var/lib/deskos-qa/tray-check.sh"
 # The domain join runs before GDM, from runtime credentials; the session report
 # reads the status file it leaves behind.
 JOIN_SCRIPT_PATH = "/var/lib/deskos-qa/join.sh"
+JOIN_STATUS_SCRIPT_PATH = "/var/lib/deskos-qa/join-status.sh"
+JOIN_CLIENT_SCRIPT_PATH = "/var/lib/deskos-qa/join-client.sh"
+WATCHDOG_SCRIPT_PATH = "/var/lib/deskos-qa/watchdog.sh"
 JOIN_ENV_PATH = "/var/lib/deskos-qa/join.env"
 JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
 # The probes live outside the home: with a directory user the home does not
@@ -279,39 +282,82 @@ def default_reads(image_database, vendor):
     )
 
 
-JOIN_SCRIPT = """#!/bin/bash
+JOIN_HEAD = """#!/bin/bash
 set -u
-# QEMU user networking exposes the host as 10.0.2.2; the server certificate
-# names the host, so the guest resolves that name to the host.
-if ! grep -qE "[[:space:]]${IPA_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
-  printf '10.0.2.2 %s\n' "$IPA_SERVER" >> /etc/hosts
-fi
-ok=no
-# No DNS in this fixture: the realm has no integrated DNS and the guest maps the
-# server in /etc/hosts. --force skips the checks that expect a resolvable host
-# name, and --hostname gives the guest a name inside the realm instead of
-# whatever the image happens to have. The log is kept so a failed join says why.
-join_host="${IPA_JOIN_HOSTNAME:-deskos-qa.$IPA_DOMAIN}"
 join_log=/var/lib/deskos-qa/join.log
-if ipa-client-install --unattended --force --hostname="$join_host" \
-    --domain="$IPA_DOMAIN" --realm="$IPA_REALM" \
-    --server="$IPA_SERVER" --principal="$IPA_PRINCIPAL" --password="$IPA_PASSWORD" \
-    --mkhomedir --no-ntp --force-join >"$join_log" 2>&1; then
+: > "$join_log"
+ok=no
+
+# One machine, one realm. Re-joining a disk that already belongs to a domain
+# conflicts with the realm, sssd, keytab and authselect state it carries.
+if realm list 2>/dev/null | grep -q .; then
+  echo "already joined: $(realm list 2>/dev/null | head -1)" >&2
+  exit 3
+fi
+
+# The link, bounded: NetworkManager-wait-online is what can hang, and the join
+# must not inherit its lack of a deadline.
+if command -v nm-online >/dev/null 2>&1; then
+  timeout 90 nm-online -q -t 80 >>"$join_log" 2>&1 || true
+fi
+
+# Point the guest at the realm's DNS through NetworkManager, the way a joined
+# workstation does. In this fixture the server is published on the host loopback
+# and QEMU user networking exposes that as 10.0.2.2.
+if [ -n "${JOIN_DNS:-}" ]; then
+  con=$(nmcli -t -f NAME,DEVICE con show --active | awk -F: '$2 != "" && $2 != "lo" {print $1; exit}')
+  if [ -n "$con" ]; then
+    nmcli con mod "$con" ipv4.dns "$JOIN_DNS" ipv4.ignore-auto-dns yes >>"$join_log" 2>&1
+    timeout 60 nmcli con up "$con" >>"$join_log" 2>&1 || true
+  else
+    echo "no active connection to carry the realm DNS" >>"$join_log"
+  fi
+fi
+
+# The client itself is its own file, so neither branch competes with the driver
+# for the 4095 B a tmpfiles argument can carry.
+if timeout 300 /bin/bash /var/lib/deskos-qa/join-client.sh >>"$join_log" 2>&1; then
   ok=yes
 fi
-# sssd can still be activating when the installer returns; the session must not
-# call a join failed because it looked a second too early.
+"""
+
+JOIN_TAIL = """
+# A failed join must explain itself even when no session ever starts: the unit's
+# output goes to the serial console.
+if [ "$ok" != yes ]; then
+  echo "---- join failed; the last lines of $join_log"
+  tail -40 "$join_log"
+fi
+
+# sssd can still be activating when the client installer returns.
 for _ in $(seq 1 30); do
   [ "$(systemctl is-active sssd 2>/dev/null || true)" = active ] && break
   sleep 2
 done
+export JOIN_OK="$ok"
+
+# The status is its own file: with the DNS answers and the sssd log it does not
+# fit one tmpfiles argument together with the join itself.
+/bin/bash /var/lib/deskos-qa/join-status.sh
+"""
+
+JOIN_STATUS = """#!/bin/bash
+join_log=/var/lib/deskos-qa/join.log
 {
-  echo "join_ok=$ok"
+  echo "join_ok=${JOIN_OK:-no}"
+  echo "join_kind=$JOIN_KIND"
   echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"
-  echo "join_user=$(getent passwd "$IPA_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
-  echo "join_sssctl=$(sssctl user-checks "$IPA_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_user=$(getent passwd "$JOIN_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
+  echo "join_sssctl=$(sssctl user-checks "$JOIN_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
   echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
-  join_home=$(getent passwd "$IPA_USER" | cut -d: -f6)
+  echo "join_resolv=$(grep -E '^nameserver|^search' /etc/resolv.conf 2>/dev/null | paste -sd, -)"
+  echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
+  echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
+  echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
+  echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
+  join_home=$(getent passwd "$JOIN_USER" | cut -d: -f6)
   echo "join_home=$join_home"
   if [ -n "$join_home" ] && [ -d "$join_home" ]; then
     echo "join_home_before=present"
@@ -322,16 +368,96 @@ done
 chmod 0644 /var/lib/deskos-qa/join.status
 """
 
+JOIN_AD = """#!/bin/bash
+set -u
+# A real AD join: discovery through DNS, realmd/adcli, sssd-ad. The POSIX
+# attributes live in the directory, so the Unix identity comes from the realm.
+#
+# realmd refuses a machine whose name is not a resolvable FQDN.
+ad_host="${JOIN_HOSTNAME:-deskos-qa.$REALM_DOMAIN}"
+hostnamectl set-hostname "$ad_host"
+if ! grep -qE "[[:space:]]$ad_host([[:space:]]|$)" /etc/hosts; then
+  printf '127.0.1.1 %s %s\n' "$ad_host" "${ad_host%%.*}" >> /etc/hosts
+fi
+realm discover "$REALM_DOMAIN"
+# Record what DNS answered. The realm's DNS is the source of truth for the DC's
+# address; overriding it with the published host breaks the join.
+echo "dc address: $(getent hosts "$REALM_SERVER" | awk '{print $1}' | paste -sd, -)"
+echo "srv: $(dig +short SRV "_ldap._tcp.$REALM_DOMAIN" | paste -sd, -)"
+echo "a: $(dig +short A "$REALM_SERVER" | paste -sd, -)"
+printf '%s\n' "$JOIN_PASSWORD" | realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN" || exit 1
+# realmd leaves sssd with access_provider = ad and no rule, which denies every
+# account: the join succeeds, the user resolves, and pam_acct_mgmt says no.
+# `realm permit --all` is the documented way, and here it exits zero without
+# writing a rule, so the rule is set below instead. A real organization narrows
+# this to groups; the fixture admits the whole realm.
+realm permit --all || echo "realm permit exited $?"
+# realmd configures sssd but not the home policy nor oddjob.
+authselect select sssd with-mkhomedir --force || true
+systemctl enable --now oddjobd || true
+
+# sssd starts at boot, before this unit points the guest at the realm's DNS, so
+# it can come up already marked offline. Restart it with debug on, pin the
+# server (its own SRV discovery comes back empty here) and wait for the domain.
+awk -v want="[domain/$REALM_DOMAIN]" -v l1="debug_level = 9" -v l2="ad_server = $REALM_SERVER" \
+  '$0 == "access_provider = ad" { print "access_provider = permit"; next }
+   { print }
+   $0 == want { print l1; print l2 }' /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+  { chown root:root /etc/sssd/sssd.conf.new
+    chmod 0600 /etc/sssd/sssd.conf.new
+    mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; } || true
+systemctl restart sssd || true
+for _ in $(seq 1 25); do
+  sssctl domain-status "$REALM_DOMAIN" 2>/dev/null | grep -q 'Online status: Online' && break
+  sleep 2
+done
+exit 0
+"""
+
+JOIN_IPA = """#!/bin/bash
+set -u
+# FreeIPA without integrated DNS: the guest maps the server name to the host and
+# --force skips the checks that expect a resolvable name. --hostname gives the
+# guest a name inside the realm instead of the image's.
+if ! grep -qE "[[:space:]]${REALM_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
+  printf '10.0.2.2 %s\n' "$REALM_SERVER" >> /etc/hosts
+fi
+join_host="${JOIN_HOSTNAME:-deskos-qa.$REALM_DOMAIN}"
+ipa-client-install --unattended --force --hostname="$join_host" \
+    --domain="$REALM_DOMAIN" --realm="$REALM_NAME" \
+    --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
+    --mkhomedir --no-ntp --force-join || exit 1
+exit 0
+"""
+
+
+def join_script():
+    """The join driver: guard, realm DNS, the client, and the report."""
+    return JOIN_HEAD + JOIN_TAIL
+
+
+def join_client_script(kind="ipa"):
+    """The client for one realm.
+
+    Only the branch the guest will run is delivered: together they exceed the
+    4095 B a single tmpfiles argument can carry, and the harness refuses to
+    truncate a credential in silence.
+    """
+    return JOIN_AD if kind == "ad" else JOIN_IPA
+
 
 def join_environment(join):
     lines = [
-        ("IPA_DOMAIN", join["domain"]),
-        ("IPA_REALM", join["realm"]),
-        ("IPA_SERVER", join["server"]),
-        ("IPA_PRINCIPAL", join["principal"]),
-        ("IPA_PASSWORD", join["password"]),
-        ("IPA_USER", join["user"]),
+        ("JOIN_KIND", join.get("kind", "ipa")),
+        ("REALM_DOMAIN", join["domain"]),
+        ("REALM_NAME", join["realm"]),
+        ("REALM_SERVER", join["server"]),
+        ("JOIN_PRINCIPAL", join["principal"]),
+        ("JOIN_PASSWORD", join["password"]),
+        ("JOIN_USER", join["user"]),
     ]
+    if join.get("dns"):
+        lines.append(("JOIN_DNS", join["dns"]))
     return "".join(f"{key}={value}\n" for key, value in lines)
 
 
@@ -590,6 +716,30 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """
 
+WATCHDOG_SCRIPT = f"""#!/bin/bash
+# A boot that never reaches the session leaves the serial silent and the run
+# stops on a timeout with nothing to read. If no results appeared by the time
+# the timer fires, report what the machine has and power it off.
+if [ -s {RESULTS} ]; then
+  exit 0
+fi
+stty -F /dev/ttyS0 115200 2>/dev/null
+{{
+echo {MARK_BEGIN}
+echo "session_results=missing"
+echo "watchdog=yes"
+cat /var/lib/deskos-qa/join.status 2>/dev/null || echo "join_status=missing"
+echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+echo "gdm=$(systemctl show gdm.service -p ActiveState -p SubState -p Result --value 2>/dev/null | paste -sd/ -)"
+echo "join_unit=$(systemctl show deskos-qa-join.service -p ActiveState -p SubState -p Result -p ExecMainStatus --value 2>/dev/null | paste -sd/ -)"
+echo "network_online=$(systemctl show network-online.target -p ActiveState -p SubState --value 2>/dev/null | paste -sd/ -)"
+echo "target=$(systemctl is-active graphical.target 2>/dev/null || true)"
+echo {MARK_END}
+}} > /dev/ttyS0 2>&1
+systemctl --no-block poweroff
+"""
+
+
 REPORT_SESSION = f"""#!/bin/bash
 # Waits for the session results, then writes them and the journal to ttyS0.
 for i in $(seq 1 240); do test -s {RESULTS} && break; sleep 2; done
@@ -597,6 +747,13 @@ stty -F /dev/ttyS0 115200 2>/dev/null
 {{
 echo {MARK_BEGIN}
 test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
+if [ ! -s {RESULTS} ]; then
+  # No session reported: GDM may be sitting at the greeter because the login
+  # could not happen. Say what the join did, so the boot is not silent.
+  echo "--- join status (no session reported)"
+  cat {JOIN_STATUS_PATH} 2>/dev/null || echo "join_status=missing"
+  tail -40 /var/lib/deskos-qa/join.log 2>/dev/null
+fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
 echo "plymouth_theme=$(plymouth-set-default-theme)"
@@ -750,18 +907,27 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # is var_lib_t, and the unit runs as init_t, which may read it but not
             # execute it (an exec is an AVC denial and 203/EXEC).
             tmpfiles += [
-                f"f {JOIN_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_SCRIPT)}",
+                f"f {JOIN_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(join_script())}",
+                f"f {JOIN_CLIENT_SCRIPT_PATH} 0755 root root - "
+                f"{tmpfiles_arg(join_client_script(join.get('kind', 'ipa')))}",
+                f"f {JOIN_STATUS_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_STATUS)}",
                 f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
             ]
             creds["systemd.extra-unit.deskos-qa-join.service"] = (
                 "[Unit]\nDescription=Join the disposable FreeIPA realm (DeskOS QA)\n"
-                "Wants=network-online.target\nAfter=network-online.target\nBefore=gdm.service\n"
+                # Ordering against network-online.target is a trap: if that
+                # target is never reached, the join never starts, gdm waits for
+                # the join, and the machine sits at the splash with no timeout to
+                # trigger. Wait for the link inside the script instead, bounded.
+                "Wants=network.target\nAfter=network.target\nBefore=gdm.service\n"
                 f"ConditionPathExists={JOIN_ENV_PATH}\n\n"
-                "[Service]\nType=oneshot\nRemainAfterExit=yes\n"
+                # The join is Before=gdm.service: if it hangs, the greeter never
+                # starts and nothing reports. Bound it, so a hang becomes a
+                # failure with a log instead of a silent splash.
+                "[Service]\nType=oneshot\nRemainAfterExit=yes\nTimeoutStartSec=420\n"
                 f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart=/bin/bash {JOIN_SCRIPT_PATH}\n"
                 "StandardOutput=journal+console\nStandardError=journal+console\n"
             )
-    creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
         f"ConditionPathExists=!/etc/initrd-release\nAfter={target}\n\n"
@@ -773,10 +939,30 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
         "[Service]\nType=oneshot\nStandardOutput=journal+console\nStandardError=journal+console\n"
         "ExecStart=/bin/bash /var/lib/deskos-qa/report.sh\n"
     )
+    # The watchdog only fires when the report never ran: the report powers the
+    # guest off, so a live guest at 11 minutes means a boot that stalled.
+    creds["systemd.extra-unit.deskos-qa-watchdog.service"] = (
+        "[Unit]\nDescription=DeskOS QA watchdog for a boot that never reported\n"
+        "ConditionPathExists=!/etc/initrd-release\n\n"
+        "[Service]\nType=oneshot\nStandardOutput=journal+console\nStandardError=journal+console\n"
+        f"ExecStart=/bin/bash {WATCHDOG_SCRIPT_PATH}\n"
+    )
+    creds["systemd.extra-unit.deskos-qa-watchdog.timer"] = (
+        "[Unit]\nDescription=DeskOS QA watchdog timer\n\n"
+        "[Timer]\nOnBootSec=11min\nUnit=deskos-qa-watchdog.service\n\n"
+        "[Install]\nWantedBy=timers.target\n"
+    )
+    creds["systemd.unit-dropin.timers.target"] = (
+        "[Unit]\nWants=deskos-qa-watchdog.timer\n"
+    )
+    tmpfiles.append(
+        f"f {WATCHDOG_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(WATCHDOG_SCRIPT)}")
+
     wants = "deskos-qa-report.service"
     if join:
         wants += " deskos-qa-join.service"
     creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
+    creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     return creds
 
 
@@ -1158,10 +1344,14 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
     if gdm_user:
         # The session itself must belong to the directory, not to a local
         # stand-in: this is what PAM, the greeter and the home policy meet.
-        check("the session is the directory user", values.get("session_user") == gdm_user,
-              f"session_user={values.get('session_user')}")
-        # The uid the guest resolved for that user, not one the harness assumes.
+        # Compare against the name the guest resolved: with AD, sssd may report
+        # the short name while the autologin was configured with the qualified
+        # one, and both are the same account.
         resolved = values.get("join_user") or ""
+        expected = resolved.split(":")[0] or gdm_user
+        check("the session is the directory user", values.get("session_user") == expected,
+              f"session_user={values.get('session_user')} expected={expected}")
+        # The uid the guest resolved for that user, not one the harness assumes.
         uid = resolved.split(":")[1] if ":" in resolved else None
         owner = (values.get("home_owner") or "").split(":")[0]
         check("the login created the home for that user",
@@ -1409,6 +1599,10 @@ def main():
     p.add_argument("--join-user", help="directory user the join must make resolvable")
     p.add_argument("--join-gdm", action="store_true",
                    help="log in at GDM as the directory user and check that session")
+    p.add_argument("--join-kind", choices=("ipa", "ad"), default="ipa",
+                   help="which client to run: ipa-client-install or realm/adcli")
+    p.add_argument("--join-dns",
+                   help="DNS server the guest must use before the join (the AD case)")
     p.add_argument("--seed-skel", action="store_true",
                    help="copy /etc/skel into the test user's HOME, as useradd -m would, and check the generated seeds")
     p.add_argument("--app", help="open this command in the session so a captured frame shows the themed widgets")
@@ -1427,12 +1621,14 @@ def main():
             if "\n" in value or "\r" in value:
                 p.error("a --join value contains a newline")
         join = {
+            "kind": a.join_kind,
             "domain": a.join_domain,
             "realm": a.join_realm,
             "server": a.join_server,
             "principal": a.join_principal,
             "password": a.join_password,
             "user": a.join_user,
+            "dns": a.join_dns,
         }
     if a.join_gdm and not join:
         p.error("--join-gdm needs the --join-* values")
