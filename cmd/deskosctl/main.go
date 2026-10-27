@@ -30,7 +30,7 @@ Usage:
   deskosctl plan [--no-core] ROOT... --workstation NAME [--format text|json]
   deskosctl render [--no-core] ROOT... --workstation NAME --backend containerfile --output DIR
   deskosctl sbom [--no-core] ROOT... --workstation NAME [--output FILE]
-  deskosctl track [--fresh] [--token TOKEN] ROOT...
+  deskosctl track [--fresh] [--write] [--rules FILE] [--token TOKEN] ROOT...
   deskosctl core export DIR
   deskosctl version
 
