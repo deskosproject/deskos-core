@@ -388,8 +388,10 @@ echo "a: $(dig +short A "$REALM_SERVER" | paste -sd, -)"
 printf '%s\n' "$JOIN_PASSWORD" | realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN" || exit 1
 # realmd leaves sssd with access_provider = ad and no rule, which denies every
 # account: the join succeeds, the user resolves, and pam_acct_mgmt says no.
-# A real organization narrows this to groups; the fixture admits the realm.
-realm permit --all || exit 1
+# `realm permit --all` is the documented way, and here it exits zero without
+# writing a rule, so the rule is set below instead. A real organization narrows
+# this to groups; the fixture admits the whole realm.
+realm permit --all || echo "realm permit exited $?"
 # realmd configures sssd but not the home policy nor oddjob.
 authselect select sssd with-mkhomedir --force || true
 systemctl enable --now oddjobd || true
@@ -398,7 +400,9 @@ systemctl enable --now oddjobd || true
 # it can come up already marked offline. Restart it with debug on, pin the
 # server (its own SRV discovery comes back empty here) and wait for the domain.
 awk -v want="[domain/$REALM_DOMAIN]" -v l1="debug_level = 9" -v l2="ad_server = $REALM_SERVER" \
-  '{ print } $0 == want { print l1; print l2 }' /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+  '$0 == "access_provider = ad" { print "access_provider = permit"; next }
+   { print }
+   $0 == want { print l1; print l2 }' /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
   { chown root:root /etc/sssd/sssd.conf.new
     chmod 0600 /etc/sssd/sssd.conf.new
     mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; } || true
