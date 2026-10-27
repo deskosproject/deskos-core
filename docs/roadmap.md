@@ -172,6 +172,34 @@ Details in
 - ~~APT sources as their own kind~~ done: `AptRepository` renders a signed
   deb822 source and its keyring, and a `PackageSet` names it through
   `aptRepositories` (ADR 0015).
+- **Enterprise use cases: what we claim and how we say it (proposed
+  2026-10-27, separate spike).** The documentation is where adoption is won or
+  lost, and the risk is a sentence that reads "DeskOS comes with an EDR". It does
+  not. The pipeline proves that an organization's software fits a DeskOS baseline
+  and that the machine stays healthy; it does not ship that software and it is
+  not how a fleet is deployed.
+  - **Never "DeskOS comes with X".** DeskOS composes a declarative baseline; the
+    organization declares its software in its own layer. EDR, antivirus, VPN and
+    proxy settings are organization software, never Core (invariant 7).
+  - **What a check may claim:** the software installs from the declared source,
+    the machine boots, the session works, and an update leaves it working. Not
+    vendor support, not a licence, not the production deployment method.
+  - **How it is deployed in real life:** configuration management — typically
+    Ansible — and the software's own console, outside these repositories. The
+    same is true of enrolment: a real machine receives a per-host credential at
+    provisioning time. Nothing about that belongs in an ISO.
+  - **No secrets in the ISO, and no per-laptop ISO.** A shared credential baked
+    into an image compromises every machine that ever uses it; an ISO prepared
+    per laptop is not a fleet artifact. Enrolment and configuration are runtime
+    acts, and the artifact carries neither.
+  - **Deliverables:** `docs/use-cases/` pages for identity, EDR, antivirus, VPN
+    and the corporate proxy, each split into "what DeskOS does", "what it does
+    not" and "how it is validated"; an FAQ for "does DeskOS ship an EDR?"; and a
+    pointer from every claim to a run or a page. A claim with neither is not
+    made.
+  - **Positioning:** a fleet artifact proves what a machine can do after it boots,
+    and proving it in CI is the part few projects do. Compare on method and
+    evidence, never on the reputation of another project.
 - A decision by the example organization on the `virt-manager` gap.
 - **Example AlmaLinux and Fedora platforms:** their image builds move to the
   weekly `examples-weekly.yml` check, with no publication. This is not a support
