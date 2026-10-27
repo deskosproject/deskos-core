@@ -22,14 +22,19 @@ permissions:
 
 concurrency:
   group: identity-freeipa
-  cancel-in-progress: false
+  # A newer push supersedes the run in flight: these are nightly checks,
+  # not gates, and a stale 20-minute run behind a fix is wasted time.
+  cancel-in-progress: true
 
 env:
-  WORK: /mnt/deskos-work
+  # A machine joins one realm. The disk keeps krb5.conf, sssd.conf, the machine
+  # keytab and authselect state, so a disk joined to FreeIPA cannot be re-joined
+  # to AD: each check owns its workspace, image tag and disk.
+  WORK: /mnt/deskos-ipa-work
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
   FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
   WS: identity-client-centos-stream-10
-  IMAGE: localhost/identity-client-centos-stream-10:ci
+  IMAGE: localhost/identity-client-ipa-centos-stream-10:ci
 
 jobs:
   identity:
