@@ -1,9 +1,11 @@
 # Promotion of one tested digest
 
-**Status: automatic, 2026-10-28.** The gate publishes weekly, by itself, and
-`promotion.yml` now runs when that gate succeeds: it verifies the digest and its
-evidence, stores an approval record and moves `:stable` and the ISO channel by
-digest. A dispatch still promotes a digest built earlier.
+**Status: implemented 2026-10-28; the first automatic move is the next gate
+run.** The gate publishes weekly, by itself, and `promotion.yml` now runs when
+that gate succeeds: it verifies the digest and its evidence, stores an approval
+record and moves `:stable` and the ISO channel by digest. A dispatch still
+promotes a digest built earlier. Until that run, the moves exercised by hand on
+2026-10-26 remain the only ones with a record.
 
 The trigger changed because a cadence that waits for a person is not a cadence.
 What did not change is the record: every move names a digest, its evidence and
