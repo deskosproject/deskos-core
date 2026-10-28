@@ -115,9 +115,10 @@ default; the weekly run cannot silently weaken it.
 
 `.github/workflows/iso.yml` is a workflow of its own: the gate calls it with the
 digest it just published, and a dispatch can do the same for any published
-digest. It is separate on purpose — an image that passed its gate is published
-and evidenced whether or not its installer built, and a retry costs one ISO build
-instead of a rebuild of the image.
+digest. It is separate on purpose — an image that passed its gate is published,
+evidenced and promoted whether or not its installer built, and a retry costs one
+ISO build instead of a rebuild of the image. The promotion reads the `publish`
+job's conclusion, not the run's.
 
 It verifies the **image's** keyless signature before building, then signs the
 installer with **its own** workflow identity:

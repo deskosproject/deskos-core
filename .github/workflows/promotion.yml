@@ -8,6 +8,11 @@ name: promotion
 # It runs by itself when the gate publishes, and on dispatch for a digest that
 # was built earlier. The approval is still recorded, but nobody has to remember
 # to press it: a cadence that depends on a person is not a cadence.
+#
+# An installer that failed is not an image that failed: the promotion waits for
+# the `publish` job (the image's gate, signature and evidence), not for the whole
+# workflow. A red installer leaves the ISO channel where it was, and the installer
+# follows whenever it succeeds.
 on:
   workflow_run:
     workflows: ["supply-chain"]
@@ -42,6 +47,8 @@ on:
 
 permissions:
   contents: read
+  # Read the triggering run's jobs: the promotion is gated on the publish job.
+  actions: read
 
 concurrency:
   group: promotion
@@ -53,9 +60,7 @@ env:
 
 jobs:
   promote:
-    if: >
-      github.ref == 'refs/heads/main' &&
-      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: evidence-write
     timeout-minutes: 30
@@ -64,10 +69,12 @@ jobs:
 
       - name: Check the request
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DIGEST_INPUT: ${{ inputs.digest }}
           CONFIRM: ${{ inputs.confirm }}
           REASON: ${{ inputs.reason }}
           EVENT: ${{ github.event_name }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           station="${{ inputs.workstation }}"
@@ -76,7 +83,20 @@ jobs:
           if [ "$EVENT" = "workflow_run" ]; then
             # The gate published this run; the digest is read from :candidate and
             # the reason names the run that produced it.
-            REASON="automatic: the gate passed and published on main (run ${{ github.event.workflow_run.id }})"
+            #
+            # The gate is the `publish` job, not the whole run: the installer is
+            # its own workflow now, and its failure must not hold back an image
+            # that was scanned, booted and signed. Every publish leg has to be
+            # green, and at least one has to exist.
+            counts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN/jobs?per_page=100" --paginate \
+              --jq '[.jobs[] | select(.name | startswith("publish ("))] | "\(length) \(map(select(.conclusion != "success")) | length)"')"
+            read -r legs bad <<<"$counts"
+            if [ "${legs:-0}" -lt 1 ] || [ "${bad:-1}" -gt 0 ]; then
+              echo "the gate did not publish in run $TRIGGER_RUN ($legs legs, $bad not successful); nothing to promote"
+              echo "SKIP=yes" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            REASON="automatic: the gate passed and published on main (run $TRIGGER_RUN)"
             DIGEST_INPUT=""
             approve="automatic (gate)"
           else
