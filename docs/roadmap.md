@@ -320,7 +320,7 @@ firmware trusts every link from the ESP to the kernel:
 ### Test organization (proposed 2026-10-26)
 
 QA stays next to what it tests for now: compiler determinism in Core, the built
-image in DayTwo, Ubuntu in its own repository. A separate `deskos-qa`
+image in the repository that builds it, Ubuntu in its own repository. A separate `deskos-qa`
 repository starts when a nightly suite has to consume published digests from
 more than two repositories. It then consumes digests and never builds, is
 triggered by `workflow_run` or `repository_dispatch`, holds read-only pull
@@ -526,8 +526,8 @@ evidence in its row, and not before.
 | P0-05 | Durable evidence, keyed by digest | **closed** | `evidence.deskos.org` serves the index and the objects of a published digest, and `promotion.yml` refuses a digest whose evidence does not verify. See [evidence-retention.md](design/evidence-retention.md) |
 | P0-06 | Build once, promote the same digest, with a recorded approval | **closes with the first automatic move** | `promotion.yml` runs on the gate's success, verifies signature and evidence, writes the approval (`automatic (gate)`, with the run) and moves `:stable` and the ISO channel by digest. Until that record exists, the two moves of 2026-10-26 are the only ones with one. See [promotion.md](design/promotion.md) |
 | P1-02 | The example policy, and the support and security entry points | **closed**, 2026-10-28 | [example-platforms.md](example-platforms.md) says what is an example and what is published; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points, and the private reporting form is enabled on the repository |
-| P1-06 | Field validation on a real machine: login, lock, logout with Wi-Fi off, offline Flatpak, the favorite | **closed** | DayTwo `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…` |
-| P1-07 | Hardware behaviour on a real machine: suspend, Wi-Fi and Bluetooth, audio, dock, TPM/LUKS, thermals | **not a Core item**: the evidence belongs to the organization that owns the machine | DayTwo `docs/hardware-validation.md` writes `hardware-report-<timestamp>/` and keeps the model, the serial and the screenshots private, in a private repository. Core states the scope — one model, best effort, never a compatibility claim — and never the identifiers |
+| P1-06 | Field validation on a real machine: login, lock, logout with Wi-Fi off, offline Flatpak, the favorite | **closed** | the organization's `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…` |
+| P1-07 | Hardware behaviour on a real machine: suspend, Wi-Fi and Bluetooth, audio, dock, TPM/LUKS, thermals | **not a Core item**: the evidence belongs to the organization that owns the machine | the organization's `docs/hardware-validation.md` writes `hardware-report-<timestamp>/` and keeps the model, the serial and the screenshots private, in a private repository. Core states the scope — one model, best effort, never a compatibility claim — and never the identifiers |
 
 P1-01, P1-03, P1-04 and P1-05 are not defined in this repository, so they are
 neither carried as open nor closed as done. Define them here or drop the

@@ -65,6 +65,10 @@ review comments. Write in English even when the maintainer writes in another
 language, and translate text you touch rather than adding more of it in
 another language.
 
+Do not name a downstream organization in this repository. Write "a downstream
+organization" or "the organization": its repositories, machines, records and
+people are its own, and Core does not advertise them.
+
 ## Commits and pull requests
 
 Use [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
