@@ -111,6 +111,17 @@ A scheduled run has no dispatch inputs, so the gate uses the explicit
 `FAIL_ON` fallback of `critical`. That is the same baseline as a dispatch's
 default; the weekly run cannot silently weaken it.
 
+### The scheduler
+
+GitHub's scheduler is not a clock. On 2026-10-28 this repository's scheduled runs
+started about six hours after their cron — the daily identity checks at 10:39 and
+10:49 for crons at 04:23 and 04:47 — and hourly ticks were dropped: the mirror
+produced two runs in six hours. A weekly gate whose tick is dropped would be a
+week with no release and nobody noticing, so the cadence does not trust one tick:
+`release-watchdog.yml` runs daily, reads the age of `:stable` from the public
+registry and dispatches the gate with `publish=true` when it is more than eight
+days old. A missed tick becomes a delay of a day, not a missed release.
+
 ### Freezing publication
 
 Publication stops from the repository settings: set the variable

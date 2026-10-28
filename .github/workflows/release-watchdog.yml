@@ -1,0 +1,62 @@
+name: release-watchdog
+
+# GitHub's scheduler runs late here and drops ticks: on 2026-10-28 the daily
+# identity checks started about six hours after their cron, and the hourly mirror
+# produced two runs in six hours. A weekly gate whose tick is dropped would mean a
+# week with no release and nobody noticing.
+#
+# This asks one question every day: is `:stable` more than eight days old? If it
+# is, it dispatches the gate, which is the same publish path a schedule uses.
+on:
+  schedule:
+    # Daily, after the weekly tick would have run and finished.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Dispatch the gate.
+  actions: write
+
+concurrency:
+  group: release-watchdog
+  cancel-in-progress: false
+
+env:
+  REPO: quay.io/deskos/deskos-core-centos-stream-10
+  # The weekly cadence plus a day of slack: a gate run takes about two hours.
+  MAX_AGE_DAYS: 8
+
+jobs:
+  check:
+    if: vars.PUBLISH_FREEZE == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Is the weekly release overdue?
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          tag="$(curl -fsS "https://quay.io/api/v1/repository/${REPO#quay.io/}/tag/?specificTag=stable")"
+          updated="$(jq -r '.tags[0].last_modified // empty' <<<"$tag")"
+          test -n "$updated" || { echo "::error::cannot read :stable from quay"; exit 1; }
+
+          age_days=$(( ( $(date -u +%s) - $(date -u -d "$updated" +%s) ) / 86400 ))
+          echo ":stable was last moved $updated (${age_days} day(s) ago)"
+          if [ "$age_days" -lt "$MAX_AGE_DAYS" ]; then
+            echo "fresh enough: the weekly gate is keeping up"
+            exit 0
+          fi
+
+          # Do not stack runs: a queued or running gate will move :stable itself.
+          running="$(gh run list --workflow supply-chain.yml --status in_progress \
+            --status queued --json databaseId --jq 'length')"
+          if [ "$running" -gt 0 ]; then
+            echo "a gate run is already queued or running; nothing to add"
+            exit 0
+          fi
+
+          gh workflow run supply-chain.yml --ref main -f publish=true -f fail-on=critical
+          echo "dispatched the gate: :stable was ${age_days} days old, over ${MAX_AGE_DAYS}"
