@@ -19,8 +19,8 @@ Two platforms publish an image that the gate built, scanned and booted:
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` |
 
 Each has `:latest` (the newest image that passed the boot and session checks) and
-a `:<commit>` tag, moved together by a manual `publish=true` dispatch. For
-anything beyond a lab, **pin the digest you verified**:
+a `:<commit>` tag, moved together by the weekly gate (or a `publish=true`
+dispatch). For anything beyond a lab, **pin the digest you verified**:
 [architecture.md](architecture.md#validation-status) carries the digest and the
 run that published it.
 

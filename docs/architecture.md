@@ -365,19 +365,23 @@ account the upstream container image ships suppressing the wizard — is in
   consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
   disk under nested KVM on the entitled factory VM (example wallpaper). Not in
   CI; no full E2E.
-- **Published, signed and durable evidence (verified 2026-10-26).** The old
+- **Published, signed and durable evidence (verified 2026-10-28).** The old
   single repository (`quay.io/deskos/deskos-core`, run `37162282876`, commit
   `8ab0cc9`) is withdrawn and replaced by one repository per shipped platform,
-  published by the gate's `publish=true` dispatch (run `40407632381`, commit
-  `2936009`):
-  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:649aff75…`, with
-  `:latest`, `:stable` and the commit tag at the same digest (the next gate run
-  also publishes `:candidate`, the digest a promotion checks). `:latest` is the
-  fast lane, not a second stable. `cosign verify` with the
-  workflow issuer and this repository's identity passes, with the SBOM,
-  accepted-exception and effective-exception attestations bound to that
-  digest. The 16 evidence objects for the digest were fetched back and
-  verified from `evidence.deskos.org`. RHEL-derived images are never published
+  published by the weekly gate (run `40716569103`, commit `2ef9f75`) and promoted
+  automatically (run `40723460708`):
+  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:871e59cc…`, with
+  `:<commit>`, `:latest`, `:candidate` and `:stable` at the same digest;
+  `:candidate` is what a promotion checks, `:latest` is the fast lane and not a
+  second stable. `cosign verify` with the workflow issuer and this repository's
+  identity passes, with the SBOM, accepted-exception,
+  effective-exception and SLSA-provenance attestations bound to that digest. The
+  16 evidence objects for the digest were fetched back and verified from
+  `evidence.deskos.org`, and the approval record
+  (`approvals/deskos-core-centos-stream-10/stable/20261028T161205Z-871e59cc….json`)
+  names the gate run. The installer for the same digest is
+  `quay.io/deskos/deskos-core-centos-stream-10-iso`, signed and mirrored to
+  `download.deskos.org`. RHEL-derived images are never published
   (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
   Fedora are example platforms and publish nothing.
 - **Example AlmaLinux and Fedora platforms.** Their self-contained roots compose and
@@ -798,17 +802,20 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
 - **Published today: the container image, per shipped platform.** It goes to one
   repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`), and the
-  digests the last dispatch published, with the run that
-  produced them, are under
-  [Validation status](#validation-status) on this page. Publishing is manual: the
-  `supply-chain` workflow (with `publish=true`) builds, scans, boots, then pushes
-  and signs `:<commit>`, `:latest` and `:candidate` by digest. `:stable` moves
-  only through `promotion.yml`, which records who promoted which digest and
-  why. It is not published on every green `main`; pin a digest in production.
+  digest serving `:stable`, with the run that
+  produced it, is under
+  [Validation status](#validation-status) on this page. The **weekly gate publishes by
+  itself**: `supply-chain` builds, scans, boots, then pushes and signs
+  `:<commit>`, `:latest` and `:candidate` by digest; `promotion.yml` runs on that
+  success, verifies the signature and the evidence, and moves `:stable` with a
+  recorded approval. A dispatch with `publish=true` does the same on demand. It is
+  still not published on every green `main`; pin a digest in production.
 - **A CentOS Stream 10 preview ISO** is published at
-  <https://download.deskos.org/>. It is built from a published image, not from
-  the current `main`, and it is a preview rather than a supported channel; the
-  checksum is published beside it. QCOW2 files and RHEL ISOs are not published:
+  <https://download.deskos.org/>. `iso.yml` builds it from the published digest,
+  verifies the image's keyless signature first, and publishes it as a signed OCI
+  artifact beside the image (`:candidate`, `sha256-<image digest>`, and `:stable`
+  once the image is stable); the download page carries its checksum. It is a
+  preview rather than a supported channel. QCOW2 files and RHEL ISOs are not published:
   RHEL stays private, and the pinned example roots are built locally for testing
   (see [example-platforms.md](example-platforms.md)). The CI builds a QCOW2 (the EL
   platforms) only as test input; an Ubuntu disk is written with

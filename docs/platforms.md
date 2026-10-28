@@ -40,7 +40,7 @@ weekly example workflow. To build one locally or re-promote it, see
 ### CentOS Stream 10 — pull the image, then install
 
 The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as
-`:latest` and `:<commit>` by the gate's `publish=true` dispatch, with its digest
+`:latest` and `:<commit>` by the weekly gate, with its digest
 and the run in [architecture.md](architecture.md#validation-status). A preview
 ISO built from a published image is at <https://download.deskos.org/>; verify its
 checksum. Or make a QCOW2 (or an Anaconda ISO) from the image with

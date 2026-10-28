@@ -24,31 +24,34 @@ maintainer approval").
    `artifacts.yml` and path-filtered `vm-bootcheck.yml` run without publish
    secrets on GitHub-hosted runners. An organization's `ci.yml` is different: it runs on
    the **self-hosted, entitled** runner for pull requests (see gaps).
-2. **`main` → privileged build.** Core publishes only on a `publish=true`
-   dispatch from `main`; an organization's build job is `main`-only. Secrets are staged
-   into files, not passed in `argv`.
+2. **`main` → privileged build.** Core publishes only from `main`, by the weekly
+   gate or a `publish=true` dispatch, under branch protection and the `validate`
+   check; an organization's build job is `main`-only. Secrets are staged into
+   files, not passed in `argv`.
 3. **Build host → image.** The Containerfile is generated from the Plan; no
    resource carries a script, command or post-install hook.
 4. **Image → machine.** A machine follows its image reference; `deskos update`
    stages a new deployment and a person reboots.
 5. **Registry/bucket → consumer.** Pull credentials, signatures and checksums;
    the installer carries a read-only registry credential as a secret file.
-6. **Human → merge/publish.** Agents propose; a human reviews and merges; a
-   human dispatches publication. No agent self-merges (AGENTS.md).
+6. **Human → merge/publish.** Agents propose; a human reviews and merges. The
+   weekly gate then publishes by itself, and promotion moves the digest its run
+   published after verifying signature and evidence; a dispatch still publishes
+   or promotes on demand. No agent self-merges (AGENTS.md).
 
 ## Controls
 
 | Control | State | Evidence |
 |---|---|---|
 | Pull-request checks get no publish secrets | verified in Core workflows | triggers and `permissions` in `.github/workflows/` |
-| Publish is dispatch-only and `main`-only | verified | `supply-chain.yml` (`publish=true`), an organization's `build-rhel-10.yml` |
+| Publish is `main`-only and runs the reviewed workflow | verified | `supply-chain.yml` triggers (`schedule`, `workflow_dispatch`) and its `refs/heads/main` guards; an organization's `build-rhel-10.yml` |
 | Workflow tokens default to read | verified in the workflow files | `permissions: contents: read`; `id-token: write` only where keyless signing runs |
 | Third-party actions pinned by commit | verified for cosign and Renovate | `uses: …@<40-char sha> # version` |
 | First-party actions pinned by commit | Core pinned; an organization still uses tags | `actions/checkout@<sha> # v7` and the same for setup/upload/download in Core; an organization is the remaining gap |
 | Tools downloaded with a checksum or a digest | verified where recorded | BIB by digest; Syft/Grype installer commit + release checksums; cosign checksums |
 | Signing | Core keyless OIDC with manual verification and no enforcement; an organization's key outside the repo, no transparency log, enforcing on update | `supply-chain.yml`, an organization's `docs/supply-chain.md`, [authenticity](design/authenticity.md) |
-| Publishing needs a human dispatch | verified | no schedule can set `publish=true` |
-| A second human approval before publish | **not configured** | Core dispatch is one person; an organization's environment has no reviewers |
+| Automatic publication is bounded | verified 2026-10-28 | the schedule publishes, but `promotion.yml` moves only the digest its triggering run published (`run_id` in the evidence), after the keyless signature and every evidence object verify, and records `automatic (gate)` with the run. See [promotion.md](design/promotion.md) |
+| A second human approval before publish | **decided: one person** (2026-10-28) | an environment approval on `evidence-write` would stop the weekly automatic promotion; the bounds above stand in for it. Revisit with a second maintainer or an SLA. See [promotion.md](design/promotion.md) |
 | Branch and tag protection | **unverified here** | GitHub setting, not in the repository |
 | Registry and GitHub audit-log retention | **unverified here** | external settings |
 | Evidence survives a re-run | improved: artifacts carry the run attempt | `docs/checks.md`; `-attempt-${github.run_attempt}` |
