@@ -209,33 +209,63 @@ jobs:
         with:
           name: release-assets
           path: release
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Tags and history: the notes list what changed since the previous tag.
+          fetch-depth: 0
+          fetch-tags: true
+
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           PRERELEASE: ${{ needs.tag.outputs.prerelease }}
         run: |
+          set -euo pipefail
           (cd release && sha256sum -c SHA256SUMS)
           flags=()
           if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+
+          # Short, and written to a file: a note is not a manual, and backticks
+          # inside --notes "..." are command substitution that empties the text
+          # (v0.18.0 shipped "is ; likewise is , is and is ."). The detail of
+          # migrating lives in docs/migrations.md and is linked, once.
+          notes="$(mktemp)"
+          previous="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+          if [ -n "$previous" ]; then
+            all="$(git log --no-merges --format='%s' "${previous}..${TAG}" \
+              | grep -E '^(feat|fix|perf)(\(|:|!)' | grep -v '^chore' || true)"
+            [ -n "$all" ] || all="$(git log --no-merges --format='%s' "${previous}..${TAG}" || true)"
+          else
+            all=""
+          fi
+          total="$(printf '%s\n' "$all" | grep -c . || true)"
+
+          # Five lines, features and fixes only: a release note is not a changelog
+          # and not a manual. The rest is one link away.
+          {
+            echo "deskosctl ${TAG} (builds an image) and deskos ${TAG} (runs on a machine), for linux/amd64, with the DeskOS resources."
+            echo "deskosctl is also published as a scanned, signed container at \`quay.io/deskos/deskosctl:${TAG}\`; verify the downloads with \`sha256sum -c SHA256SUMS\`."
+            echo
+            echo "### Changes"
+            echo
+            if [ "${total:-0}" -gt 0 ]; then
+              printf '%s\n' "$all" | head -5 | sed 's/^/- /'
+              if [ "$total" -gt 5 ]; then
+                echo
+                echo "and $((total-5)) more — [full list](https://github.com/${GITHUB_REPOSITORY}/compare/${previous}...${TAG})."
+              fi
+            else
+              echo "- first tagged release"
+            fi
+            echo
+            echo "Moving from an older release? [docs/migrations.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/migrations.md)."
+          } > "$notes"
+
           gh release create "$TAG" \
             release/deskosctl-"$TAG"-linux-amd64 release/deskos-"$TAG"-linux-amd64 \
             release/deskos-core-resources-"$TAG".tar.gz \
             release/deskosctl-linux-amd64 release/deskos-linux-amd64 release/deskos-core-resources.tar.gz release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" \
-            --notes "deskosctl ${TAG} (builds an image) and deskos ${TAG} (runs on a machine) for linux/amd64, the DeskOS resources, and deskosctl as a scanned, signed container at quay.io/deskos/deskosctl:${TAG}, built from ${GITHUB_SHA}. The version-less names track the latest release. Verify with: sha256sum -c SHA256SUMS
-
-          **If you pinned the Ubuntu platform, read this.** Ubuntu 26.04 is not built, booted or published by this repository any more: it lives in \`deskosproject/deskos-ubuntu\`, on \`deskosproject/deskos-ubuntu-bootc\` (ADR 0020), and whatever pointed at \`quay.io/deskos/deskos-core-ubuntu-2604\` now points there. Nothing else about Core changes: it still composes and renders a Debian-family workstation, on a platform an organization declares.
-
-          **If you declare your own \`Platform\` resource, read this before bumping.** A platform now says whether its base can fetch a verified artifact: \`downloads.baseFetches\`, and \`downloads.package\` when the base cannot. A plan that downloads anything — a \`BinaryArtifact\` or an \`RpmFile\` — on a platform that declares nothing fails composition with the platform named, instead of failing minutes into a build with \`curl: not found\` (ADR 0019). The platforms this repository ships declare it, so a workstation built on one needs no change. The same release bounds the build's own download: it retries a transient failure, gives up on one that never answers, and creates the destination directory of a downloaded binary by resolving \`/usr/local\` the way the platform image defines it.
-
-          **If you declare your own \`BinaryArtifact/deskos\`, read this too.** Core's foundation declares the runtime as of v0.13.0, so an image that also declares it fails composition with \`duplicate resource BinaryArtifact/deskos\`. Remove your declaration and let the foundation carry it: two files cannot define one key and composition has no removal (ADR 0003), so keeping your own would mean giving up the foundation. The version an image gets is the one Core pins.
-
-          **Coming from v0.12 or earlier.** **If you run the commands in this repository's docs, or follow one of its published images, read this before bumping.** The names now spell each platform the way its resource does, and the examples lost a `core-` prefix that read as the shipped reference's:
-
-          - `deskosctl render --workstation deskos-core-centos10` is `--workstation deskos-core-centos-stream-10`; likewise `-almalinux10` is `-almalinux-10`, `-fedora44` is `-fedora-44` and `-ubuntu2604` is `-ubuntu-2604`.
-          - `examples/core-<platform>/` is `examples/<platform>/`, the workstation inside is `example-<platform>`, and the Ubuntu example that adds an organization's own signed package source is `example-ubuntu-2604-org-packages`.
-          - The published image repositories follow the workstation names: `quay.io/deskos/deskos-core-centos10` is now `quay.io/deskos/deskos-core-centos-stream-10`, and the same for `-almalinux-10` and `-ubuntu-2604`. The old repositories keep the digests already published in them and are not deleted, but **they stop receiving new images**: a machine whose reference points at one of them would stop updating until its reference is changed, which is a deliberate change on the machine and not something an update does by itself.
-
-          **Coming from v0.11 or earlier**, DeskOS's GNOME defaults moved to the \`deskos-gnome\` profile, which a workstation now selects (ADR 0016), and the dock and every extension are decided by UUID in \`shell.extensions\` rather than by \`dock.enabled\` (ADR 0017). A workstation that adds \`deskos-gnome\` keeps what it had; one that does not stops inheriting the session lock, the idle timeout and the software-update policy. Ubuntu workstations keep their vendor's desktop and select neither." \
+            --notes-file "$notes" \
             "${flags[@]}"
