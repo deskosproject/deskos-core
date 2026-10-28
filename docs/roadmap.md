@@ -529,7 +529,7 @@ decision is recorded; "open" means the gap is named, not that it is forgotten.
 | P0-08 | Make upstream-input changes deliberate and verifiable | **closed** | the input inventory in [supply-chain.md](supply-chain.md#inputs-and-who-moves-them) with owner, trigger and check per input; resolver and checksum tests; ADR 0019 and ADR 0021 for download capability and pinned extensions; the base re-pin and the exception re-review of 2026-10-28 are worked examples |
 | P1-01 | Define the public compatibility contract | **closed** | [compatibility.md](compatibility.md): surfaces, versioning and migration, a fixture matrix, beta/1.0 criteria and explicit non-promises |
 | P1-02 | Bound platform support, adoption and retirement | **closed** | [platforms.md](platforms.md) is the single matrix with security maintenance, upgrade paths and retirement; [example-platforms.md](example-platforms.md) draws the example boundary; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points |
-| P1-03 | Complete one public organizational adoption journey | **open** | the example's README is a description and a status line, not the journey the item asks for: compiler, validate, customize, inspect the Plan and SBOM, build, install, first user, update, recover |
+| P1-03 | Complete one public organizational adoption journey | **closed, one residual** | `examples/organization-and-role/WALKTHROUGH.md`: one pinned exercise from compiler to a booted UEFI VM, with the pins, prerequisites, Plan and SBOM, trust versus lab images, update source, and what it exposed. The residual is named in Open work: no reader from outside the project has followed it |
 | P1-04 | Correct current guidance and make recovery discoverable | **closed** | [recovery.md](recovery.md) and [troubleshooting.md](troubleshooting.md) are symptom → check → remedy; the stale AppIndicator and Ubuntu-era claims were corrected, not restated |
 | P1-05 | Make existing diagnostics useful to outside authors | **closed** | [diagnostics.md](diagnostics.md): resource and composition failures, download and build inputs, runtime evidence, and what is deliberately not a diagnostic |
 | P1-06 | Test the workstation behaviour a vendor update can break | **closed** | the organization's `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…`: interactive login, lock, logout with Wi-Fi off, offline Flatpak and reconnect, the favorite |
@@ -543,14 +543,9 @@ nobody can look up is not.
 
 ## Open work
 
-- **P0-04, the incident rehearsal.** The tabletop in
-  [threat-model.md](threat-model.md) has not been run. It needs a scenario, a
-  date, participants and the decisions, recorded where the exercise lives — a
-  walk-through without those is not evidence.
-- **P1-03, the adoption journey.** Write the one-pinned-reference exercise in
-  `examples/organization-and-role/`: compiler, validate, customize, inspect the
-  Plan and SBOM, build, install, first user, update, recover, and the gaps it
-  finds.
+- **An outside reader on the walkthrough.** P1-03 is closed on the document and
+  the run behind it; the part that cannot be manufactured from inside — a
+  stranger following it without asking — is unproven until one does.
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app or
   action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an

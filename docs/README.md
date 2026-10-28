@@ -70,6 +70,7 @@ They are few, and most confusion comes from two of them meaning more than one th
 
 ## Where the rest is
 
+- [Migrations](migrations.md): what to edit when moving from an older release.
 - [Support](support.md) and [Security](../SECURITY.md): where to ask, what is
   promised, and how to report a vulnerability privately.
 - [Checks](checks.md): what each workflow asserts, and which claims are still

@@ -9,7 +9,7 @@ Pinned versions used below:
 
 | Item | Pin |
 |---|---|
-| `deskosctl` | `v0.17.0`, sha256 `6aecc0fb381ed0ca4162e7ee9518cebdcaea2a85072b36e80fa7aa56f6ffe638` |
+| `deskosctl` | `v0.18.0`, sha256 `4fdfa82bc003b3f63624ceca0ba72d3dcfa0763f1f1314ff7c3edc1b2f464d57` |
 | ISO/QCOW2 builder | `quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b` |
 | Platform base | pinned in `resources/platforms/centos-stream-10.yaml`; the Plan records the digest |
 
