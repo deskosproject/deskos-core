@@ -327,6 +327,30 @@ credentials and no signing key, and writes evidence to the same digest-keyed
 bucket. Black-box tests move; unit and determinism tests stay with the code
 they cover.
 
+### Repository templates (proposed 2026-10-29)
+
+Two small repositories that show the model **without** the publication machinery,
+because most people who use DeskOS are not publishing an image to the world.
+
+- **An internal CentOS Stream 10 image.** One platform, one baseline profile, one
+  workstation, one workflow: `validate`, `render`, `podman build`, push to the
+  organization's registry. No evidence index, no promotion, no ISO, no signing —
+  and the template says so in its first line, because an image produced this way
+  carries no evidence and must not be published as the reference. It keeps the
+  part that cannot be given up: deterministic composition and the pin checks.
+- **An office RHEL 10 workstation.** One platform (the organization's entitled
+  RHEL), a baseline with what an office actually uses — fonts, browser, office
+  suite, printing, the organization's own CA, an update policy — and no developer
+  role: no virtualization stack, no container tooling, no IDE. The shape is the
+  one the organization's private RHEL repository already builds and installs,
+  reduced to an office. It stays private, signs with the organization's own key if
+  it signs at all, and is never published.
+
+Both are templates, not a second product: no new kinds, no escape hatches, and
+they call the released `deskosctl`. The acceptance is the same for each — someone
+who has never built a DeskOS image follows it, ends with a booted machine, and
+writes down where they got stuck.
+
 ## Milestone 4: workstation E2E
 
 - QEMU/KVM GNOME sessions tested through accessibility APIs, following
