@@ -95,6 +95,13 @@ or at build time, not while rendering.
 `.github/workflows/supply-chain.yml` runs on a weekly schedule and on
 `workflow_dispatch`. The weekly run publishes; a dispatch publishes only with
 `publish=true` on `main`, and without it is a dry look at a base bump.
+
+The installer is a separate workflow, `.github/workflows/iso.yml`, called after
+the gate publishes a digest and dispatchable for any published digest. It is
+separate on purpose: an image that passed its gate is published and evidenced
+whether or not its installer built, and a retry costs one ISO build instead of a
+rebuild of the image. The ISO channel follows the image channel for the same
+digest, whichever happens first.
 It builds one image per platform from a checkout — one matrix leg per publishable
 workstation reference, each with its own exceptions record and destination
 repository — and runs the steps above:
