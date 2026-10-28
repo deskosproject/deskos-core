@@ -274,7 +274,8 @@ The list of what a consumer needs — Plan, context, SBOM, provenance, test resu
 and authorization, with where each lives — is
 [the handoff contract](design/handoff.md). It says what is GitHub-specific and what
 is not, and names the gaps, including that the index and the approval record are
-unsigned.
+unsigned. An external policy engine (Conforma) was also run against a published
+digest: [what it read and what it wanted](design/conforma-probe.md).
 
 **Verify a digest.** Checking the signature is necessary but not sufficient:
 require the four attestation types, pin the issuer and the workflow

@@ -67,10 +67,12 @@ and the directory.
 - **No negative-case suite.** `tests/evidence/verify.py` and the promotion refuse
   missing or mismatched evidence, but there is no test that *proves* they refuse a
   tampered index, a wrong digest or an empty object.
-- **No independent policy evaluation yet.** Whether an external policy engine
-  (Conforma/`ec`, or an organization's own) can consume these predicates has not
-  been probed. That is the next step of this item, and no compatibility is claimed
-  before it runs.
+- **An external policy engine was probed once.** Conforma `ec` verified the
+  keyless signature through Rekor, found the SLSA v1 predicate and ran 155 checks;
+  the release policy set then failed on the shape of the evidence it expects
+  (Tekton build types, a PipelineRun attestation, CVE and SBOM attestations of
+  their own). The result is in [conforma-probe.md](conforma-probe.md); what it
+  would need is a policy for our build type, not a change to the compiler.
 
 ## What this contract is for
 
