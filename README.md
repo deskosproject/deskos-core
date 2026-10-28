@@ -192,6 +192,7 @@ flow, with the exact commands, is in
 | **Understand the design** | [**Architecture**](docs/architecture.md): the pipeline, the Plan, the backend, and the evidence behind the claims |
 | **Audit the supply chain** | [**Supply chain**](docs/supply-chain.md): SBOM, scan, exceptions, signing |
 | **Contribute** | [**Development**](docs/development.md): build `deskosctl`, run the tests, cut a release |
+| **Get support** | [**Support**](docs/support.md): where to ask and what is promised; [**Security**](SECURITY.md): how to report privately |
 | **Track** | [Roadmap](docs/roadmap.md) · [Research notes](docs/research-notes.md) (a dated archive) · [ADRs](docs/adr/README.md) |
 
 ## License
