@@ -130,7 +130,9 @@ no controller). There is no telemetry to prove who runs a canary.
   not a cadence, and the record does not need a button to be honest.
 - The ISO channel moves with the image: `promotion.yml` finds the ISO tagged
   `sha256-<image digest>`, verifies its signature and moves the ISO `:stable` to
-  it. A platform that published no ISO leaves the ISO channel alone.
+  it. A platform that published no ISO leaves the ISO channel alone. When the
+  installer appears after the promotion, `iso.yml` sees the image already stable
+  and tags the ISO `:stable` itself, so the order of the two does not matter.
 - **One person approves, deliberately (2026-10-28).** An environment approval on
   `evidence-write` would pause every weekly promotion for a human, which is the
   cadence this work set out to remove. What stands in for the second pair of

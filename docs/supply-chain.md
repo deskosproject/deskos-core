@@ -95,6 +95,13 @@ or at build time, not while rendering.
 `.github/workflows/supply-chain.yml` runs on a weekly schedule and on
 `workflow_dispatch`. The weekly run publishes; a dispatch publishes only with
 `publish=true` on `main`, and without it is a dry look at a base bump.
+
+The installer is a separate workflow, `.github/workflows/iso.yml`, called after
+the gate publishes a digest and dispatchable for any published digest. It is
+separate on purpose: an image that passed its gate is published and evidenced
+whether or not its installer built, and a retry costs one ISO build instead of a
+rebuild of the image. The ISO channel follows the image channel for the same
+digest, whichever happens first.
 It builds one image per platform from a checkout — one matrix leg per publishable
 workstation reference, each with its own exceptions record and destination
 repository — and runs the steps above:
@@ -342,6 +349,13 @@ It does not always work: CentOS Stream 10's `:stream10` served a manifest with t
 **same** config as the pin (same build, re-pushed), so re-pinning could not change
 anything there. That is the case where the risk goes on the record, with a reason,
 an owner and a review date — and not before.
+
+The check was run on 2026-10-28 against the manifest `:stream10` served then
+(`sha256:474b191a…`, 2026-10-26) with the pinned scan's database: it carries the
+same three Criticals the record accepts (`GO-2026-6604`, `GO-2026-6612`,
+`CVE-2026-114406`), so re-pinning would rename the risk, not remove it. The
+acceptance stands until the distribution rebuilds those Go binaries or the review
+date arrives, whichever is first; the weekly gate is what reports it.
 
 ## Promotion gate
 
