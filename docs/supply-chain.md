@@ -343,6 +343,13 @@ It does not always work: CentOS Stream 10's `:stream10` served a manifest with t
 anything there. That is the case where the risk goes on the record, with a reason,
 an owner and a review date — and not before.
 
+The check was run on 2026-10-28 against the manifest `:stream10` served then
+(`sha256:474b191a…`, 2026-10-26) with the pinned scan's database: it carries the
+same three Criticals the record accepts (`GO-2026-6604`, `GO-2026-6612`,
+`CVE-2026-114406`), so re-pinning would rename the risk, not remove it. The
+acceptance stands until the distribution rebuilds those Go binaries or the review
+date arrives, whichever is first; the weekly gate is what reports it.
+
 ## Promotion gate
 
 A digest moves forward only when, for that digest:
