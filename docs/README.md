@@ -67,3 +67,12 @@ They are few, and most confusion comes from two of them meaning more than one th
 | [VM harness](../tests/vm/README.md) | The boot, session and first-boot checks, and their transport limits |
 | [Roadmap](roadmap.md) · [Research notes](research-notes.md) | What is done, planned, and measured — the notes are a dated archive |
 | [ADRs](adr/README.md) | The decisions behind all of it |
+
+## Where the rest is
+
+- [Support](support.md) and [Security](../SECURITY.md): where to ask, what is
+  promised, and how to report a vulnerability privately.
+- [Checks](checks.md): what each workflow asserts, and which claims are still
+  measured by hand.
+- [Roadmap](roadmap.md): milestones, and the closeout of the P0/P1 items with
+  the evidence behind each.

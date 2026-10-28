@@ -92,6 +92,45 @@ jobs:
       FAIL_ON: ${{ inputs.fail-on || 'critical' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install oras before the build, not after it
+        # The ISO step needs oras. Downloading it there meant a typo in the
+        # archive name cost a two-hour build before failing (2026-10-28), so it
+        # is fetched, checksum-verified and installed here, in seconds.
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && matrix.disk == 'bib'
+        env:
+          ORAS_VERSION: v1.3.5
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
+          base="https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}"
+          curl -fsSL --retry 3 -o "$tmp/$tgz" "$base/$tgz"
+          curl -fsSL --retry 3 -o "$tmp/oras_checksums.txt" "$base/oras_${ORAS_VERSION#v}_checksums.txt"
+          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
+          tar -xzf "$tmp/$tgz" -C "$tmp" oras
+          sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
+          oras version
+          # And prove the exact push the ISO step will do — artifact type,
+          # annotation, layer media type, relative path — against a local OCI
+          # layout. oras refuses absolute file paths, and that cost an hour of
+          # build on 2026-10-28; here it costs a second.
+          zeros="$(printf '0%.0s' $(seq 1 64))"
+          d="$(mktemp -d)"
+          printf 'preflight' > "$d/install.iso"
+          ( cd "$d" && oras push --oci-layout "$d/preflight:v1" \
+              --artifact-type "application/vnd.deskos.installer.iso.v1" \
+              --annotation "org.deskos.image.digest=sha256:$zeros" \
+              "install.iso:application/x-iso9660-image" > /dev/null )
+          manifest="$(oras manifest fetch --oci-layout "$d/preflight:v1")"
+          [ "$(jq -r .artifactType <<<"$manifest")" = "application/vnd.deskos.installer.iso.v1" ] || {
+            echo "::error::the ISO artifact type does not survive the push"; exit 1; }
+          [ "$(jq -r '.layers[0].mediaType' <<<"$manifest")" = "application/x-iso9660-image" ] || {
+            echo "::error::the ISO layer media type does not survive the push"; exit 1; }
+          [ "$(jq -r '.annotations["org.deskos.image.digest"]' <<<"$manifest")" = "sha256:$zeros" ] || {
+            echo "::error::the image digest annotation does not survive the push"; exit 1; }
+          echo "oras push preflight ok"
+
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
@@ -473,7 +512,6 @@ jobs:
           ISO_REPO: quay.io/deskos/deskos-core-${{ matrix.token }}-iso
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
-          ORAS_VERSION: v1.3.5
         run: |
           set -euo pipefail
           digest="$(tr -d '\r\n' < digest.txt)"
@@ -503,25 +541,19 @@ jobs:
           ls -lh "$WORK/iso/bootiso/install.iso"
           ( cd "$WORK/iso/bootiso" && sha256sum install.iso ) | tee iso.sha256
 
-          tmp="$(mktemp -d)"
-          curl -fsSL -o "$tmp/oras.tar.gz" \
-            "https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}/oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
-          curl -fsSL -o "$tmp/oras_checksums.txt" \
-            "https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}/oras_${ORAS_VERSION#v}_checksums.txt"
-          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
-          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
-          tar -xzf "$tmp/oras.tar.gz" -C "$tmp" oras
-
-          printf '%s' "$QUAY_ROBOT_TOKEN" | "$tmp/oras" login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
-          "$tmp/oras" push --artifact-type "application/vnd.deskos.installer.iso.v1" \
-            --annotation "org.deskos.image.digest=$digest" \
-            "$ISO_REPO:$GITHUB_SHA" \
-            "$WORK/iso/bootiso/install.iso:application/x-iso9660-image"
-          "$tmp/oras" tag "$ISO_REPO:$GITHUB_SHA" candidate
+          printf '%s' "$QUAY_ROBOT_TOKEN" | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
+          # oras refuses an absolute file path ("insecure and not recommended"),
+          # so the push runs from the directory that holds the ISO.
+          ( cd "$WORK/iso/bootiso" && oras push \
+              --artifact-type "application/vnd.deskos.installer.iso.v1" \
+              --annotation "org.deskos.image.digest=$digest" \
+              "$ISO_REPO:$GITHUB_SHA" \
+              "install.iso:application/x-iso9660-image" )
+          oras tag "$ISO_REPO:$GITHUB_SHA" candidate
           # Promotion knows the image digest, not the commit: tag the artifact by
           # the digest it was built from so it can be found without a lookup.
-          "$tmp/oras" tag "$ISO_REPO:$GITHUB_SHA" "sha256-${digest#sha256:}"
-          iso_digest="$("$tmp/oras" manifest fetch --descriptor "$ISO_REPO:$GITHUB_SHA" | jq -r .digest)"
+          oras tag "$ISO_REPO:$GITHUB_SHA" "sha256-${digest#sha256:}"
+          iso_digest="$(oras manifest fetch --descriptor "$ISO_REPO:$GITHUB_SHA" | jq -r .digest)"
           test -n "$iso_digest"
           printf '%s\n' "$iso_digest" | tee iso-digest.txt
 
