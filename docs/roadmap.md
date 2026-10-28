@@ -512,45 +512,40 @@ how-to: [supply-chain.md](supply-chain.md).
 - Candidate resources: `TimeSyncPolicy`, `PerformancePolicy`,
   `FirmwarePolicy`, `IdentityProvider`, `WebApplication`.
 
-## Open work (2026-10-11)
+## Closeout of the P0/P1 items (2026-10-28)
 
-Carried out of the v0.9.3 and signed-image cycle; none is a milestone of
-its own.
+This is the only place the numbering is written down. An item closes with the
+evidence in its row, and not before.
 
-- **Signature identity for consumer enforcement (P0-03), decided 2026-10-25.**
-  DeskOS Core follows projectbluefin: keyless OIDC signatures, no key file and
-  no enforcement on the installed machine; a person verifies the digest
-  manually. An organization that chooses enforcement keeps key-based signing;
-  making that signature a policy requirement on update is that organization's
-  work. The lab verifies that key-based `sigstoreSigned` policy blocks unsigned,
-  wrong-key and wrong-identity images on `bootc switch` and `bootc upgrade`; the
-  keyless Fulcio certificate used by Core cannot be pinned by containers/image,
-  which matches issuer plus subject email while a GitHub Actions certificate
-  carries a URI SAN. No upstream change that pins a GitHub URI-SAN is merged or
-  committed. Core's P0-03 is closed as "signed and manually verifiable"; an
-  enforcing organization still owns the Anaconda install path and key rotation.
-  See [authenticity.md](design/authenticity.md).
-- ~~Documentation restructure~~ done: [platforms.md](platforms.md) is the one
-  platform matrix, the README states the
-  `YAML → validate → compose → plan → Containerfile → image → disk` line,
-  [troubleshooting.md](troubleshooting.md) covers symptom → check → remedy, and
-  `docs/resources.md` is now an index over
-  `resources/{core,software,desktop,system}.md`. Nothing here documents a
-  migration between versions: pre-1.0 there is no supported older version to
-  migrate from. Keep `research-notes` a dated archive, not current status.
-- **Durable SBOM storage (P0-05).** Decided 2026-10-25: R2, public bucket
-  `deskos-evidence-public` served at `evidence.deskos.org`, a private bucket
-  owned by the organization, a token scoped to the bucket or prefix, every
-  published digest retained, and an unsigned `index.json` initially. Keys are
-  `<namespace>/<repository>/sha256/<hex>/`, independent of the registry host.
-  The publish attests the SBOM **by reference** (Rekor caps an attestation at
-  100 KB; the installed SBOM is ~39 MB). The public bucket, domain, upload
-  token and uploader are in place; the separate evidence job verifies the
-  uploaded index and objects from `evidence.deskos.org`. The first real upload
-  waits for the next published digest; the organization's private bucket token
-  is separate. See [evidence-retention.md](design/evidence-retention.md).
-- **Renovate.** `renovate.json` is in both repositories; deploying it (app
-  or action, PAT, `registry.redhat.io` credentials) is open.
+| Item | What it was | Status | Evidence |
+|---|---|---|---|
+| P0-01 | A retry keeps the evidence of the failed attempt instead of overwriting it | **closed** | attempt-suffixed workflow artifacts (`…-attempt-1`), 14 days, beside the retry; the publish runs of 2026-10-28 show it |
+| P0-02 | Lifecycle A → B → A on CentOS Stream 10: upgrade, rollback, persistent state, interrupted upgrade | **closed, one residual** | `lifecycle.yml` green on 2026-10-26 (run `40305080925`): seven steps, power loss and a candidate that cannot boot, recovered by its composefs verity. The ostree-write interruption window is still untested |
+| P0-03 | Consumer-side authenticity: signed and manually verifiable, enforcement out of scope | **closed by decision**, 2026-10-25 | keyless OIDC signature and a documented verification; Core does not enforce a policy on update. An organization that wants enforcement keeps key-based signing and owns the install path and key rotation. See [authenticity.md](design/authenticity.md) |
+| P0-04 | A second reviewer or environment approval for publishing and signing, or a written reason why one person is acceptable at this scale | **open** | `evidence-write` has no protection rules and the publish job declares no environment |
+| P0-05 | Durable evidence, keyed by digest | **closed** | `evidence.deskos.org` serves the index and the objects of a published digest, and `promotion.yml` refuses a digest whose evidence does not verify. See [evidence-retention.md](design/evidence-retention.md) |
+| P0-06 | Build once, promote the same digest, with a recorded approval | **closes with the first automatic move** | `promotion.yml` runs on the gate's success, verifies signature and evidence, writes the approval (`automatic (gate)`, with the run) and moves `:stable` and the ISO channel by digest. Until that record exists, the two moves of 2026-10-26 are the only ones with one. See [promotion.md](design/promotion.md) |
+| P1-02 | The example policy, and the support and security entry points | **open**: policy done, entry points in review | [example-platforms.md](example-platforms.md) says what is an example and what is published; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points |
+| P1-06 | Field validation on a real machine: login, lock, logout with Wi-Fi off, offline Flatpak, the favorite | **closed** | DayTwo `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…` |
+| P1-07 | Hardware behaviour for a tested model | **open**: procedure written, no dated record | DayTwo `docs/hardware-validation.md` asks for the model, BIOS, kernel and digest of the run; that record does not exist yet |
+
+P1-01, P1-03, P1-04 and P1-05 are not defined in this repository, so they are
+neither carried as open nor closed as done. Define them here or drop the
+numbers; a number nobody can look up is not a status.
+
+Two lines that used to live here are done and left out of the table:
+documentation was restructured around [platforms.md](platforms.md) as the one
+matrix, and the durable evidence bucket was built (P0-05, above).
+
+## Open work
+
+- **P0-04, P1-02, P1-07**: the three rows marked open above.
+- **Renovate.** `renovate.json` is in both repositories; deploying it (app or
+  action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
   otherwise good image (the disk booted; the splash was not captured). Make
   the check robust, or retry, so the gate is not intermittent.
+- **Base check after a bump.** A newer `centos-bootc:stream10`
+  (`sha256:474b191a…`, 2026-10-26) exists than the pinned one; whether it
+  rebuilds the Go binaries the record accepts is unchecked. Re-pinning is the
+  fix that accepts nothing, and the record's review date is the deadline.
