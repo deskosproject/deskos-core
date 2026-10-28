@@ -111,6 +111,15 @@ A scheduled run has no dispatch inputs, so the gate uses the explicit
 `FAIL_ON` fallback of `critical`. That is the same baseline as a dispatch's
 default; the weekly run cannot silently weaken it.
 
+### Freezing publication
+
+Publication stops from the repository settings: set the variable
+`PUBLISH_FREEZE` (with a sentence saying why) and the gate, the installer, the
+promotion and the mirror do nothing, while `:stable` keeps serving the last good
+digest. That is what the [tabletop](threat-model.md) decided on 2026-10-28,
+after finding that a freeze otherwise meant editing four workflows during an
+incident.
+
 ### The installer
 
 `.github/workflows/iso.yml` is a workflow of its own: the gate calls it with the

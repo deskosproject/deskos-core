@@ -54,6 +54,11 @@ env:
 
 jobs:
   publish:
+    # One switch stops publication: set the repository variable PUBLISH_FREEZE
+    # (with a sentence saying why) and the gate does not publish, the installer
+    # does not run and there is nothing to promote. Freezing used to mean editing
+    # four workflows during an incident (tabletop, 2026-10-28).
+    if: vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
     outputs:
       # The ISO workflow builds from the digest this job published.

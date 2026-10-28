@@ -57,6 +57,9 @@ env:
 
 jobs:
   build:
+    # The same switch as the gate: an installer built while publication is frozen
+    # would be an artifact nobody may promote.
+    if: vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:

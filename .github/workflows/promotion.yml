@@ -60,7 +60,7 @@ env:
 
 jobs:
   promote:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
     environment: evidence-write
     timeout-minutes: 30
