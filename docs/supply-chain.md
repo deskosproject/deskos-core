@@ -270,6 +270,12 @@ workflow evidence and, for a published digest, in the digest-keyed
 `evidence.deskos.org` store; see
 [the evidence design](design/evidence-retention.md).
 
+The list of what a consumer needs — Plan, context, SBOM, provenance, test results
+and authorization, with where each lives — is
+[the handoff contract](design/handoff.md). It says what is GitHub-specific and what
+is not, and names the gaps, including that the index and the approval record are
+unsigned.
+
 **Verify a digest.** Checking the signature is necessary but not sufficient:
 require the four attestation types, pin the issuer and the workflow
 identity, and compare the SBOM you obtained against the hash the reference
