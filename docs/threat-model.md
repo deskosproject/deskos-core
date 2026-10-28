@@ -75,13 +75,40 @@ now pinned by commit; an organization's are not yet.
 
 ## Tabletop
 
-**Not run yet.** The procedure below is the exercise to run with the release
-owner; a walk-through without a recorded date, participants and decisions is
-not evidence that it happened.
+**Run 2026-10-28.** Participants: the maintainer (deciding) and the agent
+(facilitating), in one session; the decisions below are the maintainer's,
+recorded the same day. The scenarios stay as the procedure for the next run.
 
 A serious finding or a compromised input reaches the release owner. Walk one of
 these, record the date, the digests and the decisions, and do not publish a
 recovery until a human authorizes it.
+
+### What the exercise decided
+
+- **A — compromised upstream base.** Freeze publication by setting the repository
+  variable `PUBLISH_FREEZE`, with a sentence saying why: the gate, the installer,
+  the promotion and the mirror stop, and `:stable` keeps serving the last good
+  digest. Announce the affected digest, re-pin or wait for the vendor's rebuild,
+  then rebuild, scan, boot and publish a new digest. Machines that already staged
+  the old one keep it; there is no remote switch, and the advisory says so.
+- **C — compromised signing identity.** Rotate the quay robot, disable the
+  workflow, and publish an advisory that **names the affected digests**: deleting
+  a signature revokes nothing, and a new signature over an old digest is not a
+  fix — publish a new digest.
+- **E — compromised maintainer account.** Revoke sessions and tokens, review the
+  merges, dispatches and releases in the window, and treat every image published
+  in it as suspect until rebuilt from a trusted commit.
+
+### What the exercise found
+
+- **There was no freeze switch.** Publication could only be stopped by editing
+  four workflows across three repositories *during* the incident. `PUBLISH_FREEZE`
+  now does it from the repository settings, and the gate, the installer, the
+  promotion and the mirror all check it.
+- **One person holds every credential.** Revoking after a compromised account
+  depends on that account being intact, and there is no second maintainer to do
+  it. Accepted at this scale, named here, revisited when a second maintainer
+  joins.
 
 **A. Compromised upstream base.** Stop promoting `latest` and announce that the
 affected digest is frozen. Re-pin to a known-good earlier digest or wait for the
