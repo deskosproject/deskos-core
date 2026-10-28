@@ -79,5 +79,7 @@ They are few, and most confusion comes from two of them meaning more than one th
   that person is unavailable.
 - [Checks](checks.md): what each workflow asserts, and which claims are still
   measured by hand.
+- [Upstream findings](upstream.md): where a measured finding belongs, what
+  evidence goes with it, and which ones we have not filed.
 - [Roadmap](roadmap.md): milestones, and the closeout of the P0/P1 items with
   the evidence behind each.
