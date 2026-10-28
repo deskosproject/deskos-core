@@ -262,9 +262,11 @@ jobs:
             echo "::error::$ISO_REPO:$tag is annotated ${annotated:-with nothing}, not $DIGEST"
             exit 1
           }
+          # The installer is signed by `iso.yml`, the workflow that builds it,
+          # not by the gate: the OIDC identity names the file that holds the job.
           cosign verify "$ISO_REPO@$iso" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/iso.yml@refs/heads/main'
           # A tag move inside the repository, by digest, the same operation the
           # publish step uses: no re-push of bytes and no chance to invent a new
           # manifest.

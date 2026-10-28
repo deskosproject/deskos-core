@@ -96,12 +96,6 @@ or at build time, not while rendering.
 `workflow_dispatch`. The weekly run publishes; a dispatch publishes only with
 `publish=true` on `main`, and without it is a dry look at a base bump.
 
-The installer is a separate workflow, `.github/workflows/iso.yml`, called after
-the gate publishes a digest and dispatchable for any published digest. It is
-separate on purpose: an image that passed its gate is published and evidenced
-whether or not its installer built, and a retry costs one ISO build instead of a
-rebuild of the image. The ISO channel follows the image channel for the same
-digest, whichever happens first.
 It builds one image per platform from a checkout — one matrix leg per publishable
 workstation reference, each with its own exceptions record and destination
 repository — and runs the steps above:
@@ -116,6 +110,34 @@ only the gate applies the exceptions.
 A scheduled run has no dispatch inputs, so the gate uses the explicit
 `FAIL_ON` fallback of `critical`. That is the same baseline as a dispatch's
 default; the weekly run cannot silently weaken it.
+
+### The installer
+
+`.github/workflows/iso.yml` is a workflow of its own: the gate calls it with the
+digest it just published, and a dispatch can do the same for any published
+digest. It is separate on purpose — an image that passed its gate is published
+and evidenced whether or not its installer built, and a retry costs one ISO build
+instead of a rebuild of the image.
+
+It verifies the **image's** keyless signature before building, then signs the
+installer with **its own** workflow identity:
+`…/deskos-core/.github/workflows/iso.yml@refs/heads/main`. That is not a detail —
+the OIDC token names the file that holds the job, so the installer's signature is
+never the gate's, and a verifier that pins the wrong identity rejects a valid
+installer. It tags `sha256-<image digest>`, so promotion can find the installer
+for a digest without a lookup, and it moves its own `:stable` when the image is
+already stable, whichever happened first.
+
+```bash
+# The installer for the digest :stable serves.
+cosign verify quay.io/deskos/deskos-core-centos-stream-10-iso@sha256:… \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/iso.yml@refs/heads/main'
+```
+
+The ISO itself is **signed, not attested**: a suffix on a 3 GB disk image would
+claim what the pipeline does not measure. The signature proves who built it, and
+its `org.deskos.image.digest` annotation names the signed image it carries.
 
 ### Evidence retained for a failed gate
 
