@@ -194,20 +194,24 @@ retention; for a published digest the same evidence is also stored under
 
 ## Signing and provenance
 
-The publish step attests **SLSA v1 provenance** beside the SBOM and the
-exceptions: the source commit, the base image digest the plan pins, and this
-workflow as the builder. It is produced by the pipeline that builds the image, so
-it claims what SLSA calls a Build L2 shape — the build is what says it built —
-and not the isolation of a dedicated L3 builder. Claiming L3 for a self-produced
-statement would be false.
+The publish step attests **SLSA v1 provenance** (predicate type
+`https://slsa.dev/provenance/v1`, subject: the image digest) beside the SBOM and
+the exceptions: the source commit, the base image digest the plan pins, and this
+workflow as the builder. cosign builds the in-toto statement around that
+predicate and sets the subject from the digest the publish step pushed.
+
+It is produced by the pipeline that builds the image, so it claims what SLSA
+calls a Build L2 shape — the build is what says it built — and not the isolation
+of a dedicated L3 builder. Claiming L3 for a self-produced statement would be
+false.
 
 The same workflow, with `publish` on `main`, pushes the scanned image and
 signs it **keyless** with [cosign](https://docs.sigstore.dev/): Fulcio
 issues a short-lived certificate bound to the workflow's OIDC identity and
-Rekor records the signature. Three attestations are attached: a reference to
-the **installed** SBOM (the image digest, the SBOM's format and SHA-256, and
-where to find it), the reviewed exceptions, and the matches this image
-accepted.
+Rekor records the signature. Four attestations are attached: the SLSA
+provenance above, a reference to the **installed** SBOM (the image digest, the
+SBOM's format and SHA-256, and where to find it), the reviewed exceptions, and
+the matches this image accepted.
 
 Rekor's public instance caps an attestation at 100 KB, and an SBOM is far
 larger, so the SBOM itself is not attached: the signed statement names its
@@ -217,7 +221,7 @@ workflow evidence and, for a published digest, in the digest-keyed
 [the evidence design](design/evidence-retention.md).
 
 **Verify a digest.** Checking the signature is necessary but not sufficient:
-require the three attestation types, pin the issuer and the workflow
+require the four attestation types, pin the issuer and the workflow
 identity, and compare the SBOM you obtained against the hash the reference
 names. Do not use `--insecure-ignore-tlog` on this path.
 
@@ -239,6 +243,7 @@ cosign verify --certificate-oidc-issuer "$issuer" \
   --certificate-identity "$identity" "$ref"
 
 for type in \
+  slsaprovenance1 \
   https://deskos.org/supply-chain/sbom/v1 \
   https://deskos.org/supply-chain/exceptions/v1 \
   https://deskos.org/supply-chain/effective-exceptions/v1; do

@@ -101,10 +101,23 @@ jobs:
             echo "APPROVER=$approve"
           } >> "$GITHUB_ENV"
 
-      - name: Install skopeo and jq
+      - name: Install skopeo, oras and jq
+        env:
+          ORAS_VERSION: v1.3.5
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends skopeo jq
+          # The installer is an OCI artifact, and skopeo refuses to inspect one;
+          # oras is the client that understands it (same pin as the publish step).
+          tmp="$(mktemp -d)"
+          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
+          base="https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}"
+          curl -fsSL -o "$tmp/$tgz" "$base/$tgz"
+          curl -fsSL -o "$tmp/oras_checksums.txt" "$base/oras_${ORAS_VERSION#v}_checksums.txt"
+          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
+          tar -xzf "$tmp/$tgz" -C "$tmp" oras
+          sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
+          oras version
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -118,6 +131,9 @@ jobs:
         run: |
           printf '%s' "$QUAY_ROBOT_TOKEN" \
             | skopeo login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          # oras keeps its own credential file; the ISO step uses it.
+          printf '%s' "$QUAY_ROBOT_TOKEN" \
+            | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
 
       - name: Resolve the digest and skip when stable already serves it
         run: |
@@ -151,6 +167,8 @@ jobs:
         if: env.SKIP != 'yes'
         env:
           EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL }}
+          EVENT: ${{ github.event_name }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           base="${EVIDENCE_PUBLIC_BASE_URL%/}/deskos/$STATION/sha256/${DIGEST#sha256:}"
@@ -163,6 +181,18 @@ jobs:
           done
           python3 tests/evidence/verify.py --index "$evidence/index.json" \
             --dir "$evidence" --digest "$DIGEST"
+          # An automatic move must promote the digest **this** run published, not
+          # whatever :candidate happens to hold. Without this, a dry gate run
+          # (publish=false) that succeeded would promote an older candidate and
+          # record "the gate passed and published on main (run …)" about a run
+          # that published nothing.
+          if [ "$EVENT" = "workflow_run" ]; then
+            produced="$(jq -r '.fields.run_id // empty' "$evidence/identity.json")"
+            [ "$produced" = "$TRIGGER_RUN" ] || {
+              echo "::error::the evidence for $DIGEST names run $produced, not the run that triggered this promotion ($TRIGGER_RUN); nothing is promoted"
+              exit 1
+            }
+          fi
           echo "EVIDENCE=$evidence" >> "$GITHUB_ENV"
 
       - name: Record the approval
@@ -207,17 +237,39 @@ jobs:
           # The ISO is tagged by the image digest, because promotion knows the
           # digest and not the commit. No ISO for this digest is not an error: a
           # platform may publish an image without an installer.
+          #
+          # `skopeo inspect` cannot read an installer: it is an OCI artifact, and
+          # skopeo answers "unsupported image-specific operation on artifact with
+          # type …". That failure is indistinguishable from "no ISO published", so
+          # this step would have left the ISO channel alone in silence, forever.
           tag="sha256-${DIGEST#sha256:}"
-          iso="$(skopeo inspect --format '{{.Digest}}' "docker://$ISO_REPO:$tag" 2>/dev/null || true)"
-          if [ -z "$iso" ]; then
-            echo "no ISO published for $DIGEST; the ISO channel is left alone"
-            exit 0
+          if desc="$(oras manifest fetch --descriptor "$ISO_REPO:$tag" 2>"$RUNNER_TEMP/iso.err")"; then
+            iso="$(jq -r .digest <<<"$desc")"
+          else
+            if grep -qiE 'not found|manifest unknown|NAME_UNKNOWN' "$RUNNER_TEMP/iso.err"; then
+              echo "no ISO published for $DIGEST; the ISO channel is left alone"
+              exit 0
+            fi
+            echo "::error::could not read $ISO_REPO:$tag" >&2
+            cat "$RUNNER_TEMP/iso.err" >&2
+            exit 1
           fi
+          # The annotation is the link between the installer and the image it
+          # carries; the tag name alone is a convention.
+          annotated="$(oras manifest fetch "$ISO_REPO@$iso" \
+            | jq -r '.annotations["org.deskos.image.digest"] // empty')"
+          [ "$annotated" = "$DIGEST" ] || {
+            echo "::error::$ISO_REPO:$tag is annotated ${annotated:-with nothing}, not $DIGEST"
+            exit 1
+          }
           cosign verify "$ISO_REPO@$iso" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
-          skopeo copy --preserve-digests "docker://$ISO_REPO@$iso" "docker://$ISO_REPO:stable"
-          moved="$(skopeo inspect --format '{{.Digest}}' "docker://$ISO_REPO:stable")"
+          # A tag move inside the repository, by digest, the same operation the
+          # publish step uses: no re-push of bytes and no chance to invent a new
+          # manifest.
+          oras tag "$ISO_REPO@$iso" stable
+          moved="$(oras manifest fetch --descriptor "$ISO_REPO:stable" | jq -r .digest)"
           [ "$moved" = "$iso" ] || { echo "::error::ISO stable is $moved, not $iso"; exit 1; }
 
       - name: Summary
@@ -243,4 +295,6 @@ jobs:
 
       - name: Log out of the registry
         if: always()
-        run: skopeo logout quay.io || true
+        run: |
+          skopeo logout quay.io || true
+          oras logout quay.io || true
