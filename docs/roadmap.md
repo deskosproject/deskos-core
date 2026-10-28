@@ -548,6 +548,8 @@ nobody can look up is not.
   stranger following it without asking — is unproven until one does.
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app or
   action, PAT, `registry.redhat.io` credentials) is open.
-- **Flaky boot check.** The graphical-splash assertion has failed once on an
-  otherwise good image (the disk booted; the splash was not captured). Make
-  the check robust, or retry, so the gate is not intermittent.
+- **Flaky boot check.** The graphical-splash assertion failed once on a good
+  image because the harness sampled the screen once a second and the splash can
+  last under one. It now samples every 0.25 s until the splash or the graphical
+  screen is seen; the next boot checks are what prove it, and if it fails again
+  the frame list says whether the splash was absent or merely not sampled.
