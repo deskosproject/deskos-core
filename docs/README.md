@@ -75,6 +75,8 @@ They are few, and most confusion comes from two of them meaning more than one th
   and where a bug, a question, a security report or a conduct concern goes.
 - [Support](support.md) and [Security](../SECURITY.md): where to ask, what is
   promised, and how to report a vulnerability privately.
+- [Governance](governance.md): who decides, who owns what, and what happens if
+  that person is unavailable.
 - [Checks](checks.md): what each workflow asserts, and which claims are still
   measured by hand.
 - [Roadmap](roadmap.md): milestones, and the closeout of the P0/P1 items with
