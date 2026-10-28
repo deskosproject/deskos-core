@@ -370,36 +370,44 @@ jobs:
           # and this workflow as the builder. Produced by the pipeline that builds
           # the image, which is the honest claim (SLSA Build L2 shape); it is not
           # an isolated L3 builder and does not pretend to be.
+          #
+          # This file is the **predicate**, not a statement: cosign builds the
+          # statement around it and sets the subject from the image digest. Given
+          # a whole statement it keeps only the fields it recognises, drops the
+          # rest, and attests an empty predicate *without failing* — verified
+          # against cosign v3.1.3. Hence the check below.
           base="$(jq -r '.artifact.baseImage.digest' ctx/plan.json)"
           test -n "$base" -a "$base" != null
           jq -n \
-            --arg name "$DEST" \
-            --arg digest "${digest#sha256:}" \
             --arg commit "$GITHUB_SHA" \
             --arg base "$base" \
             --arg run "$GITHUB_RUN_ID" \
             --arg repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --arg platform "${{ matrix.token }}" \
             '{
-              _type: "https://in-toto.io/Statement/v1",
-              subject: [{name: $name, digest: {sha256: $digest}}],
-              predicateType: "https://slsa.dev/provenance/v1",
-              predicate: {
-                buildDefinition: {
-                  buildType: "https://deskos.org/build/supply-chain/v1",
-                  externalParameters: {platform: $platform, baseImage: $base},
-                  internalParameters: {workflow: "supply-chain.yml"},
-                  resolvedDependencies: [
-                    {uri: $repo, digest: {gitCommit: $commit}},
-                    {uri: "base-image", digest: {sha256: ($base | sub("^sha256:"; ""))}}
-                  ]
-                },
-                runDetails: {
-                  builder: {id: ($repo + "/.github/workflows/supply-chain.yml@refs/heads/main")},
-                  metadata: {invocationId: $run}
-                }
+              buildDefinition: {
+                buildType: "https://deskos.org/build/supply-chain/v1",
+                externalParameters: {platform: $platform, baseImage: $base},
+                internalParameters: {workflow: "supply-chain.yml"},
+                resolvedDependencies: [
+                  {uri: $repo, digest: {gitCommit: $commit}},
+                  {uri: "base-image", digest: {sha256: ($base | sub("^sha256:"; ""))}}
+                ]
+              },
+              runDetails: {
+                builder: {id: ($repo + "/.github/workflows/supply-chain.yml@refs/heads/main")},
+                metadata: {invocationId: $run}
               }
             }' > provenance.json
+          # What is attested is what this run says: commit, base, builder, run.
+          jq -e --arg commit "$GITHUB_SHA" --arg base "$base" --arg run "$GITHUB_RUN_ID" '
+            (.buildDefinition.buildType == "https://deskos.org/build/supply-chain/v1")
+            and (.runDetails.metadata.invocationId == $run)
+            and (.runDetails.builder.id | endswith("/.github/workflows/supply-chain.yml@refs/heads/main"))
+            and any(.buildDefinition.resolvedDependencies[]; .digest.gitCommit == $commit)
+            and any(.buildDefinition.resolvedDependencies[];
+                    .digest.sha256 == ($base | sub("^sha256:"; "")))
+          ' provenance.json > /dev/null
           retry cosign attest --yes --type slsaprovenance1 --predicate provenance.json "$ref"
           cosign verify-attestation --type slsaprovenance1 \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
