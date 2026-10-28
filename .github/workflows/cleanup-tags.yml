@@ -1,17 +1,21 @@
 name: cleanup-tags
 
-# One-off: delete registry tags by name. Dispatch only, and it holds the registry
-# robot because deleting is a write.
+# One-off: delete the manifests of images that were published just before their
+# gate failed. They have a `:<commit>` tag and no evidence index, so they can
+# never be promoted; the tag makes them look like verified build records.
 #
-# It exists to remove tags that were never promotable — an image published just
-# before its gate failed has a `:<commit>` tag and no evidence index. It is not a
-# general tool: it refuses anything that is not a 40-character commit tag, so it
-# cannot touch :stable, :candidate or :latest by accident.
+# The web API refuses a robot ("CSRF token was invalid or missing"), because
+# robots are registry credentials. This deletes through the registry instead,
+# which is what the robot is for: `skopeo delete` by digest removes the manifest
+# and every tag that points at it.
+#
+# It refuses anything that is not `sha256:` and 64 lowercase hex, so a digest
+# that `:stable` or `:candidate` serves cannot be passed by accident.
 on:
   workflow_dispatch:
     inputs:
-      tags:
-        description: 40-character commit tags to delete, one per line
+      digests:
+        description: Image digests to delete, one per line (sha256:…)
         required: true
         type: string
 
@@ -22,28 +26,38 @@ jobs:
   delete:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Delete the tags
+      - name: Install skopeo
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends skopeo
+
+      - name: Delete the manifests
         env:
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
-          TAGS: ${{ inputs.tags }}
+          DIGESTS: ${{ inputs.digests }}
+          REPO: quay.io/deskos/deskos-core-centos-stream-10
         run: |
           set -euo pipefail
-          repo="deskos/deskos-core-centos-stream-10"
-          printf '%s\n' "$TAGS" | tr -d '\r' | while read -r tag; do
-            [ -n "$tag" ] || continue
-            case "$tag" in
-              *[!0-9a-f]*) echo "::error::'$tag' is not a commit tag"; exit 1 ;;
-            esac
-            [ "${#tag}" -eq 40 ] || { echo "::error::'$tag' is not 40 characters"; exit 1; }
-            code="$(curl -sS -o "$RUNNER_TEMP/out" -w '%{http_code}' -X DELETE \
-              -u "$QUAY_ROBOT_USERNAME:$QUAY_ROBOT_TOKEN" \
-              "https://quay.io/api/v1/repository/$repo/tag/$tag")"
-            echo "DELETE $tag -> $code $(cat "$RUNNER_TEMP/out")"
-            case "$code" in
-              200|202|204) ;;
-              *) echo "::error::could not delete $tag"; exit 1 ;;
-            esac
+          # The digests that are serving channels must never be in the input.
+          for protected in "$(curl -fsS "https://quay.io/api/v1/repository/deskos/deskos-core-centos-stream-10/tag/?specificTag=stable" | jq -r '.tags[0].manifest_digest // empty')" \
+                           "$(curl -fsS "https://quay.io/api/v1/repository/deskos/deskos-core-centos-stream-10/tag/?specificTag=candidate" | jq -r '.tags[0].manifest_digest // empty')"; do
+            [ -n "$protected" ] || continue
+            if printf '%s\n' "$DIGESTS" | grep -qxF "$protected"; then
+              echo "::error::$protected is serving a channel; refusing the whole list"
+              exit 1
+            fi
+          done
+
+          printf '%s\n' "$DIGESTS" | tr -d '\r' | while read -r digest; do
+            [ -n "$digest" ] || continue
+            case "$digest" in sha256:*) ;; *) echo "::error::'$digest' is not sha256:"; exit 1 ;; esac
+            printf '%s' "${digest#sha256:}" | grep -qE '^[0-9a-f]{64}$' \
+              || { echo "::error::'$digest' is not 64 lowercase hex"; exit 1; }
+            printf '%s' "$QUAY_ROBOT_TOKEN" | skopeo login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+            skopeo delete "docker://$REPO@$digest" \
+              || { echo "::error::could not delete $digest"; exit 1; }
+            echo "deleted $digest"
           done
