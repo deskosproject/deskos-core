@@ -481,8 +481,18 @@ jobs:
 
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           sudo podman pull "$DEST@$digest"
-          embedded="$(sudo podman image inspect --format '{{.Digest}}' "$DEST@$digest")"
-          [ "$embedded" = "$digest" ] || { echo "::error::pulled $embedded, published $digest"; exit 1; }
+          # Not `.Digest`: that is the digest of the **local** record, and the
+          # export to the OCI archive gives the manifest a different digest than
+          # the local build had (2026-10-28: 2404… published, ce38… stored), so
+          # the pull matches the image already in storage and keeps its old
+          # digest. The ID is the config digest, identical in both, and it is
+          # what has to hold: the ISO carries the image that was booted.
+          tested_id="$(sed -n 's/^id=//p' "$WORK/image.txt")"
+          pulled_id="$(sudo podman image inspect --format '{{.Id}}' "$DEST@$digest")"
+          [ -n "$tested_id" ] || { echo "::error::no tested image id in $WORK/image.txt"; exit 1; }
+          [ "$pulled_id" = "$tested_id" ] || {
+            echo "::error::pulled image $pulled_id, the tested one is $tested_id"; exit 1
+          }
 
           mkdir -p "$WORK/iso"
           sudo podman run --rm --privileged --pull=never \
