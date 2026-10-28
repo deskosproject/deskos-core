@@ -167,6 +167,8 @@ jobs:
         if: env.SKIP != 'yes'
         env:
           EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL }}
+          EVENT: ${{ github.event_name }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           base="${EVIDENCE_PUBLIC_BASE_URL%/}/deskos/$STATION/sha256/${DIGEST#sha256:}"
@@ -179,6 +181,18 @@ jobs:
           done
           python3 tests/evidence/verify.py --index "$evidence/index.json" \
             --dir "$evidence" --digest "$DIGEST"
+          # An automatic move must promote the digest **this** run published, not
+          # whatever :candidate happens to hold. Without this, a dry gate run
+          # (publish=false) that succeeded would promote an older candidate and
+          # record "the gate passed and published on main (run …)" about a run
+          # that published nothing.
+          if [ "$EVENT" = "workflow_run" ]; then
+            produced="$(jq -r '.fields.run_id // empty' "$evidence/identity.json")"
+            [ "$produced" = "$TRIGGER_RUN" ] || {
+              echo "::error::the evidence for $DIGEST names run $produced, not the run that triggered this promotion ($TRIGGER_RUN); nothing is promoted"
+              exit 1
+            }
+          fi
           echo "EVIDENCE=$evidence" >> "$GITHUB_ENV"
 
       - name: Record the approval
