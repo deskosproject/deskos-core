@@ -12,14 +12,21 @@ not whether a branch protection rule is configured.
 | `ci.yml` | pull request, `main`, called by release | resources validate and render deterministically | job log |
 | `artifacts.yml` | pull request, `main`, dispatch | declared URLs resolve and bytes match their checksums; repositories look like repositories | job log and summary |
 | `vm-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
-| `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots and (only on a `publish=true` dispatch from `main`) pushes and signs one digest | SBOMs, Grype report, digest, cosign verification, Plan, evidence directory |
-| `lifecycle.yml` | dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
+| `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots and — on the schedule, or a `publish=true` dispatch from `main` — pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, evidence directory |
+| `iso.yml` | called by the gate; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
+| `promotion.yml` | the gate's success (`workflow_run`); dispatch | `:stable` moves only to a digest whose signature and every evidence object verify, with an approval record | approval record, job log |
+| `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the gate is dispatched when it is | job log |
+| `lifecycle.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
 | `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | AlmaLinux and Fedora examples build and boot; not published | boot/session/first-boot evidence |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
 | `tool-image.yml` | `Containerfile` or compiler paths; dispatch | the `deskosctl` container builds and runs | job log |
 | `mirror-fedora.yml` | dispatch | a Fedora base is mirrored to DeskOS Quay | job log |
 | `renovate.yml` | daily; dispatch | opens pin-update pull requests; it never merges | pull requests |
+| `identity-freeipa.yml` | daily 04:23 UTC; dispatch | a client image joins a disposable FreeIPA realm and the session proves the login | summary, frames |
+| `identity-ad.yml` | daily 04:47 UTC; dispatch | the same, against a disposable Samba AD domain controller | summary, frames |
+| `track.yml` | Mondays 05:17 UTC; dispatch | every checksum-pinned resource still resolves, and moves the ones the curated list covers, as a pull request | pull request |
+| `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed evidence store; a prefix with an index is refused without `force` | job log |
 
 A scheduled run has no dispatch inputs. `supply-chain.yml` falls back to
 `fail-on: critical` explicitly, so the weekly run cannot silently run without a

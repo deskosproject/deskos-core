@@ -50,6 +50,22 @@ class Workflows(unittest.TestCase):
                 for name, job in data["jobs"].items():
                     self.assertIsInstance(job, dict, f"job {name} is not a mapping")
 
+    def test_every_scheduled_workflow_can_also_be_dispatched(self):
+        # A schedule is best effort: GitHub runs it hours late and drops ticks
+        # (2026-10-28). A workflow that only runs on a schedule has no way back
+        # when that happens, so every one of them must also accept a dispatch.
+        for path in WORKFLOWS:
+            data = yaml.load(path.read_text(), Loader=UniqueKeyLoader)
+            triggers = data.get(True) or data.get("on") or {}
+            if not isinstance(triggers, dict) or "schedule" not in triggers:
+                continue
+            with self.subTest(workflow=path.name):
+                self.assertIn(
+                    "workflow_dispatch",
+                    triggers,
+                    f"{path.name} is scheduled but cannot be dispatched by hand",
+                )
+
     def test_the_loader_refuses_a_duplicate_key(self):
         # The test above is only worth something if it fails on the real defect.
         with self.assertRaises(ValueError):
