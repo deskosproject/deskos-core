@@ -55,6 +55,9 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-24.04
+    outputs:
+      # The ISO workflow builds from the digest this job published.
+      digest: ${{ steps.publish_image.outputs.digest }}
     # Build (40) + QCOW2 (30) + boot (15) + session (25) can exceed 90.
     timeout-minutes: 150
     strategy:
@@ -92,44 +95,6 @@ jobs:
       FAIL_ON: ${{ inputs.fail-on || 'critical' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Install oras before the build, not after it
-        # The ISO step needs oras. Downloading it there meant a typo in the
-        # archive name cost a two-hour build before failing (2026-10-28), so it
-        # is fetched, checksum-verified and installed here, in seconds.
-        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && matrix.disk == 'bib'
-        env:
-          ORAS_VERSION: v1.3.5
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"
-          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
-          base="https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}"
-          curl -fsSL --retry 3 -o "$tmp/$tgz" "$base/$tgz"
-          curl -fsSL --retry 3 -o "$tmp/oras_checksums.txt" "$base/oras_${ORAS_VERSION#v}_checksums.txt"
-          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
-          tar -xzf "$tmp/$tgz" -C "$tmp" oras
-          sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
-          oras version
-          # And prove the exact push the ISO step will do — artifact type,
-          # annotation, layer media type, relative path — against a local OCI
-          # layout. oras refuses absolute file paths, and that cost an hour of
-          # build on 2026-10-28; here it costs a second.
-          zeros="$(printf '0%.0s' $(seq 1 64))"
-          d="$(mktemp -d)"
-          printf 'preflight' > "$d/install.iso"
-          ( cd "$d" && oras push --oci-layout "$d/preflight:v1" \
-              --artifact-type "application/vnd.deskos.installer.iso.v1" \
-              --annotation "org.deskos.image.digest=sha256:$zeros" \
-              "install.iso:application/x-iso9660-image" > /dev/null )
-          manifest="$(oras manifest fetch --oci-layout "$d/preflight:v1")"
-          [ "$(jq -r .artifactType <<<"$manifest")" = "application/vnd.deskos.installer.iso.v1" ] || {
-            echo "::error::the ISO artifact type does not survive the push"; exit 1; }
-          [ "$(jq -r '.layers[0].mediaType' <<<"$manifest")" = "application/x-iso9660-image" ] || {
-            echo "::error::the ISO layer media type does not survive the push"; exit 1; }
-          [ "$(jq -r '.annotations["org.deskos.image.digest"]' <<<"$manifest")" = "sha256:$zeros" ] || {
-            echo "::error::the image digest annotation does not survive the push"; exit 1; }
-          echo "oras push preflight ok"
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
@@ -346,6 +311,7 @@ jobs:
           cosign-release: 'v3.1.3'
 
       - name: Publish, sign and attest the scanned image
+        id: publish_image
         # One image per platform; RHEL images are never published. The
         # signature is keyless: it is bound to this workflow's OIDC
         # identity, and a signed attestation references the installed SBOM.
@@ -374,6 +340,7 @@ jobs:
           fi
           digest="$(tr -d '\n\r' < digest.txt)"
           ref="$DEST@$digest"
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
           printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           # Rekor is reached over the network; retry the signing steps rather
           # than fail an image that already passed scan, boot and session.
@@ -493,84 +460,6 @@ jobs:
           # docker config, and podman logout clears the registry login.
           sudo podman logout quay.io
           echo "Published, signed and attested $ref" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Build the ISO from the published digest and publish it signed
-        # The public installer ISO is a derived artifact of the image: it is
-        # built from the digest the gate just scanned, booted and signed, never
-        # from the local tag, because a locally built image and the pushed
-        # manifest are not the same bytes and an ISO built from the tag would
-        # embed a reference nobody published.
-        #
-        # It is signed, not attested: a suffix on a 3 GB disk image would claim
-        # what this pipeline does not measure. The signature binds the artifact
-        # to this workflow's identity, and the annotation names the image digest
-        # it was built from.
-        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && matrix.disk == 'bib'
-        timeout-minutes: 45
-        env:
-          DEST: quay.io/deskos/deskos-core-${{ matrix.token }}
-          ISO_REPO: quay.io/deskos/deskos-core-${{ matrix.token }}-iso
-          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
-          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
-        run: |
-          set -euo pipefail
-          digest="$(tr -d '\r\n' < digest.txt)"
-          test -n "$digest"
-
-          printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          sudo podman pull "$DEST@$digest"
-          # Not `.Digest`: that is the digest of the **local** record, and the
-          # export to the OCI archive gives the manifest a different digest than
-          # the local build had (2026-10-28: 2404… published, ce38… stored), so
-          # the pull matches the image already in storage and keeps its old
-          # digest. The ID is the config digest, identical in both, and it is
-          # what has to hold: the ISO carries the image that was booted.
-          tested_id="$(sed -n 's/^id=//p' "$WORK/image.txt")"
-          pulled_id="$(sudo podman image inspect --format '{{.Id}}' "$DEST@$digest")"
-          [ -n "$tested_id" ] || { echo "::error::no tested image id in $WORK/image.txt"; exit 1; }
-          [ "$pulled_id" = "$tested_id" ] || {
-            echo "::error::pulled image $pulled_id, the tested one is $tested_id"; exit 1
-          }
-
-          mkdir -p "$WORK/iso"
-          sudo podman run --rm --privileged --pull=never \
-            --security-opt label=type:unconfined_t \
-            -v "$WORK/iso:/output" \
-            -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type anaconda-iso --chown "$(id -u):$(id -g)" "$DEST@$digest"
-          ls -lh "$WORK/iso/bootiso/install.iso"
-          ( cd "$WORK/iso/bootiso" && sha256sum install.iso ) | tee iso.sha256
-
-          printf '%s' "$QUAY_ROBOT_TOKEN" | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
-          # oras refuses an absolute file path ("insecure and not recommended"),
-          # so the push runs from the directory that holds the ISO.
-          ( cd "$WORK/iso/bootiso" && oras push \
-              --artifact-type "application/vnd.deskos.installer.iso.v1" \
-              --annotation "org.deskos.image.digest=$digest" \
-              "$ISO_REPO:$GITHUB_SHA" \
-              "install.iso:application/x-iso9660-image" )
-          oras tag "$ISO_REPO:$GITHUB_SHA" candidate
-          # Promotion knows the image digest, not the commit: tag the artifact by
-          # the digest it was built from so it can be found without a lookup.
-          oras tag "$ISO_REPO:$GITHUB_SHA" "sha256-${digest#sha256:}"
-          iso_digest="$(oras manifest fetch --descriptor "$ISO_REPO:$GITHUB_SHA" | jq -r .digest)"
-          test -n "$iso_digest"
-          printf '%s\n' "$iso_digest" | tee iso-digest.txt
-
-          printf '%s' "$QUAY_ROBOT_TOKEN" | cosign login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          cosign sign --yes "$ISO_REPO@$iso_digest"
-          cosign verify "$ISO_REPO@$iso_digest" \
-            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' \
-            | tee iso-cosign-verify.txt
-
-          sudo podman logout quay.io
-          {
-            echo "### Installer ISO"
-            echo "- artifact: \`$ISO_REPO:$GITHUB_SHA\` (\`candidate\`), $iso_digest"
-            echo "- built from image $DEST@$digest"
-            echo "- $(cat iso.sha256)"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: The acceptance record against what this scan accepted
         # The acceptance records name Criticals that belong to the vendor's base,
@@ -718,9 +607,6 @@ jobs:
             !${{ env.WORK }}/**/*.qcow2
             latest-digest.txt
             provenance.json
-            iso.sha256
-            iso-digest.txt
-            iso-cosign-verify.txt
           retention-days: 14
           if-no-files-found: warn
 
@@ -764,3 +650,20 @@ jobs:
             curl -fsS "$base/$name" -o "$tmp/$name"
           done
           python3 tests/evidence/verify.py --index "$tmp/index.json" --dir "$tmp" --digest "$digest"
+
+  # The installer is a derived artifact, so it is its own workflow: a failure
+  # there costs one ISO build and a dispatch, not a two-hour rebuild of an image
+  # that already passed this gate, and the image's evidence is unaffected.
+  #
+  # One entry per platform that publishes an installer. A second platform gets a
+  # second call here; the digest always comes from the job above, so a wrong
+  # repository fails at the pull instead of shipping the wrong ISO.
+  iso:
+    needs: publish
+    if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/iso.yml
+    with:
+      image: quay.io/deskos/deskos-core-centos-stream-10
+      digest: ${{ needs.publish.outputs.digest }}
+      commit: ${{ github.sha }}
+    secrets: inherit

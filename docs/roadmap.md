@@ -544,7 +544,3 @@ matrix, and the durable evidence bucket was built (P0-05, above).
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
   otherwise good image (the disk booted; the splash was not captured). Make
   the check robust, or retry, so the gate is not intermittent.
-- **Base check after a bump.** A newer `centos-bootc:stream10`
-  (`sha256:474b191a…`, 2026-10-26) exists than the pinned one; whether it
-  rebuilds the Go binaries the record accepts is unchecked. Re-pinning is the
-  fix that accepts nothing, and the record's review date is the deadline.
