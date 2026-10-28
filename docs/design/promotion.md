@@ -104,11 +104,12 @@ promoted and why.
   present.
 - If evidence is missing, the promotion does not start. A 404 is not "no known
   issues".
-- If the **installer** failed, the gate's run is red and nothing is promoted. That
-  is deliberate: fix the installer, dispatch `iso.yml` with the digest (it needs
-  no rebuild), then dispatch `promotion.yml` with that digest — the approval is
-  recorded as a dispatch, with the person who made it. The image's evidence was
-  already uploaded, so the promotion can proceed.
+- If the **installer** failed, the image is still promoted: the promotion is
+  gated on the `publish` job — the image's scan, boot, signature and evidence —
+  and not on the run as a whole. The installer is a separate workflow, so its
+  failure leaves the ISO channel where it was; `iso.yml` follows the image
+  channel whenever it succeeds, or on a dispatch for that digest. An installer is
+  not a reason to hold back an image that machines update from.
 - Withdrawal is an explicit tag move to the previous digest plus an advisory; it
   does not revoke cached images or signatures (see the threat model).
 
@@ -129,7 +130,8 @@ no controller). There is no telemetry to prove who runs a canary.
 - Channels exist per platform repository: `candidate` and `stable`. `:latest`
   stays as the **fast lane** next to `stable`, not as a second stable, and
   `:candidate` is the promotion source. Retiring `:latest` is not planned.
-- A move is authorized by the gate's success (2026-10-28), and a dispatch still
+- A move is authorized by the gate's success (2026-10-28) — the `publish` job,
+  which is the image's scan, boot, signature and evidence — and a dispatch still
   authorizes one by hand. Both write the same record; the automatic path names
   the run, the dispatch names the actor. A cadence that waited for a person was
   not a cadence, and the record does not need a button to be honest.
