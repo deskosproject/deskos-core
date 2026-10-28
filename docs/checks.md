@@ -22,9 +22,10 @@ not whether a branch protection rule is configured.
 | `renovate.yml` | daily; dispatch | opens pin-update pull requests; it never merges | pull requests |
 
 A scheduled run has no dispatch inputs. `supply-chain.yml` falls back to
-`fail-on: critical` explicitly, so the weekly watch cannot silently run without
-a severity threshold. Publishing is impossible from the schedule: it requires
-`publish=true` on a dispatch from `main`.
+`fail-on: critical` explicitly, so the weekly run cannot silently run without a
+severity threshold, and since 2026-10-28 the weekly run publishes: the gate,
+signature, evidence and promotion are the same as a dispatch's. A dispatch with
+`publish=false` is the dry gate.
 
 ## Reading a failure
 

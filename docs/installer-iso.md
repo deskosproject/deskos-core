@@ -17,8 +17,8 @@ they can pull.
 - For the CentOS Stream 10 image: pull it from
   `quay.io/deskos/deskos-core-centos-stream-10:latest`, or use the one you built locally,
   and use that reference in the build command below.
-  [architecture.md](architecture.md#validation-status) carries the digest the last
-  `publish=true` dispatch published.
+  [architecture.md](architecture.md#validation-status) carries the digest
+  `:stable` serves, which the weekly gate publishes and the promotion moves.
 - For your own image, tag it with the reference your machines will update
   from and **push it before handing out the ISO**; a `localhost/` tag, or a
   tag you never pushed, leaves them *without an update source*:
