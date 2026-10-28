@@ -93,6 +93,7 @@ it boots the disk as shipped.
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
+| Published ISO carries the signed digest | `iso.yml` (called by the gate, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
 
 A missing result, an unreadable value or a `not measurable` count is a failure
 or an explicit unverified item, not a pass. The session row is an **instrumented

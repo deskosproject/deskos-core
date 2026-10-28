@@ -68,6 +68,9 @@ jobs:
         # release. RHEL is never published. AlmaLinux and Fedora are examples
         # and have no publication leg.
         #
+        # Adding a leg with `disk: bib` here needs a matching `iso:` call at the
+        # bottom of this file, which is where its installer is built.
+        #
         # `disk` says how that platform's disk is written and `diskfile` where it
         # lands, because they differ: the EL platforms go through
         # bootc-image-builder, and Ubuntu has no Anaconda path, so it writes with

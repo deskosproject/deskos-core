@@ -104,6 +104,11 @@ promoted and why.
   present.
 - If evidence is missing, the promotion does not start. A 404 is not "no known
   issues".
+- If the **installer** failed, the gate's run is red and nothing is promoted. That
+  is deliberate: fix the installer, dispatch `iso.yml` with the digest (it needs
+  no rebuild), then dispatch `promotion.yml` with that digest — the approval is
+  recorded as a dispatch, with the person who made it. The image's evidence was
+  already uploaded, so the promotion can proceed.
 - Withdrawal is an explicit tag move to the previous digest plus an advisory; it
   does not revoke cached images or signatures (see the threat model).
 
