@@ -10,7 +10,7 @@ We expect contributors to treat each other with basic respect. Harassment, discr
 
 Our community guidelines apply to participation in DeskOS project spaces. Contributors are free to hold and express their own views outside the project and do not speak for DeskOS unless explicitly authorized.
 
-Maintainers are responsible for keeping discussions productive and may moderate or restrict participation when necessary. Concerns about community behavior can be raised privately with the maintainers and will be handled fairly and with discretion.
+Moderation exists only to keep discussions productive, and may restrict participation when a conversation stops being about the work. A concern about behavior can be raised privately and is handled fairly and with discretion.
 
 We believe good communities grow through shared work, mutual respect, and common sense rather than complicated rules.
 
