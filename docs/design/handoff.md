@@ -64,9 +64,12 @@ and the directory.
   reads it before the move and the approval record pins its hash.
 - **The approval record is unsigned.** `automatic (gate)` is a claim by the
   workflow; the record is only as trustworthy as the bucket.
-- **No negative-case suite.** `tests/evidence/verify.py` and the promotion refuse
-  missing or mismatched evidence, but there is no test that *proves* they refuse a
-  tampered index, a wrong digest or an empty object.
+- **The negative cases exist; the gap is different.** `tests/evidence/test_verify.py`
+  proves the verifier refuses a missing object, changed bytes, a traversal path, a
+  duplicate name and a wrong image digest. What is **not** refused — because
+  nothing can refuse it — is a *consistent* forgery: an index and matching objects
+  written by whoever can write the bucket. That is the unsigned-index gap above,
+  stated twice because it is the one that matters.
 - **An external policy engine was probed once.** Conforma `ec` verified the
   keyless signature through Rekor, found the SLSA v1 predicate and ran 155 checks;
   the release policy set then failed on the shape of the evidence it expects
