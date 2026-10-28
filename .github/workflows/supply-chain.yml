@@ -111,6 +111,25 @@ jobs:
           tar -xzf "$tmp/$tgz" -C "$tmp" oras
           sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
           oras version
+          # And prove the exact push the ISO step will do — artifact type,
+          # annotation, layer media type, relative path — against a local OCI
+          # layout. oras refuses absolute file paths, and that cost an hour of
+          # build on 2026-10-28; here it costs a second.
+          zeros="$(printf '0%.0s' $(seq 1 64))"
+          d="$(mktemp -d)"
+          printf 'preflight' > "$d/install.iso"
+          ( cd "$d" && oras push --oci-layout "$d/preflight:v1" \
+              --artifact-type "application/vnd.deskos.installer.iso.v1" \
+              --annotation "org.deskos.image.digest=sha256:$zeros" \
+              "install.iso:application/x-iso9660-image" > /dev/null )
+          manifest="$(oras manifest fetch --oci-layout "$d/preflight:v1")"
+          [ "$(jq -r .artifactType <<<"$manifest")" = "application/vnd.deskos.installer.iso.v1" ] || {
+            echo "::error::the ISO artifact type does not survive the push"; exit 1; }
+          [ "$(jq -r '.layers[0].mediaType' <<<"$manifest")" = "application/x-iso9660-image" ] || {
+            echo "::error::the ISO layer media type does not survive the push"; exit 1; }
+          [ "$(jq -r '.annotations["org.deskos.image.digest"]' <<<"$manifest")" = "sha256:$zeros" ] || {
+            echo "::error::the image digest annotation does not survive the push"; exit 1; }
+          echo "oras push preflight ok"
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
@@ -523,10 +542,13 @@ jobs:
           ( cd "$WORK/iso/bootiso" && sha256sum install.iso ) | tee iso.sha256
 
           printf '%s' "$QUAY_ROBOT_TOKEN" | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
-          oras push --artifact-type "application/vnd.deskos.installer.iso.v1" \
-            --annotation "org.deskos.image.digest=$digest" \
-            "$ISO_REPO:$GITHUB_SHA" \
-            "$WORK/iso/bootiso/install.iso:application/x-iso9660-image"
+          # oras refuses an absolute file path ("insecure and not recommended"),
+          # so the push runs from the directory that holds the ISO.
+          ( cd "$WORK/iso/bootiso" && oras push \
+              --artifact-type "application/vnd.deskos.installer.iso.v1" \
+              --annotation "org.deskos.image.digest=$digest" \
+              "$ISO_REPO:$GITHUB_SHA" \
+              "install.iso:application/x-iso9660-image" )
           oras tag "$ISO_REPO:$GITHUB_SHA" candidate
           # Promotion knows the image digest, not the commit: tag the artifact by
           # the digest it was built from so it can be found without a lookup.
