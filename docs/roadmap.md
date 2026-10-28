@@ -166,9 +166,9 @@ Details in
   a curated list, review notes for core components, and **one bundle pull
   request** with one commit per resource. A person merges; nothing is
   published. The compiler stays offline and deterministic: tracking is a
-  maintenance step, not part of compilation. Modeled on BuildStream's
-  `track:` and `bst source track`, which Bluefin's Dakota runs daily in
-  `.github/workflows/track-bst-sources.yml`; Renovate covers the rest.
+  maintenance step, not part of compilation. The rule is BuildStream's
+  `track:` idea: resolve the pin, propose the move, and let a person review it.
+  Renovate covers the rest.
   - **Done (2026-10-27):** `deskosctl track [--fresh] ROOT...` finds every pin in
     the tree, downloads the pinned URL and compares its sha256, and with
     `--fresh` reports a newer GitHub release. It lives in `cmd/deskosctl/track`
@@ -259,8 +259,8 @@ Details in
 - **Skip the GNOME Initial Setup software page.** The first-boot wizard still
   offers the "enable third-party repositories" step, which means nothing on an
   image-based workstation whose store is Bazaar. Ship
-  `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, as Bluefin does,
-  and assert in the first-boot check that the page is gone.
+  `/etc/gnome-initial-setup/vendor.conf` with `skip=software`, and assert in the
+  first-boot check that the page is gone.
 - ~~Mission statement, non-goals and values~~ done: [mission.md](mission.md)
   states the mission, the non-goals that already exist as invariants (ADR 0001,
   0002, 0005, 0011), and the values. The README links it.
@@ -329,8 +329,8 @@ they cover.
 
 ## Milestone 4: workstation E2E
 
-- QEMU/KVM GNOME sessions tested through accessibility APIs, following
-  Bluefin's factory practice.
+- QEMU/KVM GNOME sessions driven through accessibility APIs, the way a person
+  would use them, so a check fails where a user would be stuck.
 - Promotion gates: only digests that passed E2E move forward.
 
 ## Milestone 5: identity and provisioning
