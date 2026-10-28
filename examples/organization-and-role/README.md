@@ -23,18 +23,16 @@ The minimal per-platform examples live in the sibling directories
 `ubuntu-2604/`); this one
 shows the *composition* axis (baseline + role) on EL10.
 
-## Known gap: virt-manager
+## A desktop tool the platform does not supply
 
-The DevOps role requires `virt-manager`. On both EL10 platforms it is only
-available from the CodeReady Linux Builder repository (unsupported on
-RHEL 10, disabled by default on CentOS Stream 10), so the platforms list it
-under `unavailablePackages` and **the requirement is not met** by these
-workstations.
-
-`PackageSet/example-virt-manager` records it; including it makes
-composition fail with the platform's reason. `cockpit-machines` is
-installed as an additional tool and *is not an equivalent*. See
-[Platform capability gaps](../../docs/architecture.md#platform-capability-gaps).
+`example-virtualization` installs what both EL10 platforms carry from a supported
+repository (`qemu-kvm`, `libvirt`, `virt-install`, `virt-viewer`, Cockpit and its
+machines plugin). An organization that wants a desktop application the platform
+does not ship — a graphical VM manager, for instance — adds it where it belongs:
+a Flatpak from Flathub, or a repository the organization enables and trusts.
+Core does not enable an unsupported repository to make an example look complete,
+and a package the platform cannot supply fails composition with the platform's
+reason ([platform capability gaps](../../docs/architecture.md#platform-capability-gaps)).
 
 ## Status
 
@@ -45,8 +43,7 @@ QCOW2 passes the boot and session checks there (retired factory host); this
 repository no longer builds RHEL. The CentOS Stream 10 workstation is built
 and booted in CI (`.github/workflows/vm-bootcheck.yml`): its boot, session
 and first-boot checks pass on an image built with its four declared RPM
-sources enabled and the requested packages installed. The virt-manager gap
-above is unchanged by that run.
+sources enabled and the requested packages installed.
 
 `assets/` holds placeholder artwork; see
 [`assets/PROVENANCE.md`](assets/PROVENANCE.md).

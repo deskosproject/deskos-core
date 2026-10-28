@@ -240,7 +240,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:42"
+            "source": "organization-and-role/software/example-devops.yaml:28"
           }
         ]
       },
@@ -305,7 +305,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:42"
+            "source": "organization-and-role/software/example-devops.yaml:28"
           }
         ]
       },
@@ -338,7 +338,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:42"
+            "source": "organization-and-role/software/example-devops.yaml:28"
           }
         ]
       },
@@ -426,7 +426,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:42"
+            "source": "organization-and-role/software/example-devops.yaml:28"
           }
         ]
       },

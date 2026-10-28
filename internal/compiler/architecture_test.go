@@ -264,10 +264,13 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 }
 
 // An organization requirement the platform cannot meet fails with the
-// platform's reason instead of being dropped or substituted.
-func TestExampleVirtManagerGapIsReported(t *testing.T) {
+// platform's reason instead of being dropped or substituted. The requirement is
+// a fixture, not the example's: the example no longer carries a package the
+// platform cannot supply, and this mechanism must be tested on its own.
+func TestAPlatformGapIsReportedWithItsReason(t *testing.T) {
 	dir := fixture{
 		"p.yaml": profile("needs-virt-manager", "role", "PackageSet/example-virt-manager"),
+		"s.yaml": packageSet("example-virt-manager", "virt-manager"),
 		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
 		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
 	}.dir(t)
