@@ -62,8 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux and Fedora are example
-        # examples and have no publication leg.
+        # release. RHEL is never published. AlmaLinux and Fedora are examples
+        # and have no publication leg.
         #
         # `disk` says how that platform's disk is written and `diskfile` where it
         # lands, because they differ: the EL platforms go through
@@ -88,7 +88,7 @@ jobs:
       SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
       # A scheduled run has no workflow_dispatch inputs. Without a fallback,
       # `inputs.fail-on` is empty and Grype can run with no severity threshold;
-      # the weekly watch would then silently weaken the Critical baseline.
+      # the weekly run would then silently weaken the Critical baseline.
       FAIL_ON: ${{ inputs.fail-on || 'critical' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
