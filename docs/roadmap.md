@@ -514,32 +514,44 @@ how-to: [supply-chain.md](supply-chain.md).
 
 ## Closeout of the P0/P1 items (2026-10-28)
 
-This is the only place the numbering is written down. An item closes with the
-evidence in its row, and not before.
+Every item of the [2026-10-20 review](future-backlog.md), with the evidence that
+closes it. "Closed by decision" means the item asked for a decision and the
+decision is recorded; "open" means the gap is named, not that it is forgotten.
 
 | Item | What it was | Status | Evidence |
 |---|---|---|---|
-| P0-01 | A retry keeps the evidence of the failed attempt instead of overwriting it | **closed** | attempt-suffixed workflow artifacts (`…-attempt-1`), 14 days, beside the retry; the publish runs of 2026-10-28 show it |
-| P0-02 | Lifecycle A → B → A on CentOS Stream 10: upgrade, rollback, persistent state, interrupted upgrade | **closed, one residual** | `lifecycle.yml` green on 2026-10-26 (run `40305080925`): seven steps, power loss and a candidate that cannot boot, recovered by its composefs verity. The ostree-write interruption window is still untested |
-| P0-03 | Consumer-side authenticity: signed and manually verifiable, enforcement out of scope | **closed by decision**, 2026-10-25 | keyless OIDC signature and a documented verification; Core does not enforce a policy on update. An organization that wants enforcement keeps key-based signing and owns the install path and key rotation. See [authenticity.md](design/authenticity.md) |
-| P0-04 | Bound build authority: a second reviewer or environment approval for publishing and signing, or a written reason why one person is acceptable at this scale | **closed by decision**, 2026-10-28: one person, written down | an environment approval would stop the weekly automatic promotion; the automatic path can only move the digest its run published, after the signature and every evidence object verify. See [promotion.md](design/promotion.md) |
-| P0-05 | Durable evidence, keyed by digest | **closed** | `evidence.deskos.org` serves the index and the objects of a published digest, and `promotion.yml` refuses a digest whose evidence does not verify. See [evidence-retention.md](design/evidence-retention.md) |
-| P0-06 | Build once, promote the same digest, with a recorded approval | **closed**, 2026-10-28 | the first automatic move: the gate published `sha256:871e59cc…` (run `40716569103`) and `promotion.yml` moved `:stable` from `sha256:649aff75…` and the ISO `:stable` to `sha256:d5af3354…`, recording `approvals/deskos-core-centos-stream-10/stable/20261028T161205Z-871e59cc….json` — approver `automatic (gate)`, the evidence index hash and the run. See [promotion.md](design/promotion.md) |
-| P1-02 | Bound platform support, adoption and retirement: the example policy, the support and security entry points, and how a platform leaves | **closed**, 2026-10-28 | [example-platforms.md](example-platforms.md) says what is an example and what is published; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points, and the private reporting form is enabled on the repository |
-| P1-06 | Test the workstation behaviour a vendor update can break: login, lock, logout with Wi-Fi off, offline Flatpak, the favorite | **closed** | the organization's `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…` |
-| P1-07 | Hardware behaviour on a real machine: suspend, Wi-Fi and Bluetooth, audio, dock, TPM/LUKS, thermals | **not a Core item**: the evidence belongs to the organization that owns the machine | the organization's `docs/hardware-validation.md` writes `hardware-report-<timestamp>/` and keeps the model, the serial and the screenshots private, in a private repository. Core states the scope — one model, best effort, never a compatibility claim — and never the identifiers |
+| P0-01 | Make gate failures actionable and preserve the tested identity | **closed** | attempt-suffixed artifacts (14 days) beside the retry; `identity.json` with commit, run, plan and manifest hashes, image ID and digest; the failed-boot journal is kept and uploaded |
+| P0-02 | Prove upgrade, rollback and persistent-state recovery | **closed, one residual** | `lifecycle.yml` green 2026-10-26 (run `40305080925`): stage, boot B, roll back, power loss and a candidate that cannot boot, recovered by composefs verity. The ostree-write interruption window is still untested |
+| P0-03 | Establish consumer-side authenticity enforcement | **closed by decision**, 2026-10-25 | keyless OIDC signature and a documented manual verification; Core does not enforce a policy on update. An organization that wants enforcement keeps key-based signing and owns the install path and key rotation |
+| P0-04 | Bound build authority and rehearse supply-chain incidents | **partial**: authority decided 2026-10-28; the rehearsal is not run | one person approves, with the bounds in [promotion.md](design/promotion.md): the automatic path moves only its run's digest, after signature and every evidence object verify. The tabletop in [threat-model.md](threat-model.md) says "not run yet" |
+| P0-05 | Preserve digest-indexed evidence and verifiable provenance | **closed** | `evidence.deskos.org` serves the index and objects of a published digest; `promotion.yml` refuses evidence that does not verify; the image carries a SLSA v1 provenance predicate |
+| P0-06 | Design promotion of one tested digest | **closed** | the first automatic move, 2026-10-28: `sha256:871e59cc…` from `sha256:649aff75…`, record `approvals/…/20261028T161205Z-871e59cc….json` (`automatic (gate)`), ISO `:stable` `sha256:9803337b…` |
+| P0-07 | Review released-image risk throughout its useful life | **closed** | the rescan procedure in [supply-chain.md](supply-chain.md): select a published digest, record scanner and database versions, and route a new Critical to revalidation, a dated exception or replacement/withdrawal, recorded on an issue with the digest and the matching package |
+| P0-08 | Make upstream-input changes deliberate and verifiable | **closed** | the input inventory in [supply-chain.md](supply-chain.md#inputs-and-who-moves-them) with owner, trigger and check per input; resolver and checksum tests; ADR 0019 and ADR 0021 for download capability and pinned extensions; the base re-pin and the exception re-review of 2026-10-28 are worked examples |
+| P1-01 | Define the public compatibility contract | **closed** | [compatibility.md](compatibility.md): surfaces, versioning and migration, a fixture matrix, beta/1.0 criteria and explicit non-promises |
+| P1-02 | Bound platform support, adoption and retirement | **closed** | [platforms.md](platforms.md) is the single matrix with security maintenance, upgrade paths and retirement; [example-platforms.md](example-platforms.md) draws the example boundary; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points |
+| P1-03 | Complete one public organizational adoption journey | **open** | the example's README carries the `virt-manager` gap and a status line, not the journey the item asks for: compiler, validate, customize, inspect the Plan and SBOM, build, install, first user, update, recover |
+| P1-04 | Correct current guidance and make recovery discoverable | **closed** | [recovery.md](recovery.md) and [troubleshooting.md](troubleshooting.md) are symptom → check → remedy; the stale AppIndicator and Ubuntu-era claims were corrected, not restated |
+| P1-05 | Make existing diagnostics useful to outside authors | **closed** | [diagnostics.md](diagnostics.md): resource and composition failures, download and build inputs, runtime evidence, and what is deliberately not a diagnostic |
+| P1-06 | Test the workstation behaviour a vendor update can break | **closed** | the organization's `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…`: interactive login, lock, logout with Wi-Fi off, offline Flatpak and reconnect, the favorite |
+| P1-07 | Record a small physical-hardware validation matrix | **not a Core item**: the evidence belongs to the organization that owns the machine | the organization's `docs/hardware-validation.md` writes `hardware-report-<timestamp>/` and keeps the model, the serial and the screenshots private, in a private repository. Core states the scope — one model, best effort, never a compatibility claim — and never the identifiers |
+| P1-08 | Make update behaviour predictable to users and operators | **closed** | the situation table in [operations.md](operations.md): automatic on and off, battery skip, staged with and without a window, machine off, registry unreachable, interrupted download, metered connection, Flatpak independent |
 
-P1-01, P1-03, P1-04 and P1-05, and the acceptance criteria of every item above,
-are defined in the [2026-10-20 review](future-backlog.md) that introduced the
-numbering. Their status there is the status at that date; this table does not
-claim any of the four.
-
-Two lines that used to live here are done and left out of the table:
-documentation was restructured around [platforms.md](platforms.md) as the one
-matrix, and the durable evidence bucket was built (P0-05, above).
+That is the review closed as a tracking document: twelve items done or decided,
+one outside Core, and **two gaps named** — the incident rehearsal (P0-04) and the
+adoption journey (P1-03). A number with an owner and a gap is a status; a number
+nobody can look up is not.
 
 ## Open work
 
+- **P0-04, the incident rehearsal.** The tabletop in
+  [threat-model.md](threat-model.md) has not been run. It needs a scenario, a
+  date, participants and the decisions, recorded where the exercise lives — a
+  walk-through without those is not evidence.
+- **P1-03, the adoption journey.** Write the one-pinned-reference exercise in
+  `examples/organization-and-role/`: compiler, validate, customize, inspect the
+  Plan and SBOM, build, install, first user, update, recover, and the gaps it
+  finds.
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app or
   action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
