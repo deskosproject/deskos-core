@@ -353,9 +353,17 @@ writes down where they got stuck.
 
 ## Milestone 4: workstation E2E
 
+**Designed 2026-10-29, not implemented.** See
+[session-e2e.md](design/session-e2e.md): the transport the session check already
+uses, an accessibility driver inside the guest speaking AT-SPI over D-Bus with
+`gdbus` (no package the artifact does not carry), and four bounded scenarios —
+launch an app, reach a Settings page, lock and unlock, open and close a window —
+asserted on the accessibility tree and not on pixels.
+
 - QEMU/KVM GNOME sessions driven through accessibility APIs, the way a person
   would use them, so a check fails where a user would be stuck.
-- Promotion gates: only digests that passed E2E move forward.
+- Promotion gates: only digests that passed E2E move forward. That needs the first
+  part implemented before it is worth promising.
 
 ## Milestone 5: identity and provisioning
 
