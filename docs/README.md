@@ -71,8 +71,12 @@ They are few, and most confusion comes from two of them meaning more than one th
 ## Where the rest is
 
 - [Migrations](migrations.md): what to edit when moving from an older release.
+- [Contributing](../CONTRIBUTING.md): what belongs here, how to run the checks,
+  and where a bug, a question, a security report or a conduct concern goes.
 - [Support](support.md) and [Security](../SECURITY.md): where to ask, what is
   promised, and how to report a vulnerability privately.
+- [Governance](governance.md): who decides, who owns what, and what happens if
+  that person is unavailable.
 - [Checks](checks.md): what each workflow asserts, and which claims are still
   measured by hand.
 - [Upstream findings](upstream.md): where a measured finding belongs, what

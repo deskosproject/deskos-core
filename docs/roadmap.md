@@ -546,8 +546,11 @@ nobody can look up is not.
 - **An outside reader on the walkthrough.** P1-03 is closed on the document and
   the run behind it; the part that cannot be manufactured from inside — a
   stranger following it without asking — is unproven until one does.
-- **Renovate.** `renovate.json` is in both repositories; deploying it (app or
-  action, PAT, `registry.redhat.io` credentials) is open.
-- **Flaky boot check.** The graphical-splash assertion has failed once on an
-  otherwise good image (the disk booted; the splash was not captured). Make
-  the check robust, or retry, so the gate is not intermittent.
+- **Renovate outside Core.** Core runs it daily (`renovate.yml`, `RENOVATE_TOKEN`)
+  and it opens the pin pull requests; `deskos-infrastructure` has no
+  `renovate.json` and no pins that move, so there is nothing to deploy there until
+  it does.
+- **Flaky boot check.** The graphical-splash assertion failed once on a good
+  image because the harness sampled the screen once a second and the splash can
+  last under one. It now samples every 0.25 s until the splash or the graphical
+  screen is seen, and the boot checks of #282 passed with the assertion on.
