@@ -220,7 +220,6 @@ Details in
   and deserves a resource of its own — a new kind, which needs an ADR and an
   explicit decision (invariant 4). If it is environment, Ansible owns it. The
   proxy check starts with what can be expressed today and leaves this open.
-- A decision by the example organization on the `virt-manager` gap.
 - **Example AlmaLinux and Fedora platforms:** their image builds move to the
   weekly `examples-weekly.yml` check, with no publication. This is not a support
   promise; [example-platforms.md](example-platforms.md) records the re-promotion
@@ -530,7 +529,7 @@ decision is recorded; "open" means the gap is named, not that it is forgotten.
 | P0-08 | Make upstream-input changes deliberate and verifiable | **closed** | the input inventory in [supply-chain.md](supply-chain.md#inputs-and-who-moves-them) with owner, trigger and check per input; resolver and checksum tests; ADR 0019 and ADR 0021 for download capability and pinned extensions; the base re-pin and the exception re-review of 2026-10-28 are worked examples |
 | P1-01 | Define the public compatibility contract | **closed** | [compatibility.md](compatibility.md): surfaces, versioning and migration, a fixture matrix, beta/1.0 criteria and explicit non-promises |
 | P1-02 | Bound platform support, adoption and retirement | **closed** | [platforms.md](platforms.md) is the single matrix with security maintenance, upgrade paths and retirement; [example-platforms.md](example-platforms.md) draws the example boundary; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points |
-| P1-03 | Complete one public organizational adoption journey | **open** | the example's README carries the `virt-manager` gap and a status line, not the journey the item asks for: compiler, validate, customize, inspect the Plan and SBOM, build, install, first user, update, recover |
+| P1-03 | Complete one public organizational adoption journey | **open** | the example's README is a description and a status line, not the journey the item asks for: compiler, validate, customize, inspect the Plan and SBOM, build, install, first user, update, recover |
 | P1-04 | Correct current guidance and make recovery discoverable | **closed** | [recovery.md](recovery.md) and [troubleshooting.md](troubleshooting.md) are symptom → check → remedy; the stale AppIndicator and Ubuntu-era claims were corrected, not restated |
 | P1-05 | Make existing diagnostics useful to outside authors | **closed** | [diagnostics.md](diagnostics.md): resource and composition failures, download and build inputs, runtime evidence, and what is deliberately not a diagnostic |
 | P1-06 | Test the workstation behaviour a vendor update can break | **closed** | the organization's `docs/field-validation.md`, recorded 2026-10-27, digest `sha256:5e80b551…`: interactive login, lock, logout with Wi-Fi off, offline Flatpak and reconnect, the favorite |

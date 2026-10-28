@@ -121,10 +121,6 @@ jq '.artifact.scheduledUpdates[] | select(.kind == "image") |
 
 The image schedule reads `weekly` with both Core's and your policy in the
 provenance; the highest layer supplied the value. The package says `role`.
-The example's `virt-manager` gap is unchanged: it stays an unreferenced
-`PackageSet/example-virt-manager`, and Cockpit is not a substitute. Adding it
-makes composition fail with the platform's reason; that is the intended
-visibility, not a workaround.
 
 ## 4. Render and build the image
 
@@ -242,8 +238,6 @@ application data from your own backup.
 
 - The two-command update surface is deliberate: image, system Flatpaks and
   user-level tools are separate; `deskos update` is image-only.
-- The `virt-manager` requirement is still unmet on EL10 and remains visible;
-  Cockpit is an additional tool, not a replacement.
 - The example organization had no update policy of its own; overriding one
   layer is enough, and `plan` shows both provenance entries.
 - A lab image is not an update source; the registry section is not optional for
