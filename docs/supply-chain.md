@@ -93,7 +93,8 @@ or at build time, not while rendering.
 ## CI job
 
 `.github/workflows/supply-chain.yml` runs on a weekly schedule and on
-`workflow_dispatch`; only a dispatch with `publish=true` on `main` publishes.
+`workflow_dispatch`. The weekly run publishes; a dispatch publishes only with
+`publish=true` on `main`, and without it is a dry look at a base bump.
 It builds one image per platform from a checkout — one matrix leg per publishable
 workstation reference, each with its own exceptions record and destination
 repository — and runs the steps above:
@@ -106,8 +107,8 @@ two evidence passes are pinned to `tests/supply-chain/grype-raw.yaml`
 only the gate applies the exceptions.
 
 A scheduled run has no dispatch inputs, so the gate uses the explicit
-`FAIL_ON` fallback of `critical`. That is the same baseline as a manual
-dispatch's default; the weekly watch cannot silently weaken it.
+`FAIL_ON` fallback of `critical`. That is the same baseline as a dispatch's
+default; the weekly run cannot silently weaken it.
 
 ### Evidence retained for a failed gate
 
@@ -312,8 +313,9 @@ rotation, and the fact that verification without a transparency log carries
 less evidence than the keyless path, are recorded with the organization.
 
 The gates are unified: `supply-chain.yml` is the single publish path, and it
-boots, scans, signs and attests the same image before it is promoted; it is
-dispatched manually with `publish=true`. `vm-bootcheck.yml` is a pure check.
+boots, scans, signs and attests the same image before it is promoted. The weekly
+run publishes by itself; a dispatch with `publish=true` does the same on demand.
+`vm-bootcheck.yml` is a pure check.
 
 The matrix runs with `fail-fast: false`, so one platform failing does not
 stop another from being published: promotions are **independent per

@@ -1,9 +1,11 @@
 # Promotion of one tested digest
 
-**Status: automatic, 2026-10-28.** The gate publishes weekly, by itself, and
-`promotion.yml` now runs when that gate succeeds: it verifies the digest and its
-evidence, stores an approval record and moves `:stable` and the ISO channel by
-digest. A dispatch still promotes a digest built earlier.
+**Status: implemented 2026-10-28; the first automatic move is the next gate
+run.** The gate publishes weekly, by itself, and `promotion.yml` now runs when
+that gate succeeds: it verifies the digest and its evidence, stores an approval
+record and moves `:stable` and the ISO channel by digest. A dispatch still
+promotes a digest built earlier. Until that run, the moves exercised by hand on
+2026-10-26 remain the only ones with a record.
 
 The trigger changed because a cadence that waits for a person is not a cadence.
 What did not change is the record: every move names a digest, its evidence and
@@ -14,10 +16,10 @@ who approved it — now "automatic (gate)", with the run that produced it. The f
 No canary or pilot channel exists.
 
 P0-06 asks for build-once promotion: one image digest moves through stages
-without being rebuilt, carrying its evidence and a recorded human decision.
-Today the gate builds, scans and boots an image, then moves `:latest` to that
-digest on a `publish=true` dispatch. There is no candidate→stable path, and a
-promotion is not recorded as an artifact.
+without being rebuilt, carrying its evidence and a recorded decision. The gate
+builds, scans and boots an image and moves `:candidate` and `:latest` to that
+digest; `promotion.yml` then moves `:stable` to the same digest, and the approval
+record names the digest, its evidence and the run that produced it.
 
 ## What is true today
 
@@ -36,8 +38,11 @@ promotion is not recorded as an artifact.
   digest, and verifies the tag resolves to the same digest.
 - Machines follow the reference they were installed from; `:latest` is mutable,
   a digest is not. `deskos update` stages whatever that reference now serves.
-- Publication requires a human dispatch; there is no second reviewer or
-  environment approval by default (P0-04).
+- Publication does not wait for a person: the weekly gate publishes and the
+  promotion follows its success. The record still names the approval —
+  `automatic (gate)` and the run that produced the digest — and a dispatch
+  remains for a digest built earlier. There is no second reviewer or environment
+  approval by default (P0-04).
 
 ## Model
 
@@ -46,12 +51,13 @@ and it does not imply a rebuild.
 
 | Channel | Meaning | Entry | Exit |
 |---|---|---|---|
-| `candidate` | built and gate-checked, not recommended for general use | publish dispatch, by digest | evidence index complete, scan/boot green, human authorization |
+| `candidate` | built and gate-checked, not recommended for general use | the weekly gate, or a `publish=true` dispatch, by digest | evidence index complete, scan/boot green, the gate succeeded |
 | `canary` | **not used**; documented for completeness | a named owner and opted-in machines | an agreed window with no blocking regression |
 | `stable` | the channel the page and documentation recommend | `promotion.yml`, by digest, with an approval record | replaced by a later digest, or withdrawn |
 
 At this project's scale the path is `candidate → stable`, with no canary stage.
-The important part is that every move names a digest, the evidence and a person.
+The important part is that every move names a digest, the evidence and who
+approved it.
 
 ### Tag map
 
@@ -64,10 +70,9 @@ The important part is that every move names a digest, the evidence and a person.
 
 Keeping `:latest` next to `:candidate` is deliberate. `candidate` names what the
 gate produced and is the tag `promotion.yml` checks; `latest` is the familiar
-fast-lane name, and it is not a second stable. This follows the peers: Bluefin
-keeps `latest` next to `stable`, and Utah and Dakota move `stable` from
-`testing` after their gate. Fedora Silverblue has no promotion channel at all;
-its `latest` means the current stable release, which is a different idea.
+fast-lane name, and it is not a second stable. The reason is the method, not a
+model borrowed from another project: one digest is built and tested once, a move
+names it, and the record says what was approved and why.
 
 ## Promotion is a move, not a build
 
@@ -75,10 +80,12 @@ its `latest` means the current stable release, which is a different idea.
    evidence index for that digest.
 2. Check the stage's entry conditions: scan result, boot/session/first-boot
    results, SBOM/Plan hashes, exception record and review dates.
-3. Write an approval record: digest, from-channel, to-channel, person, time,
+3. Write an approval record: digest, from-channel, to-channel, approver, time,
    previous stable digest, evidence index hash and a reason. It is stored in the
    public evidence bucket under `approvals/<repository>/<channel>/…`, never
-   inside a digest's immutable prefix.
+   inside a digest's immutable prefix. An automatic move records
+   `automatic (gate)` and the run that produced the digest, so "who approved
+   this" has an answer without a person having pressed a button.
 4. Move the destination tag **by digest** (a registry-side tag update), never
    by rebuilding. `:<commit>` remains as the build record.
 5. Verify from a clean machine that the destination tag resolves to the same
@@ -117,8 +124,13 @@ no controller). There is no telemetry to prove who runs a canary.
 - Channels exist per platform repository: `candidate` and `stable`. `:latest`
   stays as the **fast lane** next to `stable`, not as a second stable, and
   `:candidate` is the promotion source. Retiring `:latest` is not planned.
-- One person authorizes a move: the maintainer who dispatches `promotion.yml`.
-  The record names the actor and an approver (the actor by default).
+- A move is authorized by the gate's success (2026-10-28), and a dispatch still
+  authorizes one by hand. Both write the same record; the automatic path names
+  the run, the dispatch names the actor. A cadence that waited for a person was
+  not a cadence, and the record does not need a button to be honest.
+- The ISO channel moves with the image: `promotion.yml` finds the ISO tagged
+  `sha256-<image digest>`, verifies its signature and moves the ISO `:stable` to
+  it. A platform that published no ISO leaves the ISO channel alone.
 - No canary stage. Adding one needs opted-in machines and a named owner, and the
   project has neither.
 - The previous stable digest is recorded in the approval record and remains

@@ -1,16 +1,15 @@
 name: supply-chain
 
-# Manual only. The single publish path: builds the DeskOS Core reference
-#
-# It used to call itself experimental, which is the opposite of what it is: this is the
-# only path that publishes an image, and it publishes the manifest it tested and signed.
-# workstation for each platform in the matrix from this checkout, writes the
+# The single publish path: builds the DeskOS Core reference workstation for each
+# platform in the matrix from this checkout, writes the
 # declared SBOM with `deskosctl sbom`, produces the installed SBOM with Syft,
 # scans it with Grype, compares the two for RPM coverage, then makes a QCOW2
 # from the same image and runs the boot and session checks on it. Only then does
 # it tag, push, sign and attest that one digest, and upload the evidence. RHEL is
 # not built, scanned or published here at all: its build, scan and boot run in the
-# downstream organization's repository. See docs/supply-chain.md and ADR 0010.
+# downstream organization's repository. The weekly schedule publishes; a dispatch
+# publishes only with `publish=true` on `main`. See docs/supply-chain.md and
+# ADR 0010.
 on:
   # The weekly run builds, scans, boots, publishes and signs. It used to be a
   # watch that could not publish, which made "the newest image" depend on someone
@@ -63,8 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux and Fedora are example
-        # examples and have no publication leg.
+        # release. RHEL is never published. AlmaLinux and Fedora are examples
+        # and have no publication leg.
         #
         # `disk` says how that platform's disk is written and `diskfile` where it
         # lands, because they differ: the EL platforms go through
@@ -89,7 +88,7 @@ jobs:
       SPLASH: ${{ matrix.splash && '--expect-splash' || '' }}
       # A scheduled run has no workflow_dispatch inputs. Without a fallback,
       # `inputs.fail-on` is empty and Grype can run with no severity threshold;
-      # the weekly watch would then silently weaken the Critical baseline.
+      # the weekly run would then silently weaken the Critical baseline.
       FAIL_ON: ${{ inputs.fail-on || 'critical' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
