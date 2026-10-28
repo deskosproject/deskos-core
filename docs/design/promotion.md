@@ -131,6 +131,17 @@ no controller). There is no telemetry to prove who runs a canary.
 - The ISO channel moves with the image: `promotion.yml` finds the ISO tagged
   `sha256-<image digest>`, verifies its signature and moves the ISO `:stable` to
   it. A platform that published no ISO leaves the ISO channel alone.
+- **One person approves, deliberately (2026-10-28).** An environment approval on
+  `evidence-write` would pause every weekly promotion for a human, which is the
+  cadence this work set out to remove. What stands in for the second pair of
+  eyes is the narrowness of the move: the automatic path can only move the
+  digest its triggering run published — the evidence names that `run_id` — and
+  only after the keyless signature verifies against `supply-chain.yml` on `main`
+  and every object in the evidence index matches its hash. A dispatch can name
+  another digest, and it records the person who did. What is left to a person
+  is upstream: a merge to `main` under branch protection and the `validate`
+  check. Revisit when a second maintainer joins, or when an organization
+  consumes Core under an SLA.
 - No canary stage. Adding one needs opted-in machines and a named owner, and the
   project has neither.
 - The previous stable digest is recorded in the approval record and remains

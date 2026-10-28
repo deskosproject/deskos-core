@@ -522,7 +522,7 @@ evidence in its row, and not before.
 | P0-01 | A retry keeps the evidence of the failed attempt instead of overwriting it | **closed** | attempt-suffixed workflow artifacts (`…-attempt-1`), 14 days, beside the retry; the publish runs of 2026-10-28 show it |
 | P0-02 | Lifecycle A → B → A on CentOS Stream 10: upgrade, rollback, persistent state, interrupted upgrade | **closed, one residual** | `lifecycle.yml` green on 2026-10-26 (run `40305080925`): seven steps, power loss and a candidate that cannot boot, recovered by its composefs verity. The ostree-write interruption window is still untested |
 | P0-03 | Consumer-side authenticity: signed and manually verifiable, enforcement out of scope | **closed by decision**, 2026-10-25 | keyless OIDC signature and a documented verification; Core does not enforce a policy on update. An organization that wants enforcement keeps key-based signing and owns the install path and key rotation. See [authenticity.md](design/authenticity.md) |
-| P0-04 | A second reviewer or environment approval for publishing and signing, or a written reason why one person is acceptable at this scale | **open** | `evidence-write` has no protection rules and the publish job declares no environment |
+| P0-04 | A second reviewer or environment approval for publishing and signing, or a written reason why one person is acceptable at this scale | **closed by decision**, 2026-10-28: one person, written down | an environment approval would stop the weekly automatic promotion; the automatic path can only move the digest its run published, after the signature and every evidence object verify. See [promotion.md](design/promotion.md) |
 | P0-05 | Durable evidence, keyed by digest | **closed** | `evidence.deskos.org` serves the index and the objects of a published digest, and `promotion.yml` refuses a digest whose evidence does not verify. See [evidence-retention.md](design/evidence-retention.md) |
 | P0-06 | Build once, promote the same digest, with a recorded approval | **closes with the first automatic move** | `promotion.yml` runs on the gate's success, verifies signature and evidence, writes the approval (`automatic (gate)`, with the run) and moves `:stable` and the ISO channel by digest. Until that record exists, the two moves of 2026-10-26 are the only ones with one. See [promotion.md](design/promotion.md) |
 | P1-02 | The example policy, and the support and security entry points | **open**: policy done, entry points in review | [example-platforms.md](example-platforms.md) says what is an example and what is published; [SECURITY.md](../SECURITY.md) and [support.md](support.md) are the entry points |
@@ -539,7 +539,7 @@ matrix, and the durable evidence bucket was built (P0-05, above).
 
 ## Open work
 
-- **P0-04, P1-02, P1-07**: the three rows marked open above.
+- **P1-02, P1-07**: the rows marked open above.
 - **Renovate.** `renovate.json` is in both repositories; deploying it (app or
   action, PAT, `registry.redhat.io` credentials) is open.
 - **Flaky boot check.** The graphical-splash assertion has failed once on an
