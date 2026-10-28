@@ -1,0 +1,49 @@
+name: cleanup-tags
+
+# One-off: delete registry tags by name. Dispatch only, and it holds the registry
+# robot because deleting is a write.
+#
+# It exists to remove tags that were never promotable — an image published just
+# before its gate failed has a `:<commit>` tag and no evidence index. It is not a
+# general tool: it refuses anything that is not a 40-character commit tag, so it
+# cannot touch :stable, :candidate or :latest by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 40-character commit tags to delete, one per line
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  delete:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Delete the tags
+        env:
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+          TAGS: ${{ inputs.tags }}
+        run: |
+          set -euo pipefail
+          repo="deskos/deskos-core-centos-stream-10"
+          printf '%s\n' "$TAGS" | tr -d '\r' | while read -r tag; do
+            [ -n "$tag" ] || continue
+            case "$tag" in
+              *[!0-9a-f]*) echo "::error::'$tag' is not a commit tag"; exit 1 ;;
+            esac
+            [ "${#tag}" -eq 40 ] || { echo "::error::'$tag' is not 40 characters"; exit 1; }
+            code="$(curl -sS -o "$RUNNER_TEMP/out" -w '%{http_code}' -X DELETE \
+              -u "$QUAY_ROBOT_USERNAME:$QUAY_ROBOT_TOKEN" \
+              "https://quay.io/api/v1/repository/$repo/tag/$tag")"
+            echo "DELETE $tag -> $code $(cat "$RUNNER_TEMP/out")"
+            case "$code" in
+              200|202|204) ;;
+              *) echo "::error::could not delete $tag"; exit 1 ;;
+            esac
+          done
