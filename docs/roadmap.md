@@ -58,11 +58,14 @@ each slice is reviewed on its own:
   now. It runs on pull requests and on
   `main` for paths that can change an image, and on demand
   (`workflow_dispatch`).
-- **Publishing:** `supply-chain.yml`, run manually with `publish=true` on
-  `main`, builds, scans and boots each platform's image and then pushes and
+- **Publishing:** `supply-chain.yml` runs weekly on `main` and publishes by
+  itself: it builds, scans and boots each platform's image, then pushes and
   signs it to that platform's repository
-  (`quay.io/deskos/deskos-core-centos-stream-10`) as `:latest` and
-  `:<commit>`. CentOS Stream 10 today, with the
+  (`quay.io/deskos/deskos-core-centos-stream-10`) as `:latest`, `:candidate` and
+  `:<commit>`, with the installer ISO as a signed OCI artifact beside it.
+  `promotion.yml` follows the gate's success and moves `:stable` to that digest
+  with a recorded approval. A dispatch with `publish=true` does the same on
+  demand. CentOS Stream 10 today, with the
   digests and the run in [architecture.md](architecture.md#validation-status), and
   the older single repository
   (`quay.io/deskos/deskos-core`) has been withdrawn. `vm-bootcheck.yml` is a
