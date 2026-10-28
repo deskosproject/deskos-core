@@ -335,7 +335,14 @@ def run(args):
                 break
             if proc.poll() is not None:
                 raise HarnessError(f"QEMU exited during boot with status {proc.returncode}")
-            time.sleep(args.interval)
+            # The splash can last well under a second on a fast boot, and the
+            # loop used to sample once a second: one run saw the graphical
+            # desktop and no splash, and the gate failed on a good image
+            # (2026-10-28). Sample finely until the splash or the graphical
+            # screen is seen, then fall back to the configured interval. Frames
+            # are only written when the picture changes, so this adds a handful.
+            hunting = splash_at is None and graphical_at is None
+            time.sleep(min(args.interval, 0.25) if hunting else args.interval)
         summary["splash_first_s"] = splash_at
         summary["graphical_first_s"] = graphical_at
         summary["ready_serial_s"] = ready_at
