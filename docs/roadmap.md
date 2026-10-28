@@ -543,6 +543,10 @@ nobody can look up is not.
 
 ## Open work
 
+- **P2-03, adoption beyond one organization.** One organization records its own
+  resource root and its field evidence (private, the same maintainer); the item
+  asks for **two external environments**, and a second pair of eyes is the whole
+  point. Named here so the first environment is not mistaken for the validation.
 - **An outside reader on the walkthrough.** P1-03 is closed on the document and
   the run behind it; the part that cannot be manufactured from inside — a
   stranger following it without asking — is unproven until one does.
