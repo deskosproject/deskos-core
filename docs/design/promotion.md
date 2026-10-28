@@ -1,8 +1,13 @@
 # Promotion of one tested digest
 
-**Status: implemented and exercised, 2026-10-26.** The gate publishes
-`:candidate`; `promotion.yml` verifies the digest and its evidence, stores an
-approval record and moves `:stable` by digest. The first promotion moved
+**Status: automatic, 2026-10-28.** The gate publishes weekly, by itself, and
+`promotion.yml` now runs when that gate succeeds: it verifies the digest and its
+evidence, stores an approval record and moves `:stable` and the ISO channel by
+digest. A dispatch still promotes a digest built earlier.
+
+The trigger changed because a cadence that waits for a person is not a cadence.
+What did not change is the record: every move names a digest, its evidence and
+who approved it — now "automatic (gate)", with the run that produced it. The first promotion moved
 `sha256:96fe80d3…` to `:stable` from `:latest` (run `40317904401`, because
 `:candidate` starts with the next gate run) and its record is
 `approvals/deskos-core-centos-stream-10/stable/20261026T115001Z-96fe80d3….json`.

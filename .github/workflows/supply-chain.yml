@@ -12,9 +12,10 @@ name: supply-chain
 # not built, scanned or published here at all: its build, scan and boot run in the
 # downstream organization's repository. See docs/supply-chain.md and ADR 0010.
 on:
-  # The watch that notices when a vendor's base stops carrying the Criticals the
-  # records accept, and when a new one appears. It cannot publish: publishing
-  # needs `publish=true`, which only a dispatch can set.
+  # The weekly run builds, scans, boots, publishes and signs. It used to be a
+  # watch that could not publish, which made "the newest image" depend on someone
+  # remembering to dispatch; that is not a cadence. A dispatch with publish=false
+  # still runs the gate without publishing, for a dry look at a base bump.
   schedule:
     - cron: '17 6 * * 1'
   workflow_dispatch:
@@ -300,7 +301,7 @@ jobs:
             --out "$WORK/firstboot" --boot-timeout 900
 
       - name: Install cosign
-        if: inputs.publish && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
           # The action defaults to an older cosign; pin the release we verify.
@@ -310,7 +311,7 @@ jobs:
         # One image per platform; RHEL images are never published. The
         # signature is keyless: it is bound to this workflow's OIDC
         # identity, and a signed attestation references the installed SBOM.
-        if: inputs.publish && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
         env:
           DEST: quay.io/deskos/deskos-core-${{ matrix.token }}
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
@@ -365,6 +366,45 @@ jobs:
             --predicate ${{ matrix.exceptions }} "$ref"
           retry cosign attest --yes --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --predicate "$WORK/effective-exceptions.json" "$ref"
+          # SLSA v1 provenance: the commit, the base image digest the plan pins,
+          # and this workflow as the builder. Produced by the pipeline that builds
+          # the image, which is the honest claim (SLSA Build L2 shape); it is not
+          # an isolated L3 builder and does not pretend to be.
+          base="$(jq -r '.artifact.baseImage.digest' ctx/plan.json)"
+          test -n "$base" -a "$base" != null
+          jq -n \
+            --arg name "$DEST" \
+            --arg digest "${digest#sha256:}" \
+            --arg commit "$GITHUB_SHA" \
+            --arg base "$base" \
+            --arg run "$GITHUB_RUN_ID" \
+            --arg repo "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --arg platform "${{ matrix.token }}" \
+            '{
+              _type: "https://in-toto.io/Statement/v1",
+              subject: [{name: $name, digest: {sha256: $digest}}],
+              predicateType: "https://slsa.dev/provenance/v1",
+              predicate: {
+                buildDefinition: {
+                  buildType: "https://deskos.org/build/supply-chain/v1",
+                  externalParameters: {platform: $platform, baseImage: $base},
+                  internalParameters: {workflow: "supply-chain.yml"},
+                  resolvedDependencies: [
+                    {uri: $repo, digest: {gitCommit: $commit}},
+                    {uri: "base-image", digest: {sha256: ($base | sub("^sha256:"; ""))}}
+                  ]
+                },
+                runDetails: {
+                  builder: {id: ($repo + "/.github/workflows/supply-chain.yml@refs/heads/main")},
+                  metadata: {invocationId: $run}
+                }
+              }
+            }' > provenance.json
+          retry cosign attest --yes --type slsaprovenance1 --predicate provenance.json "$ref"
+          cosign verify-attestation --type slsaprovenance1 \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
+            | tee -a cosign-verify.txt
           # Pin the release workflow, not the repository: another workflow in
           # this repository must not be able to sign a published image.
           cosign verify "$ref" \
@@ -419,7 +459,7 @@ jobs:
         # what this pipeline does not measure. The signature binds the artifact
         # to this workflow's identity, and the annotation names the image digest
         # it was built from.
-        if: inputs.publish && github.ref == 'refs/heads/main' && matrix.disk == 'bib'
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && matrix.disk == 'bib'
         timeout-minutes: 45
         env:
           DEST: quay.io/deskos/deskos-core-${{ matrix.token }}
@@ -461,6 +501,9 @@ jobs:
             "$ISO_REPO:$GITHUB_SHA" \
             "$WORK/iso/bootiso/install.iso:application/x-iso9660-image"
           "$tmp/oras" tag "$ISO_REPO:$GITHUB_SHA" candidate
+          # Promotion knows the image digest, not the commit: tag the artifact by
+          # the digest it was built from so it can be found without a lookup.
+          "$tmp/oras" tag "$ISO_REPO:$GITHUB_SHA" "sha256-${digest#sha256:}"
           iso_digest="$("$tmp/oras" manifest fetch --descriptor "$ISO_REPO:$GITHUB_SHA" | jq -r .digest)"
           test -n "$iso_digest"
           printf '%s\n' "$iso_digest" | tee iso-digest.txt
@@ -572,7 +615,7 @@ jobs:
         run: python3 tests/supply-chain/identity.py --check "$WORK/evidence/identity.json"
 
       - name: Stage durable evidence
-        if: inputs.publish && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
         run: |
           set -euo pipefail
           d="$WORK/durable"
@@ -592,7 +635,7 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > "$d/commit.txt"
 
       - name: Upload durable evidence
-        if: inputs.publish && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: supply-chain-durable-${{ matrix.token }}-attempt-${{ github.run_attempt }}
@@ -625,6 +668,7 @@ jobs:
             ${{ env.WORK }}/journal-failed-boot
             !${{ env.WORK }}/**/*.qcow2
             latest-digest.txt
+            provenance.json
             iso.sha256
             iso-digest.txt
             iso-cosign-verify.txt
@@ -633,7 +677,7 @@ jobs:
 
   evidence:
     needs: publish
-    if: inputs.publish && github.ref == 'refs/heads/main' && needs.publish.result == 'success'
+    if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && needs.publish.result == 'success'
     runs-on: ubuntu-24.04
     environment: evidence-write
     permissions:

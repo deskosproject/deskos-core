@@ -193,6 +193,13 @@ retention; for a published digest the same evidence is also stored under
 
 ## Signing and provenance
 
+The publish step attests **SLSA v1 provenance** beside the SBOM and the
+exceptions: the source commit, the base image digest the plan pins, and this
+workflow as the builder. It is produced by the pipeline that builds the image, so
+it claims what SLSA calls a Build L2 shape — the build is what says it built —
+and not the isolation of a dedicated L3 builder. Claiming L3 for a self-produced
+statement would be false.
+
 The same workflow, with `publish` on `main`, pushes the scanned image and
 signs it **keyless** with [cosign](https://docs.sigstore.dev/): Fulcio
 issues a short-lived certificate bound to the workflow's OIDC identity and
