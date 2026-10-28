@@ -5,6 +5,195 @@
     "image": "quay.io/centos-bootc/centos-bootc:stream10",
     "digest": "sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11"
   },
-  "exceptions": [],
-  "note": "Re-reviewed against the base above on 2026-10-28. The scan of that base reports no Critical match, so the three accepted-risk entries for the previous base (GO-2026-6604, GO-2026-6612, CVE-2026-114406) are moot and were removed rather than kept as a risk that no longer exists."
+  "exceptions": [
+    {
+      "id": "GO-2026-6604",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/47/eb689d5d554bf0b03007bbb39dececb84bef3e9712ebc3020b801e3fe4a3ef.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/d4/4b5d5bcf4b0af9e56b90e5b5f11650a62891e1204afd8d60afd53a72d089c4.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/bin/toolbox"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/libexec/yggdrasil-worker-package-manager"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/podman"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6612",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/47/eb689d5d554bf0b03007bbb39dececb84bef3e9712ebc3020b801e3fe4a3ef.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/sysroot/ostree/repo/objects/d4/4b5d5bcf4b0af9e56b90e5b5f11650a62891e1204afd8d60afd53a72d089c4.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/bin/toolbox"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.25.7",
+          "path": "/usr/libexec/yggdrasil-worker-package-manager"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.3",
+          "path": "/sysroot/ostree/repo/objects/37/36efca45e2c2c5dc57fbb1a9b586693d069b710be490ef914c8eea4aa00f4d.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.3",
+          "path": "/usr/bin/yggd"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.5",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/15/5e8ab3709d5fa0e0d3158e3c6509b5c87ae3cd0d557892fe72cea9ca6b59a0.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/4c/bbb724b74515a8b087f4ea2cd8efcf748e3f821db8d5808e0206061aabe324.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/a8/67099f02f90be25f502c69a27cf59d0ffbd2052d2f49e0dfa24f4334aa31a2.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/bin/rhc"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/libexec/rhc/rhc-collector"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/libexec/rhc/rhc-server"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/sbin/ipp-usb"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-114406",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-23 and re-reviewed on 2026-10-26 for the Stream 10 base move. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base now carries 2026.2.92_v9.0.319-100.1, which no longer ships the two roots DeskOS blocklisted (verified in the base bundle), so the deskos-trust profile is no longer selected by this workstation; the remaining roots are what the fixed 2026.2.92_v9.0.319-100.3 build removes. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when the compose serves ca-certificates-2026.2.92_v9.0.319-100.3.",
+      "matches": [
+        {
+          "package": "ca-certificates",
+          "type": "rpm",
+          "version": "2026.2.92_v9.0.319-100.1.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        }
+      ]
+    }
+  ]
 }
