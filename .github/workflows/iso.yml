@@ -117,20 +117,34 @@ jobs:
         with:
           cosign-release: 'v3.1.3'
 
-      - name: Verify the digest and pull it
+      - name: Verify the digest and pull it, with the builder
         # What the ISO carries is the digest, and the digest is what the gate
         # signed. The signature is the link between the two, so it is checked
         # before the build, not after.
+        #
+        # The builder is pulled here too: in the gate it came from the build's
+        # own pull step, and without it `podman run --pull=never` answers
+        # "image not known" (2026-10-28).
         env:
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           set -euo pipefail
+          retry() {
+            local n=0
+            until "$@"; do
+              n=$((n+1))
+              [ "$n" -ge 4 ] && { echo "gave up after $n attempts: $*" >&2; return 1; }
+              echo "attempt $n failed; retrying in $((n*15))s: $*" >&2
+              sleep $((n*15))
+            done
+          }
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           cosign verify "$IMAGE@$DIGEST" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
-          sudo podman pull "$IMAGE@$DIGEST"
+          retry sudo podman pull "$IMAGE@$DIGEST"
+          retry sudo podman pull "$BIB"
 
       - name: Build the ISO from that digest
         run: |
