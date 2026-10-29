@@ -33,3 +33,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0021: An extension the platform's repositories do not carry as a pinned artifact](0021-extensions-can-be-delivered-as-pinned-artifacts.md) | accepted |
 | [0022: Removing packages a platform must not carry](0022-removing-packages-a-platform-must-not-carry.md) | accepted |
 | [0023: Scheduled image apply is an explicit, time-bound opt-in](0023-scheduled-apply-window.md) | accepted |
+| [0024: What a desktop platform must expose](0024-what-a-desktop-platform-must-expose.md) | proposed |

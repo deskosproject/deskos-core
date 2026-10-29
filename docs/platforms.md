@@ -64,6 +64,15 @@ This repository still **composes and renders** a Debian-family workstation, and
 its tests say so. It no longer builds, boots or publishes one: the virtual
 machines, the publish leg and the platform's resources moved with it.
 
+## Why GNOME
+
+A desktop is adopted here on [seven criteria](adr/0024-what-a-desktop-platform-must-expose.md)
+— file-based configuration with precedence, a lock layer, a greeter database, an
+offline expression and state a check can read — not on popularity. GNOME on EL10
+meets them today, and [the audit](gnome-coverage.md) is the evidence: sixteen
+guide items modelled exactly, four partially, and the refusals named. Another
+desktop would arrive as its own kind, ADR and audit, not as a flag.
+
 ## Support and retirement
 
 The matrix above is the support statement. It is **not an LTS promise**, and a
