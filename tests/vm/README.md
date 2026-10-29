@@ -1,23 +1,16 @@
-# VM boot check
+# VM harness
 
-`bootcheck.py` boots an **unmodified** DeskOS disk image in QEMU with UEFI
-firmware and records the screen until the machine shows a stable graphical
-screen, then shuts it down through ACPI. **The disk is never written**;
-each run boots a throwaway qcow2 overlay in its own output directory.
-`sessioncheck.py` adds an instrumented boot that checks the GNOME session
-against the plan.
+`bootcheck.py` boots an **unmodified** disk in QEMU with UEFI firmware, records
+the screen until it is stably graphical, then shuts down through ACPI. The disk
+is never written: each run boots a throwaway qcow2 overlay in its own output
+directory. `sessioncheck.py` adds an instrumented boot that checks the GNOME
+session against the plan; `firstbootcheck.py` asks whether the first-boot wizard
+is the session that came up.
 
-**Requirements:** Linux with `/dev/kvm`, QEMU (`qemu-system-x86_64` or
-`/usr/libexec/qemu-kvm`), `qemu-img`, OVMF and Python 3. Only the Python
-standard library is used. It runs as an unprivileged user with user-mode
-networking.
+**Requirements:** Linux with `/dev/kvm`, QEMU, `qemu-img`, OVMF and Python 3 (no
+third-party modules). It runs unprivileged, with user-mode networking.
 
 ## Building a test disk
-
-Build the image from a rendered context, then a QCOW2 *without*
-bootc-image-builder's default kernel arguments
-(`rw console=tty0 console=ttyS0`), so the disk boots with the image's own
-arguments, as an installed workstation does:
 
 ```bash
 deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
@@ -29,28 +22,12 @@ sudo podman run --rm --privileged --pull=missing \
     build --type qcow2 --no-default-kernel-args localhost/deskos-core-centos-stream-10:test
 ```
 
-**Or install to a raw disk**, which is the path for a platform whose image is not
-published — Ubuntu 26.04 today. The harness detects the backing format, so a raw
-disk and a QCOW2 are both accepted:
-
-```bash
-deskosctl render --workstation <workstation> --output ctx
-sudo podman build -t localhost/<workstation>:test ctx
-# The composefs import rejects uncompressed layers, so recompress into an OCI
-# layout, which is also what the install mounts as its source:
-sudo skopeo copy containers-storage:localhost/<workstation>:test oci:/tmp/oci:test
-truncate -s 32G disk.raw
-# --target-imgref is the reference the installed system will update from. It must
-# be the reference of the image being installed (this derivative's own published
-# reference once it has one); leaving it out records the lab path, and pointing it
-# at the base would replace the derivative with the base at the next update.
-sudo podman run --rm --privileged --pid=host --security-opt label=type:unconfined_t \
-    -v /dev:/dev -v /var/lib/containers:/var/lib/containers \
-    -v /tmp/oci:/src-oci:ro -v "$PWD":/output \
-    localhost/<workstation>:test bootc install to-disk --via-loopback /output/disk.raw \
-    --source-imgref oci:/src-oci:test --target-imgref <published reference> \
-    --composefs-backend --bootloader systemd --wipe --filesystem ext4 --allow-missing-verity
-```
+`--no-default-kernel-args` drops bootc-image-builder's `console=ttyS0`, so the
+disk boots with the image's own arguments. A platform that publishes no image can
+be written with `bootc install to-disk` instead; the harness detects the backing
+format, so a raw disk and a QCOW2 are both accepted. `--target-imgref` must be the
+reference the installed system will update from, or the lab path is recorded and
+the next update would replace the derivative with its base.
 
 ## Running
 
@@ -58,331 +35,183 @@ sudo podman run --rm --privileged --pid=host --security-opt label=type:unconfine
 python3 tests/vm/bootcheck.py --disk output/qcow2/disk.qcow2 --out run-1 --expect-splash --hash-disk
 ```
 
-| Exit status | Meaning |
-|---|---|
-| `0` | pass |
-| `1` | fail |
-| `2` | harness error |
-
-The run fails when:
-
-- no stable graphical screen appears within `--boot-timeout`;
-- `--expect-splash` is set and no graphical boot splash is seen;
-- ACPI shutdown does not power off within `--shutdown-timeout`.
+Exit `0` passes, `1` fails, `2` is a harness error. A run fails when no stable
+graphical screen appears within `--boot-timeout`, when `--expect-splash` sees no
+splash, or when ACPI shutdown does not power off in time.
 
 `run-1/` holds `summary.md`, `summary.json`, one PNG per distinct frame,
-`serial.log` and `qemu.log`. Frames are classified as:
-
-- `blank`;
-- `text` (firmware, GRUB, console);
-- `splash` (dark screen with only a lower-middle spinner and watermark);
-- `graphical` (a mostly non-dark screen).
+`serial.log` and `qemu.log`. Frames are classed `blank`, `text` (firmware, GRUB,
+console), `splash` (dark, lower-middle spinner and watermark) or `graphical`.
 
 > [!NOTE]
-> These are **pixel heuristics**: the harness does not identify which
-> graphical screen it sees (GNOME Initial Setup, GDM or a desktop) and
-> does not test applications. *The frames are the evidence.*
+> These are pixel heuristics: the harness does not identify *which* graphical
+> screen it sees, and does not test applications. The frames are the evidence.
 
-## Session check (instrumented boot)
+## Session check
 
-`sessioncheck.py` boots the same unmodified disk (again through an
-overlay) with systemd credentials passed as SMBIOS type 11 strings. They
-add:
-
-- a test user `deskos-qa` with GDM autologin;
-- a session script that records what GNOME reports;
-- a unit that writes the results and the kernel, Plymouth and GDM
-  journal to the serial port, then powers the machine off.
-
-Kernel arguments and Plymouth are unchanged, but this is an
-**instrumented boot** and is reported as one.
+The same disk, again through an overlay, with systemd credentials passed as SMBIOS
+type 11: a `deskos-qa` user with GDM autologin, a script that records what GNOME
+reports, and a unit that writes results and journals to the serial port and powers
+off. Kernel arguments and Plymouth are unchanged, but this is an **instrumented
+boot** and is reported as one.
 
 ```bash
 python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.json --out session-1
 ```
 
-`--offline` boots the same disk with **no NIC** and asserts the session still
-logs in: it checks that the guest has no default route, so a boot that quietly
-kept user networking fails instead of passing as an offline login. The browser
-page and the declared Flatpak store need the network, so both are skipped in
-that mode.
+`--offline` boots with **no NIC** and asserts the session still logs in, checking
+that the guest really has no default route. Browser and Flatpak checks are skipped
+there because they need the network.
 
-Expected values come from the image's `plan.json`: the enabled
-extensions (including Dash to Dock), the favorites order, each favorite's
-desktop entry (system or Flatpak export) and the command that entry launches,
-the login logo's file when the plan declares one, and the wallpaper. The check
-also requires `disable-user-extensions` to be false, Firefox to run headless
-and to fetch a page the harness serves on the host side of QEMU's user network
-(`10.0.2.2`), the shipped `deskos report` to name the tested workstation and
-`deskos check` to run (exit 0 or 1), every declared system Flatpak to be
-installed, no failed user units and no unexpected failed system units (see
-[the mcelog exception](#known-amd-guest-exception-mcelog) below). Results are in `session.md`, `session.json` and `journal.txt`,
-with frames as for the boot check.
+Expectations come from the image's `plan.json`: enabled extensions (including Dash
+to Dock), favorites order, each favorite's desktop entry and the command it
+launches, the login logo's file, the wallpaper, and `disable-user-extensions`
+false. It also requires headless Firefox to fetch a page served by the harness on
+`10.0.2.2`, `deskos report` to name the workstation, `deskos check` to run (exit 0
+or 1), every declared system Flatpak installed, no failed user units and no
+unexpected failed system units. Results are in `session.md`, `session.json` and
+`journal.txt`, with frames as above.
 
 ### Every default the plan declares
 
-Beyond those named checks, the harness asserts **every default the plan
-declares** and takes the lists from the plan itself, so a default declared
-later is asserted without editing `sessioncheck.py`. There are two declared
-lists and two delivery paths:
+The lists come from the plan, so a default declared later is asserted without
+editing the harness. Two delivery paths:
 
-- **dconf defaults** (`artifact.dconf.defaults`): the guest reads each key
-  with `dconf read`, the effective value the session sees, in the same
-  GVariant text the plan stores.
-- **GSettings vendor defaults** (`artifact.gsettingsVendorDefaults`): the
-  guest reads each schema and key with `gsettings get`, in session and in
-  the compiled schema default. This is the path a
-  `*.gschema.override` takes, and it is the only one that delivers a
-  default on a platform whose dconf profile does not read the DeskOS
-  database.
+- **dconf defaults** (`artifact.dconf.defaults`): each key read with `dconf read`.
+- **GSettings vendor defaults** (`artifact.gsettingsVendorDefaults`): each schema
+  and key read with `gsettings get`; the path a `*.gschema.override` takes, and
+  the only one that delivers a default where the platform's dconf profile does not
+  read the DeskOS database.
 
-Each declared default is **two claims**, not one, and each claim is read
-separately:
+Each default is **two claims**, read separately:
 
-- **The image carries it.** For a dconf default the guest also reads the key
-  through a profile naming only the image's own dconf database, so the
-  value the image ships is known apart from the value the session ends up
-  with. For a vendor default the guest reads the compiled schema default
-  with `GSETTINGS_BACKEND=memory`, which is the value the schemas resolve to
-  apart from any dconf value. That read confirms the compiled default is the
-  declared one; it does not attribute the value to DeskOS's own
-  `*.gschema.override`, because a vendor's override carrying the same value
-  reads the same — the drop-in's content is the backend's, covered by its
-  own tests. A declared default the image does not carry **fails**, whether
-  or not the session happens to see the plan's value: the session showing
-  the right value does not prove DeskOS put it there, and the value could
-  come from anywhere.
-- **The session ends up with it.** The value the session sees must match the
-  plan. The run is a fresh account on a fresh install, so nothing legitimate
-  has set a value yet: a session value that differs **fails**, because a
-  declared default that does not reach the user is the defect this check
-  exists for. A key the desktop itself rewrites on first login is the only
-  exception, declared in `EXPLAINED_SESSION_DIFFERENCES` with the reason the
-  report prints — not skipped by default. The entry names the delivery path
-  as well as the key (`dconf:<key>` or `gsettings:<schema> <key>`), because
-  the same key can be declared on both paths (the wallpaper is) and an
-  exception on one must not excuse the other.
+- **The image carries it.** A dconf default is also read through a profile naming
+  only the image's own database; a vendor default through
+  `GSETTINGS_BACKEND=memory`. A declared default the image does not carry fails,
+  whether or not the session happens to show the right value.
+- **The session ends up with it.** On a fresh install a differing session value
+  fails: a default that does not reach the user is the defect. A key the desktop
+  itself rewrites on first login is declared in `EXPLAINED_SESSION_DIFFERENCES`
+  with its reason, naming the delivery path (`dconf:<key>` or
+  `gsettings:<schema> <key>`), because one key can be declared on both.
 
-A read the guest cannot make is not a contradiction, so it is not failed: if
-the image carries the default but the session cannot see it (its dconf
-profile does not reach the database that holds it, or the read fails), the
-key is **reported as unverified with the reason**. That is the case that
-tells whether a platform's profile reads the database DeskOS writes to.
-`session.json` carries `plan_defaults` (`declared`, `in_image`,
-`in_session`, and every read that was not verified with its axis, state and
-reason), and `session.md` prints the counts and each unverified read.
+A read the guest cannot make is **not** a contradiction: it is reported as
+unverified with the reason (the image carries the default but the profile does not
+reach it). `session.json` carries `plan_defaults` with every unverified read, its
+axis, state and reason; `session.md` prints the counts.
 
-Arrays are compared **in order**, because the plan fixes that order:
-`favorite-apps` has its own order-sensitive check for exactly this reason. An
-array is compared as a multiset only for the keys in `UNORDERED_DEFAULTS`,
-where GNOME itself treats the value as a set and rewrites the whole list
-(`enabled-extensions`, `custom-keybindings`); a reorder there is the same
-value, and the detail says so. Adding a key to that set is a claim about
-GNOME's semantics, so it carries a reason.
+Arrays compare **in order** except the keys in `UNORDERED_DEFAULTS`
+(`enabled-extensions`, `custom-keybindings`), where GNOME treats the value as a set
+and rewrites the list; adding a key there is a claim about GNOME and carries a
+reason. `@as []` equals `[]` for an `as` key; `@ai []` does not.
 
-The type annotation dconf prints for an empty array is dropped only when it
-is the declared type's own: `@as []` is the `[]` an `as` key stores, while
-`@ai []` is a different value and does not match.
+Both lists travel as files of their own so the script stays inside the tmpfiles
+cap.
 
-The two lists travel to the guest as files of their own, so the script that
-reads them stays inside the tmpfiles.d argument cap as plans grow
-(`tmpfiles_arg` refuses content the guest would drop in silence).
-
-`platform_diagnostics` in `session.json` (and its section in
-`session.md`) records the guest CPU vendor, family and model,
-`edac_mce_amd` and `/dev/mcelog` state, `mcelog.service` properties and at
-most 100 kernel `mce`/`edac` lines; missing data is `unknown`.
+`platform_diagnostics` records CPU vendor, family and model, `edac_mce_amd` and
+`/dev/mcelog` state, `mcelog.service` properties and up to 100 kernel `mce`/`edac`
+lines; missing data is `unknown`.
 
 ### Every binary the plan installs
 
-A binary the plan installs is a declaration like any other, so it gets an
-assertion. The plan carries each one's destination, its mode and the checksum its
-download was verified against at build time; the guest reads the file where it
-landed and the host compares. **The claim is the file the plan installs**: one the
-build never wrote, one that is not an executable regular file, one replaced
-afterwards, and one that lost its declared mode are all differences, and each is
-named.
+The plan carries each binary's destination, mode and the checksum its download was
+verified against; the guest reads the file and the host compares.
 
-What that claim can be depends on **what the plan pins**, and there are two cases:
+- **Single-file artifact** (`archive: none`): the plan's checksum *is* the file's,
+  so the bytes are compared and a mismatch fails.
+- **Archive** (`archive: tar.gz`): the plan pins the archive, which is gone by
+  session time. The file is verified as installed with its declared mode, and the
+  report says which claim it could make. Comparing the two anyway once reported a
+  difference that was not one, on the example workstation's own `openshift-client`;
+  a real boot found that.
 
-- a **single-file artifact** (`archive: none`): the plan's checksum *is* the
-  installed file's, so the bytes are compared and a mismatch fails;
-- an **archive** (`archive: tar.gz`): the plan pins the archive's checksum, and the
-  file inside it cannot be compared with it here — the build verified that download,
-  and the archive is gone by the time a session runs. The file is verified as
-  installed with its declared mode, and the report says which claim it could make.
-  Comparing the two anyway reported a difference that was not one, on the example
-  workstation's own `openshift-client`; the VM check found that itself, on a real
-  boot.
+Mode is asserted in both cases, because the plan declares it; `stat` prints `755`
+where the plan writes `0755`. A read that did not happen is reported as unread, not
+as a mismatch. Both reads follow a link, so a symlink describes the file that runs.
 
-The mode is asserted in both cases, because the plan declares it: the right bytes
-with the wrong mode is a file the user may not be able to run, which is not what the
-plan says it installs. `stat` prints `755` where the plan writes `0755`, so the
-leading zero is not a difference. A mode that could not be read is not a mode that
-differs: it is a read that did not happen, reported as one. Both reads follow a link,
-so a symlink to the installed file describes the file that runs; whether the
-destination is a link is not a declared fact, so it is not asserted.
+`session.json` carries `plan_binaries` and `session.md` the counts; `unreadable`
+names which axis could not be read.
 
-`session.json` carries `plan_binaries` (`declared`, `checksum_verified`,
-`install_verified`, `unreadable`, and the ones that failed with their detail), and
-`session.md` prints the counts. `unreadable` counts the binaries with a read this
-machine would not give up — the bytes, the mode, or both — and the detail says which:
-a check can be verified on one axis and unmeasured on another (an archive whose member
-could not be hashed is installed, and a file whose mode could not be read still has
-its bytes compared). That is a read that did not happen, which is not the same claim
-as a value that disagreed, and the summary says so instead of counting it as
-verified.
+### Seeding the skeleton, showing widgets
 
-### Seeding the skeleton and showing the widgets
-
-Two optional flags reach the per-user state a desktop theme lives in:
-
-- `--seed-skel` copies `/etc/skel` into the test user's `$HOME`, as
-  `useradd -m` does (the test user comes from `sysusers`, which does not).
-  Without it the image's per-user seeds never apply to the session. With it,
-  every generated file the plan places under `/etc/skel` is asserted to reach
-  `$HOME` with the generated content.
-- `--app <command>` opens a window (for example `nautilus` or `ptyxis`)
-  before the report, so a captured frame shows the themed widgets. A check
-  confirms the process is running.
+- `--seed-skel` copies `/etc/skel` into the test user's `$HOME`, as `useradd -m`
+  does (the user comes from `sysusers`, which does not). Without it the image's
+  per-user seeds never apply.
+- `--app <command>` opens a window (for example `nautilus`) before the report, so a
+  frame shows the themed widgets; a check confirms the process runs.
 
 ```bash
 python3 tests/vm/sessioncheck.py --disk output/qcow2/disk.qcow2 --plan ctx/plan.json \
     --out session-theme --seed-skel --app nautilus
 ```
 
-### Known AMD guest exception (mcelog)
+### Known AMD guest exception
 
-**Any failed system unit fails the check**, with one exception: the known
-AMD guest signature, where all of these hold:
-
-- `mcelog.service` is the only failed unit;
-- the CPU is `AuthenticAMD`;
-- `/dev/mcelog` is present;
-- `edac_mce_amd` is not live;
-- the unit is loaded and failed with `exit-code` and status 1;
-- its journal says "does not support this processor" and names
-  `edac_mce_amd`.
-
-It is then reported as "FAIL (known, non-blocking)" and the raw
-`system_failed_units` is kept. **If any condition cannot be verified, the
-check fails.** The image still ships and starts mcelog.
+Any failed system unit fails the check, with one exception — all of: only
+`mcelog.service` failed, CPU `AuthenticAMD`, `/dev/mcelog` present,
+`edac_mce_amd` not live, the unit loaded and failed with `exit-code` status 1, and
+its journal saying "does not support this processor" and naming `edac_mce_amd`. It
+is then reported as "FAIL (known, non-blocking)" with the raw value kept. If any
+condition cannot be verified, the check fails.
 
 ### Journal mode
 
-`--mode journal --disk <kept overlay>` adds no user. It boots a disk kept
-with `bootcheck.py --keep-overlay` again and writes the journal of the
-previous (tested) boot, which is how a failed unmodified boot is
-diagnosed.
+`--mode journal --disk <kept overlay>` adds no user, boots a disk kept with
+`bootcheck.py --keep-overlay` again, and writes the journal of the previous boot.
 
 ## Transport limits
 
-The instrumentation reaches the guest as systemd credentials over SMBIOS type 11
-(`-smbios type=11,value=io.systemd.credential.binary:<name>=<base64>`), and
-`systemd-tmpfiles` turns a `tmpfiles.extra` line into a file. Both have a limit,
-and both drop data in silence, which is why the harness checks them instead of
-waiting for a report that never comes:
+Instrumentation arrives as systemd credentials over SMBIOS type 11 and is written
+by `systemd-tmpfiles`. Both drop data in silence, so the harness checks them:
 
-- **A `tmpfiles.d` file argument is capped at 4095 B of resolved content.**
-  systemd unescapes the argument and then expands specifiers into a `PATH_MAX-1`
-  buffer (`cunescape()` then `specifier_printf(unescaped, PATH_MAX-1, …)`), so
-  the cap is on the result, in bytes, not on the bytes in the file: measured
-  against `systemd-tmpfiles`, 4095 B is written and 4096 B is refused with `File
-  name too long` and **the file is not created**, 4095 B of `%` (8190 B once
-  escaped) is written just the same, and 2047 `é` (4094 B) pass while 2048 (4096
-  B) do not. `sessioncheck.tmpfiles_arg` counts the unescaped content in bytes
-  and refuses anything longer, loudly, instead of letting the guest drop it;
-  anything larger travels as a credential of its own.
-  **The margin is the number to watch**, not the limit: the largest content the
-  harness writes today is the session report of the loaded example, 2,980 B of the
-  4,095 B cap (1,115 B of margin, measured 2026-10-18 on the rendered devops plan,
-  which declares 21 defaults and two binaries). A probe that does not fit is refused
-  here, loudly, before the machine boots: the cap is checked, not inherited.
-- **A report that does not run says so on the console.** The report unit runs
-  `/bin/bash` on a script the guest received, and bash writes a syntax error to the
-  unit's journal — which the harness does not read. The unit therefore carries
+- **A `tmpfiles.d` file argument is capped at 4095 B of resolved content.** The cap
+  is on the unescaped result in bytes: 4095 B is written, 4096 B is refused with
+  `File name too long` and the file is not created. `tmpfiles_arg` counts the
+  content and refuses anything longer, loudly. The largest content today is 2,980 B
+  of 4,095 (measured 2026-10-18, 21 defaults and two binaries); anything larger
+  travels as a credential of its own.
+- **A report that does not run says so on the console.** The report unit carries
   `StandardOutput=journal+console` and `StandardError=journal+console`, so a script
-  that does not parse, or a file that is not there, appears on the serial port the
-  harness is already watching, and the failure line quotes it back
-  (`bootcheck.serial_hint`). Without that, a broken script and a truncated
-  credential were indistinguishable: both left a serial log with no marker.
-- **A single SMBIOS type 11 credential is capped near 64 KiB.** The SMBIOS 2.1
-  entry point records the length of the *whole* table in a 16-bit field
-  (`SMBIOS_21_MAX_TABLES_LEN = 0xffff` in QEMU's `hw/smbios/smbios.c`), so every
-  OEM string together — not one structure — has to fit in 64 KiB. Measured with
-  QEMU: a string of 65016 B arrives intact and one of 65416 B does not. This is
-  far above what the harness passes — the largest payload is the first-boot
-  report, about 7 KiB base64. systemd also caps one credential at 1 MiB
-  (`CREDENTIAL_SIZE_MAX`).
+  that does not parse, or a missing file, appears on the serial port and the
+  failure quotes it (`serial_hint`).
+- **One SMBIOS type 11 credential is capped near 64 KiB**, because SMBIOS 2.1
+  records the whole table length in 16 bits: 65016 B arrives, 65416 B does not.
+  systemd also caps one credential at 1 MiB. The largest payload here is about
+  7 KiB base64.
 
-The first-boot report script is the only payload large enough to matter, so it
-travels as a credential of its own and its unit reads it from
-`$CREDENTIALS_DIRECTORY`; it never becomes a `tmpfiles.d` argument and needs no
-escaping.
+The first-boot report is the only payload large enough to matter, so it travels as
+a credential and its unit reads it from `$CREDENTIALS_DIRECTORY`.
 
-## First-boot check (instrumented boot, no account added)
+## First-boot check
 
-`firstbootcheck.py` answers what a screenshot cannot. It boots the same unmodified
-disk through an overlay, adds **no account and no session**, and has the guest
-report whether the first-boot wizard is the session that came up, whether any
-account could log in with a password, and whether any service unit failed.
-
-It exists because `bootcheck.py` classifies pixels and concludes at the first stable
-graphical screen — on Ubuntu 26.04 that screen is GDM, not the wizard — so it reports
-the same PASS with the wizard suppressed, and suppressing it is exactly the defect
-the base cleanup fixed.
+No account and no session added. The guest reports whether the wizard is the
+session that came up, whether any account could log in with a password, and whether
+any service failed. It exists because `bootcheck.py` stops at the first stable
+graphical screen, which can be GDM with the wizard suppressed — the exact defect
+one base cleanup fixed.
 
 ```bash
 python3 tests/vm/firstbootcheck.py --disk disk.raw --out firstboot-1
 ```
 
-The guest waits up to five minutes for `gnome-initial-setup` before reporting, so
-`--boot-timeout` has to cover that. Results are in `firstboot.md` and
-`firstboot.json`, with the raw guest values and the frames.
+The guest waits up to five minutes for `gnome-initial-setup`, so `--boot-timeout`
+must cover that. It signals `DESKOS-QA-READY` as soon as the report runs; without
+it the run fails after `--ready-timeout` (420 s) saying the guest never signalled,
+rather than waiting out the 900 s end marker.
 
-The guest signals `DESKOS-QA-READY` as soon as the report runs, before the wait
-for the wizard. If it never arrives, the run fails after `--ready-timeout`
-(default 420 s) saying the guest never signalled it was instrumented — a
-credential may have been dropped — instead of waiting out `--boot-timeout`
-(900 s) for an end marker that will not come. The report itself is a credential
-of its own, read from `$CREDENTIALS_DIRECTORY` (see
-[Transport limits](#transport-limits)).
-
-What it asserts:
-
-- the wizard (`gnome-initial-setup`) is running;
-- the wizard **is the session that came up**: the guest reports loginctl sessions, and
-  a session by that name must exist on a seat. A process alone is not the session, and
-  a stable GDM screen with the wizard suppressed is exactly what this has to tell
-  apart from the wizard;
-- no account with uid >= 1000, a usable shell, and a password that is neither locked
-  (`!` or `*`) nor empty;
-- no unexpected failed system services, judged with **`sessioncheck.py`'s own rule for
-  the known guest signature** — the same function, not a second copy of it — applied
-  here to this boot's observations. The probes it needs (CPU vendor, `edac_mce_amd`,
-  `/dev/mcelog`, the unit's properties, its journal) are collected here too.
-
-A guest that does not report the failed services fails: unknown is not clean. Every
-check boots its own overlay, so what is shared is the rule, not another check's
-observations — a unit can fail in this boot and not in the session check's.
-
-What it reports in full without judging it:
-
-- the complete failed-unit list, including unit types the check above does not judge.
-  On the Ubuntu image the sssd responder sockets report `dependency` because
-  `sssd.service` is skipped by its own condition (sssd is installed unconfigured);
-  those are sockets, not services. Like the session check, this is an instrumented
-  boot, and is reported as one.
+Asserted: the wizard runs; a loginctl session by that name exists on a seat (a
+process alone is not the session); no account with uid ≥ 1000, a usable shell and
+an unlocked or empty password; and no unexpected failed service, judged by
+`sessioncheck.py`'s own rule for the known guest signature, applied to this boot's
+observations. Unknown is not clean. Every check boots its own overlay, so only the
+rule is shared. The full failed-unit list is reported without judgement.
 
 ## CI and unit tests
 
-The GitHub workflow `.github/workflows/vm-bootcheck.yml` runs the same
-build, boot and session checks. It runs on pull requests and on `main` for the paths
-that can change an image, and on demand (`workflow_dispatch`), per platform: CentOS
-Stream 10 from this checkout, and Ubuntu 26.04 with no published image to hand to
-`bootc-image-builder`, written by `bootc install to-disk` out of a compressed OCI
-layout. The QCOW2 and the raw disk it builds are test input that is not uploaded. It
-is a pure check: the publish path is `supply-chain.yml`.
+`.github/workflows/vm-bootcheck.yml` runs the same build, boot, session and
+first-boot checks on pull requests and on `main` for paths that can change an
+image, and on demand. The QCOW2 is test input and is not uploaded; the publish
+path is `supply-chain.yml`.
 
 Unit tests: `python3 -m unittest discover -s tests/vm` (run by CI, not by
 `make check`).

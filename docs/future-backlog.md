@@ -1,875 +1,338 @@
-> **Dated review, 2026-10-20 — kept as the definition, not as status.** This is
-> the review that introduced the P0/P1 numbering, and the only place each item is
-> defined. The statuses below are the status *at that date*. What is done, and
-> with which evidence, is the closeout table in
-> [roadmap.md](roadmap.md#closeout-of-the-p0p1-items-2026-10-28); do not update
-> statuses here.
-
 # Future backlog
 
-Strategic review dated **2026-10-20**, reviewed through committed checkout
-`171e8cc`, including the extension hardening and corrected Fedora claims that
-landed during this review. The CI snapshot below is for `5532f31`; where a
-finding was closed after it, the row says so and names the run.
-No image was built or
-tested for this review. Repository evidence establishes implementation and test
-scope; historical run results remain historical. Uncommitted code is not evidence
-of completed work.
+> **Dated review, 2026-10-20 — definition, not status.** This is where each
+> P0/P1 item is defined. Statuses here are as of that date; what closed and with
+> which evidence is the closeout table in
+> [roadmap.md](roadmap.md#closeout-of-the-p0p1-items-2026-10-28). Do not update
+> statuses here.
 
-Start with the [eight recommended actions](roadmap.md#strategic-direction-and-immediate-focus-2026-10-20).
-This document holds the detailed backlog; [roadmap.md](roadmap.md) retains the
-milestone history. [Platforms](platforms.md) remains the sole current platform
-matrix, [architecture](architecture.md#validation-status) holds validation
-evidence, and [ADRs](adr/README.md) govern design. This review does not expand
-support or override an ADR.
+Strategic review of checkout `171e8cc` (CI snapshot `5532f31`). No image was
+built for it. Repository evidence establishes implementation and test scope;
+uncommitted code is not evidence.
 
-**Navigate:** [Evidence](#what-the-review-found) ·
-[P0](#p0--trustworthiness-and-operational-correctness) ·
-[P1](#p1--product-stability-and-usability) ·
-[P2](#p2--community-and-enterprise-readiness) ·
-[P3](#p3--strategic-research-without-feature-commitments) ·
-[Non-goals](#deferred-decisions) · [Human decisions](#decisions-reserved-for-human-review).
+Terms: **Proposed** means eligible for selection, not scheduled. **Research**
+means a bounded investigation whose output is a decision. **In progress**,
+**Blocked** and **Done** require evidence. Scope **S/M/L** is a focused
+document or probe / several connected changes / multiple reviewable slices — not
+a time estimate.
 
-## Reading and activating the backlog
-
-IDs are stable even if priorities change. **Proposed** means eligible for human
-selection, not scheduled. **Research** means a bounded investigation with a
-decision as its output, not a promised feature. **In progress** requires evidence
-of existing work; **Blocked** requires an identified unmet prerequisite; **Done**
-requires acceptance evidence. Dependencies below constrain implementation, but
-need not prevent drafting a design. Scope **S/M/L** means a focused document or
-probe / several connected changes / multiple reviewable slices; it is not a time
-estimate. Split an L item before authorizing implementation.
-
-Promote work into active development only when a maintainer records:
-
-- A reproducible defect or validated external organizational need, and the
-  expected improvement over the current path.
-- A named owner with review capacity and an acceptable ongoing support cost.
-- Existing upstream solutions evaluated, a bounded scope and explicit non-goals.
-- A test or evidence plan, completion criteria and dependencies that can be met.
-- Compatibility and security impact, including migration and recovery where needed.
-- Human agreement; a future RFC/ADR first if an accepted decision would change.
-
-Do not activate the entire priority tier. Select one bounded engineering slice,
-review its evidence, then reconsider the next choice. Pilots may reorder Proposed
-work. Research can end with **no action**. No engineering dates are implied.
+Activate one bounded slice when a maintainer records: a reproducible defect or a
+validated organizational need; a named owner with review capacity; the upstream
+alternatives considered and the non-goals; a test or evidence plan; the
+compatibility and security impact; and human agreement. Do not activate a whole
+tier. Research may end with no action.
 
 ## What the review found
 
-| State | Evidence and remaining boundary |
+| State | Boundary |
 |---|---|
-| **Done: deterministic compiler foundation** | [Architecture tests](../internal/compiler/architecture_test.go), [composition tests](../internal/compiler/compose_test.go) and [goldens](../internal/compiler/golden_test.go) cover fourteen kinds, layering, provenance, offline planning and deterministic rendering. This does not establish image reproducibility or API stability. |
-| **Done: organization extension example** | [Organization and role](../examples/organization-and-role/README.md) references Core from a separate root and offers a public CentOS target plus a private RHEL target. Repositories, binaries, trust and GNOME are present; `virt-manager` remains explicitly unmet. P1-03 completes the guided adoption path. |
-| **Done: reference supply-chain gate** | [Publish workflow](../.github/workflows/supply-chain.yml) builds, scans, boots, session-checks and first-boot-checks the local image, publishes a commit tag, signs/attests its digest, verifies it, then moves `latest` by digest. Platforms publish independently. [Recorded publication evidence](architecture.md#validation-status) exists for CentOS and AlmaLinux. Channel promotion and consumer enforcement are absent. |
-| **Done: declared/installed SBOM distinction and exception mechanism** | [SBOM code](../internal/sbom/sbom.go), [comparison tests](../tests/supply-chain/test_compare.py) and [exception tests](../tests/supply-chain/test_check_exceptions.py). The comparison gates declared RPM **names**, not every declared component or exact version. The signed installed-SBOM statement references bytes held in a 14-day artifact. |
-| **Done: minimal runtime companion and staging policy** | [ADR 0018](adr/0018-the-runtime-companion.md), [companion tests](../cmd/deskos/main_test.go), [guard tests](../internal/evidence/evidence_test.go), [operations](operations.md). `report`, `check`, `update` exist; `bootc` owns status/rollback. Report admits no installed SBOM; check publishes its limited scope. Scheduled staging and a manual CentOS update were previously measured; no automated lifecycle E2E exists. |
-| **Done: local repository keys, APT language and Ubuntu separation** | ADRs [0015](adr/0015-package-manager-and-database.md), [0019](adr/0019-a-platform-says-whether-its-base-can-fetch.md), [0020](adr/0020-ubuntu-lives-in-its-own-repository.md). Core keeps synthetic Debian composition/render tests; Ubuntu build/boot/publish belongs downstream. RHEL builds are also downstream, with one historical Core factory validation. |
-| **Partially implemented: CI and updates to inputs** | [VM workflow](../.github/workflows/vm-bootcheck.yml), [artifact probes](../.github/workflows/artifacts.yml), [pin existence check](../.github/workflows/ci.yml), [Renovate workflow](../.github/workflows/renovate.yml) and [configuration](../renovate.json) exist. The old “deploy Renovate” entry is stale as an implementation description; operation, coverage and authorization still need review. No credential inspection was performed. |
-| **Fedora boots and is checked in CI** (closed with #91) | The regenerated initramfs now adds the `ostree` and `bootc` dracut modules and asserts `ostree-prepare-root` ([research notes](research-notes.md#fedoras-rebuilt-initramfs-dropped-ostree-and-bootc-2026-10-20)). [Run 39462806315](https://github.com/deskosproject/deskos-core/actions/runs/39462806315) booted a **btrfs** disk to a graphical screen in 30 s and passed the session and first-boot checks, with the tray extension active and its watcher answering. No Fedora image is published, no Fedora disk has been installed on hardware, and both community images were republished with that initramfs (CentOS `sha256:30878af4…`, Alma `sha256:bde415d7…`). |
-| **Absent from the tree: public participation policies** | No `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md` or governance document was found. Engineering and agent rules already exist; remote reporting settings and branch protections were not audited. |
+| Deterministic compiler, fourteen kinds | architecture, composition and golden tests; does not establish image reproducibility or API stability |
+| Organization example | separate root, CentOS and private RHEL targets; `virt-manager` explicitly unmet (P1-03) |
+| Supply-chain gate | builds, scans, boots, signs, verifies, moves `latest` by digest; promotion and consumer enforcement were absent at review |
+| Declared vs installed SBOM | comparison gates declared RPM names, not every component; the signed statement referenced bytes that expired in 14 days |
+| Runtime companion | `report`, `check`, `update`; `bootc` owns status and rollback; no lifecycle E2E at review |
+| Local keys, APT, Ubuntu split | ADRs 0015, 0019, 0020; Ubuntu and RHEL build downstream |
+| CI and input updates | workflows and Renovate exist; coverage and authorization still need review |
+| Fedora boots in CI (closed, #91) | initramfs fix; run `39462806315`; nothing published, nothing installed on hardware |
+| Participation policies | absent at review: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `SUPPORT.md`, governance |
 
-The latest extension decision, [ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md),
-already permits verified, pinned upstream extension archives where vendor packages
-are unavailable. Preserve that bounded delivery model; do not propose a packaging
-fork. Its declared UUID/version checks and session load checks are useful starting
-evidence, not proof that every application's tray behavior works.
-
-## P0 — Trustworthiness and operational correctness
+## P0 — trustworthiness and operational correctness
 
 <a id="p0-01"></a>
-
-### P0-01 — Make gate failures actionable and preserve the tested identity
-
-**Status: Proposed · Scope: M.** Boot retries, privileged disk builds and scarce
-runner resources make a green/red result hard to interpret. The splash retry is
-bounded to one specific failure, but its cause remains unexplained. The publish
-workflow uploads summaries rather than the full diagnostic directories.
-
-**Action:** Audit required merge/release gates, path coverage and measured runner
-KVM, disk, RAM and timeout needs. Classify harness/infrastructure, image defects
-and unverified probes separately; preserve first-attempt results. Record the
-relationship between local image ID, exported scan input, disk and registry
-manifest, accounting for compression changing OCI digests. Reuse the existing
-unified gate; do not create a second publisher.
-
-**Acceptance:** Reproduce the splash failure or record a bounded investigation
-with an explicit unresolved result; demonstrate distinct infrastructure and image
-failures with serial/QEMU logs, guest journal, structured results and frames
-retained even on failure. A passing retry remains visible. Required probe reads
-cannot silently count as verified. Resolve the pending Fedora run before closing
-its regression; retest btrfs separately after ext4 works. Record a lint-warning
-disposition per measured vendor warning without patching packages to silence it.
-Document actual required checks and prove tested/published identity continuity.
-Verify scheduled versus dispatched gate behavior: the scheduled supply-chain job
-reads `inputs.fail-on` without an explicit fallback in the workflow, so the
-Critical baseline needs a demonstrated schedule-path result too.
-
-**Dependencies:** None. **References:** [VM harness](../tests/vm/README.md),
-[publish workflow](../.github/workflows/supply-chain.yml),
-[lint warnings](architecture.md#lint-warnings), [Fedora investigation](research-notes.md#fedoras-rebuilt-initramfs-dropped-ostree-and-bootc-2026-10-20).
+### P0-01 — Make gate failures actionable
+**Proposed · M.** Retries and scarce runners make green/red hard to interpret, and
+the publish workflow uploads summaries rather than full diagnostics. Audit the
+required gates and their KVM, disk and RAM needs; keep first-attempt artifacts;
+record how local image ID, scan input, disk and registry manifest relate; one
+publisher, not two.
+**Done when:** an infrastructure failure and an image failure are distinguishable
+from serial, journal, results and frames retained even on failure; a passing retry
+stays visible; the scheduled gate path has a demonstrated result.
+[Harness](../tests/vm/README.md) · [Lint warnings](architecture.md#lint-warnings)
 
 <a id="p0-02"></a>
-
-### P0-02 — Prove upgrade, rollback and persistent-state recovery
-
-**Status: Proposed · Scope: L.** Existing checks start independent overlays;
-they do not exercise a persistent workstation through successive deployments.
-
-**Action:** Start on CentOS Stream 10 with known-good image A. Create disposable
-user data and system state, then upgrade to B, reboot, assert deployment identity
-and state, roll back to A and verify again. Exercise an interrupted/rejected
-upgrade and a deliberately non-booting candidate recovered through the previous
-boot entry. Keep fault injection in the external test lab, never a resource hook.
-
-**Acceptance:** A reproducible CI recipe shows a successful A → B → A cycle and
-at least one meaningful boot recovery, with journals and deployment identities
-for every stage. Include unchanged and locally edited `/etc` files, `/var` and a
-synthetic application-data change. Specify deployment-specific `/etc` merge and
-rollback behavior; `/var`, homes, system Flatpaks and application migrations are
-not automatically undone. Demonstrate backup/restore or document an incompatible
-data migration that requires operator recovery. Record manual versus automatic
-recovery accurately; reuse downstream contracts before claiming other platforms.
-
-**Dependencies:** P0-01. **References:** [Milestones 3–4](roadmap.md#milestone-3-vm-boot-and-desktop-tests),
-[operations](operations.md#roll-back), [upstream rollback semantics](https://bootc.dev/bootc/man/bootc-rollback.8.html).
-
-<a id="p0-04"></a>
-
-### P0-04 — Bound build authority and rehearse supply-chain incidents
-
-**Status: Proposed · Scope: M.** Manual dispatch and signatures alone do not
-establish independent publication approval or recovery from stolen authority.
-
-**Action:** Document PR → privileged build → evidence → publish trust boundaries.
-Review branch/tag protection, required checks, untrusted PR execution, workflow
-tokens/OIDC scopes, action commit pins, tool downloads, registry access and
-human approval. Some actions use version tags today; actual remote protection
-settings remain unverified. Separate development and publication authority where
-practical for the current maintainer capacity.
-
-**Acceptance:** A human-reviewed threat model and prioritized remediation list
-identify owners and evidence for each control or gap. A tabletop exercise covers
-compromised upstream base, workflow, signing identity or registry: freeze channels,
-identify affected digests, notify users, restore trusted inputs and publish a
-human-authorized recovery. Explain why deleting tags/signatures does not revoke
-cached images or signatures. Document backup access and restore responsibilities
-without recording secrets; any real credential or infrastructure change requires
-separate explicit approval. Coordinate reporting with P2-01 and succession with
-P2-02.
-
-**Dependencies:** None for the model; P0-03/P0-06 consume its decisions.
-**References:** [workflows](../.github/workflows),
-[agent authority limits](../AGENTS.md), [ADR 0011](adr/0011-agentic-contribution-layer.md).
+### P0-02 — Prove upgrade, rollback and state recovery
+**Proposed · L.** Independent overlays do not exercise a machine through
+successive deployments. On CS10: state → B → reboot → identity and state →
+rollback to A → verify; plus an interrupted upgrade and a candidate that cannot
+boot, recovered through the previous entry. Fault injection stays in the lab.
+**Done when:** a CI recipe shows A → B → A and a recovery, with journals and
+deployment identities, including unchanged and edited `/etc` and a `$HOME`-free
+`/var` change; `/var` and Flatpaks are stated as not rolled back.
+[Operations](operations.md) · [bootc rollback](https://bootc.dev/bootc/man/bootc-rollback.8.html)
 
 <a id="p0-03"></a>
+### P0-03 — Establish consumer-side enforcement
+**Research · M.** `cosign verify` in CI does not show a machine rejecting an
+unauthorized image. Evaluate the signature policy of the bootc and
+containers-image versions in use at install, switch and upgrade, with the exact
+workflow identity rather than a repository-wide regex.
+**Done when:** positive and negative cases pass (authorized, unsigned, wrong
+identity, tampered bytes, evidence for another digest, rotation, lost trust), and
+the path for a new trusted policy to reach a compromised machine is written down.
+[ADR 0018](adr/0018-the-runtime-companion.md) · [policy format](https://github.com/containers/image/blob/main/docs/containers-policy.json.5.md)
 
-### P0-03 — Establish consumer-side authenticity enforcement
-
-**Status: Research · Scope: M.** CI's `cosign verify` does not demonstrate that
-installers or installed workstations reject unauthorized images.
-
-**Action:** Produce a threat model and disposable-lab prototype plan for the
-actual vendor versions of bootc/containers-image. Evaluate signature-policy
-enforcement at install, switch and subsequent upgrade, and whether the current
-cosign signature/attestation storage is consumable by that path. Specify exact
-workflow/ref/issuer authorization rather than treating a repository-wide identity
-regex as release authorization. Specify installer or organization-image provisioning
-of public trust roots; credentials remain external. Existing TLS `TrustAnchor`
-is not an image-signature trust policy.
-
-**Acceptance:** Document supported mechanisms, version constraints and executable
-positive/negative cases: authorized, unsigned, wrong identity, tampered bytes,
-evidence for another digest, identity rotation and loss of trust in a previously
-valid release. Define how the next trusted policy reaches a machine on a
-compromised release, emergency recovery and offline limits. Include both timer
-and companion update paths; a manual verification command alone is insufficient.
-Choose no new kind unless a working experiment proves a need and a human approves
-a future ADR.
-
-**Dependencies:** P0-04 threat model; P0-02 supplies the recovery lab.
-**References:** [ADR 0018](adr/0018-the-runtime-companion.md),
-[bootc switch](https://bootc.dev/bootc/man/bootc-switch.8.html),
-[containers signature policy](https://github.com/containers/image/blob/main/docs/containers-policy.json.5.md).
-These upstream mechanisms are candidates, not a verified DeskOS integration.
+<a id="p0-04"></a>
+### P0-04 — Bound build authority, rehearse incidents
+**Proposed · M.** Document the PR → privileged build → evidence → publish
+boundaries; review branch protection, tokens, OIDC scopes and action pins; run a
+tabletop (compromised base, workflow, signing identity or registry) that freezes
+channels, finds affected digests and publishes a human-authorized recovery.
+**Done when:** a reviewed threat model names an owner per control or gap, and the
+tabletop produced a working freeze and a written recovery path.
+[Threat model](threat-model.md) · [ADR 0011](adr/0011-agentic-contribution-layer.md)
 
 <a id="p0-05"></a>
-
-### P0-05 — Preserve digest-indexed evidence and verifiable provenance
-
-**Status: Proposed · Scope: L.** Installed SBOM bytes expire after 14 days;
-current attestations bind an SBOM reference and exceptions, not the complete
-source/build/test/authorization chain. Downloaded CLI/companion binaries have
-checksums but no signed source-to-binary attestation.
-
-**Action:** First choose durable evidence storage after testing OCI referrers and
-an alternative immutable store against registry size, retention, garbage
-collection, access and cost constraints. Then design a verifiable evidence index
-joining source commit, workflow identity, base digest, compiler version, canonical
-Plan/context hashes, produced image digest, declared and installed SBOMs, scanner
-and database identity, exceptions, test results and publication authorization.
-Evaluate GitHub Artifact Attestations and SLSA requirements; distinguish claims
-made by the build itself from independently protected evidence generation.
-
-**Acceptance:** A chosen storage design and lab retrieval/verification procedure
-recover a historical digest's full evidence after workflow artifacts expire;
-missing, changed or mismatched evidence fails verification. Demonstrate copying
-associated evidence across promotion/mirror boundaries. Specify an authenticity
-path for release binaries and the resources archive. Explain endpoint evidence
-discovery under ADR 0010 stage 4: embedding a post-build SBOM changes the image
-digest and requires a deliberate design, not a recursive digest promise. No SLSA
-level claim without a requirement-by-requirement assessment.
-
-**Dependencies:** P0-01 identity records and P0-04 trust boundaries; retention
-design can begin first. **References:** [supply chain](supply-chain.md),
-[ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md),
-[release workflow](../.github/workflows/release.yml),
-[OCI referrers](https://specs.opencontainers.org/distribution-spec/),
-[GitHub attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations),
-[SLSA requirements](https://slsa.dev/spec/v1.2/build-requirements).
+### P0-05 — Preserve digest-indexed evidence
+**Proposed · L.** SBOM bytes expired after 14 days and attestations bound only a
+reference. Choose durable storage (OCI referrers or an immutable store), then an
+index joining commit, workflow, base digest, compiler version, Plan and context
+hashes, image digest, both SBOMs, scanner and database, exceptions, tests and
+authorization.
+**Done when:** a historical digest's evidence can be retrieved and verified after
+workflow artifacts expire, and missing or mismatched evidence fails verification.
+[ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md) · [supply chain](supply-chain.md)
 
 <a id="p0-06"></a>
-
-### P0-06 — Design promotion of one tested digest
-
-**Status: Proposed · Scope: M.** The existing gate moves `latest` after checks;
-candidate → canary → pilot → stable is still a design proposal.
-
-**Action:** Define build-once promotion with per-platform references, immutable
-evidence and recorded human authorization. Specify entry/exit checks, stale scan
-handling, withdrawal, channel rollback and failure partway through publication.
-Organizations own their channel names, timing and external rollout tools; no
-fleet controller is required and all four stages need not be mandatory at this
-project's scale.
-
-**Acceptance:** A reviewed design traces one digest through promotion without
-rebuild, verifies its evidence on each transition and records approvals. State
-that `:<commit>` is a naming convention, not registry-enforced immutability.
-Machines following mutable tags see future content on upgrade; digest-pinned
-machines require an intentional reference change. Test reference behavior in the
-lifecycle lab and define recovery when cached or already staged releases differ
-from the current tag. Publication authority remains external to Core.
-
-**Dependencies:** P0-02, P0-03 mechanism decision, P0-04, P0-05.
-**References:** [Milestones 6–7](roadmap.md#milestone-6-compliance-and-supply-chain),
-[publish workflow](../.github/workflows/supply-chain.yml),
-[upstream reference behavior](https://bootc.dev/bootc/man/bootc-switch.8.html).
-
-<a id="p0-08"></a>
-
-### P0-08 — Make upstream-input changes deliberate and verifiable
-
-**Status: Proposed · Scope: M.** Pin checks and Renovate exist, but coverage and
-update responsibilities vary. RHEL cannot be checked anonymously; a version-only
-binary bump is incomplete without the matching URL and checksum.
-
-**Action:** Inventory bases, RPM repositories/keys, binary and extension archives,
-embedded companion, builder, scanners and actions. Document proposal → human
-review → resolve/hash → compose/render diff → build/boot/scan. Audit Renovate
-coverage against that inventory; distinguish checks that prove availability from
-ones that prove expected content, and credentials-required from missing digests.
-
-**Acceptance:** One worked base re-pin and one version/URL/checksum update have
-reviewable evidence and explicit failure messages for unavailable input. Map each
-input to owner, trigger and verification; security updates receive explicit triage.
-Fedora release detection/re-pin remains deliberate; RHEL checks stay downstream
-with appropriate access. No automatic merge, new token scope or dependency on
-network during compilation. Do not redeploy automation merely because an old
-roadmap entry says it is missing.
-
-**Dependencies:** P0-01; coordinate with P1-02 support policy.
-**References:** [Renovate configuration](../renovate.json),
-[artifact resolver](../tests/artifacts/resolve.py), [CI](../.github/workflows/ci.yml),
-[ADR 0019](adr/0019-a-platform-says-whether-its-base-can-fetch.md),
-[ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md).
+### P0-06 — Promote one tested digest
+**Proposed · M.** Build once, promote by digest, with per-platform references,
+immutable evidence and a recorded authorization; define entry and exit checks,
+stale scans, withdrawal, channel rollback and a failure halfway through.
+**Done when:** a reviewed design traces one digest through promotion without a
+rebuild and verifies evidence at each step; `:<commit>` is stated as a naming
+convention, not immutability.
+[Release model](architecture.md#release-model)
 
 <a id="p0-07"></a>
+### P0-07 — Review released-image risk over time
+**Proposed · M.** The weekly rebuild does not rescan every published digest.
+Inventory supported digests, rescan those images, prioritise base re-pins and
+assess High findings for reachability, keeping raw findings beside dated OpenVEX
+decisions.
+**Done when:** selecting an old digest, recording scanner versions and routing a
+new finding to revalidation, a dated exception or withdrawal is a written
+procedure someone else can run.
+[ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md) · [supply chain](supply-chain.md)
 
-### P0-07 — Review released-image risk throughout its useful life
+<a id="p0-08"></a>
+### P0-08 — Make upstream inputs deliberate
+**Proposed · M.** Inventory bases, repositories and keys, binaries, extensions,
+the companion, builders, scanners and actions; document propose → human review →
+resolve and hash → render diff → build, boot and scan. Audit Renovate against that
+inventory.
+**Done when:** one base re-pin and one version/URL/checksum update have reviewable
+evidence and each input is mapped to owner, trigger and check.
+[tracking.md](design/tracking.md) · [ADR 0019](adr/0019-a-platform-says-whether-its-base-can-fetch.md)
 
-**Status: Proposed · Scope: M.** Reviewed exceptions already expire and bind
-specific content. The weekly supply-chain workflow rebuilds from the checkout;
-that does not rescan every previously published digest.
-
-**Action:** Extend the documented operating process to inventory supported release
-digests, rescan those exact images, prioritize security base re-pins, validate
-vendor backports and assess High findings for reachability. Keep raw findings
-alongside dated OpenVEX/exception decisions; explain organizational responsibility
-for stricter external acceptance policy and private RHEL evidence.
-
-**Acceptance:** A reference procedure selects an old release by digest, records
-scanner/database versions, detects a newly relevant finding, assigns an owner
-and routes to revalidation, an expiring justified exception or emergency
-replacement/withdrawal. Critical blocks, High is tracked and becomes blocking
-when demonstrated reachable, as ADR 0012 states. No silent threshold change;
-changing that baseline requires a future ADR. A clean scan is not proof of a
-secure image.
-
-**Dependencies:** P0-04 incident roles, P0-05 retention/index; P0-08 update path.
-**References:** [ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md),
-[exception checker](../tests/supply-chain/check_exceptions.py),
-[scheduled workflow](../.github/workflows/supply-chain.yml).
-
-## P1 — Product stability and usability
+## P1 — product stability and usability
 
 <a id="p1-01"></a>
-
-### P1-01 — Define the public compatibility contract
-
-**Status: Proposed · Scope: M.** `v1alpha1` has already had intentional breaking
-changes; schemas and goldens pin today's behavior, not a compatibility policy.
-
-**Action:** Define compiler/resources/Plan/companion compatibility, CLI output and
-exit-status promises, deprecation/migration notices and pre-1.0 breaking-change
-review. Require a validated outside use case before proposing more public kinds.
-
-**Acceptance:** A documented policy and fixture matrix distinguish compatible,
-rejected and migratable inputs; intentional golden changes receive human review.
-Define measurable beta/stable promotion criteria: external use, bounded unresolved
-API issues, documented migration and compatibility evidence. No automatic version
-promotion and no expansion beyond fourteen kinds without an explicit decision.
-
-**Dependencies:** None for policy; pilot evidence from P2-03 for API graduation.
-**References:** [resource reference](resources.md), [goldens](../internal/compiler/golden_test.go),
-[architecture tests](../internal/compiler/architecture_test.go).
+### P1-01 — Define the compatibility contract
+**Proposed · M.** `v1alpha1` has had deliberate breaks; schemas and goldens pin
+behaviour, not a policy. Define compatibility for resources, Plan, CLI output and
+exit codes, deprecation and migration, and the criteria for beta and 1.0.
+**Done when:** a documented policy and fixture matrix separate compatible,
+rejected and migratable inputs, and an outside use case exists before more kinds.
+[compatibility.md](compatibility.md)
 
 <a id="p1-02"></a>
-
-### P1-02 — Bound platform support, adoption and retirement
-
-**Status: Proposed · Scope: M.** The canonical matrix separates composition,
-build, boot and publication; it does not define a complete maintenance promise.
-
-**Action:** Extend that single authority with maintainers, security maintenance,
-hardware evidence, supported upgrade paths, exit criteria and consumer notices.
-Evaluate demand, vendor bases, CI cost and ownership before adding a platform;
-use Ubuntu's separation as a maintenance-cost precedent.
-
-**Acceptance:** Every current platform and downstream boundary has an explicit
-support statement and retirement process, with no LTS promise inferred from vendor
-lifecycle. Preserve private RHEL builds, AlmaLinux's experimental vendor base,
-Fedora's one-release policy and prerelease caveat, and downstream Ubuntu ownership.
-Fedora publication requires the released-compose re-pin, successful relevant gates
-and human approval; hardware validation is a separate claim. State how a lost
-maintainer/vendor support changes status and how users change update references.
-
-**Dependencies:** P0-01 findings; P0-02 before promising upgrade paths.
-**References:** [platform matrix](platforms.md),
-[ADR 0014](adr/0014-platform-base-ownership.md), [ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md).
-
-<a id="p1-04"></a>
-
-### P1-04 — Correct current guidance and make recovery discoverable
-
-**Status: In progress · Scope: M.** Platform status already has one home, but
-documentation restructuring is unfinished. Stale descriptions include unmodeled
-downloads/AppIndicator in architecture, Ubuntu-era VM instructions, outdated
-example counts and a release-asset list that omits the companion.
-
-**Action:** Audit claims against current ADRs/code. Add symptom → evidence →
-remedy guidance for install, first boot, registry, update and recovery failures;
-link from README. Keep the resource reference navigable; split it only when that
-improves finding information. Separate historical observations from current claims.
-
-**Acceptance:** One platform status change needs one matrix edit and evidence
-links rather than duplicated tables. Document verified versus experimental QCOW2,
-ISO, UEFI and partitioning paths, first-user behavior and destructive installer
-assumptions; record an installation/recovery walkthrough. Explain `/etc` merge,
-shared `/var`, organization-owned baseline and user-owned state without promising
-data rollback. Current commands/asset names match the release and ADR 0018;
-links and reader navigation are checked. This roadmap update does not itself
-complete those corrections.
-
-**Dependencies:** None for corrections; P0-02/P1-03 provide measured walkthroughs.
-**References:** [historical open work](roadmap.md#open-work-2026-10-11),
-[docs index](README.md), [installer ISO](installer-iso.md), [ADR 0018](adr/0018-the-runtime-companion.md).
+### P1-02 — Bound platform support and retirement
+**Proposed · M.** The matrix separates composition, build, boot and publication
+but promises nothing about maintenance. Add maintainers, security maintenance,
+upgrade paths, exit criteria and consumer notices.
+**Done when:** every platform and downstream boundary has a support statement and
+a retirement process, with no LTS inferred from a vendor lifecycle.
+[platforms.md](platforms.md) · [ADR 0014](adr/0014-platform-base-ownership.md)
 
 <a id="p1-03"></a>
+### P1-03 — One public adoption journey
+**Proposed · M.** Extend the CentOS example guide through obtaining a matching
+`deskosctl`, validating, customizing, inspecting Plan and SBOM, rendering,
+building a UEFI QCOW2, creating a first user, updating and recovering.
+**Done when:** an unfamiliar engineer completes it without private steps,
+recording versions, digests and prerequisites, and the gaps they hit are recorded.
+[WALKTHROUGH](../examples/organization-and-role/WALKTHROUGH.md)
 
-### P1-03 — Complete one public organizational adoption journey
-
-**Status: Proposed · Scope: M.** Examples already prove composition without
-copying Core; a newcomer still crosses several documents and an unmet role need.
-
-**Action:** Extend the CentOS organization/role example's guide through obtaining a
-version-matched compiler, validate, customize baseline/role and update policy,
-inspect canonical Plan/provenance and declared SBOM, render, build, make a UEFI
-QCOW2, create a first user, inspect with `deskos`, then update and recover. Reuse
-the existing repositories, trust and desktop definitions. Document optional private
-registry integration with placeholders and external credentials.
-
-**Acceptance:** An unfamiliar engineer follows one pinned reference exercise
-without founder-only infrastructure or undocumented steps, recording versions,
-digests and host/disk/RAM prerequisites. Explain public-key trust versus image
-authenticity and local lab images versus reachable update references. Keep the
-`virt-manager` gap visible until the example organization explicitly decides;
-do not silently substitute Cockpit. Produce a sample provenance explanation, not
-another copy of Core resources. Record gaps discovered by the exercise.
-
-**Dependencies:** P1-01/P1-02 policy drafts, P1-04 corrections; P0-02 for a verified
-recovery exercise. **References:** [example](../examples/organization-and-role/README.md),
-[development](development.md), [installation](install.md), [operations](operations.md).
+<a id="p1-04"></a>
+### P1-04 — Correct guidance, make recovery discoverable
+**In progress · M.** Several stale claims exist (downloads, AppIndicator,
+Ubuntu-era VM steps, example counts). Audit claims against code and ADRs; add
+symptom → evidence → remedy pages for install, first boot, registry, update and
+recovery, linked from the README.
+**Done when:** a platform status change needs one matrix edit, and the
+documented versus experimental paths are stated per platform.
+[docs index](README.md) · [installer ISO](installer-iso.md)
 
 <a id="p1-05"></a>
-
-### P1-05 — Make existing diagnostics useful to outside authors
-
-**Status: Proposed · Scope: M.** Provenance and explicit capability errors exist;
-their usefulness to new users and external tooling has not been established.
-
-**Action:** Walk representative failures through `validate`, `plan`, `render`,
-`sbom`, `deskos report/check/update`. Improve resource/file/layer context and next
-actions where confusing; investigate machine-readable diagnostics or stable codes
-only against concrete consumers. Distinguish artifact intent, observed state,
-unsupported capability and an observation that could not be made.
-
-**Acceptance:** Missing/unknown resources, same-layer conflicts, invalid profile
-references, unavailable packages, missing download capabilities and absent runtime
-evidence each have a documented, actionable diagnostic. Positive and negative
-examples keep tested scope honest. Do not add commands merely to rename what
-`bootc` or existing CLI output already explains.
-
-**Dependencies:** P1-01 contract; P1-03/P2-03 user findings prioritize changes.
-**References:** [text Plan](../internal/textplan), [composition tests](../internal/compiler/compose_test.go),
-[companion tests](../cmd/deskos/main_test.go).
+### P1-05 — Diagnostics useful to outside authors
+**Proposed · M.** Walk representative failures through `validate`, `plan`,
+`render`, `sbom` and the companion; improve resource, file and layer context and
+the next action. Machine-readable codes only against a real consumer.
+**Done when:** missing resources, same-layer conflicts, invalid references,
+unavailable packages, missing download capability and absent runtime evidence
+each have an actionable diagnostic with positive and negative examples.
+[diagnostics.md](diagnostics.md)
 
 <a id="p1-06"></a>
-
-### P1-06 — Test the workstation behavior vendor updates can break
-
-**Status: Proposed · Scope: L.** Session defaults, enabled extensions and headless
-Firefox already have probes. They do not prove interactive login, app launches,
-Flatpak materialization or a complete desktop workflow.
-
-**Action:** Expand the existing harness incrementally: declared favorite IDs and
-launches; local harness-served browser content; GDM login/Wayland, logo, wallpaper
-and first-boot behavior; extension loads and StatusNotifierWatcher; offline login,
-Flatpak install after reconnection and screen locking. Select accessibility probes
-where useful. Monitor vendor GNOME changes, not a DeskOS GNOME fork.
-
-**Acceptance:** A recorded behavior matrix ties each promoted image's claims to
-positive/negative probes, distinguishes instrumentation from an unmodified boot
-and lists untestable behavior. Test AlmaLinux Flatpak/trust only before claiming
-them exercised. Include an extension-incompatible vendor update failure. Assign
-power/suspend/display behavior to hardware testing when emulation cannot prove it.
-
-**Dependencies:** P0-01, P1-02; P0-06 later consumes results.
-**References:** [VM harness](../tests/vm/README.md),
-[ADR 0016](adr/0016-vendor-desktop-and-app-menu.md),
-[ADR 0021](adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md).
+### P1-06 — Test what vendor updates break
+**Proposed · L.** Extend the harness incrementally: favorite launches, harness
+browser content, GDM login and Wayland, logo and wallpaper, extension loads and
+the watcher, offline login, Flatpak after reconnect, screen locking, and
+accessibility probes where they help.
+**Done when:** a behaviour matrix ties each promoted image's claims to positive
+and negative probes, separated into instrumented and unmodified boots.
+[Harness](../tests/vm/README.md) · [ADR 0016](adr/0016-vendor-desktop-and-app-menu.md)
 
 <a id="p1-07"></a>
-
-### P1-07 — Record a small physical-hardware validation matrix
-
-**Status: Proposed · Scope: M.** VM evidence does not establish workstation
-hardware support, and no universal compatibility promise is affordable.
-
-**Action:** With volunteered hardware and an owner, select a generic UEFI laptop
-and desktop spanning available Intel/AMD graphics. Record Wi-Fi/Bluetooth,
-suspend/resume, external displays, audio/camera and encryption where actually
-configured. Treat NVIDIA as a separately justified investigation.
-
-**Acceptance:** Repeatable results record device class/model, firmware, image
-digest, installer path and limitations without personal identifiers. Retest on a
-meaningful kernel/vendor transition; label untested combinations explicitly.
-No extra hardware support tier without a maintainer and retest capacity.
-
-**Dependencies:** P0-02, P1-02/P1-03; donated hardware and operator availability.
-**References:** [validation evidence](architecture.md#validation-status), [platforms](platforms.md).
+### P1-07 — Physical-hardware validation
+**Proposed · M.** With volunteered hardware and an owner, record one UEFI laptop
+and one desktop across available Intel and AMD graphics: Wi-Fi, Bluetooth,
+suspend, displays, audio, camera and encryption where configured.
+**Done when:** results name device class, firmware, digest and installer path
+without personal identifiers, and untested combinations are labelled.
+[platforms.md](platforms.md)
 
 <a id="p1-08"></a>
+### P1-08 — Predictable update behaviour
+**Proposed · M.** Document and test staged visibility, ordinary versus explicit
+reboot, timer and companion concurrency, failures, offline and reconnect, and
+Flatpak independence.
+**Done when:** a scenario table shows the actual behaviour and logs for automatic
+off and on, battery skip, AC return, metered, offline and a failed download.
+[operations.md](operations.md) · [ADR 0007](adr/0007-updatepolicy.md)
 
-### P1-08 — Make update behavior predictable to users and operators
-
-**Status: Proposed · Scope: M.** Staging and explicit companion updates exist;
-battery-skipped runs wait for the next schedule, and metered handling is not
-supported by ADR 0007. GUI notification expectations remain undefined.
-
-**Action:** Document and test staged visibility, ordinary versus explicit reboot,
-timer/companion concurrency, failures, offline/reconnected devices and system
-Flatpak independence. Assess AC-connect catch-up and notifications using upstream
-facilities only after a user need is demonstrated.
-
-**Acceptance:** A scenario table covers automatic disabled/enabled, battery skip,
-AC return, metered/offline and failed download, showing actual behavior and logs.
-State what `deskos update` invokes and that it does not update Flatpaks or firmware
-today. No unsolicited reboot or reconciliation. Any metered support or change to
-staging semantics needs human review of ADR 0007 before implementation; proposal
-and current behavior remain distinguishable.
-
-**Dependencies:** P0-02, P0-03; P1-07 for power behavior that requires hardware.
-**References:** [operations](operations.md), [ADR 0007](adr/0007-updatepolicy.md),
-[update guard](../internal/evidence/guard.go).
-
-## P2 — Community and enterprise-readiness
-
-### Community and sustainable maintenance
+## P2 — community and enterprise readiness
 
 <a id="p2-01"></a>
-
-### P2-01 — Publish contribution, security, support and conduct entry points
-
-**Status: Proposed · Scope: S.** Engineering rules exist, but newcomers lack a
-public contribution path and confidential security-reporting instructions.
-
-**Action:** Prepare `CONTRIBUTING.md`, `SECURITY.md`, and concise support/conduct
-guidance with a maintainer-confirmed private reporting route. Cover scoped
-proposals, tests (including separate Python harness suites), golden review, ADR
-discussion and human-owned PRs. Link existing agent rules rather than inventing
-another AI policy or execution framework.
-
-**Acceptance:** An outside contributor can reproduce checks and submit a bounded
-patch without private instructions. Users can distinguish security reporting,
-support, bugs and collaboration concerns. State realistic supported versions and
-response expectations, with no unstaffed response-time promise. Conduct rules
-focus on respectful technical collaboration and safe participation. AI-assisted
-output must be verified; human review/merge/release accountability and deterministic
-model-free compilation remain authoritative. Confirm routes before publishing
-them; this proposal does not enable remote features.
-
-**Dependencies:** Maintainer chooses reporting/support contacts; no engineering
-gate dependency. **References:** [AGENTS.md](../AGENTS.md),
-[development](development.md), [ADR 0011](adr/0011-agentic-contribution-layer.md).
+### P2-01 — Publish participation entry points
+**Proposed · S.** `CONTRIBUTING.md`, `SECURITY.md` and concise support and conduct
+pages, with a maintainer-confirmed private reporting route; link the agent rules
+rather than writing another AI policy.
+**Done when:** an outsider reproduces the checks and submits a bounded patch
+without private instructions, and knows where to report a vulnerability.
+[AGENTS.md](../AGENTS.md)
 
 <a id="p2-02"></a>
-
-### P2-02 — Define lightweight governance and maintainer continuity
-
-**Status: Proposed · Scope: M.** Founder ownership and informal procedures are
-fragile even if the compiler is small.
-
-**Action:** Define reviewer/maintainer responsibilities, appointments, decision
-and disagreement paths, RFC/ADR triggers, release approval and transfer of
-maintainership. Map ownership of compiler, platforms, tests, docs and supply chain;
-write onboarding and continuity runbooks, including backup access custodians.
-
-**Acceptance:** A tabletop absence scenario identifies who can review, stop a
-release, communicate and recover project/evidence infrastructure. Record gaps
-honestly if a second maintainer is unavailable. Backups and access recovery have
-a verification plan; never place credentials in documentation. Delegate by
-demonstrated competence, not a contributor-count target, with separate explicit
-approval for privileges. No committees needed.
-
-**Dependencies:** P2-01; coordinate incident authority with P0-04.
-**References:** [human approval rules](../AGENTS.md), [release workflow](../.github/workflows/release.yml).
+### P2-02 — Governance and continuity
+**Proposed · M.** Define reviewer and maintainer duties, appointments, decision
+and disagreement paths, RFC and ADR triggers, release approval and transfer; map
+ownership of compiler, platforms, tests, docs and supply chain.
+**Done when:** a tabletop absence shows who can review, stop a release,
+communicate and recover infrastructure — or records honestly that nobody can.
+[governance.md](governance.md)
 
 <a id="p2-03"></a>
-
-### P2-03 — Validate independent adoption and the compiler's value
-
-**Status: Proposed · Scope: M.** Published reference images do not establish
-that organizations can maintain their own workstation definitions economically.
-
-**Action:** Invite two or three willing teams to author and maintain separate
-resource roots. Compare a bounded baseline change in independent Containerfiles
-and CI against DeskOS profiles: duplication, change effort, conflict detection,
-provenance, vendor-base portability and maintenance cost. Collect user-owned,
-explicitly opt-in reports; accept unfavorable results.
-
-**Acceptance:** At least two external environments build their own definitions
-and document onboarding, update/recovery and maintenance findings. Publish a
-reproducible comparison method and results with permission; distinguish anonymous
-summaries from approved public attribution. Convert observed obstacles into a
-small ranked follow-up list before designing new abstractions. No telemetry.
-
-**Dependencies:** P1-01/P1-02 draft contracts, P1-03, P2-01; P0 safety results before
-suggesting production use. **References:** [organization example](../examples/organization-and-role/README.md),
-[ADR 0005](adr/0005-managed-baseline-boundary.md).
+### P2-03 — Validate independent adoption
+**Proposed · M.** Two or three teams author and maintain their own roots. Compare
+a bounded baseline change in their Containerfiles and CI against DeskOS profiles:
+duplication, effort, conflicts, provenance, portability, cost.
+**Done when:** two external environments document onboarding, update, recovery
+and maintenance, and a ranked follow-up list exists before any new abstraction.
+[Organization example](../examples/organization-and-role/README.md)
 
 <a id="p2-04"></a>
-
-### P2-04 — Make releases, proposals and upstream findings easy to follow
-
-**Status: Proposed · Scope: S.** Durable ADRs exist, but release notes are embedded
-in a workflow and support/proposal destinations are not a public process.
-
-**Action:** Define concise release/migration notes, platform retirement notices
-and development summaries. Choose one proposal/support venue; evaluate Discussions
-only if moderation capacity exists. Keep decisions in ADRs and roadmap documents.
-Prepare concrete upstream discussion topics from measured work.
-
-**Acceptance:** Users can identify affected installations, reference/identity
-changes and required actions for a release. Proposed versus committed work and
-abandoned experiments are explicit. Identify appropriate upstream venues for
-bootc/install diagnostics, CentOS Alternative Images, AlmaLinux Atomic, Fedora
-Image Mode/ELN and GNOME/Flatpak findings, using initramfs, first-boot or extension
-evidence rather than announcing hypothetical integrations. Outreach or remote
-feature changes require a separate human instruction.
-
-**Dependencies:** P2-01/P2-02, P1-01/P1-02 for compatibility notices.
-**References:** [release notes in workflow](../.github/workflows/release.yml),
-[research archive](research-notes.md), [ADR index](adr/README.md).
+### P2-04 — Make releases and findings followable
+**Proposed · S.** Concise release and migration notes, retirement notices, one
+proposal and support venue, decisions in ADRs, and concrete upstream topics drawn
+from measured work.
+**Done when:** a user can identify what a release changes for them and what to do,
+and proposed versus committed work is explicit.
+[release.yml](../.github/workflows/release.yml)
 
 <a id="p2-05"></a>
-
-### P2-05 — Prepare the CentOS Connect 2027 proposal for human submission
-
-**Status: Proposed · Scope: S.** A focused CentOS demonstration could attract
-independent users and upstream review without expanding the product.
-
-**Action:** Draft “Building Managed Linux Workstations with bootc: From
-Organizational Intent to Auditable Images.” Prepare the problem, typed Plan and
-composition explanation, a CentOS Stream 10 organization/role demo, evidence,
-lessons, limitations and collaboration requests. Prefer a 25-minute outline.
-
-**Acceptance:** A proposal, speaker-approved abstract and reproducible demo outline
-are ready for a maintainer to submit. Capture a known-good digest and fallback recording;
-do not present lifecycle E2E, consumer enforcement or Fedora repair as complete
-without results. Submission is a separate explicitly approved action.
-
-**Timing, verified 2026-10-20:** The [official CFP](https://cfp.fedoraproject.org/centos-connect-2027/cfp)
-closes **2026-12-04 23:59 Europe/Brussels** (22:59 UTC). The
-[event](https://www.centos.org/events/connect/) is **January 28–29, 2027, Brussels**;
-the organizers prefer 25-minute talks with some 40-minute slots. Recheck before
-submission. This is the only external calendar constraint in this backlog.
-
-**Dependencies:** Existing CentOS example and recorded evidence suffice for a
-proposal; no dependency on finishing P0. **References:** [example](../examples/organization-and-role/README.md),
-[validation evidence](architecture.md#validation-status).
-
-### Enterprise work gated by actual organizational demand
+### P2-05 — Prepare a conference proposal
+**Proposed · S.** Draft the problem, the typed Plan and composition, a CS10
+organization demo, the evidence, the limitations and a collaboration request as a
+25-minute outline.
+**Done when:** an abstract and a reproducible demo outline are ready for a
+maintainer to submit; submission is a separate, explicitly approved action.
+**CFP (verified 2026-10-20):** closes 2026-12-04 23:59 Europe/Brussels; the event
+is 2027-01-28/29 in Brussels. Recheck before submitting.
 
 <a id="p2-06"></a>
-
-### P2-06 — Validate external enrollment and restricted-network operation
-
-**Status: Research · Scope: M.** Identity and disconnected-network requirements
-are plausible adoption blockers, but no reference organizational lab is established.
-
-**Action:** With a requesting pilot, scope one FreeIPA or AD/SSSD/Kerberos lab:
-client packages and enterprise CA trust in the artifact; per-machine enrollment,
-emergency local access and credentials in existing external provisioning tools.
-Assess private/mirrored registries and package/Flatpak sources only to the extent
-that the same lab needs them.
-
-**Acceptance:** A design and isolated lab plan separate artifact, provisioning and
-enrollment ownership. Cover first boot offline, credential expiry, identity-server
-outage and emergency access. For restricted networks, list every network input,
-how images/evidence/signatures are mirrored and verified, and how update references
-and trust are provisioned externally. No embedded join secret, home management,
-identity service or fleet controller; demonstrate one lab before generalizing.
-
-**Dependencies:** A pilot sponsor from P2-03, P0-03/P0-05 trust and evidence contracts.
-**References:** [Milestone 5](roadmap.md#milestone-5-identity-and-provisioning),
-[provisioning boundary](architecture.md#provisioning-and-enrollment).
+### P2-06 — External enrolment and restricted networks
+**Research · M.** With a pilot, scope one FreeIPA or AD/SSSD/Kerberos lab: client
+packages and CA trust in the artifact, per-machine enrolment, emergency access and
+credentials in existing provisioning tools; mirrors only if that lab needs them.
+**Done when:** artifact, provisioning and enrolment ownership are separated, and
+offline first boot, credential expiry, server outage and emergency access are
+covered.
+[ADR 0005](adr/0005-managed-baseline-boundary.md)
 
 <a id="p2-07"></a>
-
-### P2-07 — Map compliance requirements to established evidence
-
-**Status: Research · Scope: M.** SBOMs and scans are useful evidence, not a
-compliance certification. No requesting organization's control set is selected.
-
-**Action:** Select one real requirement and map artifact properties to OpenSCAP/
-SCAP Security Guide, CycloneDX/SPDX, OpenVEX and provenance evidence where useful.
-Distinguish build-time checks from installed-machine checks owned by the
-organization. Reuse standards; keep scanners external to compiler semantics.
-
-**Acceptance:** A scoped reference workflow names control, producer, subject
-digest, limitations and verification steps, including missing evidence. Do not
-implement historical candidate `TrustPolicy`/`ComplianceProfile` kinds without
-proof that external policy is insufficient and a future approved ADR.
-
-**Dependencies:** Requesting organization, P0-05, P2-06 when identity controls matter.
-**References:** [ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md), [supply chain](supply-chain.md).
+### P2-07 — Map compliance to existing evidence
+**Research · M.** Pick one real requirement and map artifact properties to
+OpenSCAP/SSG, CycloneDX, OpenVEX and provenance; keep build-time and
+installed-machine checks distinct.
+**Done when:** a scoped workflow names control, producer, subject digest,
+limitation and verification step, including missing evidence.
+[ADR 0010](adr/0010-artifact-evidence-and-supply-chain.md)
 
 <a id="p2-08"></a>
+### P2-08 — Portable factory outputs
+**Research · M.** Specify the minimum contract — compiler and resources version,
+Plan, rendered context and manifest, OCI subject digest, installed SBOM,
+provenance, tests and authorization — and probe a policy engine against
+GitHub-generated evidence before considering another platform.
+**Done when:** an independent verifier checks identity, provenance, SBOM
+association and required tests, with negative cases, and the adapters needed are
+recorded.
 
-### P2-08 — Define portable factory outputs and evaluate policy independently
+## P3 — strategic research, no commitments
 
-**Status: Research · Scope: M.** Compiler outputs are CI-neutral; the complete
-image/evidence handoff is currently expressed by the GitHub workflows.
+Each needs a sponsor, a bounded question and a maintenance comparison.
 
-**Action:** Specify the minimum contract: versioned compiler/resources, canonical
-Plan, rendered context/manifest, OCI subject digest, installed SBOM, provenance,
-test results and authorization. Run a small Conforma (`ec`) evaluation against
-GitHub-generated evidence before considering another build platform.
-
-**Acceptance:** An independent verifier can check exact identity/digest, provenance,
-SBOM association and required tests, with negative cases for missing or mismatched
-evidence. Record which predicates Conforma can consume and what would need an
-adapter; no claim of compatibility before the probe. The contract remains usable
-by Tekton, Konflux, GitLab or internal CI without Kubernetes in Core. Demonstrate
-one alternative runner only after a user justifies its maintenance cost.
-
-**Dependencies:** P0-05/P0-06 contracts; independent policy experiment can inform
-promotion design. **References:** [Conforma CLI](https://conforma.dev/docs/cli/),
-[Conforma policies](https://conforma.dev/docs/policy/index.html),
-[compiler outputs](architecture.md#containerfile-backend).
-
-## P3 — Strategic research, without feature commitments
-
-Each investigation needs a sponsor, bounded question and maintenance comparison
-before it starts. These entries are not parallel work or a reason to delay P0/P1.
-
-<a id="p3-01"></a>
-
-### P3-01 — Compare Konflux with the existing factory at actual project scale
-
-**Status: Research · Scope: M.** Alternative build infrastructure may offer stronger
-boundaries, but migration itself creates operational cost.
-
-**Action:** Compare the same rendered context/evidence contract on GitHub and
-Konflux: provenance isolation, policy/promotion, performance/cost, developer
-experience, QEMU/KVM, privileged workloads, OpenShift SCC and maintenance staffing.
-
-**Acceptance:** A written keep/adopt/reject decision with measured advantages and
-costs; any probe is external infrastructure. Adoption by Fedora/Red Hat alone is
-insufficient. No Core migration or permanent service without a human decision.
-
-**Dependencies:** P2-08 and a requesting user/maintainer.
-**References:** [CI adapter boundary](architecture.md#design-principles),
-[upstream Konflux documentation](https://konflux-ci.dev/docs/).
-
-<a id="p3-02"></a>
-
-### P3-02 — Watch upstream bases and GNOME changes against concrete risks
-
-**Status: Research · Scope: S.** New bases and desktop releases may reduce gaps
-or add costs; names and release plans are not usable platform evidence.
-
-**Action:** Maintain a bounded watchlist for ELN/Stream 11/RHEL 11, official bootc
-bases, Hummingbird and GNOME OS. Verify what each project actually is before
-comparing ownership, image model, package/security lifecycle, bootc compatibility,
-CI and staffing. Track vendor GNOME/Wayland, portals, accessibility, remote desktop,
-HDR, authentication and extension changes only where a DeskOS behavior is at risk.
-
-**Acceptance:** A source-linked prerequisite checklist and an explicit adoption
-threshold: usable base, user need, owner and executable validation path. Feed
-specific risks into P1-06; do not create Stream 11 resources, promise GNOME 50/51
-backports or maintain a desktop fork. “No action” is a valid result. These names
-are research questions, not claims of current suitability or future release dates.
-
-**Dependencies:** P1-02 support/cost criteria; evaluate when relevant upstream
-evidence changes. **References:** [official-base rule](adr/0004-core-is-platform-independent.md),
-[owned-base rule](adr/0014-platform-base-ownership.md), [platforms](platforms.md).
-
-<a id="p3-03"></a>
-
-### P3-03 — Establish a secure-installation responsibility model
-
-**Status: Research · Scope: M.** Disk encryption and boot-chain trust are
-organizational requirements distinct from OCI publisher authenticity.
-
-**Action:** For a real threat model, map UEFI Secure Boot, TPM2, LUKS recovery,
-measured boot, installer verification, factory provisioning and replacement to
-firmware, vendor bootc/installer, hardware and the organization. Prefer upstream
-support over maintaining a signing/install stack.
-
-**Acceptance:** A design and lab plan cover trust bootstrap, lost keys, failed
-install, encrypted-device recovery and replacement; state unsupported combinations.
-No implementation or key handling follows from this research entry.
-
-**Dependencies:** P0-02/P0-03, requesting pilot and physical hardware owner.
-**References:** [installer guide](installer-iso.md),
-[provisioning boundary](architecture.md#provisioning-and-enrollment).
-
-<a id="p3-04"></a>
-
-### P3-04 — Assess aarch64 only with users and test ownership
-
-**Status: Research · Scope: M.** Compiler portability alone does not establish
-desktop image support on another architecture.
-
-**Action:** Inventory compiler/companion assets, vendor bootc bases, packages,
-binary/extension inputs, runners, disk builders and ARM workstation hardware.
-
-**Acceptance:** Feasibility and maintenance assessment names requesting users,
-maintainer and executable build/boot/desktop matrix; choose no expansion if any
-prerequisite is absent. Distinguish CLI releases from bootable platform support.
-
-**Dependencies:** P1-02, pilot demand, funded or available validation hardware.
-**References:** [release architecture](../.github/workflows/release.yml), [platform resources](../resources/platforms).
-
-<a id="p3-05"></a>
-
-### P3-05 — Measure image reproducibility gaps before choosing lockfiles
-
-**Status: Research · Scope: M.** Plans and contexts are deterministic; repository
-resolution, build tools and metadata still prevent an image reproducibility claim.
-
-**Action:** Compare two controlled builds; inventory repository snapshots/exact
-packages, bases, keys, binaries, Flatpak runtime materialization, tools, timestamps
-and environment differences. Separate image bytes from post-boot mutable apps.
-Measure build time, image/disk size, boot and upgrade resource costs as diagnostic
-baselines, not unsupported performance targets.
-
-**Acceptance:** A gap analysis identifies which differences matter to audit or
-recovery, and minimal controls with retention/maintenance costs. Propose resolved
-input manifests or lockfiles only for demonstrated gaps; any language change
-requires a future decision. Continue to say deterministic compilation/rendering
-until repeat image digests are actually demonstrated under stated conditions.
-
-**Dependencies:** P0-05 evidence and P0-08 input inventory; repeatable test host.
-**References:** [supply-chain inputs](architecture.md#supply-chain-inputs),
-[historical lockfile proposal](roadmap.md#later).
-
-<a id="p3-06"></a>
-
-### P3-06 — Evaluate external agent assistance and focused UX improvements
-
-**Status: Research · Scope: S.** Better explanations and onboarding could help
-administrators, including those using agents, without expanding compiler semantics.
-
-**Action:** Use pilot findings to select a small explanation/UX problem: Plan diff,
-why a value exists, validated proposed YAML, migration review or update visibility.
-Study lessons from other image-based desktops in discoverability, coherent
-defaults and accessibility only when they address that problem. Prefer existing CLI/JSON and
-documentation over a custom agent platform or more themes.
-
-**Acceptance:** A proposal ties a measurable user obstacle to a bounded improvement
-and compares manual/agent-assisted use. Any generated resources pass the ordinary
-offline validator and human review. No model in a provider/Plan/backend, proprietary
-API requirement, autonomous production change, home management or telemetry.
-
-**Dependencies:** P1-05, P2-03 findings; do not start from a model integration idea.
-**References:** [ADR 0011](adr/0011-agentic-contribution-layer.md),
-[managed baseline](adr/0005-managed-baseline-boundary.md).
-
-<a id="deferred-decisions"></a>
+- **P3-01 Alternative build infrastructure · M.** Compare the same context and
+  evidence contract on GitHub and Konflux: isolation, policy, cost, QEMU/KVM,
+  privileged workloads, staffing. Done when there is a written keep/adopt/reject
+  with measured costs.
+- **P3-02 Watch upstream bases and GNOME · S.** A source-linked checklist for new
+  bases and desktop changes, with risks fed into P1-06. Done when each watch item
+  has an adoption threshold; "no action" is a valid result.
+- **P3-03 Secure-installation responsibility · M.** Map Secure Boot, TPM2, LUKS
+  recovery, measured boot and factory provisioning to firmware, vendor, hardware
+  and organization. Done when a design and lab plan state unsupported
+  combinations.
+- **P3-04 aarch64 · M.** Inventory compiler assets, bases, packages, inputs,
+  runners, builders and hardware. Done when the assessment names users, an owner
+  and an executable build/boot matrix, or declines.
+- **P3-05 Reproducibility gaps · M.** Compare two controlled builds and inventory
+  what differs: snapshots, bases, keys, binaries, runtimes, tools, timestamps.
+  Done when the gaps that matter to audit or recovery are named, and lockfiles are
+  proposed only for demonstrated gaps.
+- **P3-06 Agent assistance and UX · S.** Pick one explanation or UX problem from
+  pilot findings and compare manual with agent-assisted use. Done when a
+  measurable obstacle maps to a bounded improvement that passes the ordinary
+  offline validator and human review.
 
 ## Deferred decisions and non-goals
 
-- **Not planned:** general-purpose fleet management, an Ansible/Satellite/MDM
-  replacement, endpoint reconciliation or a DeskOS identity service (ADR 0001).
-- **Not planned:** shell hooks/raw dconf escape hatches, YAML-to-Containerfile
-  templating, personal development environments or home-directory management
-  (ADRs 0002/0005).
-- **Not planned:** maintaining GNOME/Mutter/distribution package forks for newer
-  desktop versions, unlimited editions or a desktop-customization race. Use vendor
-  components and upstream fixes; the existing pinned extension delivery is bounded.
+- **Not planned:** fleet management, an Ansible/Satellite/MDM replacement,
+  endpoint reconciliation, a DeskOS identity service (ADR 0001).
+- **Not planned:** shell hooks, raw dconf escape hatches, templating, personal
+  development environments, `$HOME` management (ADRs 0002/0005).
+- **Not planned:** maintaining GNOME, Mutter or distribution package forks;
+  unlimited editions; a customization race.
 - **Not planned:** AI-dependent compilation, a proprietary model requirement,
-  custom agent orchestration in Core or autonomous release authority (ADR 0011).
-- **Not planned:** permanent dependency on Konflux or any CI provider; research
-  must demonstrate a benefit before infrastructure changes.
+  custom agent orchestration in Core, autonomous release authority (ADR 0011).
+- **Not planned:** a permanent dependency on any CI provider.
 - **Not planned:** unsupported LTS guarantees, automatic platform expansion,
-  public redistribution of RHEL derivatives or bringing Ubuntu builds back into
-  Core (ADRs 0004/0014/0020).
-- **Deferred, no commitment:** `TrustPolicy`, `ComplianceProfile`, `TimeSyncPolicy`,
+  publishing RHEL derivatives, or bringing Ubuntu builds back into Core
+  (ADRs 0004/0014/0020).
+- **Deferred:** `TrustPolicy`, `ComplianceProfile`, `TimeSyncPolicy`,
   `PerformancePolicy`, `FirmwarePolicy`, `IdentityProvider`, `WebApplication`,
-  external providers and a custom update orchestrator. Existing milestones named
-  candidates; they are not authority to add kinds. External need, a minimal proven
-  abstraction and an approved future ADR must come first.
-- **Deferred, lower impact:** third-party theme import, session desktop-logo and
-  Activities-button recoloring. Existing Theme/applier functionality stays recorded
-  in milestone history; finish lifecycle, trust and user adoption before new polish.
-- **Deferred until justified:** prebuilt disk/ISO hosting, registry mirrors, a
-  second simultaneous Fedora release and hardware-specific/NVIDIA support. Each
-  creates a retention, trust or ongoing validation obligation; P1-02/P2-03 must
-  supply the case. Restricted-network organizational mirroring is scoped in P2-06.
+  external providers, a custom update orchestrator. External need, a proven
+  minimal abstraction and an approved ADR come first.
+- **Deferred:** third-party theme import, session `desktopLogo`, Activities-button
+  recolouring.
+- **Deferred:** prebuilt disk or ISO hosting, registry mirrors, a second
+  simultaneous Fedora release, NVIDIA and hardware-specific support.
 
 ## Decisions reserved for human review
 
-Choosing roadmap order is not authorization to implement security-sensitive work.
-Humans must choose consumer trust/rotation and emergency recovery (P0-03/P0-04),
-evidence retention and signing of release assets (P0-05), publication/channel
-authority (P0-06), API promotion/deprecation (P1-01), support promises/retirement
-(P1-02), reporting contacts and maintainer delegation (P2-01/P2-02).
-
-Any vulnerability threshold change conflicts with ADR 0012 until a future ADR
-accepts it. New kinds, metered-update behavior beyond ADR 0007, changes to the
-artifact/runtime boundary or a new platform ownership model likewise need human
-architectural review first. No such decision is made here. Security policy,
-enrollment and enterprise verification should be proven externally before asking
-the compiler to express another concept.
+Humans choose consumer trust and rotation (P0-03/P0-04), evidence retention and
+signing of release assets (P0-05), publication authority (P0-06), API promotion
+(P1-01), support promises (P1-02), reporting contacts and delegation
+(P2-01/P2-02). A vulnerability threshold change conflicts with ADR 0012 until a
+future ADR accepts it. New kinds, metered-update behaviour beyond ADR 0007, a
+boundary change or a new platform ownership model need architectural review first.

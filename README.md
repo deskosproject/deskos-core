@@ -15,9 +15,8 @@
 
 **DeskOS compiles a workstation from text.** You describe the machine — its
 applications, desktop settings, branding, update policy — in declarative
-resources, and DeskOS turns them into a bootable operating-system image — built,
-scanned, and, where the platform allows it, signed and published like any other
-artifact.
+resources, and DeskOS turns them into a bootable image: built, scanned, and,
+where the platform allows, signed and published like any other artifact.
 
 <p align="center">
   <picture>
@@ -29,10 +28,6 @@ artifact.
 Most people should never run that pipeline by hand: **CentOS Stream 10 publishes
 a finished image you can install today; RHEL 10 is built privately.** The rest of this page starts there, and
 leaves the compiler for whoever wants to understand everything.
-
-Composition is where the layers meet: sets union, keyed definitions must match,
-and a scalar takes the highest layer — never the last file read. The plan keeps
-the provenance of every value.
 
 <p align="center">
   <picture>
@@ -105,12 +100,10 @@ spec:
 ```
 
 Profiles sit at explicit layers — `foundation` < `organization` < `role` <
-`workstation` — so an organization overrides DeskOS Core **on purpose**, never by
-file order. Sets (packages, units) are unioned; keyed definitions (repositories,
-Flatpaks, binaries) must agree; scalars (desktop settings) take the highest layer,
-and two different values at the same layer are an error. Every value in the
-resulting plan keeps its provenance: the resource, the layer and the file it came
-from.
+`workstation` — so an organization overrides Core **on purpose**, never by file
+order. Sets union; keyed definitions must agree; scalars take the highest layer,
+and two values at one layer are an error. Every value in the plan keeps its
+provenance: resource, layer and file.
 
 The [example organization](examples/organization-and-role) is a complete one:
 copy it, point `deskosctl` at that directory, and edit. Every resource kind, with
@@ -152,11 +145,10 @@ PROFILES
 ```
 
 `plan` prints what the image will contain and **where each value came from**.
-`render` writes the deterministic build context — the same inputs always give the
-same bytes, and `generated-manifest.json` records their SHA-256 — which `podman
-build` turns into an image, and `bootc-image-builder` into a disk. That whole
-flow, with the exact commands, is in
-[**docs/development.md**](docs/development.md#build-the-image-yourself).
+`render` writes the deterministic build context — the same inputs give the same
+bytes, and `generated-manifest.json` records their SHA-256 — which `podman build`
+turns into an image and `bootc-image-builder` into a disk. The exact commands are
+in [**docs/development.md**](docs/development.md#build-the-image-yourself).
 
 > [!NOTE]
 > **Pre-1.0.** The resource APIs are `v1alpha1` and will change.

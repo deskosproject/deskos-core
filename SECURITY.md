@@ -32,9 +32,8 @@ credential, a signing key or an internal installer.
 
 ## What to expect
 
-- An acknowledgement as soon as a maintainer reads it. There is no SLA and no
-  bug bounty: this is a small project, and saying otherwise would be a promise
-  nobody can keep.
+- An acknowledgement as soon as a maintainer reads it. There is no SLA and no bug
+  bounty: this is a small project.
 - A coordinated disclosure: we agree a date with you, fix or mitigate, then
   publish the advisory. If the issue is in the base distribution, we route it
   upstream and say so.

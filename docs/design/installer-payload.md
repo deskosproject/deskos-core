@@ -46,10 +46,9 @@ Record that it floats, and make the guard explicit:
 3. revisit the vendored-installer option if a second installer regression
    reaches a person.
 
-This is a smaller promise than pinning: it says the **installed system** is the
-digest we tested, and the **installer** is whatever the vendor shipped that day,
-checked by an unattended install. Revisit the vendored-installer option if a
-second installer regression reaches a person.
+This is a smaller promise than pinning: the **installed system** is the digest we
+tested, and the **installer** is whatever the vendor shipped that day, checked by
+an unattended install.
 
 ## What this does not decide
 

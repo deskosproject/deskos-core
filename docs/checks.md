@@ -1,9 +1,9 @@
 # Checks and what a red run means
 
-What runs on this repository, what each check proves, the evidence it keeps, and
-how to tell an infrastructure failure from an image defect. Required status
-checks are a GitHub setting outside the repository; this page lists what runs,
-not whether a branch protection rule is configured.
+What runs here, what each check proves, the evidence it keeps, and how to tell an
+infrastructure failure from an image defect. Required status checks are a GitHub
+setting outside the repository; this page lists what runs, not whether a branch
+protection rule exists.
 
 ## What runs
 
@@ -30,18 +30,17 @@ not whether a branch protection rule is configured.
 
 A scheduled run has no dispatch inputs. `supply-chain.yml` falls back to
 `fail-on: critical` explicitly, so the weekly run cannot silently run without a
-severity threshold, and since 2026-10-28 the weekly run publishes: the gate,
-signature, evidence and promotion are the same as a dispatch's. A dispatch with
-`publish=false` is the dry gate.
+severity threshold, and since 2026-10-28 it publishes: gate, signature, evidence
+and promotion as for a dispatch. A dispatch with `publish=false` is the dry gate.
 
 ## Reading a failure
 
 Classify before changing anything:
 
 - **Infrastructure or harness.** The job log shows a registry 503/EOF, a full
-  runner disk, a missing firmware path, a permission error, or no runner. The
-  image may be untouched. Fix the runner or retry; say which attempt produced
-  the result. Do not "fix" the image for this class.
+  runner disk, a missing firmware path, a permission error, or no runner; the
+  image may be untouched. Fix the runner or retry, say which attempt produced the
+  result, and do not "fix" the image for this class.
 - **Image defect.** The build finished, then the boot, session or first-boot
   check failed. Read the serial log, the failed-boot journal, the frames and the
   structured summary before rerunning; a retry does not make an image boot.
@@ -53,11 +52,9 @@ Classify before changing anything:
   items as **not measurable here**. These are not passes. A check that could not
   observe its target stays red.
 
-The VM harness already keeps `bootcheck-attempt1` beside the retried
-`bootcheck` when the splash retry runs, so a retry is visible rather than
-replacing the first attempt. Workflow artifacts also carry the run attempt in
-their name (`…-attempt-2`), so a re-run does not overwrite the first attempt's
-evidence.
+The VM harness keeps `bootcheck-attempt1` beside the retried `bootcheck` when the
+splash retry runs, and workflow artifacts carry the run attempt in their name
+(`…-attempt-2`), so a re-run does not overwrite the first attempt's evidence.
 
 ## Tested and published identity
 
@@ -110,10 +107,9 @@ or an explicit unverified item, not a pass. The session row is an **instrumented
 autologin session**, not proof of an interactive GDM login.
 
 **Not proved by these probes:** an interactive GDM login (the probes autologin),
-so the Wayland session type through GDM is unproved too; launching every
-declared favorite; Flatpak install after reconnection; suspend, battery, display
-and other hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied
-claims.
+so the Wayland session type through GDM is unproved too; launching every declared
+favorite; Flatpak install after reconnection; suspend, battery, display and other
+hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
 
 ## What is not covered
 

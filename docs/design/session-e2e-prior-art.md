@@ -6,11 +6,10 @@ Three families of practice exist for testing a desktop session that no unit test
 can reach: boot the artifact, use it, and assert on what a person would see. They
 differ in **what they assert on**, not in what they boot.
 
-Project names are left out on purpose. The question this page answers is *which
-method fits this repository*, and a method has to stand on its own: a comparison
-that borrows another project's reputation is not evidence, and adopting a stack
-wholesale would import assumptions that were never ours — a helper inside the
-image, a scheduler, a screenshot library.
+Project names are left out on purpose. The question is *which method fits this
+repository*, and a method has to stand on its own: a comparison that borrows
+another project's reputation is not evidence, and adopting a stack wholesale
+would import assumptions that were never ours.
 
 ## Shape 1: compare the screen against stored references
 
@@ -18,8 +17,8 @@ An OS-level tester boots or installs the image in a virtual machine, sends
 synthetic input through the VM's keyboard and mouse, and compares the screen with
 a stored crop after each step.
 
-- **Proves:** the installer and the desktop, on the artifact as shipped, including
-  what a person notices and no API exposes.
+- **Proves:** the installer and the desktop, on the artifact as shipped,
+  including what a person notices and no API exposes.
 - **Cost:** every UI change re-records references, and a person reviews each one.
   Theme, font and locale changes turn a real pass into a false failure.
 - **As a gate:** it needs an image library and review discipline; the suite
@@ -39,8 +38,8 @@ session-side helper.
 - **Cost:** application trees are imperfect (missing names, wrong roles, scroll
   bars that refuse to move), and the bridge helper is usually expected **inside**
   the image.
-- **As a gate:** one suite, reusable across images, with assertions that survive a
-  theme or font change.
+- **As a gate:** one suite, reusable across images, with assertions that survive
+  a theme or font change.
 
 ## Shape 3: boot a digest and exercise the lifecycle
 
@@ -59,23 +58,19 @@ second deployment, rolls back and recovers a failed candidate, and
 
 Shape 1 stays **open on purpose**. `bootcheck.py` asserts a stable graphical frame
 and the splash and does **not** match against references: a reference library is a
-maintenance product we have not agreed to own, and a false failure in a weekly
-gate costs more than it proves.
+maintenance product we have not agreed to own.
 
 ## What the survey changed
 
-- **Input injection.** The first design said a root helper writing to
-  `/dev/uinput` was how to send Super and typing. It is not: that bypasses the
-  desktop. The remote-desktop portal is the supported route, and it is what the
-  accessibility-driven suites use on Wayland. The open question is how a helper
-  reaches an image that must not carry test packages — as a credential injected at
-  boot, or as a package the platform already ships.
-- **A time budget.** The suites that survive as gates state a full pass in the low
+- **Input injection.** A root helper writing to `/dev/uinput` bypasses the
+  desktop; the remote-desktop portal is the supported route on Wayland. The open
+  question is how a helper reaches an image that must not carry test packages — as
+  a credential injected at boot, or as a package the platform already ships.
+- **A time budget.** Suites that survive as gates state a full pass in the low
   tens of minutes; one states 10–15. Our session pass is about a minute and the
-  boot pass about five, so the budget is a constraint on what we add, not a
-  problem to solve.
-- **Sharding.** One suite splits its scenarios across parallel jobs to keep the
-  number. That matters when the pass stops fitting the budget, and not before.
+  boot pass about five, so the budget constrains what we add.
+- **Sharding.** One suite splits scenarios across parallel jobs. That matters when
+  the pass stops fitting the budget, not before.
 
 ## What we deliberately do not take
 
@@ -87,8 +82,7 @@ gate costs more than it proves.
 - **A BDD layer.** The steps are few and the summary is the artifact; a `.feature`
   file adds indirection, not proof.
 - **Another suite's scope.** Installer, first boot, lifecycle, session and supply
-  chain are separate checks here; importing a foreign suite would duplicate them,
-  and the duplication is what rots first.
+  chain are separate checks here; importing a foreign suite would duplicate them.
 
 ## Still unverified
 
@@ -96,7 +90,3 @@ gate costs more than it proves.
   and whether it is packaged for the platform this repository builds today.
 - Whether a Settings page and the lock screen expose enough of a tree to assert on
   (scenarios 2 and 3 of the design).
-
-Nothing on this page is a claim about another project's quality. It is a reading
-of public documentation in October 2026, written down so that the design can cite
-a method instead of a reputation.

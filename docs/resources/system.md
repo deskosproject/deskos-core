@@ -6,9 +6,13 @@ Part of the [resource model](../resources.md): the kinds that describe boot, upd
 
 **Boot appearance**: graphical splash, quiet boot and the splash watermark.
 
-Core ships two: `deskos-boot` (the boot behaviour, no artwork) and
-`deskos-splash` (the DeskOS lockup), which needs `deskos-boot` for a graphical
-splash to sit on.
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `splash`, `quiet` | `graphical` or `text`; boolean | no | `text` adds no splash argument and no initramfs rebuild; `quiet: false` adds no `quiet` |
+| `watermark` | asset inside the resource root | no | a PNG, at most 1024x1024; needs an effective `splash: graphical` |
+
+Core ships `deskos-boot` (the boot behaviour, no artwork) and `deskos-splash`
+(the DeskOS lockup), which needs `deskos-boot` for a graphical splash to sit on.
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
@@ -29,10 +33,12 @@ spec:
 
 ## `UpdatePolicy`
 
-**Unattended updates** of the image and of system Flatpaks. By default the
-image update downloads and stages the next image; it applies at the next
-reboot the user makes. An organization can opt in to a scheduled apply and
-reboot inside a local time window.
+**Unattended updates** of the image and of system Flatpaks. By default the image
+update stages the next image and applies at the next reboot the user makes.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `image.automatic`, `.schedule`, `.requireACPower`, `flatpak.automatic`, `.schedule`, `.requireACPower` | boolean; `daily` or `weekly`; boolean | no | image updates; system Flatpaks |
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
@@ -47,108 +53,68 @@ spec:
 ```
 
 `requireACPower` also installs a udev rule that starts the staging service when
-AC comes online; the daily timer remains the schedule.
-
-Core sets the **image** policy only. `flatpak:` is deliberately absent from it
-([`resources/system/deskos-core-updates.yaml`](../../resources/system/deskos-core-updates.yaml)):
-declaring it in the foundation would impose an application channel on every
-platform. An organization that wants unattended Flatpak updates adds `flatpak:`
-at its own layer.
-
-`schedule` is `daily` or `weekly`. Every field is a layered scalar, so an
-organization changes one field and keeps the rest of Core's policy, for
-example `image: {schedule: weekly}`, or turns image updates off with
-`image: {automatic: false}` when another tool updates its machines.
+AC comes online; the daily timer remains the schedule. Core sets the **image**
+policy only: `flatpak:` is deliberately absent
+([`resources/system/deskos-core-updates.yaml`](../../resources/system/deskos-core-updates.yaml)),
+because declaring it in the foundation would impose an application channel on
+every platform. Units and operation:
+[runtime.md](../runtime.md#updates), [operations.md](../operations.md).
 
 ## Scheduled apply
 
 `apply` is the explicit opt-in to run `bootc upgrade --apply` and reboot. It
-requires `automatic: true`, and it is independent of the stage schedule:
-daily staging plus a weekly apply window is the recommended shape.
+requires `automatic: true`; daily staging plus a weekly apply window is the
+recommended shape.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `image.apply.enabled`, `.days` | boolean; non-empty list of lowercase weekdays | `enabled` yes within `apply` | `false` disables a lower layer's apply policy |
+| `image.apply.at` / `.window.start`, `.duration`, `.timezone` | `HH:MM`; `HH:MM`; positive whole-minute duration (`2h`); IANA name validated with the embedded tzdata | `at` or `window`, not both; `timezone` no; the window ends the same day | the apply may start within five minutes after `at`; machine local zone when `timezone` is omitted |
 
 ```yaml
 spec:
   image:
-    automatic: true
-    schedule: daily
-    requireACPower: true
     apply:
       enabled: true
       days: [sunday]
-      at: "03:00"                  # exact local time, or:
-      # window:
-      #   start: "03:00"
-      #   duration: 2h
+      at: "03:00"                  # exact local time
       timezone: Europe/Madrid      # optional; machine local zone when omitted
 ```
 
-- `days` is a non-empty list of lowercase weekdays.
-- Exactly one of `at` or `window` is required.
-- `at` is `HH:MM`; the apply may start within five minutes after it.
-- `window.start` is `HH:MM`, `window.duration` is a positive whole-minute
-  duration, and the window must end on the same day.
-- `timezone` is an IANA name validated with the embedded tzdata; omit it for
-  the machine's local zone.
-- The apply timer is `Persistent=false`; a missed window waits for the next
-  one instead of rebooting at the next boot. The generated
-  `deskos window` `ExecCondition` also rejects a timer that fires after
-  suspend.
-- `apply.enabled: false` disables a lower layer's apply policy.
-
-An organization that only wants staging never sets `apply`. The generated units
-are described in [architecture.md](../architecture.md#updates) and
-[ADR 0023](../adr/0023-scheduled-apply-window.md); how to operate them is in
-[operations.md](../operations.md).
+The apply timer is `Persistent=false`: a missed window waits for the next one
+instead of rebooting at the next boot, and the `deskos window` `ExecCondition`
+rejects a timer that fires after suspend. An organization that only wants
+staging never sets `apply`
+([ADR 0023](../adr/0023-scheduled-apply-window.md)).
 
 ## `TrustAnchor`
 
-**CA certificates the image trusts or refuses to trust** in the platform
-trust store:
+**CA certificates the image trusts or refuses to trust** in the platform trust
+store; a platform with anchors but no `blocklistDir` fails composition.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `anchors[].name`, `.file`, `blocklist[].name`, `.file` | file stem; PEM X.509 certificate inside the resource root | yes | keyed by `name`; one name cannot be in both |
 
 ```yaml
-apiVersion: system.deskos.org/v1alpha1
-kind: TrustAnchor
-metadata:
-  name: example-root-ca
 spec:
   anchors:
     - name: example-root-ca
       file: ../assets/example-root-ca.crt
 ```
 
-Each `file` is a PEM X.509 certificate inside the resource root and `name`
-is the file stem in the trust store. Anchors are **keyed** by `name`: the
-same certificate under one name deduplicates, and a different certificate
-under the same name conflicts at any layer. The Platform supplies the
-anchors directory and the update command; on the EL platforms that is
-`/etc/pki/ca-trust/source/anchors/` and `update-ca-trust`. The private key
-is neither needed nor accepted. See
-[architecture.md](../architecture.md#trust-store).
+Anchors are keyed by `name`: one certificate under a name deduplicates, a
+different one under the same name conflicts at any layer. The Platform supplies
+the anchors directory and the update command — `/etc/pki/ca-trust/source/anchors/`
+and `update-ca-trust` on the EL platforms. The private key is neither needed nor
+accepted. A `blocklist` entry such as
+`{name: compromised-root-ca, file: ../assets/compromised-root-ca.pem}` lowers to
+`trust.blocklistDir` (`/etc/pki/ca-trust/source/blocklist/` on EL), which p11-kit
+reads as distrusted: the certificate stays out of every extracted bundle, so a
+chain ending at it is rejected. See [runtime.md](../runtime.md#trust-store).
 
-A certificate can also be **distrusted** instead of trusted:
-
-```yaml
-apiVersion: system.deskos.org/v1alpha1
-kind: TrustAnchor
-metadata:
-  name: my-workstation-distrust
-spec:
-  blocklist:
-    - name: compromised-root-ca
-      file: ../assets/compromised-root-ca.pem
-```
-
-`blocklist` entries have the same `name`/`file` shape, keying and asset
-rules as `anchors`, and one name cannot be in both. They lower to the
-platform's `trust.blocklistDir` (on the EL platforms
-`/etc/pki/ca-trust/source/blocklist/`), which p11-kit reads as distrusted:
-`update-ca-trust` leaves the certificate out of every extracted bundle, so
-a chain that ends at it is rejected. Trust in that CA is removed; TLS is
-not weakened. A platform that declares anchors but no `blocklistDir`
-fails composition with that gap instead of ignoring the entry.
-
-The rescue path for a compromised CA is a resource, not a script, and it
-composes at any layer including the workstation layer. Core ships
-`deskos-trust` with the October 2026 eMudhra roots (RHSB-2026-012); an
-organization adds its own through its profiles. Drop an entry once the
-platform's `ca-certificates` no longer ships that root.
+The rescue path for a compromised CA is a resource, not a script, and composes
+at any layer, the workstation layer included. Core ships `deskos-trust` with the
+October 2026 eMudhra roots (RHSB-2026-012); an organization adds its own through
+its profiles and drops an entry once the platform's `ca-certificates` no longer
+ships that root.

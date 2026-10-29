@@ -1,36 +1,12 @@
 # DeskOS architecture
 
-How DeskOS turns resources into a workstation image: the boundary it keeps,
-the resource model, composition, the typed plan, the Containerfile
-backend, and what has been validated on each platform.
-
-**Contents:**
-[Boundary](#boundary) ·
-[Design principles](#design-principles) ·
-[Resource model](#resource-model) ·
-[Core, organizations and roles](#core-organizations-and-roles) ·
-[Composition](#composition) ·
-[Providers and the registry](#providers-and-the-registry) ·
-[Plan (IR)](#plan-ir) ·
-[Containerfile backend](#containerfile-backend) ·
-[Public CentOS, private RHEL](#public-centos-private-rhel) ·
-[Platform capability gaps](#platform-capability-gaps) ·
-[Validation status](#validation-status) ·
-[Supply-chain inputs](#supply-chain-inputs) ·
-[Managed baseline](#managed-baseline) ·
-[System Flatpaks](#system-flatpaks) ·
-[GNOME](#gnome) ·
-[Boot](#boot) ·
-[Trust store](#trust-store) ·
-[Updates](#updates) ·
-[Drift and mutable `/etc`](#drift-and-mutable-etc) ·
-[Provisioning and enrollment](#provisioning-and-enrollment) ·
-[Release model](#release-model)
+Resources become a workstation image: boundary, resource model, composition,
+typed Plan, Containerfile backend, and what is verified on each platform. What
+the image does once it boots is [runtime.md](runtime.md).
 
 ## Boundary
 
-DeskOS **compiles desired artifact state**. It does not continuously
-reconcile deployed endpoint state.
+DeskOS **compiles artifact state**. It does not reconcile running machines.
 
 <p align="center">
   <picture>
@@ -39,33 +15,24 @@ reconcile deployed endpoint state.
   </picture>
 </p>
 
-DeskOS is finished once the artifact exists. Keeping 4,000 running
-machines in a given state is the job of configuration management
-(Ansible Automation Platform, Satellite, Foreman, MDM); DeskOS builds the
-*baseline* those systems operate on.
-
-> [!NOTE]
-> There is no controller, agent or reconciliation loop, and none is
-> planned. Scheduled updates ([Updates](#updates)) are image content:
-> timers that stage the next published image, not a loop that checks or
-> enforces machine state.
+Keeping 4,000 machines in a state is configuration management's job (Ansible,
+Satellite, Foreman, MDM). DeskOS builds the baseline those systems operate on.
+There is no controller, agent or reconciliation loop, and none is planned.
+Scheduled updates ([Updates](#updates)) are image content: timers that stage the
+next published image.
 
 ## Design principles
 
-- **Intent is data.**
-- **Compilation is deterministic.**
-- **File order does not define precedence.**
-- **Providers emit typed IR**, not arbitrary shell.
-- **DeskOS Core** provides capabilities and defaults; **organizations**
-  provide policy and content.
-- **DeskOS owns the artifact**, not the running machine.
-- **CI is an adapter**, not the product.
-- **AI may assist development**, but it is not part of compiler semantics.
-- **Compose existing Linux technologies** rather than reinventing them.
+- Intent is data; compilation is deterministic.
+- File order never defines precedence.
+- Providers emit typed IR, not shell.
+- Core provides capabilities; organizations provide policy and content.
+- DeskOS owns the artifact, not the running machine.
+- CI is an adapter, not the product.
+- AI may assist development; it is not part of compiler semantics.
+- Compose existing Linux technology rather than reinventing it.
 
 ## Resource model
-
-Every resource is a versioned envelope:
 
 ```yaml
 apiVersion: <group>.deskos.org/v1alpha1
@@ -74,9 +41,9 @@ metadata: {name: <dns-label>}
 spec: {...}
 ```
 
-Identity is **GVK plus name** and must be unique across all loaded roots.
-Resources are *plain data*: YAML anchors, aliases, merge keys and custom
-tags are rejected, and no field accepts shell, templates or hooks.
+Identity is **GVK plus name**, unique across all loaded roots. Resources are
+plain data: no anchors, aliases, merge keys, custom tags, shell, templates or
+hooks.
 
 | Group | Kinds |
 |---|---|
@@ -85,47 +52,30 @@ tags are rejected, and no field accepts shell, templates or hooks.
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
 
-Schemas live in `schemas/` and are embedded in `deskosctl`. Each kind is
-checked **twice**: against its JSON Schema, and by strict typed decoding
-with semantic validation in its provider.
+Schemas live in `schemas/` and are embedded in `deskosctl`. Every kind is checked
+twice: against its JSON Schema, and by strict typed decoding with semantic
+validation in its provider.
 
-DeskOS Core is **embedded in `deskosctl`** — it is small and versioned with
-the compiler — so a run loads it plus the resource roots you pass. Several
-organization roots can be combined (`deskosctl plan ./one ./two ...`), and
-an organization keeps its own repository of resources and references DeskOS
-resources by name; it **never copies** them. `--no-core` drops the embedded
-Core, and `deskosctl core export DIR` writes it for inspection.
-Examples of every kind are in
-[resources.md](resources.md).
+Core is **embedded in `deskosctl`** and loads beside the roots you pass; several
+organization roots can be combined. Organizations keep their own repositories
+and reference Core by name, never copying it.
 
 ## Core, organizations and roles
 
-- **`Platform`**: facts about an OS target: bootc base image,
-  redistribution constraints, the RPM groups behind DeskOS group names,
-  GNOME integration facts (dconf database, default extensions, available
-  extensions), boot facts, the units that update the image on their
-  own, Flatpak capabilities, and CA trust-store facts. *All platform
-  differences live here.*
-- **`Profile`**: a reusable fragment of intent at a semantic layer. It
-  lists the resources it includes.
-- **`Workstation`**: a concrete build target, one Platform plus Profiles.
-  It compiles into a workstation *image*; the kind names the machine you
-  compose.
+- **`Platform`**: every platform difference — bootc base, redistribution,
+  RPM groups, GNOME facts, boot facts, image-update units, Flatpak capabilities,
+  trust-store paths.
+- **`Profile`**: a reusable fragment at a semantic layer.
+- **`Workstation`**: one Platform plus Profiles; it compiles into one image.
 
-DeskOS Core (`resources/profiles/deskos-core.yaml`) is a `foundation`
-profile, and so is `deskos-gnome`, which carries Core's own GNOME defaults and
-which a workstation selects only when its platform's base lets DeskOS write
-them (ADR 0016). The same Core composes onto the shipped `centos-stream-10` and `rhel-10`; the
-example AlmaLinux and Fedora platforms compose it from their own roots. The Ubuntu
-platform composes it in its own repository
-([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)), on a base the project
-owns rather than its vendor. A RHEL workstation starts from
-`registry.redhat.io/rhel10/rhel-bootc`, **never** from the CentOS-based
-DeskOS image. A test asserts the four shipped RPM platforms — CentOS Stream 10,
-CentOS Stream 10 and RHEL 10 — produce the same Core content. A Debian-family platform is
-not compared by that test, because its package manager is deb: what pins the deb render
-here is the synthetic Debian golden in the compiler tests (`debian-synthetic`), which is
-built from a fixture rather than from a platform this repository ships.
+Core is `resources/profiles/deskos-core.yaml`, a foundation profile, with
+`deskos-gnome` for GNOME defaults and `deskos-dock` for the dock. A RHEL
+workstation starts from `registry.redhat.io/rhel10/rhel-bootc`, never from the
+CentOS-based DeskOS image. A test asserts that the **two shipped RPM platforms**,
+CentOS Stream 10 and RHEL 10, produce the same Core content over the fields it
+compares (groups, packages, enabled units, dconf defaults, installed files,
+default target). AlmaLinux and Fedora have their own roots; Ubuntu is in its own
+repository ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
 ## Composition
 
@@ -140,695 +90,236 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 
 | Class | Used for | Rule |
 |---|---|---|
-| **set** | RPM packages, package groups, systemd units, GNOME locks | deterministic union; duplicates collapse |
-| **keyed** | RPM repositories (by repo id), RPM files (by URL), binary destinations, desktop entries (by id), Flatpak remotes and applications, trust anchors (by name) | identical definitions deduplicate; different definitions conflict *at any layer* |
-| **scalar** | GNOME, boot and update settings | highest layer wins; different values *at one layer* conflict |
+| **set** | packages, groups, units, GNOME locks | union; duplicates collapse |
+| **keyed** | repositories, RPM files, binary destinations, desktop entries, Flatpak remotes and applications, trust anchors | identical definitions deduplicate; different ones conflict at any layer |
+| **scalar** | GNOME, boot and update settings | highest layer wins; different values at one layer conflict |
 
-**Profile order and file order never matter.** Every contribution carries
-*provenance* (resource, including profile, layer, source file and line),
-and conflict errors list every contributor.
-
-References are transitive: a `PackageSet` names the `RpmRepository` and
-`AptRepository` resources its packages need, a `FlatpakSet` names its
-`FlatpakRemote`.
-Included resources contribute at the layer of the including profile.
+Profile order and file order never matter. Every contribution carries provenance
+(resource, profile, layer, file, line) and conflicts list every contributor.
+References are transitive: a `PackageSet` names its repositories, a `FlatpakSet`
+its remote. Included resources contribute at the layer of the including profile.
 
 ## Providers and the registry
 
-`internal/registry` maps GVK to a provider. A provider decodes and
-validates one kind, may declare references, may contribute to
-composition, and owns a lowerer that turns composed intent into Plan IR
-using only Platform facts. **Providers have no side effects**: no
-commands, no network. Asset reads are confined to the declaring resource
-root.
-
-Unknown kinds fail with
-`no provider registered for <group/version>, Kind <Kind>`. The provider
-contract (decode, references, contributions, IR) is data in and data out,
-so a future out-of-process provider protocol can implement it.
+`internal/registry` maps GVK to a provider. A provider decodes and validates one
+kind, may declare references and contribute to composition, and lowers composed
+intent to Plan IR using only Platform facts. Providers have no side effects: no
+commands, no network, and asset reads stay inside the declaring root. Unknown
+kinds fail with `no provider registered for <group/version>, Kind <Kind>`.
 
 ## Plan (IR)
 
-`internal/plan` is the typed intermediate representation, independent of
-YAML and of Containerfile syntax. `deskosctl plan --format json` prints
-it.
+`internal/plan` is the typed IR, independent of YAML and of Containerfile
+syntax. `deskosctl plan --format json` prints it.
 
 - **Artifact**: base image, labels, `RpmRepository`, `AptRepository`,
-  `RpmGroupInstall`
-  (with `excludePackages`), `RpmInstall`, `PackageRemove`, `RpmFileInstall`,
-  `VerifiedBinaryInstall`,
-  `FileInstall`, `GeneratedFile`, `TrustAnchorInstall` (with `TrustStoreUpdate`),
-  `DesktopEntry`, `IconCacheUpdate`, `DconfDatabase` (defaults and locks),
-  `GSettingsVendorDefault`, `KernelArgument`, `InitramfsRegeneration`,
-  `PlymouthTheme`, `SystemdEnable`, `SystemdMask`, `ScheduledUpdate`,
-  `DefaultTarget`.
-- **Provisioning**: system Flatpak remotes and applications, materialized
-  on the machine by upstream `flatpak preinstall`. An OCI remote that names
-  an authenticator also carries the unit that points the remote at it.
+  `RpmGroupInstall` (with `excludePackages`), `RpmInstall`, `PackageRemove`,
+  `RpmFileInstall`, `VerifiedBinaryInstall`, `FileInstall`, `GeneratedFile`,
+  `TrustAnchorInstall` (with `TrustStoreUpdate`), `DesktopEntry`,
+  `IconCacheUpdate`, `DconfDatabase`, `GSettingsVendorDefault`, `KernelArgument`,
+  `InitramfsRegeneration`, `PlymouthTheme`, `SystemdEnable`, `SystemdMask`,
+  `ScheduledUpdate`, `DefaultTarget`.
+- **Provisioning**: system Flatpak remotes and applications, materialized by
+  upstream `flatpak preinstall`; an OCI remote with an authenticator also carries
+  the unit that points the remote at it.
 - **Enrollment**: reserved and empty.
 
-Every item keeps its provenance. The plan is **canonical**: sorted, no
-maps, no timestamps.
+Every item keeps its provenance. The plan is canonical: sorted, no maps, no
+timestamps.
 
 ### Image identity summary
 
-The compiler also writes `/usr/share/deskos/image-info.json`
-(`deskos.image-info/v1`): a small, image-owned summary naming the
-workstation and its title, the platform and its release, the
-architectures, the base image reference and digest, the plan format and
-the profiles that contributed, sorted by layer and name. It is generated
-from the Plan, so it stays deterministic and needs no extra input.
+`/usr/share/deskos/image-info.json` (`deskos.image-info/v1`) names the
+workstation and title, the platform and release, architectures, base reference
+and digest, plan format and the profiles that contributed, sorted by layer and
+name. It is generated from the Plan, so it adds no input.
 
-It is not the identity of the machine and not `os-release`: the
-distribution identity stays the vendor's, and the file deliberately leaves
-out build-host paths, a build commit and a plan hash (the hash would
-describe itself). The full Plan remains the authoritative record; this
-file is the part a person or a support engineer can read without one.
+It is not the machine identity and not `os-release`: the distribution identity
+stays the vendor's. It carries no build-host path, commit or plan hash. The Plan
+remains the authoritative record.
 
 ## Containerfile backend
 
-`internal/backends/containerfile` reads **only the Plan**. It renders:
+`internal/backends/containerfile` reads **only the Plan** and renders:
 
 ```text
 Containerfile
 plan.json                 canonical Plan
 generated-manifest.json   every file with mode and sha256
 repos/etc/yum.repos.d/    one file per RpmRepository
-repos/etc/pki/rpm-gpg/    RPM repository signing keys, named by sha256
+repos/etc/pki/rpm-gpg/    RPM repository keys, named by sha256
 repos/etc/apt/sources.list.d/  one deb822 source per AptRepository
-repos/etc/apt/keyrings/   APT signing keys, named by sha256
+repos/etc/apt/keyrings/   APT keys, named by sha256
 rpm-keys/                 public keys of RPM files, named by sha256
 rootfs/                   image files, copied after package installation
 ```
 
 The Containerfile, in order:
 
-1. copies the repository files, so every transaction that follows can install
-   from a declared source;
-2. one group transaction, with the platform's `--exclude` options;
+1. copies the repository files, so every later transaction installs from a
+   declared source;
+2. one group transaction with the platform's `--exclude` options;
 3. one package transaction;
-4. copies `rpm-keys/` to `/usr/share/deskos/rpm-keys/`, then, in one RUN,
-   downloads every RPM file, checks its SHA-256, checks its signature
-   against its own key in a temporary rpm keyring (an unsigned package or
-   another key fails the build), and installs them in one package
-   transaction; the image's rpm keyring is not changed;
-5. removes every `Platform.removePackages` name that is installed, then
-   fails if one remains; an absent name is a no-op (ADR 0022);
+4. copies `rpm-keys/`, then in one RUN downloads each RPM, checks its SHA-256,
+   checks its signature against its own key in a temporary keyring, and installs
+   them; the image keyring is untouched;
+5. removes every installed `Platform.removePackages` name and fails if one
+   remains; an absent name is a no-op (ADR 0022);
 6. one verified download per binary artifact;
 7. copies `rootfs/`;
-8. checks the DeskOS GSettings override with
-   `glib-compile-schemas --strict` against the installed schemas, then
-   compiles them without `--strict`, as the packages do;
-9. runs `dconf update`, regenerates the hicolor icon cache when the
-   image installs desktop entry icons, regenerates the platform trust
-   store when the image places trust anchors, enables and masks units and
-   sets the default target;
-10. installs the Plymouth theme and rebuilds the initramfs when boot intent
-    needs them (see [Boot](#boot));
-11. cleans package caches and ends with `bootc container lint`.
+8. validates the GSettings override with `glib-compile-schemas --strict`, then
+   compiles it as packages do;
+9. runs `dconf update`, regenerates the icon cache and the trust store when
+   needed, enables and masks units, sets the default target;
+10. installs the Plymouth theme and rebuilds the initramfs when
+    [Boot](#boot) needs them;
+11. cleans caches and ends with `bootc container lint`.
 
-Every generated command comes from a typed operation; values are
-validated upstream and quoted again. The plan is also installed as
-`/usr/share/deskos/plan.json`, so a future endpoint tool can report what
-the image was built from.
-
-**Rendering never needs credentials or network.** Building RHEL contexts
-needs an entitled build host, which is a factory input.
+Every command comes from a typed operation; values are validated upstream and
+quoted again. The plan is installed as `/usr/share/deskos/plan.json`.
+**Rendering needs no credentials and no network.**
 
 ### Build-host subscription state
 
-On EL10 the subscription-manager dnf plugins run inside every `dnf`
-transaction of a build. On an entitled host they write `redhat.repo`
-(pointing at the host's entitlement certificate serial) and state under
-`/var/lib/rhsm` and `/var/log/rhsm`. So every RPM transaction the backend
-emits:
-
-- mounts those two directories as **tmpfs**;
-- removes the generated `/etc/yum.repos.d/redhat.repo` **in the same
-  RUN**, before the layer is committed (removing it in a later layer would
-  leave it in the image history);
-- fails if a `redhat.repo` already exists, and the render rejects an
-  `RpmRepository` with id `redhat`, so declared content is never removed.
-
-subscription-manager's own tmpfiles.d entries recreate `/var/lib/rhsm`
-and `/var/log/rhsm` at boot.
+On EL10 the subscription-manager dnf plugins run inside every transaction and
+write `redhat.repo` plus state under `/var/lib/rhsm` and `/var/log/rhsm`. So
+every emitted transaction mounts those directories as tmpfs, removes
+`redhat.repo` in the same RUN (a later layer would leave it in history), and
+fails if one already exists; the render also rejects an `RpmRepository` with id
+`redhat`, so declared content is never removed.
 
 ### Lint warnings
 
-`bootc container lint` passes with **three warnings**, all produced by
-distribution package scriptlets rather than by DeskOS:
+`bootc container lint` passes with **three warnings**, all from distribution
+scriptlets: content in `/run` (cockpit, cups), users without sysusers.d entries
+(libstoragemgmt, wsdd; on RHEL also avahi and libvirtdbus), and `/var` content
+without tmpfiles.d entries. Seen on CS10 builds `50f8892a` and `77832d5c` and
+RHEL 10.2 builds `81bdfeec` and `0e65bf4b`.
 
-- content in `/run` (cockpit, cups);
-- users without sysusers.d entries (libstoragemgmt, wsdd; on RHEL also
-  avahi and libvirtdbus);
-- `/var` content without tmpfiles.d entries.
-
-Seen on CS10 Core builds `50f8892a` and `77832d5c` (11 passed, 1 skipped)
-and the RHEL 10.2 builds `81bdfeec` and `0e65bf4b` (10 passed, 1
-skipped), where the RHSM tmpfs mounts keep `/var/log/rhsm/rhsm.log` out of
-the image. They are non-blocking.
-
-**Disposition (2026-10-24):** accept all three as vendor scriptlet warnings, and
-keep the lint in report mode. Do not use `--fatal-warnings`: it would make
-packaging owned by the distribution block a DeskOS release without a defect in
-DeskOS intent. Do not patch the packages to silence them. Re-run the lint each
-release; a warning that originates in a DeskOS `RUN` step is a defect and
-blocks, unlike these three. Track upstream fixes where the vendor accepts them.
+**Disposition (2026-10-24):** accept them, keep the lint in report mode, never
+`--fatal-warnings`, never patch the packages. A warning from a DeskOS `RUN` step
+is a defect and blocks. Re-run each release.
 
 ## Public CentOS, private RHEL
 
-The public reference workstation `deskos-core-centos-stream-10` is
-redistributable and is the source of `quay.io/deskos/deskos-core-centos-stream-10`.
+`deskos-core-centos-stream-10` is redistributable and is the source of
+`quay.io/deskos/deskos-core-centos-stream-10`.
 
 > [!IMPORTANT]
-> RHEL-derived images are covered by the RHEL EULA and are **never
-> published**. The `rhel-10` Platform marks them
-> `redistributable: false`, and plans and Containerfiles carry that
-> notice. Subscription material never appears in resources.
+> RHEL-derived images are covered by the RHEL EULA and are **never published**.
+> The `rhel-10` Platform marks them `redistributable: false`, and plans and
+> Containerfiles carry the notice. Subscription material never appears in
+> resources.
 
 ## Platform capability gaps
 
-Organizational intent can ask for something a platform does not supply.
-The Platform lists such packages under `unavailablePackages` with a
-reason, and **composition fails with that reason** instead of dropping or
-substituting the package. The example organization shows this with
-`virt-manager`, which EL10 ships only in the CodeReady Linux Builder
-repository (unsupported on RHEL 10); see
-[`examples/organization-and-role/README.md`](../examples/organization-and-role/README.md).
-
-A Platform package group may list `excludePackages`: group members the
-platform does not install with the group. They become `--exclude` options
-of the single group transaction only, so a `PackageSet` that names one
-still installs it. The CS10 Platform excludes setroubleshoot this way; see
-[research-notes.md](research-notes.md). The RHEL 10 Platform excludes
-`redhat-flatpak-preinstall-firefox`: its Firefox Flatpak comes from an
-OCI remote whose authenticator needs a session bus, so a system
-`flatpak preinstall` fails for every declared Flatpak. Core installs the
-Firefox RPM on both EL platforms.
+A Platform lists packages it cannot supply under `unavailablePackages` with a
+reason, and **composition fails with that reason** instead of substituting. The
+example organization shows this with `virt-manager`, which EL10 ships only in
+CRB. A group may list `excludePackages`, which become `--exclude` options of the
+group transaction only, so a `PackageSet` naming one still installs it: CS10
+excludes setroubleshoot, RHEL 10 excludes `redhat-flatpak-preinstall-firefox`
+(its OCI authenticator needs a session bus, which would break every system
+`flatpak preinstall`). Core installs the Firefox RPM on both EL platforms.
 
 ## Validation status
 
-The canonical matrix — base owner, what is verified on each platform, and how to
-install it today — is [**platforms.md**](platforms.md). The evidence behind those
-claims is below.
-
-The RHEL column there is historical: the RHEL factory host was retired, and this
-repository no longer builds or boots RHEL. Composition and rendering for RHEL stay
-covered by the tests. The Ubuntu
-root-cause story — GDM counting users through AccountsService, and the uid-1000
-account the upstream container image ships suppressing the wizard — is in
-[research notes](research-notes.md).
+The canonical matrix is [**platforms.md**](platforms.md); the evidence is here.
+The RHEL column there is historical: the factory host was retired, and this
+repository no longer builds or boots RHEL. Composition and rendering for RHEL
+stay covered by tests.
 
 ### Evidence
 
-- **Artifact identity (CI).** Each gate leg writes `identity.json`: commit,
-  run, plan and manifest hashes, local image ID/digest, exported OCI archive,
-  disk hash, and the published digest/reference and signature evidence when
-  present. The record is uploaded even on failure, and a successful leg checks
-  that it is complete. It is workflow evidence, not `/etc/os-release`; the
-  distribution identity stays the vendor's. For a published digest it is also
-  stored under `evidence.deskos.org`, keyed by digest and verified from the
-  public URL.
+- **Artifact identity (CI).** Each gate leg writes `identity.json`: commit, run,
+  plan and manifest hashes, image ID and digest, OCI archive, disk hash, and the
+  published digest with signature evidence when present. It is uploaded even on
+  failure, and a successful leg checks it is complete. For a published digest it
+  is also stored under `evidence.deskos.org`, keyed by digest and verified from
+  the public URL.
 - **CentOS Stream 10, built and booted.** `bootcheck.py` on Core disks (pixel
   classes; frames show the DeskOS splash and GNOME Initial Setup over the DeskOS
-  wallpaper), and `sessioncheck.py` on the instrumented boot. What the session check
-  asserts is the plan itself: **every dconf default the plan declares**, read twice
-  (the image's own database and what the session ends up with), **whether every
-  extension the composition turned on really loaded**, and **the bytes of every binary
-  the plan installs** against the checksum the plan pins. It also confirms favorites
-  and wallpaper as planned and Firefox running headless. On the reference workstation
-  that is 23 defaults, both reads verified, and the dock reported loaded
-  (`Yes/ACTIVE`). The GDM login logo was seen in a Core VM. No full E2E.
-- **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on RHEL 10.2,
-  base `d13af792...`; lint passed with the three known warnings; all 75 layers of
-  `0e65bf4b` scanned free of RHSM paths and the build host's entitlement serial,
-  consumer UUID and hostname; `bootcheck.py` and `sessioncheck.py` passed on its
-  disk under nested KVM on the entitled factory VM (example wallpaper). Not in
-  CI; no full E2E.
-- **Published, signed and durable evidence (verified 2026-10-28).** The old
-  single repository (`quay.io/deskos/deskos-core`, run `37162282876`, commit
-  `8ab0cc9`) is withdrawn and replaced by one repository per shipped platform,
-  published by the weekly gate (run `40716569103`, commit `2ef9f75`) and promoted
-  automatically (run `40723460708`):
+  wallpaper) and `sessioncheck.py` on the instrumented boot. The session check
+  asserts the plan itself: every declared dconf default read twice, every enabled
+  extension actually loaded, and the bytes of every installed binary against its
+  pinned checksum; plus favorites, wallpaper and headless Firefox. On the
+  reference workstation that is 23 defaults, both reads verified, the dock
+  `Yes/ACTIVE`. The GDM login logo was seen in a Core VM.
+- **Accessibility and one E2E step (2026-10-29).** The session exposes its
+  applications through AT-SPI (nine on the reference image: the shell, its
+  `gsd-*` daemons, the portal, ibus, the alarm notifier), and launching the
+  Calculator desktop entry makes a new `gnome-calculator` window appear in the
+  tree. Run `40795106343` on both images. The remaining scenarios are designed,
+  not implemented ([session-e2e.md](design/session-e2e.md)).
+- **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on base
+  `d13af792…`; lint passed with the three warnings; all 75 layers scanned free of
+  RHSM paths, entitlement serial, consumer UUID and hostname; `bootcheck.py` and
+  `sessioncheck.py` passed on its disk under nested KVM on the factory VM.
+- **Published, signed and durable (verified 2026-10-28).** One repository per
+  shipped platform, published by the weekly gate (run `40716569103`, commit
+  `2ef9f75`) and promoted automatically (run `40723460708`):
   `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:871e59cc…`, with
-  `:<commit>`, `:latest`, `:candidate` and `:stable` at the same digest;
-  `:candidate` is what a promotion checks, `:latest` is the fast lane and not a
-  second stable. `cosign verify` with the workflow issuer and this repository's
-  identity passes, with the SBOM, accepted-exception,
-  effective-exception and SLSA-provenance attestations bound to that digest. The
-  16 evidence objects for the digest were fetched back and verified from
-  `evidence.deskos.org`, and the approval record
-  (`approvals/deskos-core-centos-stream-10/stable/20261028T161205Z-871e59cc….json`)
-  names the gate run. The installer for the same digest is
+  `:<commit>`, `:latest`, `:candidate` and `:stable` at that digest. `cosign
+  verify` with the workflow issuer and this repository's identity passes, with
+  SBOM, exception and SLSA-provenance attestations bound to the digest. Sixteen
+  evidence objects were fetched back and verified from `evidence.deskos.org`,
+  and the approval record names the gate run. The ISO for the same digest is
   `quay.io/deskos/deskos-core-centos-stream-10-iso`, signed and mirrored to
-  `download.deskos.org`. RHEL-derived images are never published
-  (ADR 0014). Ubuntu lives in its own repository (ADR 0020); AlmaLinux and
-  Fedora are example platforms and publish nothing.
-- **Example AlmaLinux and Fedora platforms.** Their self-contained roots compose and
-  render in CI, and `examples-weekly.yml` builds and boots them weekly without
-  publishing. They are not shipped platforms and have no image repository; see
-  [example-platforms.md](example-platforms.md). Historical measurements remain in the
-  example Platform resources, not in the shipped platform matrix.
-- **Flatpak preinstall (RHEL).** `example-devops-rhel-10` declares no Flatpaks; a
-  private RHEL 10.2 workstation with four Flathub apps installed all four from
-  `/usr/share/flatpak/preinstall.d` with `flatpak preinstall --system` (no
-  session bus), and its booted disk had no failed preinstall unit.
+  `download.deskos.org`.
+- **Example AlmaLinux and Fedora.** Their roots compose and render in CI, and
+  `examples-weekly.yml` builds and boots them weekly without publishing.
+- **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
+  Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
+  `flatpak preinstall --system` (no session bus).
 - **Failed system units.** In AMD QEMU guests without `edac_mce_amd`,
-  `mcelog.service` is the only tolerated failed unit, reported as a known,
-  non-blocking diagnostic with its raw failed state (see
-  [`tests/vm/README.md`](../tests/vm/README.md) and
-  [research-notes.md](research-notes.md)).
+  `mcelog.service` is the only tolerated failure, reported as a known
+  diagnostic ([tests/vm/README.md](../tests/vm/README.md)).
 
-Confirmed on RHEL 10.2 by that build: `workstation-product-environment`,
-`gnome-shell-extension-dash-to-dock` 102, Terraform 1.16.5, kubectl
-1.37.1, VS Code 1.140.0 and Chrome 154 from their vendor repositories,
-and the rhel9 `oc` 4.22.17 build (needs at most GLIBC_2.34).
-
-**Still open:** E2E tests on any of the platforms.
+**Still open:** the remaining E2E scenarios, and interactive GDM login.
 
 ## Supply-chain inputs
 
-**Compilation is deterministic; builds are not yet reproducible bit for
-bit.** External inputs that can still change between builds:
+**Compilation is deterministic; builds are not yet bit-for-bit reproducible.**
 
-- the base image tag, unless `bootc.digest` is set — all four shipped Platforms
-  pin a digest;
+- the base image tag, unless `bootc.digest` is set — both shipped Platforms pin
+  a digest;
 - repository metadata and packages: RPM repositories on the EL and Fedora
-  platforms, APT sources on a Debian-family one (the Ubuntu platform, in its own
-  repository).
+  platforms, APT sources on a Debian-family one.
 
-`BinaryArtifact` pins an exact version and SHA-256; RPM files pin a
-SHA-256 and a signing key; and **RPM repository signing keys are local
-assets**, read into the plan and placed in the image, so a dnf transaction
-never trusts a key fetched by URL. The remaining goal is that every
-external input has an immutable, verifiable identity; candidate mechanisms
-(lockfile entries, base digests) are not chosen yet.
+`BinaryArtifact` pins an exact version and SHA-256; RPM files pin a SHA-256 and a
+signing key; RPM repository keys are **local assets** read into the plan, so no
+transaction trusts a key fetched by URL. The goal is an immutable, verifiable
+identity for every input; the mechanism is not chosen.
 
-## Managed baseline
+## Runtime behaviour
 
-DeskOS manages what the organization requires **for any authorized user
-of the machine**, available before any user's `$HOME` exists. Personal
-and project tooling (Homebrew, mise, SDKMAN, language version managers,
-dotfiles, personal Toolboxes) stays outside the resource model.
-
-Acquisition order:
-
-1. distribution RPM;
-2. official vendor RPM repository;
-   - 2b. signed vendor RPM file, when the vendor publishes no repository:
-     it is still a vendor-signed RPM managed by the package manager, but
-     updates need a new URL and checksum in the resources;
-3. checksum-pinned upstream binary;
-4. system Flatpak;
-5. in the future, managed web applications.
-
-`BinaryArtifact` requires an exact version, an https URL that is not a
-floating location, a SHA-256 checksum, and installs only directly into
-`/usr/local/bin` with mode `0755` or `0555`. The verification is part of the
-build: the containerfile fetches over https and fails on a checksum that does not
-match. That fetch uses `curl`, which **the platform's image must provide** — the EL
-and Fedora bases ship it because `dnf` needs it, and the Ubuntu base does not, so its
-platform declares it (measured 2026-10-18; that platform is in its own repository now,
-and the fact is Core's). A platform that neither
-ships nor declares it fails at build with `/bin/sh: 1: curl: not found`, which is
-late: making it a composition error needs a typed statement of what a base provides,
-and that is not modeled yet.
-
-The destination has a platform difference of its own. The backend creates the
-directory the file lands in, resolving symlinks (`readlink -m`), because
-`install -D` cannot traverse a `/usr/local` that is a **dangling symlink**: Debian and
-Ubuntu ship `/usr/local -> ../var/usrlocal` and create that target at boot with a
-bootc tmpfiles rule, so it does not exist during the build (measured 2026-10-18 on the
-Ubuntu base, where `install -D` into `/usr/local/bin` failed to create the
-directory). With the directory created where the file really lands, the same step
-works on both families.
-
-A single-file `BinaryArtifact` may declare a `desktopEntry`. The
-software lowerer turns it into a `DesktopEntry`, a `FileInstall` for its
-icon and an `IconCacheUpdate` for `/usr/share/icons/hicolor`, and adds
-the `gtk-update-icon-cache` package. The backend generates
-`/usr/share/applications/<id>.desktop` in `rootfs/`; its `Exec` and
-`TryExec` are the artifact's destination, never authored text. The icon
-cache is regenerated after `rootfs/` is copied because RPM file triggers
-maintain it only for packaged files, and GTK keeps using an existing
-cache that lacks the copied icons.
-
-`PackageSet.rpmFiles` requires the same kind of URL and checksum plus an
-ASCII-armored public key file inside the resource root; the build fails
-unless the RPM is signed by that key.
-
-## System Flatpaks
-
-DeskOS is **image-first and Flatpak-enabled**. The image that declares a system
-Flatpak channel installs Flatpak — the EL family's `PackageSet/rhel-family` does,
-the foundation does not — and adds no remote. Remotes go to
-`/usr/share/flatpak/remotes.d` and
-applications to `/usr/share/flatpak/preinstall.d`, both image-owned. A
-generated unit runs `flatpak preinstall` once per boot, as the upstream
-man page expects the OS to do. This is *artifact materialization*, not a
-DeskOS controller: upstream decides what to install or remove from the
-image's vendor list, and does not reinstall apps a user removed.
-
-The unit is `WantedBy=multi-user.target`, `Type=exec`, and ordered after
-`network-online.target` and `multi-user.target`. Ordering it after
-`multi-user.target` suppresses the implicit `After=` a target adds to
-units it wants (systemd v257 `unit_add_default_target_dependency`), so
-**DeskOS adds no network wait to any boot target**; `Type=exec` means
-nothing waits for the download itself.
-
-Two first-boot failures are worth naming, and the unit handles both before
-each attempt: an interrupted pull can leave a ref that `flatpak preinstall` will
-not refresh (`flatpak repair` removes it), and a stale Flathub summary can
-report a declared app as "not found in the remote" (`flatpak update --appstream`
-refreshes it). It then **retries until it succeeds** (`Restart=on-failure`,
-`RestartSec=60`, no start limit), because a laptop may connect its network
-minutes after the unit starts; retrying is bounded per attempt, not per boot.
-It also stops within 20 s (`TimeoutStopSec=20`): a shutdown while the first
-boot is still pulling Flatpaks must not hang on the stop job for systemd's
-default 90 s. Nothing else waits for it.
-
-A remote is OSTree by default. `transport: oci` makes it an index of
-Flatpak images in a container registry instead: the remote file carries
-`Url=oci+https://...` and no signing key, because the registry and its
-images are what get verified, and it has no collection to deploy sideloads
-into. Flatpak keeps an OCI remote's authenticator in the remote's own
-configuration, and the `.flatpakrepo` format has no key for it, so an OCI
-remote that names one gets a second generated unit,
-`deskos-flatpak-oci-authenticator.service`. It runs
-`flatpak remote-add --if-not-exists --from` (a no-op once the remotes.d
-entry has been imported) and then
-`flatpak remote-modify --authenticator-name`, which is the documented way
-to attach an authenticator. It runs only local commands, so it adds no
-network wait to a boot target, and it is ordered before the preinstall
-unit, because the applications that unit installs may need it. The
-credentials are not part of the artifact: the authenticator reads them from
-the machine, for example from `/etc/flatpak/oci-auth.json`.
-
-Offline boot, observed by booting the reference image under systemd in a
-container with no network and a 25-second simulated `nm-online` timeout:
-
-- `gdm.service` is not ordered after the network, `multi-user.target` or
-  this unit, and was active while `network-online.target` was still
-  pending.
-- `graphical.target` still waits for `network-online.target`, because
-  platform units (`kdump`, `rsyslog`, `insights-client-boot`) are wanted
-  by `multi-user.target` and ordered after it; on EL10 that wait is
-  bounded by `NM_ONLINE_TIMEOUT=60`. That is platform behavior, not
-  DeskOS behavior.
-- Without network, `flatpak preinstall` prints "Nothing to do.", exits 0
-  and records nothing, so the apps stay eligible: a later run with
-  network proposed the install again (it was declined in the test, so an
-  actual installation after an offline boot is unverified). A download
-  failure is expected to exit non-zero and leave the unit failed, visible
-  in `systemctl status deskos-flatpak-preinstall` and the journal; this
-  was not tested.
-
-GDM itself was not exercised in the container (it has no display) and a
-real offline VM boot has not been run. The public reference adds Flathub
-and Bazaar through the separate `deskos-reference-apps` profile.
-
-## GNOME
-
-`GnomeProfile` exposes **administrator vocabulary** (`windows.buttons`,
-`shell.favorites`, `session.idle.blankAfter`, `dock.position`, ...). The
-desktop lowerer maps it to dconf keys and writes them to the platform's
-vendor database (`distro` on EL10). Wallpaper files are repository assets
-resolved relative to the declaring file and installed under
-`/usr/share/deskos/backgrounds/`.
-
-**Dock.** The dock is a GNOME Shell extension, so it is enabled by deciding about
-its extension, like any other: `shell.extensions` names its UUID and says whether
-it runs. The settings DeskOS models for it (`dock.position`, `dock.behavior`,
-`dock.iconSize`, `dock.showTrash`) apply only while that decision is true. A
-higher-layer `enabled: false` masks lower-layer dock settings and is reported as a
-warning by `plan` and `validate`; dock settings without an enabled dock, or at or
-above the disabling layer, are errors. An organization that enables the dock
-installs the extension the platform declares for it.
-Favorites are native and work without the dock.
-
-**Appearance.** `appearance.colorScheme` and `appearance.accentColor` set
-`org.gnome.desktop.interface` `color-scheme` and `accent-color`, with the
-enum values of `gsettings-desktop-schemas` 47.1. Core sets neither.
-
-**GNOME Software.** `software.updates` controls the updates GNOME Software
-handles, Flatpak applications included:
-
-| Value | `allow-updates` | `download-updates` | Effect |
-|---|---|---|---|
-| `automatic` | true | true | GNOME default: downloads in the background and applies what needs no reboot |
-| `manual` | true | false | offers updates; the user applies them |
-| `disabled` | false | false | no Updates page; another updater owns every update |
-
-`deskos-gnome` sets `manual` (a default, no lock), so GNOME Software never updates
-behind the image while users can still update Flatpak applications.
-
-**Terminal shortcut.** `GnomeProfile.defaults.keyboard.terminal` names a
-`.desktop` id bound to Ctrl+Alt+T (EL10 has no native terminal key and no
-default-terminal launcher outside EPEL). **Not modeled:** the GNOME Initial Setup
-third-party repositories page, which appears only when `fedora-third-party` is
-installed, and EL10 does not ship it. The AppIndicator extension is not in the
-vendor repositories either; Platforms deliver it as a pinned artifact, above. See
-[research notes](research-notes.md#gnome-user-settings-2026-10-04).
-
-**Login screen.** `appearance.loginLogo` sets the GDM login-screen logo;
-GDM's dconf profile reads `distro`, which Platforms declare with
-`gnome.loginScreen`.
-
-**First boot.** GNOME Initial Setup uses its own dconf profile, which does
-not read `distro`, so the effective wallpaper is also written as a GLib
-vendor override (`/usr/share/glib-2.0/schemas/50_deskos.gschema.override`,
-above the distribution's `10_` override) and schemas are compiled in the
-build. Verified by GSettings resolution under the `gnome-initial-setup`
-profile and seen on the first-boot screen of a CS10 Core VM.
-
-**Defaults and locks.** The EL10 profile reads `user`, `local`, `site`,
-`distro`, highest first. Verified on the built image:
-
-| DeskOS writes | Effect |
-|---|---|
-| a **default** | a value in `local` or `site`, or a user change, overrides it |
-| a **lock** | the `distro` value applies and is not writable; values and even locks in `local` or `site` are ignored |
-
-> [!WARNING]
-> A lock is artifact-level enforcement that also defeats `site` and
-> `local` overrides. DeskOS Core uses no locks. Lock only settings the
-> organization wants the *image* to enforce, and leave settings managed by
-> Ansible, Satellite or similar tools as defaults (or unset).
-
-## Boot
-
-`BootProfile` (`splash: graphical|text`, `quiet`, `watermark`) lowers to:
-
-- bootc kernel arguments in `/usr/lib/bootc/kargs.d/50-deskos.toml` (the
-  platform's `rhgb` and `quiet`);
-- for `graphical`: the platform's Plymouth packages, a dracut drop-in
-  adding the Plymouth module, and a rebuild of every image kernel's
-  initramfs (`/usr/lib/modules/<kver>/initramfs.img`) after the image
-  files are in place. **The build fails** if no kernel is found or
-  Plymouth is missing from an initramfs.
-
-`text` adds no splash argument and no rebuild; `quiet: false` adds no
-`quiet`. bootc applies kargs.d at install and applies its diff on
-updates; the initramfs is image content, so updates and rollbacks carry
-it with the deployment.
-
-**Watermark.** `watermark` (a PNG, at most 1024x1024, inside the resource
-root) needs an effective `splash: graphical`. It becomes an image-owned
-two-step theme `deskos` in `/usr/share/plymouth/themes/deskos/`:
-
-- a generated `deskos.plymouth` (the stock spinner layout, own
-  `ImageDir`, no firmware BGRT logo);
-- the watermark as `watermark.png`;
-- the platform's stock spinner frames copied in the build, except their
-  `watermark.png`.
-
-`plymouth-set-default-theme deskos` selects it before the initramfs
-rebuild, and the build fails unless each initramfs contains the theme and
-selects it. A higher-layer `splash: text` masks a lower-layer watermark
-with a plan warning; a watermark at or above a `text` layer, or with no
-splash set, is an error. Core sets the DeskOS lockup; without a watermark
-the platform's default theme stays.
-
-**Diagnostics stay available:** ESC switches Plymouth to details, systemd
-still prints failures under `quiet`, and editing the boot entry to drop
-`rhgb quiet` gives full text. Firmware, bootloader and early kernel output
-before Plymouth starts can still appear. The DeskOS splash is seen at boot
-and shutdown on UEFI VMs. A serial console turns Plymouth to text mode, so
-test QCOW2s are built with bootc-image-builder's
-`--no-default-kernel-args`, which omits its `console=ttyS0` (see
-`tests/vm/README.md`); the artifact's own kernel arguments are unchanged.
-
-## Trust store
-
-`TrustAnchor` places organization CA certificates in the platform trust
-store. `anchors[].name` / `anchors[].file` add a certificate to the
-anchors directory; `blocklist[].name` / `blocklist[].file` add one to the
-blocklist, where p11-kit reads it as **distrusted**. It lowers to:
-
-- one image file per anchor at `<trust.anchorsDir>/<name>.crt`;
-- one image file per distrusted certificate at
-  `<trust.blocklistDir>/<name>.crt`;
-- one trust-store update through the platform's `trust.updateCommand`,
-  run in the system-configuration step after `COPY rootfs/`.
-
-On `rhel-10` and `centos-stream-10` the directories are
-`/etc/pki/ca-trust/source/anchors/` and
-`/etc/pki/ca-trust/source/blocklist/`, and the command is
-`update-ca-trust`, which regenerates `/etc/pki/ca-trust/extracted/`. A
-blocklisted certificate is left out of every extracted bundle, so a chain
-that ends at it is rejected: trust in that CA is removed and TLS itself is
-not weakened. The update runs during the build, so the extracted store is
-image content and changes only when the certificates change.
-
-Each certificate is a **keyed** definition by `name`: identical definitions
-deduplicate and different certificates under one name conflict at any
-layer. Anchoring and distrusting one name is a contradiction and fails
-composition. The certificate must be a PEM `CERTIFICATE` block that parses
-as X.509; the private key is neither needed nor accepted. A platform
-without `trust` facts fails composition when a `TrustAnchor` is used, and
-a platform with anchors but no `blocklistDir` fails when a `blocklist`
-entry is requested — a platform gap is named, never dropped.
-
-The distrust is ordinary intent, so it composes like anything else: Core
-ships `deskos-trust` for the October 2026 eMudhra roots (RHSB-2026-012),
-and an organization adds its own certificates through a profile at any
-layer, including the workstation layer. A foundation entry cannot be
-re-trusted by a lower layer; the certificate simply stays distrusted.
-
-The destination is never replaced silently: the render rejects a
-certificate that shares a path with another image file, and the build fails
-if the base image or an installed package already provides that exact file.
-Asset paths are confined to the resource root, so `../` cannot pull a host
-file into the build context and a symlink out of the root is refused too.
-
-## Updates
-
-Every Platform DeskOS ships lists `bootc-fetch-apply-updates.timer` as an
-image-update unit. Where the base **enables** it, its service runs
-`bootc upgrade --apply`, which **reboots** whenever a new image is published.
-The reboot-on-publish path was checked end to end on CentOS Stream 10. RHEL is
-built and booted by the organization, which owns that validation. The example
-examples are checked weekly but are not shipped platforms.
-
-DeskOS declares the update unit on every shipped platform, so masking it leaves
-DeskOS's own staging timer the only update path.
-
-`UpdatePolicy` (`image` and `flatpak`, each with `automatic`,
-`schedule: daily|weekly` and `requireACPower`; `image` additionally has an
-optional `apply` window) lowers to:
-
-- for any `image.automatic`: masks of the Platform's
-  `updates.imageUpdateUnits` (`systemctl mask`, links to `/dev/null` in
-  `/etc/systemd/system`);
-- for `automatic: true`: a generated service and an enabled timer in
-  `/usr/lib/systemd/system/`:
-
-| Unit | Command |
-|---|---|
-| `deskos-image-update.service` | `/usr/bin/bootc upgrade --quiet` |
-| `deskos-flatpak-update.service` | `/usr/bin/flatpak update --system --noninteractive --assumeyes` |
-| `deskos-image-apply.service` (opt-in) | `deskos window` guard, then `/usr/bin/bootc upgrade --apply --quiet` |
-
-`bootc upgrade` without `--apply` downloads the image and stages it;
-`ostree-finalize-staged.service` applies it at the next shutdown or
-reboot the user makes. **No generated unit reboots unless an organization
-sets `image.apply.enabled: true`.** A test rejects `--apply`,
-`--soft-reboot` and `--download-only` in every rendered Core and example
-image; the apply unit is covered by its own test.
-
-Timers use `OnCalendar=daily` or `weekly`, `RandomizedDelaySec=2h` and
-`Persistent=true` (a missed run starts after the next boot) for staging.
-`requireACPower` adds `ConditionACPower=true` to the service: on battery
-the run is skipped, not failed, until the next scheduled time. Desktops
-and VMs without a known AC connector count as on AC power. Services want
-and follow `network-online.target`; the timers add no boot ordering.
-
-An `image.apply` policy ([ADR 0023](adr/0023-scheduled-apply-window.md)) adds the
-separate `deskos-image-apply.timer` and `.service`. The timer uses the requested
-`days` plus `at` or a `window.start`
-and `window.duration`, an optional IANA `timezone`, `AccuracySec=1min` and
-`Persistent=false`. A window also adds `RandomizedDelaySec` equal to its
-duration. The service runs `/usr/bin/deskos window` as an `ExecCondition`
-before `bootc upgrade --apply --quiet`; a calendar event that elapses while
-the machine is suspended is therefore skipped when it is outside the local
-day/time interval. Exact `at` allows five minutes of grace. The timer never
-catches up a missed window.
-
-Core sets the **image** updates daily, on AC power only; system Flatpak updates
-are the EL family's policy (`rhel-family`), not the foundation's. An
-organization overrides single fields at a higher layer; `automatic:
-false` for the image keeps the platform updater masked and schedules
-nothing, leaving updates to an administrator or configuration
-management. A workstation with no image intent keeps the platform's
-rebooting timer. The masks live in `/etc`, so a local unmask is kept
-across image updates (see [Drift](#drift-and-mutable-etc)).
-
-**Not supported:** metered networks (systemd has no condition for them,
-and reading NetworkManager's `Metered` property needs a program, which
-would be a script); a catch-up run when AC power returns. Checked:
-`systemd-analyze verify` of the Core units, and a CentOS Stream 10 VM
-installed from a registry image: `deskos-image-update.service` staged
-the next image with the same boot ID, a manual reboot booted it with the
-previous image as rollback, the bootc timer stayed masked, and
-`deskos-flatpak-update.service` succeeded. Not yet checked: RHEL 10, and
-a laptop running on battery.
-
-## Drift and mutable `/etc`
-
-bootc updates `/usr` atomically, but **`/etc` is persistent and merged
-three ways**. Files DeskOS writes under `/etc` (dconf keyfiles, repository
-files) follow image updates only while they are locally unmodified. A new
-release changes the image; it does not force a machine that was edited
-locally back into line. Organizations that need guaranteed enforcement use
-configuration management on top of the image. `deskos check` **reports** the drift it
-can measure and publishes what it leaves out; DeskOS will not enforce, and `deskos`
-does not reconcile the machine against its plan (ADR 0018).
-
-## Provisioning and enrollment
-
-| Stage | Contents |
-|---|---|
-| **Artifact** | everything identical across machines: packages, branding, client binaries, descriptors |
-| **Provisioning** | per-machine install choices, a local bootstrap account, storage and encryption, first-boot Flatpak materialization |
-| **Enrollment** | FreeIPA or AD join, device certificates, VPN identities, EDR tenancy |
-
-One image digest serves many machines with distinct identities, so **no
-identity or secret is ever baked into the artifact**. Enrollment is
-reserved in the Plan and not implemented.
+What the image does once it boots — managed baseline, system Flatpaks, GNOME,
+boot and trust, updates, `/etc` drift, and the provisioning boundary — is
+[runtime.md](runtime.md). The plan format it consumes is above.
 
 ## Release model
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **Published today: the container image, per shipped platform.** It goes to one
-  repository per platform (`quay.io/deskos/deskos-core-centos-stream-10`), and the
-  digest serving `:stable`, with the run that
-  produced it, is under
-  [Validation status](#validation-status) on this page. The **weekly gate publishes by
-  itself**: `supply-chain` builds, scans, boots, then pushes and signs
-  `:<commit>`, `:latest` and `:candidate` by digest; `promotion.yml` runs on that
-  success, verifies the signature and the evidence, and moves `:stable` with a
-  recorded approval. A dispatch with `publish=true` does the same on demand. It is
-  still not published on every green `main`; pin a digest in production.
-- **A CentOS Stream 10 preview ISO** is published at
-  <https://download.deskos.org/>. `iso.yml` builds it from the published digest,
-  verifies the image's keyless signature first, and publishes it as a signed OCI
-  artifact beside the image (`:candidate`, `sha256-<image digest>`, and `:stable`
-  once the image is stable); the download page carries its checksum. It is a
-  preview rather than a supported channel. QCOW2 files and RHEL ISOs are not published:
-  RHEL stays private, and the pinned example roots are built locally for testing
-  (see [example-platforms.md](example-platforms.md)). The CI builds a QCOW2 (the EL
-  platforms) only as test input; an Ubuntu disk is written with
-  `bootc install to-disk` by that platform's own repository.
-- **Exercised (2026-10-26):** `candidate → stable` promotion of one digest
-  without rebuilding, with an approval record in the evidence bucket
-  (`docs/design/promotion.md`). The first promotion moved
-  `sha256:96fe80d3…` to `:stable`; a second, after the Stream 10 base bump,
-  moved `sha256:649aff75…` (run `40412048361`). The record names the digest,
-  the actor, the approver, the reason and the evidence index hash. No canary
-  or pilot channel.
-  A mirror on `ghcr.io/deskosproject/deskos-core` is possible and not decided.
+- **One repository per shipped platform**, `quay.io/deskos/deskos-core-centos-stream-10`
+  today, with `:stable` at the digest in [Validation
+  status](#validation-status). The weekly gate publishes by itself: builds,
+  scans, boots, pushes and signs `:<commit>`, `:latest` and `:candidate` by
+  digest; `promotion.yml` then verifies signature and evidence and moves
+  `:stable` with a recorded approval. Not every green `main` publishes; pin a
+  digest in production.
+- **A CentOS Stream 10 preview ISO** is at <https://download.deskos.org/>.
+  `iso.yml` builds it from the published digest after verifying the image's
+  keyless signature and publishes it as a signed OCI artifact
+  (`:candidate`, `sha256-<image digest>`, `:stable` once the image is stable). It
+  is a preview, not a supported channel. QCOW2 files and RHEL ISOs are not
+  published; CI builds a QCOW2 only as test input.
+- **Promotion without a rebuild** was exercised on 2026-10-26 with an approval
+  record in the evidence bucket ([promotion.md](design/promotion.md)): the first
+  moved `sha256:96fe80d3…`, a second after the Stream 10 base bump moved
+  `sha256:649aff75…` (run `40412048361`). The record names digest, actor,
+  approver, reason and evidence index hash. No canary or pilot channel.
 
-`deskosctl` itself is released as a linux/amd64 binary on GitHub Releases
-when a `vX.Y.Z` tag is pushed. GitHub Actions is the reference CI; it is
-an adapter, not part of DeskOS semantics.
+`deskosctl` is released as a linux/amd64 binary on GitHub Releases when a `vX.Y.Z`
+tag is pushed. GitHub Actions is the reference CI, an adapter rather than part of
+DeskOS semantics.

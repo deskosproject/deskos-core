@@ -1,10 +1,5 @@
 # Operating an installed machine
 
-How a DeskOS workstation updates, and how to inspect, apply and roll back that
-update with what the image ships. Every Core image carries `/usr/bin/deskos`
-(ADR 0018), so start there; `bootc` and `systemctl` are underneath it and remain
-the fallback.
-
 ```bash
 deskos report        # what this machine was built from, read from the plan it carries
 deskos check         # compare the plan's declared scope with the machine, and say what it leaves out
@@ -17,74 +12,45 @@ sudo deskos rollback # stage the previous deployment for the next boot
 sudo deskos etc reset --all   # put /etc back to the image, with a backup
 ```
 
-`deskos` is the runtime companion to `deskosctl`: it reads the plan the image
-carries, so a machine can be asked what it was built from. It is **not** a
-controller and has no reconciliation loop (ADR 0001). `status` and `rollback`
-are thin front ends to `bootc`: `status` reads `bootc status --json`, and
-`rollback` asks bootc to stage the previous deployment for the next boot. `bootc`
-remains underneath and is the fallback. The pin is
-`resources/software/deskos.yaml`, and it moves like any other pin: a release
-publishes the asset, and the pin is bumped to it deliberately.
-
-`update` runs `bootc upgrade` underneath, which changes the deployment the machine
-boots from, so it needs root. `report` and `check` only read and need none.
-
-`update --flatpak` runs a system Flatpak update before the image; `--firmware`
-lists firmware updates with `fwupdmgr get-updates` and never applies them;
-`--all` is the image, the Flatpak applications and the firmware check. These are
-the on-demand side of the timers above, for one machine and one person; they add
-no policy.
+Every Core image carries `/usr/bin/deskos` (ADR 0018), the runtime companion to
+`deskosctl`; it has no controller (ADR 0001), and `status` and `rollback` front
+`bootc`. `update` runs `bootc upgrade`, which changes the deployment the machine
+boots from, so it needs root; `report` and `check` are read-only. `--firmware`
+lists firmware updates with `fwupdmgr get-updates` and never applies them; the pin
+is `resources/software/deskos.yaml`.
 
 `check` measures **what the artifact declares** — the files it installs and
-generates, the dconf defaults it sets — and prints its scope on every run. It is
-not an audit of everything the machine has become.
-
-`report` lists the dconf locks the plan declares and says that whether the
-running session enforces them is not its measurement. `check` names the same
-limit in its scope. The instrumented session check is the proof: it writes each
-locked key and expects the write to fail.
+generates, the dconf defaults it sets — and prints its scope on every run; it is
+not an audit of the whole machine. `report` lists the declared dconf locks and
+says that enforcement by the running session is not its measurement. The session
+check proves it: it writes each locked key and expects the write to fail.
 
 ## What changed in /etc
 
-On a deployment that merges `/etc`, `deskos etc` compares the running `/etc`
-with the image's baseline at `/usr/etc` and lists modified, added and removed
-paths. It is read-only and needs no root. On a machine that does not keep that
-baseline it refuses and says why.
+On a deployment that merges `/etc`, `deskos etc` compares the running `/etc` with
+the image's baseline at `/usr/etc` and lists modified, added and removed paths. It
+is read-only, needs no root, and refuses without that baseline.
 
 Runtime state is not an edit: NetworkManager connections, machine-id, SSH host
 keys, printer and Bluetooth state, sockets and caches are ignored by default.
-An organization adds patterns in `/etc/deskos/deskos.json`; the tool ignores
-`/etc/deskos/` itself and reports a policy difference separately instead of
-mixing it with the user's files.
+Patterns in `/etc/deskos/deskos.json` add more; `/etc/deskos/` itself is ignored
+and a policy difference reported separately.
 
 ```bash
 deskos etc                     # the differences, with a count of what was ignored
 deskos etc --ignored           # name the ignored paths too
 sudo deskos etc reset /etc/foo # put one path back to the image's version
-sudo deskos etc reset --all    # every difference; local additions are removed
 sudo deskos etc reset --all --dry-run
 ```
 
-`reset` copies the baseline back and keeps a timestamped copy of what it
-replaced under `/var/lib/deskos/etc-backup/`. It never touches `/etc/deskos/`
-unless you pass `--include-policy`.
-
-This is the same three-way merge an ostree-derived system does at boot, made
-visible: the image's baseline, the local file, and the next image's baseline
-when a deployment is staged.
-
-
-When an install, a first boot or an update does not work, start with
-[recovery.md](recovery.md): it lists the symptom, the evidence to collect and
-the remedy.
+`reset` copies the baseline back and keeps a timestamped copy of what it replaced
+under `/var/lib/deskos/etc-backup/`; it never touches `/etc/deskos/` unless you
+pass `--include-policy`.
 
 ## How updates work
 
-A DeskOS image **stages** its next version. By default it never reboots your
-session on its own. An organization can opt in to a scheduled apply and reboot
-with `image.apply`; that is an explicit maintenance decision, not the default.
-The image carries two base services and their timers, on the schedule the
-effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
+Two base services and their timers run on the `UpdatePolicy` schedule (DeskOS
+Core: daily, on AC power):
 
 | Unit | Runs | Effect |
 |---|---|---|
@@ -95,38 +61,27 @@ effective `UpdatePolicy` declares (DeskOS Core: daily, on AC power):
 > **Platform scope.** Everything `bootc` here is on every shipped platform. The
 > Flatpak half exists only where the image declares a system Flatpak channel: the
 > EL family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither
-> the package nor the unit without a profile that selects it; an organization can
-> still declare them itself. A platform that declares no channel fails composition
-> for a `FlatpakSet` rather than pretending. The example AlmaLinux and Fedora
-> examples are not part of the shipped support statement
-> ([platforms.md](platforms.md)).
+> the package nor the unit without a profile that selects it. A platform that
+> declares no channel fails composition for a `FlatpakSet`, and the AlmaLinux and
+> Fedora examples are not shipped support ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
-`Persistent=true`; the services carry `ConditionACPower=true`. The base
-image's own `bootc-fetch-apply-updates.timer` and `.service` are **masked**,
-so the image owns updates rather than the base
-(see [ADR 0007](adr/0007-updatepolicy.md)).
+`Persistent=true`; the services carry `ConditionACPower=true`. The base image's
+own `bootc-fetch-apply-updates.timer` and `.service` are **masked**
+([ADR 0007](adr/0007-updatepolicy.md)).
 
-The staged image **applies at the next reboot**. An organization changes
-the schedule, or turns automation off, in its own `UpdatePolicy`
-(`image.automatic`, `image.schedule`, `image.requireACPower`, and the
-`flatpak` equivalents). With `automatic: false` the service is still
-written, but no timer, so an operator (or `deskos update`) can run it
-on demand. The kind is documented in [resources/system.md](resources/system.md#updatepolicy).
+An organization sets the schedule or turns automation off in its own `UpdatePolicy`
+(`image.automatic`, `image.schedule`, `image.requireACPower`, and the `flatpak`
+equivalents); with `automatic: false` the service is written, but no timer, so
+`deskos update` runs it on demand ([resources/system.md](resources/system.md#updatepolicy)).
 
-When `image.requireACPower` is set, the image also carries a udev rule that
-starts the staging service when AC comes online, so a run skipped on battery
-does not wait for the next day. The service still checks `ConditionACPower`.
-
-An organization that enables `image.apply` accepts scheduled reboots. The
-apply timer is not persistent: if the machine is off during the window, it
-waits for the next one. The service first runs `deskos window`, which checks
-the local weekday and `at`/window (and optional IANA timezone), so a timer
-that fires after suspend outside the interval does nothing. An exact `at`
-allows five minutes of grace; a `window` allows its full duration. There is no
-active-session check in this version: the window is the maintenance contract.
-Inspect the apply units with `systemctl list-timers 'deskos-*'` and
-`journalctl -u deskos-image-apply.service`.
+When `image.requireACPower` is set, the image also carries a udev rule that starts
+the staging service when AC comes online; the service still checks `ConditionACPower`.
+The service first runs `deskos window`, which checks the local weekday and
+`at`/window (and optional IANA timezone), so a timer that fires after suspend
+outside the interval does nothing. An exact `at` allows five minutes of grace, a
+`window` its full duration; there is no active-session check, the window is the
+maintenance contract.
 
 ## What happens in each situation
 
@@ -141,8 +96,7 @@ Inspect the apply units with `systemctl list-timers 'deskos-*'` and
 | machine off during the window | no catch-up on boot; the next window applies |
 | registry unreachable or no network | `bootc upgrade` fails, the journal records it, and the running deployment is unchanged; the next run retries |
 | download interrupted | no staged deployment is recorded; the running image is unchanged |
-| metered connection | not detected: the timer runs as on any other connection ([not supported](architecture.md#updates)) |
-| Flatpak updates | a separate timer and service, independent of the image update |
+| metered connection | not detected: the timer runs as on any other connection ([not supported](runtime.md#updates)) |
 | `deskos update` | stages the image only: no reboot, no Flatpaks, no firmware, no rollback, and no reconciliation of `/etc` |
 
 ## Inspect
@@ -150,62 +104,25 @@ Inspect the apply units with `systemctl list-timers 'deskos-*'` and
 ```bash
 bootc status                        # booted and staged deployments, image ref
 systemctl list-timers 'deskos-*'    # when the next update runs
-systemctl status deskos-image-update.service
 journalctl -u deskos-image-update.service --since today
+rpm-ostree status                   # on the EL platforms, the same in ostree terms
+flatpak list --system               # system apps and runtimes, on the EL platforms
 ```
-
-On the EL platforms:
-
-```bash
-rpm-ostree status                   # the same, in ostree terms
-flatpak list --system               # system apps and runtimes
-```
-
-`bootc status` shows a `Staged` entry once the next image is downloaded and
-waiting for a reboot; `bootc status --verbose` says whether it is in
-download-only mode.
 
 ## Update now, then apply
 
 ```bash
 sudo systemctl start deskos-image-update.service     # stage the next image
+sudo bootc upgrade                                   # or check and stage in one step
 sudo reboot                                          # apply the staged image
 ```
 
-To check and stage in one step, without waiting for the timer:
-
-```bash
-sudo bootc upgrade
-sudo reboot
-```
-
-`deskos update` is the same staging step behind a guard: it refuses when this is not a
-bootc deployment or when bootc cannot read the deployment, and it reports — without
-refusing — an image that updates itself and whatever the plan owns under `/etc`, since
-customization there is the machine owner's.
-
-On the EL platforms only, the Flatpak half:
-
-```bash
-sudo systemctl start deskos-flatpak-update.service   # update Flatpaks now
-```
-
-`deskos update` stages the image and nothing else. System Flatpaks and
-user-level tools are separate layers, updated by their own commands:
-
-```bash
-sudo deskos update                                  # the image, staged
-sudo systemctl start deskos-flatpak-update.service  # system Flatpaks
-mise upgrade                                        # example user-level tools
-```
-
-The last line is an example: a user-level tool manager changes `$HOME` and runs
-as the person, never under `sudo`. `deskos update` does not touch a home or
-update Flatpaks, user or system.
+`deskos update` is the same staging step behind a guard: it refuses when this is
+not a bootc deployment or when bootc cannot read the deployment, and it reports —
+without refusing — an image that updates itself and what the plan owns under
+`/etc`.
 
 ## Roll back
-
-Every applied image keeps the previous deployment. To boot it:
 
 ```bash
 sudo bootc rollback
@@ -213,22 +130,17 @@ sudo reboot
 ```
 
 `bootc rollback` reorders the boot entries: the deployment marked `rollback`
-becomes the next boot and the current one becomes the rollback, so rolling
-back again returns you. Files the image owns under `/etc` revert with the
-deployment; a local edit under `/etc` is kept (the merge is three-way, not a
-snapshot), and `/var` (including home directories) is preserved. The lifecycle
-check asserts both `/etc` cases on every run
-([design](design/lifecycle.md#shape)).
+becomes the next boot and the current one becomes the rollback, so rolling back
+again returns you. Files the image owns under `/etc` revert with the deployment; a
+local edit under `/etc` is kept (the merge is three-way, not a snapshot), and
+`/var` and home directories are preserved. The lifecycle check asserts both `/etc`
+cases on every run ([design](design/lifecycle.md#shape)).
 
-A rollback does not undo data that the newer version already migrated under
-`/var`, and it is not automatic: choosing the previous deployment is a manual
-step (or the firmware entry for it after a candidate that does not boot).
-Restore application data from your own backup; the image ships no backup tool.
+A rollback is not a backup: data already migrated under `/var` is not undone,
+choosing the previous deployment is manual, and the image ships no backup tool
+([recovery.md](recovery.md#rollback-is-not-a-backup)).
 
 ## Change where updates come from
-
-A machine tracks the image reference it was installed from. To move it to a
-different one (a new registry, a pinned digest):
 
 ```bash
 sudo bootc switch registry.example.com/deskos/core-rhel-10:latest

@@ -1,7 +1,7 @@
 # Contributing
 
 DeskOS compiles workstations from declared intent. A patch is welcome whether a
-person or an agent wrote it, under the same rules: review, tests, and a human
+person or an agent wrote it, under the same rules: review, tests, a human
 decision.
 
 ## What this repository is, and what it is not
@@ -16,7 +16,7 @@ decision.
   its own resource root.
 
 A good first contribution is a correction under `resources/**`, a documentation
-fix, a test, or a pilot bump that carries its checksum.
+fix, a test, or a pin bump that carries its checksum.
 
 ## Before you write code
 
@@ -38,9 +38,8 @@ go test ./internal/compiler -update                  # refresh goldens — then 
 
 `make check` does not run the VM harness; CI does. A golden diff is a change
 under review, not a fix for a failing test: if you cannot explain every line of
-the diff, the change is not ready. The full description is in
-[development.md](docs/development.md), and what each workflow proves is in
-[checks.md](docs/checks.md).
+the diff, the change is not ready. See [development.md](docs/development.md) and,
+for what each workflow proves, [checks.md](docs/checks.md).
 
 ## Commits and pull requests
 
@@ -73,10 +72,8 @@ The model is never part of the compiler's behaviour.
 ## Conduct
 
 Be respectful of the person, direct about the work. Disagree with a design and
-say why; do not make it personal. Assume the other person read the same documents
-and reached a different conclusion. Harassment, discrimination and disclosure of
-private information are not welcome and are grounds for removal from the
-conversation.
+say why; do not make it personal. Harassment, discrimination and disclosure of
+private information are grounds for removal from the conversation.
 
 Report a conduct concern to the maintainer through the same private channel as a
 security report if you would rather not raise it in public. There is one

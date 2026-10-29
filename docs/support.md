@@ -2,8 +2,8 @@
 
 ## Where to ask
 
-- **A bug or a feature**: an issue in this repository. Say what you ran, what
-  you expected and what happened; a plan, a log or the digest helps more than a
+- **A bug or a feature**: an issue in this repository. Say what you ran, what you
+  expected and what happened; a plan, a log or the digest helps more than a
   description.
 - **A question about using or building a workstation**: GitHub Discussions.
 - **A vulnerability**: not here. [SECURITY.md](../SECURITY.md) has the private
@@ -29,7 +29,7 @@ states what the project does and does not promise.
 
 ## Before you ask
 
-[troubleshooting.md](troubleshooting.md) is organised as symptom → the check
-that distinguishes it → the remedy, and [diagnostics.md](diagnostics.md) says
-what to collect. Most questions about a machine that will not update or will not
-boot are answered there.
+[troubleshooting.md](troubleshooting.md) is organised as symptom → the check that
+distinguishes it → the remedy, and [diagnostics.md](diagnostics.md) says what to
+collect. Most questions about a machine that will not update or boot are answered
+there.

@@ -65,15 +65,13 @@ and the directory.
 - **The approval record is unsigned.** `automatic (gate)` is a claim by the
   workflow; the record is only as trustworthy as the bucket.
 - **No negative-case suite.** `tests/evidence/verify.py` and the promotion refuse
-  missing or mismatched evidence, but there is no test that *proves* they refuse a
-  tampered index, a wrong digest or an empty object.
+  missing or mismatched evidence, but no test *proves* they refuse a tampered
+  index, a wrong digest or an empty object.
 - **No independent policy evaluation yet.** Whether an external policy engine
   (Conforma/`ec`, or an organization's own) can consume these predicates has not
-  been probed. That is the next step of this item, and no compatibility is claimed
-  before it runs.
+  been probed; no compatibility is claimed before it runs.
 
 ## What this contract is for
 
-So that "verify the image" is a list of objects and commands rather than an act of
-trust in a workflow someone cannot see — and so that a second build platform, if
-one is ever justified, has a target to hit.
+So that "verify the image" is a list of objects and commands rather than trust in
+a workflow someone cannot see, and a second build platform has a target to hit.

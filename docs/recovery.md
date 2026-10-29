@@ -1,11 +1,9 @@
 # Recovering a workstation
 
-What to do when an install, a first boot, an update or a rollback does not go
-as expected, and what evidence to collect before changing anything. The normal
-operation of updates and rollbacks is in [operations.md](operations.md); the
-installer itself is in [installer-iso.md](installer-iso.md).
-
-Nothing on this page phones home. A report is yours to send or keep.
+What to do when an install, a first boot, an update or a rollback does not go as
+expected, and what evidence to collect before changing anything. Normal operation
+is in [operations.md](operations.md); the installer is in
+[installer-iso.md](installer-iso.md). Nothing on this page phones home.
 
 ## The installer does not finish
 
@@ -16,8 +14,8 @@ Nothing on this page phones home. A report is yours to send or keep.
 | The machine does not boot the ISO | Secure Boot is on, the medium is damaged, or the machine is not booting UEFI | Verify the published checksum, write the ISO again, boot UEFI with Secure Boot off |
 | An unattended test install stops on the summary | The test-only ISO was not used | Build and boot the ISO from [tests/installer](../tests/installer/README.md); do not add its answers to the published ISO |
 
-The installer asks for language, keyboard, timezone, network, the disk and
-LUKS. It erases the disk you select. Back up first and disconnect other disks.
+The installer asks for language, keyboard, timezone, network, the disk and LUKS.
+It erases the disk you select. Back up first and disconnect other disks.
 
 ## First boot
 
@@ -30,7 +28,7 @@ LUKS. It erases the disk you select. Back up first and disconnect other disks.
 ## An update fails or waits
 
 An update **stages** a new deployment; the running system is untouched until a
-reboot. A failed download therefore does not take the machine down.
+reboot, so a failed download does not take the machine down.
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
@@ -44,29 +42,29 @@ connection.
 
 ## The update did not boot
 
-The previous deployment is still on the disk. Recovery is manual: DeskOS does
-not switch back on its own.
+The previous deployment is still on the disk. Recovery is manual: DeskOS does not
+switch back on its own.
 
 1. In the boot menu, choose the previous entry. The menu lists the deployments
    the machine keeps.
 2. If the machine boots but the new deployment is current, run
    `sudo bootc rollback` and reboot. That queues the previous deployment.
-3. If no entry boots, boot a rescue environment (for example the installer
-   ISO's rescue entry, if it has one), mount the installation, and use your
-   backup. There is no automatic rescue.
+3. If no entry boots, boot a rescue environment (for example the installer ISO's
+   rescue entry, if it has one), mount the installation, and use your backup.
+   There is no automatic rescue.
 
-After recovering, keep the evidence from the failed boot: `journalctl -b -1`
-from the working deployment, `bootc status`, and the boot menu entries. A
-candidate that does not boot is exactly the case the lifecycle check does not
-cover yet ([design](design/lifecycle.md)).
+After recovering, keep the evidence from the failed boot: `journalctl -b -1` from
+the working deployment, `bootc status`, and the boot menu entries. A candidate
+that does not boot is exactly the case the lifecycle check does not cover yet
+([design](design/lifecycle.md)).
 
 ## Rollback is not a backup
 
 `bootc rollback` reverts image-owned files under `/etc`; local `/etc` edits are
 kept because the merge is three-way, not a snapshot. `/var`, home directories,
 system Flatpaks and application data are **not** reverted. Data a newer version
-already migrated is not undone by rolling back: restore it from your own
-backup. The image ships no backup tool.
+already migrated is not undone by rolling back: restore it from your own backup.
+The image ships no backup tool.
 
 ## Collect the evidence before you change state
 

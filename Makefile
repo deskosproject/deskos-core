@@ -11,7 +11,7 @@ BIN_RUNTIME := bin/deskos
 # passed on the command line.
 EXAMPLE   := ./examples/organization-and-role
 
-.PHONY: build test test-evidence fmt fmt-check vet check validate plan-centos plan-example render-centos render-example sbom-example golden clean
+.PHONY: build test test-evidence fmt fmt-check vet check validate links plan-centos plan-example render-centos render-example sbom-example golden clean
 
 build:
 	$(GO) build -o $(BIN) ./cmd/deskosctl
@@ -34,7 +34,11 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-check: fmt-check vet test test-evidence validate
+check: fmt-check vet test test-evidence validate links
+
+# Relative Markdown links and anchors, so a rewrite cannot leave a dead path.
+links:
+	python3 tools/check-links.py
 
 validate: build
 	$(BIN) validate $(EXAMPLE)
