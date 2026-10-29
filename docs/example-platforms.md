@@ -105,7 +105,7 @@ sudo podman run --rm -it --privileged --pull=missing \
   --security-opt label=type:unconfined_t \
   -v "$PWD/output:/output" \
   -v /var/lib/containers/storage:/var/lib/containers/storage \
-  quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+  quay.io/centos-bootc/bootc-image-builder:latest \
   build --type qcow2 --rootfs xfs --no-default-kernel-args \
   --chown "$(id -u):$(id -g)" localhost/example-almalinux-10:test
 ```

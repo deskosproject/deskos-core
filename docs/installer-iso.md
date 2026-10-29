@@ -134,7 +134,7 @@ sudo podman run --rm --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
     -v ./output:/output -v ./config.toml:/config.toml:ro \
     -v /var/lib/containers/storage:/var/lib/containers/storage \
-    quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b \
+    quay.io/centos-bootc/bootc-image-builder:latest \
     build --type anaconda-iso --config /config.toml \
     --chown "$(id -u):$(id -g)" registry.example.com/deskos/core:stable
 ```
