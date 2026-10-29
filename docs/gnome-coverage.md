@@ -34,7 +34,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Disable repartitioning | a polkit `.policy` file for udisks2 | **gap: decision**: a file with security semantics, not a key; a kind here is a new surface |
 | Disable logout and switching | `lockdown disable-log-out`, `disable-user-switching` | **modelled** |
 | Disallow fingerprint login | PAM, fprintd and a reader | **outside**: hardware and PAM, not image intent |
-| Lock down extensions | `shell enabled-extensions`, `development-tools` | **partial**: the list is modelled and lockable; Looking Glass is **gap: field** |
+| Lock down extensions | `shell enabled-extensions`, `development-tools` | **modelled** since 2026-10-29 (`shell.extensions`, `shell.developmentTools`) |
 | **Appearance** | | |
 | Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: `BinaryArtifact` or a package; no field |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
@@ -70,9 +70,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 Three different bills, and conflating them is how a backlog grows without
 shipping:
 
-- **Five fields are cheap**: the extension lock for Looking Glass, a distinct
-  lock shield, idle logout, XKB layouts and the NFS profile line. Each is a
-  scalar (or two) in
+- **Four fields are cheap**: a distinct lock shield, idle logout, XKB layouts and
+  the NFS profile line. Each is a scalar (or two) in
   `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
   the count stays at fourteen.
 - **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
@@ -91,5 +90,5 @@ shipping:
 3. Keep the refusals written down here rather than rediscovered in review.
 4. Correct the roadmap: it claimed dconf defaults and locks covered more than
    expected. At the audit they covered **fourteen** guide items exactly and four
-   partially, which is a different claim. The greeter's two and the power pair have
-   since added three, so the table above reads seventeen and three.
+   partially, which is a different claim. The greeter's two, the power pair and
+   Looking Glass have since added four, so the table above reads eighteen and two.

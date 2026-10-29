@@ -203,8 +203,8 @@ Administration Guide](https://help.gnome.org/system-admin-guide/) a verdict:
 modelled, partial, artifact, a missing field, a candidate kind, or refused with the
 invariant that refuses it. The vocabulary is **closed** (no raw dconf field), so
 the audit found fourteen modelled exactly and four partially; the greeter's two
-fields and the power pair have shipped since, so the table now reads seventeen and
-three. Five fields need no kind; a NetworkManager connection needs an ADR (secrets at runtime); a polkit
+fields, the power pair and Looking Glass have shipped since, so the table now reads
+eighteen and two. Four fields need no kind; a NetworkManager connection needs an ADR (secrets at runtime); a polkit
 action file is a security surface; autostart, custom sessions and
 single-application mode are refused under invariant 5. Next: one issue per field,
 one PR per group, each with its check.

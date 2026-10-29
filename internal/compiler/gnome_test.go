@@ -366,6 +366,20 @@ func TestDimBrightnessIsAPercentage(t *testing.T) {
 	}
 }
 
+func TestDevelopmentToolsReachTheShell(t *testing.T) {
+	// The guide's "lock down enabled extensions" also disables Looking Glass; the
+	// key is org.gnome.shell development-tools, false meaning no inspector.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", "    shell:\n      developmentTools: false\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	if got, ok := dconf(p, "/org/gnome/shell/development-tools"); !ok || got != "false" {
+		t.Fatalf("development-tools = %q (present %v), want false", got, ok)
+	}
+}
+
 func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 	// The lock list is a schema enum: a setting that lowers but is missing from it
 	// cannot be locked, which is how the two greeter fields shipped without one.
@@ -374,6 +388,7 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"session.idle.dim", "    session:\n      idle:\n        dim: true\n"},
 		{"login.banner", "    login:\n      banner: 'Lab machine'\n"},
 		{"login.showUserList", "    login:\n      showUserList: false\n"},
+		{"shell.developmentTools", "    shell:\n      developmentTools: false\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
