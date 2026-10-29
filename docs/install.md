@@ -4,10 +4,23 @@ Two ways to end up with a machine:
 
 - **Option 1: install the published image.** Nothing is compiled: take the
   CentOS Stream 10 image the pipeline built, scanned and booted, write a disk or an
-  ISO from it, install it.
+  ISO from it, install it. **This is for evaluating DeskOS, not for a fleet.**
 - **Option 2: build your own image, then install it.** Author a `Workstation` in a
   resource root, render it, build it, and install the result. RHEL 10 is this
-  option on an entitled base.
+  option on an entitled base. **This is the point of DeskOS:** your image, your
+  desktop, your ISO.
+
+Two template repositories do Option 2 for you:
+
+| Template | Runner and registry |
+|---|---|
+| [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | GitHub-hosted runner, image to `ghcr.io`, public |
+| [`deskos-template-rhel10`](https://github.com/deskosproject/deskos-template-rhel10) | your entitled RHEL runner, image to your private registry |
+
+Fork one, edit the resources, run the workflow, and pull the image. The template's
+README then builds the ISO with the same command as step 3 of Option 1; the
+templates stop at the image on purpose, because where an ISO lives is your
+decision.
 
 Either way the machine has **no user account**: GNOME Initial Setup creates the
 first one at first boot, and that account is the administrator.
@@ -118,7 +131,10 @@ Use this when you author your own resource root: an organization's packages,
 desktop defaults and update policy. The example below lives in a checkout, so this
 option starts with **git**; `deskosctl` itself is a binary.
 
-### 1. Get `deskosctl`
+### 1. Get `deskosctl`, or fork a template
+
+The two templates above already carry the binary download, the resources and the
+workflow. Read on if you want the compiler in your hands.
 
 Download the binary from
 [GitHub Releases](https://github.com/deskosproject/deskos-core/releases):
