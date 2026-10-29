@@ -45,9 +45,24 @@ QMP screendump per step  ←    the screen a person saw
 Each is a small, bounded interaction with an assertion on the accessibility tree,
 not on pixels:
 
-1. **Open the overview and launch an application.** Super, type the app name, Enter,
-   and assert the app's window appears in the tree with the expected name. This is
-   the cheapest proof that keyboard input reaches the shell.
+1. **Launch an application and see its window.** The declared favorite is started
+   through its desktop entry with `gio launch` — the path its icon takes — and the
+   run asserts that a **new** application with at least one toplevel appears in the
+   tree. Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
+
+   *Keyboard injection is deferred, and the survey says how it should be done.*
+   Mutter on Wayland rejects synthetic key events from an ordinary client. A root
+   helper writing to `/dev/uinput` would work only by going around the desktop, so
+   that is recorded as the **wrong shape**, not as the plan. The supported route is
+   the **remote-desktop portal**, which a session-side helper uses to send input and
+   which other desktop automation stacks use on Wayland for exactly this. Whether
+   that helper is packaged for EL10 is the open question; it is a step of its own,
+   and not a prerequisite for the assertion above, which does not care how the window
+   was asked to appear.
+
+   The launch asserts a *new* application, because the first run showed the registry
+   already lists the shell, its `gsd-*` daemons and the portal: finding one of those
+   would prove nothing.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
    still broken.
@@ -75,6 +90,14 @@ checked as a file. If a greeter scenario is wanted later, it is a separate desig
 - Cost: a few seconds per step on a session that is already booted. It runs after
   the session check on the same instrumented boot, in the same job.
 
+## What the first run showed
+
+The probe lists what is **already running** when the autostart script fires: the
+shell, its helper daemons and the portal. That is the floor the interactions stand
+on, and it means scenario 1 cannot pass by finding an application that was there all
+along — it must make one appear. The list also names the shell itself, so a scenario
+asserts on a window in the tree, not on the application's presence alone.
+
 ## What it does not claim
 
 - Not an accessibility conformance test: it uses AT-SPI to drive, and says nothing
@@ -93,8 +116,16 @@ promising.
 
 - [x] Confirm the AT-SPI stack is in the published image: done against the installed
       SBOM of `sha256:871e59cc…` (`at-spi2-core`, `at-spi2-atk`, `python3-pyatspi`).
-- [ ] A `pyatspi` call that lists the applications the registry knows, from the
-      injected script, over the serial transport.
+- [x] A `pyatspi` call that lists the applications the registry knows, from the
+      injected script, over the serial transport. First run on 2026-10-29
+      (`deskos-core-centos-stream-10`): **nine** applications, `gnome-shell`, the
+      `gsd-*` daemons, `evolution-alarm-notify`, `ibus-extension-gtk3` and
+      `xdg-desktop-portal-gtk`. Every one of them belongs to the session itself: no
+      ordinary application was open, which is exactly what the next step has to
+      change.
 - [ ] Scenario 1 only, asserted in the harness and reported in the summary.
+      Implemented 2026-10-29: launch through the desktop entry, a new application
+      with a toplevel in the tree, and the application terminated afterwards. The
+      close *through the tree* stays scenario 4.
 - [ ] Then 2 to 4, one at a time, each with its failure message.
 - [ ] Wire the job into the gate, and only then into promotion.

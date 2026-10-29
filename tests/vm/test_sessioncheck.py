@@ -82,6 +82,9 @@ GOOD = {
     "default_routes": "0",
     "e2e_apps": "3",
     "e2e_app_names": "gnome-shell,org.gnome.Nautilus,org.gnome.Settings",
+    "e2e_launch_entry": "/usr/share/applications/org.gnome.Calculator.desktop",
+    "e2e_launch_ok": "yes", "e2e_launch_app": "gnome-calculator",
+    "e2e_launch_frames": "Calculator", "e2e_launch_closed": "yes",
     "deskos_report_exit": "0", "deskos_report_workstation": "ws",
     "deskos_check_exit": "0",
     "system_failed_units": "", "user_failed_units": "",
@@ -354,6 +357,35 @@ class ParseEvaluateTest(unittest.TestCase):
         self.assertTrue(c["pass"])
         self.assertIn("e2e_apps=3", c["detail"])
         self.assertIn("org.gnome.Settings", c["detail"])
+
+    def test_an_application_that_does_not_open_fails(self):
+        # The entry launched and no window appeared in the tree: for anyone who
+        # uses the tree, the application did not open.
+        bad = dict(GOOD, e2e_launch_ok="no", e2e_launch_app="",
+                   e2e_launch_frames="", e2e_launch_exit="0")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"an application opens from its desktop entry"})
+
+    def test_a_missing_desktop_entry_fails_the_launch(self):
+        bad = dict(GOOD, e2e_launch_entry="missing", e2e_launch_ok="no",
+                   e2e_launch_reason="no-desktop-entry", e2e_launch_app="",
+                   e2e_launch_frames="")
+        c = next(c for c in sc.evaluate(bad, PLAN)
+                 if c["check"] == "an application opens from its desktop entry")
+        self.assertFalse(c["pass"])
+        self.assertIn("no-desktop-entry", c["detail"])
+
+    def test_a_session_that_did_not_report_the_launch_fails(self):
+        values = {k: v for k, v in GOOD.items() if not k.startswith("e2e_launch_")}
+        failed = {c["check"] for c in sc.evaluate(values, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"an application opens from its desktop entry"})
+
+    def test_the_launch_check_reports_what_it_saw(self):
+        c = next(c for c in sc.evaluate(GOOD, PLAN)
+                 if c["check"] == "an application opens from its desktop entry")
+        self.assertTrue(c["pass"])
+        self.assertIn("e2e_launch_app=gnome-calculator", c["detail"])
+        self.assertIn("e2e_launch_frames=Calculator", c["detail"])
 
     def test_an_offline_boot_asserts_the_session_and_the_missing_route(self):
         # The browser page and the Flatpak store need the network this boot

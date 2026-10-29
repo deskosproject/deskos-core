@@ -92,6 +92,7 @@ it boots the disk as shipped.
 | Each favorite resolves to a desktop entry | `sessioncheck.py` | every id exists in a system or Flatpak application directory | an id has no `.desktop` entry | instrumented |
 | Each favorite resolves to a command | `sessioncheck.py` | the entry's `Exec` names a binary the image ships | the command is missing, or a Flatpak app, which the Flatpak check owns | instrumented |
 | Session exposes its applications through AT-SPI | `sessioncheck.py`, `e2e-apps.py` | the accessibility registry lists at least one application, and the report names them | the binding or the registry is missing, or no application is listed | instrumented |
+| An application opens from its desktop entry | `sessioncheck.py`, `e2e-apps.py` | a new application with at least one toplevel appears in the accessibility tree after its entry is launched | the entry is missing, nothing new appears, or the new application has no window | instrumented |
 | Browser fetches harness content | `sessioncheck.py` | the guest fetches the harness page, the marker is in it, the fixture saw a Firefox request and a screenshot exists | fetch fails, marker missing, no browser request or no screenshot | instrumented |
 | Login logo file exists | `sessioncheck.py` | the dconf logo names a file the image carries | the key is set and the file is missing | instrumented |
 | Offline login | `sessioncheck.py --offline` (Core) | autologin reaches a session with no NIC and no default route | no session, or the boot kept a route | instrumented |
