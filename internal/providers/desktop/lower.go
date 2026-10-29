@@ -157,6 +157,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeyLockDelay, "/org/gnome/desktop/screensaver/lock-delay", "u", gvUint32(v.Value.(Seconds)), v.Provenance)
 	}
 
+	shield, hasShield := get(KeyLockShield)
 	if wp, ok := get(KeyWallpaper); ok {
 		v := wp.Value.(WallpaperValue)
 		light := l.installAsset(v.Light, wp.Provenance)
@@ -166,7 +167,10 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 		l.set(KeyWallpaper, "/org/gnome/desktop/background/picture-uri", "s", gvString(light), wp.Provenance)
 		l.set(KeyWallpaper, "/org/gnome/desktop/background/picture-uri-dark", "s", gvString(dark), wp.Provenance)
-		l.set(KeyWallpaper, "/org/gnome/desktop/screensaver/picture-uri", "s", gvString(light), wp.Provenance)
+		if !hasShield {
+			// The shield follows the wallpaper unless a profile names its own.
+			l.set(KeyWallpaper, "/org/gnome/desktop/screensaver/picture-uri", "s", gvString(light), wp.Provenance)
+		}
 		// GNOME Initial Setup's dconf profile skips the DeskOS database, so
 		// the first-boot session gets the wallpaper as a schema default.
 		for key, uri := range map[string]string{"picture-uri": light, "picture-uri-dark": dark} {
@@ -205,6 +209,11 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		// until welcome-dialog-last-shown-version is at least the version of
 		// its last tour change; setting it suppresses the dialog.
 		l.set(KeyWelcomeTour, "/org/gnome/shell/welcome-dialog-last-shown-version", "s", gvString(welcomeDialogShownVersion), v.Provenance)
+	}
+
+	if hasShield {
+		l.set(KeyLockShield, "/org/gnome/desktop/screensaver/picture-uri", "s",
+			gvString(l.installAsset(shield.Value.(Asset), shield.Provenance)), shield.Provenance)
 	}
 
 	if v, ok := get(KeyLoginLogo); ok {

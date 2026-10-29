@@ -203,8 +203,8 @@ Administration Guide](https://help.gnome.org/system-admin-guide/) a verdict:
 modelled, partial, artifact, a missing field, a candidate kind, or refused with the
 invariant that refuses it. The vocabulary is **closed** (no raw dconf field), so
 the audit found fourteen modelled exactly and four partially; the greeter's two
-fields, the power pair and Looking Glass have shipped since, so the table now reads
-eighteen and two. Four fields need no kind; a NetworkManager connection needs an ADR (secrets at runtime); a polkit
+fields, the power pair, Looking Glass and the shield have shipped since, so the
+table now reads nineteen and one. Three fields need no kind; a NetworkManager connection needs an ADR (secrets at runtime); a polkit
 action file is a security surface; autostart, custom sessions and
 single-application mode are refused under invariant 5. Next: one issue per field,
 one PR per group, each with its check.
@@ -218,6 +218,25 @@ one PR per group, each with its check.
 - **Installed run of the published ISO** (#294), by a person, recorded.
 
 ## Later
+
+- **Retire the v1 repositories from the organization (proposed 2026-10-29).**
+  `deskosproject` lists about 120 repositories. Eight are current: core,
+  infrastructure, site, ubuntu, ubuntu-bootc, brand and the two templates. The rest
+  is the 2016-2018 RPM packaging of the first attempt. They are noise in the
+  organization list and in search, and none should be deleted: that history is the
+  record of how the project got here.
+
+  Plan: create `deskosproject-archive`, transfer every repository whose last push is
+  before 2019 (the `*-rpm` set, the packager, livemedia and the old website),
+  archive each one there so it is read-only, and set its description to point at
+  the current project. GitHub redirects the old URLs, so links in old issues and
+  posts keep working. Check before transferring anything that publishes a container
+  image or a Pages site: package names follow the repository, and a Pages URL does
+  not redirect.
+
+  Acceptance: `deskosproject` lists only current repositories; the archived ones
+  stay readable and clonable with their tags and releases; a sample of old links
+  resolves.
 
 - Lockfiles for binary artifacts and base digests, once release experience shows
   which inputs need them.

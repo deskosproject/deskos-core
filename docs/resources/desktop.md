@@ -12,7 +12,7 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 |---|---|---|
 | `windows.buttons`, `windows.buttonPlacement` | `minimize`, `maximize`, `close`, at least one; `left` or `right` | |
 | `applications.browser`, `.fileManager`, `.textEditor`, `.imageViewer`, `.videoPlayer`, `.pdfViewer` | a `*.desktop` id | |
-| `appearance.wallpaper.light` (required), `.dark`, `appearance.loginLogo`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; theme names | |
+| `appearance.wallpaper.light` (required), `.dark`, `appearance.loginLogo`, `.lockShield`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; theme names | |
 | `appearance.fonts.interface`, `.document`, `.monospace`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]`, `.developmentTools` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}`; boolean (`false` hides Looking Glass) | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |

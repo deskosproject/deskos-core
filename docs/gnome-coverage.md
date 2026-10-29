@@ -39,7 +39,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: `BinaryArtifact` or a package; no field |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |
-| Lock screen shield | `screensaver picture-uri` | **partial**: the shield is set to the wallpaper; a distinct shield is **gap: field** |
+| Lock screen shield | `screensaver picture-uri` | **modelled** since 2026-10-29 (`appearance.lockShield`; the wallpaper is the default) |
 | Lock the screen when idle | `screensaver lock-enabled`, `lock-delay` | **modelled** |
 | Custom background | `background picture-uri`, `-dark` | **modelled** (`appearance.wallpaper.light`, `.dark`) |
 | Default favorite applications | `shell favorite-apps` | **modelled**, order-sensitive and checked |
@@ -70,8 +70,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 Three different bills, and conflating them is how a backlog grows without
 shipping:
 
-- **Four fields are cheap**: a distinct lock shield, idle logout, XKB layouts and
-  the NFS profile line. Each is a scalar (or two) in
+- **Three fields are cheap**: idle logout, XKB layouts and the NFS profile line.
+  Each is a scalar (or two) in
   `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
   the count stays at fourteen.
 - **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
@@ -90,5 +90,6 @@ shipping:
 3. Keep the refusals written down here rather than rediscovered in review.
 4. Correct the roadmap: it claimed dconf defaults and locks covered more than
    expected. At the audit they covered **fourteen** guide items exactly and four
-   partially, which is a different claim. The greeter's two, the power pair and
-   Looking Glass have since added four, so the table above reads eighteen and two.
+   partially, which is a different claim. The greeter's two, the power pair,
+   Looking Glass and the shield have since added five, so the table above reads
+   nineteen and one.
