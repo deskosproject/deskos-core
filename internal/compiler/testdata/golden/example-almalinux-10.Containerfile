@@ -29,7 +29,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'google-carlito-fonts' \
         'google-crosextra-caladea-fonts' \
         'google-noto-color-emoji-fonts' \
-        'google-noto-sans-cjk-vf-fonts' \
         'google-noto-sans-fonts' \
         'google-noto-sans-math-fonts' \
         'google-noto-sans-mono-fonts' \
@@ -42,6 +41,9 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
+        'redhat-display-fonts' \
+        'redhat-text-fonts' \
+        'urw-base35-fonts' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 

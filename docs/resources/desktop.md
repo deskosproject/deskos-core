@@ -87,9 +87,9 @@ read. Declare only what you mean: an image that declares nothing keeps the
 distribution's choices. RGB and BGR depend on the panel, so Core picks neither.
 
 The families are separate from the rendering: `deskos-gnome` includes the
-`deskos-fonts` package set, so the interface, an office document, a terminal, the
-CJK scripts, color emoji and the symbol and math ranges all have a font without
-anyone installing one.
+`deskos-fonts` package set, so the interface, an office document, a terminal,
+color emoji and the symbol and math ranges all have a font without anyone
+installing one.
 
 ### Greeter
 

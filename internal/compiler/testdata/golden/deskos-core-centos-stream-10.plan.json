@@ -209,17 +209,6 @@
         ]
       },
       {
-        "name": "google-noto-sans-cjk-vf-fonts",
-        "provenance": [
-          {
-            "resource": "PackageSet/deskos-fonts",
-            "profile": "deskos-gnome",
-            "layer": "foundation",
-            "source": "resources/software/deskos-fonts.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "google-noto-sans-fonts",
         "provenance": [
           {
@@ -359,6 +348,39 @@
             "profile": "deskos-look",
             "layer": "foundation",
             "source": "resources/system/deskos-splash.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "redhat-display-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "redhat-text-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "urw-base35-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
           }
         ]
       }

@@ -39,8 +39,8 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'google-carlito-fonts' \
         'google-chrome-stable' \
         'google-crosextra-caladea-fonts' \
+        'google-droid-sans-mono-fonts' \
         'google-noto-color-emoji-fonts' \
-        'google-noto-sans-cjk-vf-fonts' \
         'google-noto-sans-fonts' \
         'google-noto-sans-math-fonts' \
         'google-noto-sans-mono-fonts' \
@@ -57,9 +57,13 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth-system-theme' \
         'podman' \
         'qemu-kvm' \
+        'redhat-display-fonts' \
+        'redhat-mono-fonts' \
+        'redhat-text-fonts' \
         'skopeo' \
         'terraform' \
         'toolbox' \
+        'urw-base35-fonts' \
         'vim-enhanced' \
         'virt-install' \
         'virt-viewer' \

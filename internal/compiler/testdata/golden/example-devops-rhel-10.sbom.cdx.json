@@ -276,7 +276,7 @@
     },
     {
       "type": "library",
-      "name": "google-noto-color-emoji-fonts",
+      "name": "google-droid-sans-mono-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -286,7 +286,7 @@
     },
     {
       "type": "library",
-      "name": "google-noto-sans-cjk-vf-fonts",
+      "name": "google-noto-color-emoji-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -456,6 +456,36 @@
     },
     {
       "type": "library",
+      "name": "redhat-display-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "redhat-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "redhat-text-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "skopeo",
       "properties": [
         {
@@ -477,6 +507,16 @@
     {
       "type": "library",
       "name": "toolbox",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "urw-base35-fonts",
       "properties": [
         {
           "name": "deskos:source",

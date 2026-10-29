@@ -28,6 +28,24 @@ spec:
 apiVersion: software.deskos.org/v1alpha1
 kind: PackageSet
 metadata:
+  name: example-terminal-fonts
+spec:
+  # A role that reads a terminal all day is picky about the monospace family, the
+  # way an office role is picky about the document one. Core already ships DejaVu
+  # Sans Mono and Noto Sans Mono; this adds the two the platform packages.
+  #
+  # What the terminal-font practice usually reaches for is a patched icon font
+  # (a Nerd Font) or one of the developer families from a vendor archive, and
+  # neither is an RPM for EL10. Delivering one needs either a package repository
+  # that carries it or a BinaryArtifact destination outside /usr/local/bin, which
+  # is a decision this example does not make on its own.
+  packages:
+    - redhat-mono-fonts
+    - google-droid-sans-mono-fonts
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
   name: example-platform-tools
 spec:
   packages:

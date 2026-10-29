@@ -240,7 +240,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:28"
+            "source": "organization-and-role/software/example-devops.yaml:46"
           }
         ]
       },
@@ -349,7 +349,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:28"
+            "source": "organization-and-role/software/example-devops.yaml:46"
           }
         ]
       },
@@ -365,18 +365,18 @@
         ]
       },
       {
-        "name": "google-noto-color-emoji-fonts",
+        "name": "google-droid-sans-mono-fonts",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-fonts",
-            "profile": "deskos-gnome",
-            "layer": "foundation",
-            "source": "resources/software/deskos-fonts.yaml:1"
+            "resource": "PackageSet/example-terminal-fonts",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "organization-and-role/software/example-devops.yaml:28"
           }
         ]
       },
       {
-        "name": "google-noto-sans-cjk-vf-fonts",
+        "name": "google-noto-color-emoji-fonts",
         "provenance": [
           {
             "resource": "PackageSet/deskos-fonts",
@@ -460,7 +460,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:28"
+            "source": "organization-and-role/software/example-devops.yaml:46"
           }
         ]
       },
@@ -575,6 +575,39 @@
         ]
       },
       {
+        "name": "redhat-display-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "redhat-mono-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/example-terminal-fonts",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "organization-and-role/software/example-devops.yaml:28"
+          }
+        ]
+      },
+      {
+        "name": "redhat-text-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "skopeo",
         "provenance": [
           {
@@ -592,7 +625,7 @@
             "resource": "PackageSet/example-platform-tools",
             "profile": "example-devops",
             "layer": "role",
-            "source": "organization-and-role/software/example-devops.yaml:28"
+            "source": "organization-and-role/software/example-devops.yaml:46"
           }
         ]
       },
@@ -604,6 +637,17 @@
             "profile": "example-devops",
             "layer": "role",
             "source": "organization-and-role/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "urw-base35-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
           }
         ]
       },
