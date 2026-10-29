@@ -352,6 +352,17 @@
         ]
       },
       {
+        "name": "ptyxis",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "redhat-display-fonts",
         "provenance": [
           {
@@ -621,6 +632,34 @@
       "loginScreen": "gdm",
       "defaults": [
         {
+          "key": "/org/gnome/Ptyxis/font-name",
+          "type": "s",
+          "value": "'DejaVu Sans Mono 11'",
+          "setting": "appearance.fonts.terminal",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-fonts",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-fonts.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/Ptyxis/use-system-font",
+          "type": "b",
+          "value": "false",
+          "setting": "appearance.fonts.terminal",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-fonts",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-fonts.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/desktop/background/picture-uri",
           "type": "s",
           "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
@@ -645,6 +684,20 @@
               "profile": "deskos-look",
               "layer": "foundation",
               "source": "resources/desktop/deskos-look.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/interface/monospace-font-name",
+          "type": "s",
+          "value": "'DejaVu Sans Mono 11'",
+          "setting": "appearance.fonts.monospace",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-fonts",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-fonts.yaml:1"
             }
           ]
         },

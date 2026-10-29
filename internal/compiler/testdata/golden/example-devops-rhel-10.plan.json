@@ -564,6 +564,17 @@
         ]
       },
       {
+        "name": "ptyxis",
+        "provenance": [
+          {
+            "resource": "GnomeProfile/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/desktop/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "qemu-kvm",
         "provenance": [
           {
@@ -988,6 +999,34 @@
       "name": "distro",
       "loginScreen": "gdm",
       "defaults": [
+        {
+          "key": "/org/gnome/Ptyxis/font-name",
+          "type": "s",
+          "value": "'DejaVu Sans Mono 11'",
+          "setting": "appearance.fonts.terminal",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-fonts",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-fonts.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/Ptyxis/use-system-font",
+          "type": "b",
+          "value": "false",
+          "setting": "appearance.fonts.terminal",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-fonts",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-fonts.yaml:1"
+            }
+          ]
+        },
         {
           "key": "/org/gnome/desktop/background/picture-uri",
           "type": "s",

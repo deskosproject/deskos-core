@@ -66,6 +66,7 @@ spec:
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - {name: dash-to-dock, package: gnome-shell-extension-dash-to-dock, uuid: dash-to-dock@micxgx.gmail.com}
+    terminal: {package: ptyxis, dconfPath: /org/gnome/Ptyxis/, fontKey: font-name, useSystemFontKey: use-system-font}
   flatpak: {package: flatpak, preinstall: true}
   trust: {anchorsDir: /etc/pki/ca-trust/source/anchors, updateCommand: update-ca-trust}
   iconCache: {package: gtk-update-icon-cache, command: "gtk-update-icon-cache --force --quiet"}

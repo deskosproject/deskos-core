@@ -275,7 +275,42 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeyFontRGBA, "/org/gnome/settings-daemon/plugins/xsettings/rgba-order", "s",
 			gvString(v.Value.(string)), v.Provenance)
 	}
+	// GNOME 47 reads the rendering policy from its own keys and ignores them
+	// while font-rendering is automatic, which is its default: declaring any of
+	// the three switches it to manual, and each declared value goes with it.
+	// The Xsettings keys above stay for X11 applications.
+	if _, hasAA := get(KeyFontAA); hasAA {
+		l.rendering(get)
+	} else if _, hasHint := get(KeyFontHinting); hasHint {
+		l.rendering(get)
+	} else if _, hasRGBA := get(KeyFontRGBA); hasRGBA {
+		l.rendering(get)
+	}
 	l.fontconfig(get)
+
+	if v, ok := get(KeyFontTitlebar); ok {
+		// A title font only applies while GNOME is told not to use the interface
+		// font, which is its default.
+		l.set(KeyFontTitlebar, "/org/gnome/desktop/wm/preferences/titlebar-uses-system-font", "b", "false", v.Provenance)
+		l.set(KeyFontTitlebar, "/org/gnome/desktop/wm/preferences/titlebar-font", "s",
+			gvString(fontName(v.Value.(Font))), v.Provenance)
+	}
+	if v, ok := get(KeyFontTerminal); ok {
+		pl := l.c.PlatformSpec
+		if pl.Gnome == nil || pl.Gnome.Terminal == nil {
+			l.errs.Add(fmt.Errorf("%s declares no terminal, which %s needs\n  set by: %s",
+				l.c.Platform.ID(), KeyFontTerminal, describe(v.Provenance)))
+		} else {
+			t := pl.Gnome.Terminal
+			l.p.AddPackage(t.Package, v.Provenance...)
+			l.set(KeyFontTerminal, t.DconfPath+t.FontKey, "s", gvString(fontName(v.Value.(Font))), v.Provenance)
+			l.set(KeyFontTerminal, t.DconfPath+t.UseSystemFontKey, "b", "false", v.Provenance)
+		}
+	}
+	if v, ok := get(KeyTextScaling); ok {
+		l.set(KeyTextScaling, "/org/gnome/desktop/interface/text-scaling-factor", "d",
+			strconv.FormatFloat(v.Value.(float64), 'f', -1, 64), v.Provenance)
+	}
 
 	for key, gkey := range map[string]string{KeyIconTheme: "icon-theme", KeyCursorTheme: "cursor-theme"} {
 		if v, ok := get(key); ok {
@@ -640,6 +675,28 @@ func describeShort(ps []model.Provenance) string {
 func (l *lowering) set(setting, key, typ, value string, prov []model.Provenance) {
 	l.db.Defaults = append(l.db.Defaults, plan.DconfDefault{Key: key, Type: typ, Value: value, Setting: setting, Provenance: prov})
 	l.bySett[setting] = append(l.bySett[setting], key)
+}
+
+// rendering mirrors the low-level rendering decision into the keys GNOME 47
+// added. It is one function because GNOME gates all three on font-rendering:
+// setting one of them without manual is a value nothing reads.
+func (l *lowering) rendering(get func(string) (compose.Scalar, bool)) {
+	first := true
+	for key, gkey := range map[string]string{
+		KeyFontAA:      "/org/gnome/desktop/interface/font-antialiasing",
+		KeyFontHinting: "/org/gnome/desktop/interface/font-hinting",
+		KeyFontRGBA:    "/org/gnome/desktop/interface/font-rgba-order",
+	} {
+		v, ok := get(key)
+		if !ok {
+			continue
+		}
+		if first {
+			l.set(key, "/org/gnome/desktop/interface/font-rendering", "s", gvString("manual"), v.Provenance)
+			first = false
+		}
+		l.set(key, gkey, "s", gvString(v.Value.(string)), v.Provenance)
+	}
 }
 
 // FontconfigPath is where the rendering policy lands: fontconfig reads every

@@ -136,6 +136,17 @@
                 "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
                 "command": { "type": "string", "pattern": "^/usr/[a-z0-9/._-]+$" }
               }
+            },
+            "terminal": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["package", "dconfPath", "fontKey", "useSystemFontKey"],
+              "properties": {
+                "package": { "$ref": "../../common/definitions.json#/$defs/packageName" },
+                "dconfPath": { "type": "string", "pattern": "^(/[A-Za-z0-9_-]+)+/$", "description": "The terminal's GSettings path, for example /org/gnome/Ptyxis/. It is the platform's fact: a terminal that keeps its font elsewhere says where." },
+                "fontKey": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+                "useSystemFontKey": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+              }
             }
           }
         },

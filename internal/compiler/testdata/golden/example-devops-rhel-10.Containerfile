@@ -56,6 +56,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth-scripts' \
         'plymouth-system-theme' \
         'podman' \
+        'ptyxis' \
         'qemu-kvm' \
         'redhat-display-fonts' \
         'redhat-mono-fonts' \

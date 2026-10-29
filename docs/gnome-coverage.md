@@ -2,7 +2,7 @@
 
 What of the [GNOME System Administration
 Guide](https://help.gnome.org/system-admin-guide/) a DeskOS image can carry, page
-by page. Audited 2026-10-29 against `GnomeProfile` and the providers, not against
+by page. Audited 2026-10-30 against `GnomeProfile` and the providers, not against
 the guide's own assumption that any dconf key is a setting.
 
 This page is also the evidence for [ADR 0024](adr/0024-what-a-desktop-platform-must-expose.md):
@@ -36,6 +36,9 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Disallow fingerprint login | PAM, fprintd and a reader | **outside**: hardware and PAM, not image intent |
 | Lock down extensions | `shell enabled-extensions`, `development-tools` | **modelled** since 2026-10-29 (`shell.extensions`, `shell.developmentTools`) |
 | **Appearance** | | |
+| Choose the fonts, surface by surface | `interface font-name`, `document-font-name`, `monospace-font-name`; `wm titlebar-font`; the terminal's `font-name` | **modelled** since 2026-10-30 (`appearance.fonts.interface`, `.document`, `.monospace`, `.titlebar`, `.terminal`) |
+| Zoom text without changing sizes | `interface text-scaling-factor` | **modelled** (`appearance.fonts.textScaling`, 0.5 to 3.0) |
+| Subpixel rendering and hinting | `interface font-rendering`, `font-antialiasing`, `font-hinting`, `font-rgba-order`, and fontconfig's own file | **modelled** (`appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter`): the file for every application, the keys for GNOME and X11 |
 | Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35 |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |

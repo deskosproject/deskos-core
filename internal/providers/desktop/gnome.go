@@ -47,6 +47,9 @@ const (
 	KeyFontInterface   = "appearance.fonts.interface"
 	KeyFontDocument    = "appearance.fonts.document"
 	KeyFontMonospace   = "appearance.fonts.monospace"
+	KeyFontTitlebar    = "appearance.fonts.titlebar"
+	KeyFontTerminal    = "appearance.fonts.terminal"
+	KeyTextScaling     = "appearance.fonts.textScaling"
 	KeyFontAA          = "appearance.fonts.antialiasing"
 	KeyFontHinting     = "appearance.fonts.hinting"
 	KeyFontRGBA        = "appearance.fonts.rgbaOrder"
@@ -127,6 +130,7 @@ var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
 	KeyLockShield:    true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true,
+	KeyFontTitlebar: true, KeyFontTerminal: true, KeyTextScaling: true,
 	KeyFontAA: true, KeyFontHinting: true, KeyFontRGBA: true, KeyFontLCD: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
 	KeyDimBrightness: true, KeyLockEnabled: true,
@@ -248,8 +252,17 @@ type Fonts struct {
 	Interface *Font `json:"interface,omitempty"`
 	Document  *Font `json:"document,omitempty"`
 	Monospace *Font `json:"monospace,omitempty"`
-	// Rendering, applied by fontconfig to every application and mirrored in the
-	// Xsettings keys X11 applications read.
+	// Titlebar is the window title font. Omitting it keeps GNOME's default, which
+	// is to use the interface font.
+	Titlebar *Font `json:"titlebar,omitempty"`
+	// Terminal is the font of the terminal the platform ships. A platform that
+	// declares no terminal cannot carry it, and composition says so.
+	Terminal *Font `json:"terminal,omitempty"`
+	// TextScaling is GNOME's text-scaling-factor: a multiplier over every size,
+	// not a size. 1.0 is the default, and the range is GNOME's.
+	TextScaling *float64 `json:"textScaling,omitempty"`
+	// Rendering, applied by fontconfig to every application, mirrored in the
+	// interface keys GNOME 47 reads and in the Xsettings keys X11 applications use.
 	Antialiasing string `json:"antialiasing,omitempty"`
 	Hinting      string `json:"hinting,omitempty"`
 	RGBAOrder    string `json:"rgbaOrder,omitempty"`
@@ -506,7 +519,10 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				}
 				set(key, v, v)
 			}
-			for key, font := range map[string]*Font{KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace} {
+			for key, font := range map[string]*Font{
+				KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace,
+				KeyFontTitlebar: f.Titlebar, KeyFontTerminal: f.Terminal,
+			} {
 				if font == nil {
 					continue
 				}
@@ -515,6 +531,13 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 					continue
 				}
 				set(key, *font, fontName(*font))
+			}
+			if f.TextScaling != nil {
+				if *f.TextScaling < 0.5 || *f.TextScaling > 3 {
+					bad("%s: text scaling must be between 0.5 and 3.0", KeyTextScaling)
+				} else {
+					set(KeyTextScaling, *f.TextScaling, strconv.FormatFloat(*f.TextScaling, 'g', -1, 64))
+				}
 			}
 		}
 		for key, v := range map[string]string{KeyIconTheme: a.IconTheme, KeyCursorTheme: a.CursorTheme} {

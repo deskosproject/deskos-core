@@ -1,6 +1,7 @@
 package compiler_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -424,6 +425,12 @@ func TestFontRenderingWritesFontconfigAndXsettings(t *testing.T) {
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	for key, want := range map[string]string{
+		// GNOME 47 reads these, and ignores them unless font-rendering is manual.
+		"/org/gnome/desktop/interface/font-rendering":    "'manual'",
+		"/org/gnome/desktop/interface/font-antialiasing": "'rgba'",
+		"/org/gnome/desktop/interface/font-hinting":      "'slight'",
+		"/org/gnome/desktop/interface/font-rgba-order":   "'bgr'",
+		// X11 applications read these through the settings daemon.
 		"/org/gnome/settings-daemon/plugins/xsettings/antialiasing": "'rgba'",
 		"/org/gnome/settings-daemon/plugins/xsettings/hinting":      "'slight'",
 		"/org/gnome/settings-daemon/plugins/xsettings/rgba-order":   "'bgr'",
@@ -482,6 +489,60 @@ func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
 	}
 }
 
+func TestEveryFontSurfaceGNOMEdraws(t *testing.T) {
+	// GNOME has one font key per surface, plus a multiplier over all of them, and
+	// the terminal keeps its own because it is the platform's packaged app. A
+	// workstation that names them gets each key, not just the interface one.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    appearance:\n      fonts:\n"+
+			"        interface: {family: Noto Sans, size: 11}\n"+
+			"        document: {family: Noto Serif, size: 12}\n"+
+			"        monospace: {family: Noto Sans Mono, size: 10}\n"+
+			"        titlebar: {family: Noto Sans, size: 11}\n"+
+			"        terminal: {family: JetBrains Mono, size: 11}\n"+
+			"        textScaling: 1.25\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/desktop/interface/font-name":                      `'Noto Sans 11'`,
+		"/org/gnome/desktop/interface/document-font-name":             `'Noto Serif 12'`,
+		"/org/gnome/desktop/interface/monospace-font-name":            `'Noto Sans Mono 10'`,
+		"/org/gnome/desktop/wm/preferences/titlebar-font":             `'Noto Sans 11'`,
+		"/org/gnome/desktop/wm/preferences/titlebar-uses-system-font": "false",
+		"/org/gnome/Ptyxis/font-name":                                 `'JetBrains Mono 11'`,
+		"/org/gnome/Ptyxis/use-system-font":                           "false",
+		"/org/gnome/desktop/interface/text-scaling-factor":            "1.25",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+	if !slices.Contains(packages(p), "ptyxis") {
+		t.Error("the terminal the font is set on is not installed")
+	}
+}
+
+func TestATerminalFontNeedsAPlatformThatShipsOne(t *testing.T) {
+	// The font lives on the platform's terminal, so a platform that declares none
+	// cannot carry it: composition says which gap, rather than writing a key that
+	// nothing reads (docs/adr/0025).
+	platform := strings.Replace(platformYAML,
+		"    terminal: {package: ptyxis, dconfPath: /org/gnome/Ptyxis/, fontKey: font-name, useSystemFontKey: use-system-font}\n", "", 1)
+	if platform == platformYAML {
+		t.Fatal("the fixture no longer declares a terminal, so this test proves nothing")
+	}
+	dir := base.with(fixture{
+		"platform.yaml": platform,
+		"ws.yaml":       workstation("ws", "core"),
+		"core.yaml":     profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":        gnome("core", "    appearance:\n      fonts:\n        terminal: {family: JetBrains Mono, size: 11}\n"),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "declares no terminal", "appearance.fonts.terminal")
+}
+
 func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 	// The lock list is a schema enum: a setting that lowers but is missing from it
 	// cannot be locked, which is how the two greeter fields shipped without one.
@@ -493,6 +554,9 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"shell.developmentTools", "    shell:\n      developmentTools: false\n"},
 		{"appearance.lockShield", "    appearance:\n      lockShield: shield.svg\n"},
 		{"appearance.fonts.hinting", "    appearance:\n      fonts:\n        hinting: slight\n"},
+		{"appearance.fonts.titlebar", "    appearance:\n      fonts:\n        titlebar: {family: Noto Sans, size: 11}\n"},
+		{"appearance.fonts.terminal", "    appearance:\n      fonts:\n        terminal: {family: JetBrains Mono, size: 11}\n"},
+		{"appearance.fonts.textScaling", "    appearance:\n      fonts:\n        textScaling: 1.25\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",

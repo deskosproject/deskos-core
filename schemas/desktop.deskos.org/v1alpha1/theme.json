@@ -45,7 +45,10 @@
           "properties": {
             "interface": { "$ref": "gnomeprofile.json#/$defs/font" },
             "document": { "$ref": "gnomeprofile.json#/$defs/font" },
-            "monospace": { "$ref": "gnomeprofile.json#/$defs/font" }
+            "monospace": { "$ref": "gnomeprofile.json#/$defs/font" },
+            "titlebar": { "$ref": "gnomeprofile.json#/$defs/font" },
+            "terminal": { "$ref": "gnomeprofile.json#/$defs/font" },
+            "textScaling": { "type": "number", "minimum": 0.5, "maximum": 3 }
           }
         },
         "wallpaper": {

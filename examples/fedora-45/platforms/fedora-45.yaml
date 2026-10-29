@@ -115,6 +115,13 @@ spec:
       # /usr/sbin -> bin and is provided by gtk3 3.24.52.
       package: gtk3
       command: /usr/bin/gtk-launch
+    # Measured: Ptyxis 49 keeps the default profile's font on org.gnome.Ptyxis,
+    # path /org/gnome/Ptyxis/, keys font-name and use-system-font.
+    terminal:
+      package: ptyxis
+      dconfPath: /org/gnome/Ptyxis/
+      fontKey: font-name
+      useSystemFontKey: use-system-font
   boot:
     # Fedora's own graphical boot uses `rhgb quiet`; the image itself carries no
     # /etc/default/grub, so this is Fedora's documented default for the family and

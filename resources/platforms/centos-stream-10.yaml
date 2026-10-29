@@ -71,6 +71,14 @@ spec:
     appLauncher:
       package: gtk3
       command: /usr/bin/gtk-launch
+    # The terminal the desktop ships, and where its default profile's font lives.
+    # A profile that sets appearance.fonts.terminal needs this fact; a platform
+    # without it fails with a reason instead of writing a key nothing reads.
+    terminal:
+      package: ptyxis
+      dconfPath: /org/gnome/Ptyxis/
+      fontKey: font-name
+      useSystemFontKey: use-system-font
   boot:
     # Plymouth shows its graphical splash only with rhgb, splash or
     # plymouth.graphical on the kernel command line.

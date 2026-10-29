@@ -6,6 +6,7 @@ package desktop
 
 import (
 	"path"
+	"strconv"
 
 	"github.com/deskosproject/deskos-core/internal/compose"
 	"github.com/deskosproject/deskos-core/internal/model"
@@ -115,7 +116,10 @@ func (themeKind) Decode(res *model.Resource) error {
 	}
 
 	if f := spec.Fonts; f != nil {
-		for key, font := range map[string]*Font{KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace} {
+		for key, font := range map[string]*Font{
+			KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace,
+			KeyFontTitlebar: f.Titlebar, KeyFontTerminal: f.Terminal,
+		} {
 			if font == nil {
 				continue
 			}
@@ -124,6 +128,13 @@ func (themeKind) Decode(res *model.Resource) error {
 				continue
 			}
 			set(key, *font, fontName(*font))
+		}
+		if f.TextScaling != nil {
+			if *f.TextScaling < 0.5 || *f.TextScaling > 3 {
+				bad("%s: text scaling must be between 0.5 and 3.0", KeyTextScaling)
+			} else {
+				set(KeyTextScaling, *f.TextScaling, strconv.FormatFloat(*f.TextScaling, 'g', -1, 64))
+			}
 		}
 	}
 
