@@ -70,6 +70,30 @@ reboot
   install at the progress screen (`User interaction required on standalone spoke
   ProgressSpoke`), so do not add the flag back. With no display, use `text`.
 
+### What you can change
+
+The kickstart is Anaconda's, and `config.toml` is bootc-image-builder's. These are
+the options DeskOS uses, and the ones to avoid:
+
+| Goal | Option | Notes |
+|---|---|---|
+| Show the language, keyboard and time zone screens | `[customizations.installer.modules] enable` with `Localization` and `Timezone` | bootc-image-builder enables only Network, Payloads and Storage, so without this those spokes are missing from the summary |
+| Answer language, keyboard or time zone instead of asking | `lang`, `keyboard`, `timezone` in the kickstart | the ISO carries the image, so this works offline |
+| Set the hostname or bring up the network | `network` in the kickstart | optional; a wired install works without it |
+| Leave no root password | `rootpw --lock` | with no `user` line, GNOME Initial Setup creates the first account |
+| Boot into a graphical session after install | `xconfig --startxonboot` | without a target, Anaconda sets `multi-user.target` and the machine boots to a text login |
+| Graphical or text installer | `graphical` or `text` | `text` is the choice on a host with no display |
+| Partitioning, disk selection | `clearpart` and `autopart` | **avoid**: the person installing chooses the disk and LUKS, and `clearpart --all` erases every disk the installer sees |
+| Encryption | `autopart --encrypted --passphrase=...` | **avoid**: the passphrase would sit in the ISO in clear text |
+| Extra packages or files | `%post` | **avoid**: that is image content, and it belongs in the image; secrets in a kickstart are visible to anyone with the ISO |
+| Unattended install | `--non-interactive` | **avoid on RHEL 10**: measured abort at the progress screen (`User interaction required on standalone spoke ProgressSpoke`) |
+
+Without a `config.toml`, bootc-image-builder still produces an ISO, and the
+installer still asks for the disk, but the language and time zone spokes are
+missing and the installed system lands on `multi-user.target`. That combination has
+not been installed end to end here; the configuration above is what the published
+preview uses.
+
 ### 3. Build the ISO
 
 ```bash
