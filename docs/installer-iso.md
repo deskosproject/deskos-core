@@ -45,7 +45,6 @@ contents = """
 # Graphical Anaconda, and nothing else is answered.
 graphical
 rootpw --lock
-xconfig --startxonboot
 reboot
 """
 ```
@@ -62,9 +61,11 @@ reboot
 - No `lang`, `keyboard`, `timezone`, `network` or hostname: the installer asks, and
   the ISO carries the image so the install works offline. The `Localization` and
   `Timezone` modules must be enabled for those spokes to appear.
-- `xconfig --startxonboot`: a DeskOS image already sets `graphical.target` in the
-  image, and the install without this line still reached GNOME Initial Setup. Keep
-  it for a base that does not set a target.
+- No `xconfig --startxonboot`: Anaconda sets the default target itself
+  (`ConfigureSystemdDefaultTargetTask`): `graphical.target` when a package provides
+  `service(graphical-login)`, which gdm does, and `multi-user.target` otherwise.
+  DeskOS ships gdm, so the line does nothing here, and the install without it
+  reached GNOME Initial Setup. Keep it only for a base with no graphical login.
 - `graphical` runs the graphical UI. Without `--non-interactive`, a complete
   kickstart installs without a click and an incomplete one waits on the summary
   hub instead of aborting. RHEL 10.2's Anaconda aborts a graphical non-interactive
@@ -82,7 +83,7 @@ the options DeskOS uses, and the ones to avoid:
 | Answer language, keyboard or time zone instead of asking | `lang`, `keyboard`, `timezone` in the kickstart | the ISO carries the image, so this works offline |
 | Set the hostname or bring up the network | `network` in the kickstart | optional; a wired install works without it |
 | Leave no root password | `rootpw --lock` | with no `user` line, GNOME Initial Setup creates the first account |
-| Boot into a graphical session after install | `xconfig --startxonboot` | DeskOS images already set `graphical.target`; keep it for a base that does not |
+| Boot into a graphical session after install | nothing to do | Anaconda picks `graphical.target` when gdm is installed and `multi-user.target` otherwise; `xconfig --startxonboot` is the historical way to force the first |
 | Graphical or text installer | `graphical` or `text` | `text` is the choice on a host with no display |
 | Partitioning, disk selection | `clearpart` and `autopart` | **avoid**: the person installing chooses the disk and LUKS, and `clearpart --all` erases every disk the installer sees |
 | Encryption | `autopart --encrypted --passphrase=...` | **avoid**: the passphrase would sit in the ISO in clear text |

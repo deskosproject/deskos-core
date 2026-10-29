@@ -87,7 +87,6 @@ enable = [
 contents = """
 graphical
 rootpw --lock
-xconfig --startxonboot
 reboot
 """
 EOF
