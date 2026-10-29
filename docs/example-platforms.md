@@ -65,7 +65,7 @@ free.
 
 ### 1. Get the compiler
 
-Get `deskosctl` as in [install.md](install.md#build-your-own-then-install-it), or
+Get `deskosctl` as in [install.md](install.md#option-2-build-your-own-then-install-it), or
 run `make build` in the checkout.
 
 ### 2. Track the current vendor digest
