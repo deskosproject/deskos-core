@@ -628,7 +628,26 @@ class PlanBinariesTest(unittest.TestCase):
         values = dict(GOOD, binary_0="missing")
         c = self.binary_check(values)
         self.assertFalse(c["pass"])
-        self.assertIn("is not an executable regular file", c["detail"])
+        self.assertIn("is not a regular file", c["detail"])
+
+    def test_a_font_is_asserted_by_the_mode_the_plan_declares(self):
+        # A font is placed with no execute bit, so requiring an executable turned every
+        # font into a failure on a real boot (run 40969187647). The mode the plan
+        # declares is the assertion, and it is the same one an executable gets.
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["binaries"][0].update({
+            "artifact": "gelasio", "destination": "/usr/local/share/fonts/Gelasio.ttf",
+            "mode": "0644",
+        })
+        values = dict(GOOD, **reported(plan))
+        c = self.binary_check(values, plan=plan, destination="/usr/local/share/fonts/Gelasio.ttf")
+        self.assertTrue(c["pass"])
+        self.assertIn("mode 0644, as the plan declares", c["detail"])
+        # The same bytes with the execute bit are not what the plan installs.
+        wrong = dict(values, binary_mode_0="755")
+        c = self.binary_check(wrong, plan=plan, destination="/usr/local/share/fonts/Gelasio.ttf")
+        self.assertFalse(c["pass"])
+        self.assertIn("the plan declares 0644", c["detail"])
 
     def test_a_plan_without_binaries_asserts_none(self):
         checks = sc.evaluate(GOOD, {"artifact": {"dconf": None}})

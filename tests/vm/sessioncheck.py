@@ -204,18 +204,20 @@ def tray_probe():
 
 
 def binary_reads():
-    """The script fragment that hashes every binary the plan installs.
+    """The script fragment that hashes every file the plan's artifacts place.
 
     The declared checksum is what the image downloaded and verified at build time; this
-    reads the bytes that are really on the machine, so a binary the build never wrote,
-    or one replaced afterwards, is a difference rather than an assumption.
+    reads the bytes that are really on the machine, so a file the build never wrote, or
+    one replaced afterwards, is a difference rather than an assumption. The files are
+    not all executables: a font is placed with no execute bit, and its mode is asserted
+    against the plan like any other (ADR 0018, amended 2026-10-29).
     """
     return (
-        "# Every binary the plan installs, hashed where it landed.\n"
+        "# Every file the plan's artifacts place, hashed where it landed.\n"
         f"mapfile -t plan_binaries < {BINARY_PATHS_PATH}\n"
         'for i in "${!plan_binaries[@]}"; do\n'
         '  b="${plan_binaries[$i]}"\n'
-        '  if [ -f "$b" ] && [ -x "$b" ]; then\n'
+        '  if [ -f "$b" ]; then\n'
         # An executable file whose bytes cannot be read is not a file that changed: it
         # is a fact this machine would not give up, and the host separates it from a
         # mismatch, the same way a session read that fails is reported with its reason.
@@ -1274,7 +1276,7 @@ def dconf_value(plan, key):
 
 
 def plan_binaries(plan):
-    """The binaries the plan installs, in the order the plan lists them."""
+    """The files the plan's artifacts place, in the order the plan lists them."""
     return list(plan.get("artifact", {}).get("binaries") or [])
 
 
@@ -1564,10 +1566,11 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
               f"session_type={values.get('session_type')}")
     check("user extensions allowed", values.get("disable_user_extensions") == "false",
           f"disable-user-extensions={values.get('disable_user_extensions')}")
-    # Every binary the plan installs must be there, executable, and -- when the plan
-    # pins the file itself -- the same bytes. For an archive the plan pins the
-    # archive's checksum, so the file inside it is verified as installed and the limit
-    # is stated rather than compared, which would report a difference that is not one.
+    # Every file the plan's artifacts place must be there, with the mode the plan
+    # declares, and -- when the plan pins the file itself -- the same bytes. For an
+    # archive the plan pins the archive's checksum, so the file inside it is verified as
+    # installed and the limit is stated rather than compared, which would report a
+    # difference that is not one. Not every such file runs: a font is data.
     for i, b in enumerate(plan_binaries(plan)):
         name = BINARY_CHECK_PREFIX + b["destination"]
         got = values.get(f"binary_{i}", "missing")
@@ -1600,7 +1603,7 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         axis = "install-only" if archived else "checked-bytes"
         coverage = {"source": "binary", "key": b["destination"], "image": axis, "session": axis}
         if got == "missing":
-            check(name, False, f"{b['destination']} is not an executable regular file",
+            check(name, False, f"{b['destination']} is not a regular file",
                   coverage=coverage)
         elif mode_differs:
             check(name, False, f"{b['destination']} is installed with {mode_text}",
@@ -1608,11 +1611,11 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         elif archived:
             read = f" (sha256 {got[:12]}…)" if got != "unreadable" else " (its bytes could not be read here)"
             check(name, True,
-                  f"installed and executable{read}, {mode_text}; the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
+                  f"installed{read}, {mode_text}; the plan pins the {b['archive']} archive's checksum, which the build verified and this cannot compare",
                   skipped=bool(unread), unread=unread, coverage=coverage)
         elif got == "unreadable":
             check(name, True,
-                  f"{b['destination']} is installed and executable, {mode_text}; whether its bytes are the plan's is unreadable here",
+                  f"{b['destination']} is installed, {mode_text}; whether its bytes are the plan's is unreadable here",
                   skipped=True, unread=unread,
                   coverage=dict(coverage, image="unread", session="unread"))
         elif got != b["sha256"]:
