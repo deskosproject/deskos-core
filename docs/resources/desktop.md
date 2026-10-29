@@ -5,7 +5,8 @@ Part of the [resource model](../resources.md): the kinds that shape the GNOME se
 ## `GnomeProfile`
 
 **GNOME intent** in administrator vocabulary. An organization layer overrides
-the Core defaults it names.
+the Core defaults it names. The vocabulary is closed on purpose: what a guide
+item needs when no field exists is in [GNOME coverage](../gnome-coverage.md).
 
 | Field | Values | Default |
 |---|---|---|

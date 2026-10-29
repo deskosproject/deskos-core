@@ -42,6 +42,7 @@ New here? Read the [README](../README.md), then [Platforms](platforms.md).
 | [Operations](operations.md) | update, inspect, roll back, change the update source |
 | [Recovery](recovery.md) | install, first boot, registry, update and rollback failures |
 | [Diagnostics](diagnostics.md) | what a failure looks like, which class it is, next action |
+| [GNOME coverage](gnome-coverage.md) | every GNOME system-administration item, and whether a field carries it |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
 | [Checks](checks.md) | what each workflow proves and how to read a red run |
 | [Threat model](threat-model.md) | assets, boundaries, controls and gaps, the incident tabletop |
