@@ -413,6 +413,75 @@ func TestLockShieldCanDifferFromTheWallpaper(t *testing.T) {
 	}
 }
 
+func TestFontRenderingWritesFontconfigAndXsettings(t *testing.T) {
+	// GTK on Wayland reads fontconfig, X11 applications read Xsettings: both get
+	// the same decision, and fontconfig gets a generated file rather than a shell.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    appearance:\n      fonts:\n        antialiasing: rgba\n"+
+			"        rgbaOrder: bgr\n        hinting: slight\n        lcdfilter: light\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/settings-daemon/plugins/xsettings/antialiasing": "'rgba'",
+		"/org/gnome/settings-daemon/plugins/xsettings/hinting":      "'slight'",
+		"/org/gnome/settings-daemon/plugins/xsettings/rgba-order":   "'bgr'",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+	var content string
+	for _, f := range p.Artifact.GeneratedFiles {
+		if f.Path == "/etc/fonts/conf.d/60-deskos-fonts.conf" {
+			content = f.Content
+		}
+	}
+	if content == "" {
+		t.Fatal("no fontconfig file in the plan")
+	}
+	for _, want := range []string{
+		`<edit name="antialias" mode="assign"><bool>true</bool></edit>`,
+		`<edit name="rgba" mode="assign"><const>bgr</const></edit>`,
+		`<edit name="hintstyle" mode="assign"><const>hintslight</const></edit>`,
+		`<edit name="lcdfilter" mode="assign"><const>lcdlight</const></edit>`,
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("fontconfig file lacks %s:\n%s", want, content)
+		}
+	}
+}
+
+func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml":    gnome("core", "    appearance:\n      fonts:\n        hinting: full\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for _, key := range []string{
+		"/org/gnome/settings-daemon/plugins/xsettings/antialiasing",
+		"/org/gnome/settings-daemon/plugins/xsettings/rgba-order",
+	} {
+		if _, ok := dconf(p, key); ok {
+			t.Errorf("%s was written although only hinting was declared", key)
+		}
+	}
+	for _, f := range p.Artifact.GeneratedFiles {
+		if f.Path != "/etc/fonts/conf.d/60-deskos-fonts.conf" {
+			continue
+		}
+		if strings.Contains(f.Content, "antialias") || strings.Contains(f.Content, "rgba") ||
+			strings.Contains(f.Content, "lcdfilter") {
+			t.Errorf("fontconfig file writes undeclared settings:\n%s", f.Content)
+		}
+		if !strings.Contains(f.Content, "hintfull") {
+			t.Errorf("fontconfig file lacks the hinting it was given:\n%s", f.Content)
+		}
+	}
+}
+
 func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 	// The lock list is a schema enum: a setting that lowers but is missing from it
 	// cannot be locked, which is how the two greeter fields shipped without one.
@@ -423,6 +492,7 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"login.showUserList", "    login:\n      showUserList: false\n"},
 		{"shell.developmentTools", "    shell:\n      developmentTools: false\n"},
 		{"appearance.lockShield", "    appearance:\n      lockShield: shield.svg\n"},
+		{"appearance.fonts.hinting", "    appearance:\n      fonts:\n        hinting: slight\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",

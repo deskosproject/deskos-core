@@ -1,0 +1,26 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-fonts
+spec:
+  # The families an office document expects, plus the ones the desktop draws with.
+  #
+  # The Microsoft families cannot be shipped: Georgia, Calibri, Cambria, Arial and
+  # Times New Roman are proprietary. These are the metric-compatible replacements,
+  # which fontconfig substitutes by family name (30-metric-aliases.conf), so a
+  # document keeps its line breaks without the proprietary file:
+  #
+  #   Calibri -> Carlito, Cambria -> Caladea, Arial/Times/Courier -> Liberation.
+  #
+  # Georgia's replacement, Gelasio, is not packaged for EL10 and a font cannot be
+  # placed with BinaryArtifact today, which only writes under /usr/local/bin.
+  packages:
+    - liberation-fonts
+    - dejavu-sans-fonts
+    - dejavu-serif-fonts
+    - dejavu-sans-mono-fonts
+    - google-carlito-fonts
+    - google-crosextra-caladea-fonts
+    - google-noto-sans-fonts
+    - google-noto-serif-fonts
+    - google-noto-sans-mono-fonts

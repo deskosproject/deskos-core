@@ -100,6 +100,39 @@
     ],
     "packages": [
       {
+        "name": "dejavu-sans-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "dejavu-sans-mono-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "dejavu-serif-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "flatpak",
         "provenance": [
           {
@@ -139,6 +172,72 @@
             "profile": "rhel-family",
             "layer": "foundation",
             "source": "resources/system/rhel-family-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-carlito-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-crosextra-caladea-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-noto-sans-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-noto-sans-mono-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "google-noto-serif-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "liberation-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
           }
         ]
       },

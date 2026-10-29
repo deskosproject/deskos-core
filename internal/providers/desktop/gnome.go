@@ -47,6 +47,10 @@ const (
 	KeyFontInterface   = "appearance.fonts.interface"
 	KeyFontDocument    = "appearance.fonts.document"
 	KeyFontMonospace   = "appearance.fonts.monospace"
+	KeyFontAA          = "appearance.fonts.antialiasing"
+	KeyFontHinting     = "appearance.fonts.hinting"
+	KeyFontRGBA        = "appearance.fonts.rgbaOrder"
+	KeyFontLCD         = "appearance.fonts.lcdfilter"
 	KeyIconTheme       = "appearance.iconTheme"
 	KeyCursorTheme     = "appearance.cursorTheme"
 	KeyColorScheme     = "appearance.colorScheme"
@@ -110,10 +114,20 @@ const KeyExtensions = "shell.extensions"
 // powerButtonActions are the values GNOME's power plugin accepts.
 var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactive"}
 
+// fontEnum are the values fontconfig and Xsettings understand for each rendering
+// setting.
+var fontEnum = map[string][]string{
+	KeyFontAA:      {"none", "grayscale", "rgba"},
+	KeyFontHinting: {"none", "slight", "medium", "full"},
+	KeyFontRGBA:    {"rgb", "bgr", "vrgb", "vbgr"},
+	KeyFontLCD:     {"none", "default", "light", "legacy"},
+}
+
 var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
 	KeyLockShield:    true,
-	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true, KeyIconTheme: true,
+	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true,
+	KeyFontAA: true, KeyFontHinting: true, KeyFontRGBA: true, KeyFontLCD: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
 	KeyDimBrightness: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
@@ -234,6 +248,12 @@ type Fonts struct {
 	Interface *Font `json:"interface,omitempty"`
 	Document  *Font `json:"document,omitempty"`
 	Monospace *Font `json:"monospace,omitempty"`
+	// Rendering, applied by fontconfig to every application and mirrored in the
+	// Xsettings keys X11 applications read.
+	Antialiasing string `json:"antialiasing,omitempty"`
+	Hinting      string `json:"hinting,omitempty"`
+	RGBAOrder    string `json:"rgbaOrder,omitempty"`
+	LCDFilter    string `json:"lcdfilter,omitempty"`
 }
 
 type Font struct {
@@ -473,6 +493,19 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			}
 		}
 		if f := a.Fonts; f != nil {
+			for key, v := range map[string]string{
+				KeyFontAA: f.Antialiasing, KeyFontHinting: f.Hinting,
+				KeyFontRGBA: f.RGBAOrder, KeyFontLCD: f.LCDFilter,
+			} {
+				if v == "" {
+					continue
+				}
+				if !slices.Contains(fontEnum[key], v) {
+					bad("%s: expected %s, got %q", key, strings.Join(fontEnum[key], ", "), v)
+					continue
+				}
+				set(key, v, v)
+			}
 			for key, font := range map[string]*Font{KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace} {
 				if font == nil {
 					continue

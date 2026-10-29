@@ -6,6 +6,10 @@ spec:
   layer: foundation
   description: DeskOS's own GNOME defaults (session timeout and lock, software updates), for workstations whose platform ships a desktop DeskOS can write to.
   resources:
+    # The office and desktop font families travel with the desktop, not with the
+    # core: a server platform has no use for them.
+    - kind: PackageSet
+      name: deskos-fonts
     - kind: GnomeProfile
       name: deskos-core
     # Tray icons, on every workstation: Fedora delivers Fedora's package, EL10 the

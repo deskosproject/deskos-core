@@ -31,12 +31,19 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'cockpit' \
         'cockpit-machines' \
         'code' \
+        'dejavu-sans-fonts' \
+        'dejavu-sans-mono-fonts' \
+        'dejavu-serif-fonts' \
         'flatpak' \
         'git' \
+        'google-carlito-fonts' \
         'google-chrome-stable' \
+        'google-crosextra-caladea-fonts' \
         'google-noto-sans-fonts' \
         'google-noto-sans-mono-fonts' \
+        'google-noto-serif-fonts' \
         'kubectl' \
+        'liberation-fonts' \
         'libvirt' \
         'plymouth' \
         'plymouth-scripts' \

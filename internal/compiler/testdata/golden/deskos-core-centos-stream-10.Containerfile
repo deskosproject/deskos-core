@@ -22,7 +22,16 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'dejavu-sans-fonts' \
+        'dejavu-sans-mono-fonts' \
+        'dejavu-serif-fonts' \
         'flatpak' \
+        'google-carlito-fonts' \
+        'google-crosextra-caladea-fonts' \
+        'google-noto-sans-fonts' \
+        'google-noto-sans-mono-fonts' \
+        'google-noto-serif-fonts' \
+        'liberation-fonts' \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
