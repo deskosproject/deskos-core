@@ -656,6 +656,64 @@ class PlanBinariesTest(unittest.TestCase):
         self.assertTrue(all(c["pass"] for c in checks))
 
 
+class PlanFontsTest(unittest.TestCase):
+    def plan(self):
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["dconf"]["defaults"] += [
+            {"key": "/org/gnome/desktop/interface/font-name", "type": "s",
+             "value": "'Noto Sans 11'", "setting": "appearance.fonts.interface"},
+            {"key": "/org/gnome/Ptyxis/font-name", "type": "s",
+             "value": "'DejaVu Sans Mono 11'", "setting": "appearance.fonts.terminal"},
+        ]
+        return plan
+
+    def family_check(self, values, family, plan=None):
+        plan = plan or self.plan()
+        name = f"font family {family} is installed"
+        return next(c for c in sc.evaluate(values, plan) if c["check"] == name)
+
+    def test_a_family_a_profile_names_must_be_installed(self):
+        # The plan names a family; fontconfig, which is what an application asks,
+        # has to carry one by that name. Composition cannot know what a package
+        # installs, so this read is what turns a typo into a failure.
+        values = dict(GOOD, font_families="DejaVu Sans Mono|Noto Sans|Red Hat Text")
+        c = self.family_check(values, "Noto Sans")
+        self.assertTrue(c["pass"])
+        self.assertIn("declared by appearance.fonts.interface", c["detail"])
+        self.assertIn("3 families fontconfig carries", c["detail"])
+        t = self.family_check(values, "DejaVu Sans Mono")
+        self.assertTrue(t["pass"])
+        self.assertIn("appearance.fonts.terminal", t["detail"])
+
+    def test_a_family_the_image_does_not_carry_fails(self):
+        # Noto Sanss is a typo, and it would fall back silently on the machine.
+        values = dict(GOOD, font_families="DejaVu Sans Mono|Noto Sans Mono")
+        c = self.family_check(values, "Noto Sans")
+        self.assertFalse(c["pass"])
+        self.assertIn("not among the 2 families", c["detail"])
+
+    def test_the_family_list_is_case_insensitive(self):
+        values = dict(GOOD, font_families="noto sans|dejavu sans mono")
+        self.assertTrue(self.family_check(values, "Noto Sans")["pass"])
+
+    def test_a_list_that_could_not_be_read_is_not_a_difference(self):
+        # No read is not a family that differs: the checker reports the read that
+        # did not happen and does not attribute a missing font to the image.
+        c = self.family_check(GOOD, "Noto Sans")
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertIn("could not be read here", c["detail"])
+        self.assertEqual(c["unread"], ["the family list"])
+
+    def test_a_size_with_decimals_does_not_hide_the_family(self):
+        plan = self.plan()
+        plan["artifact"]["dconf"]["defaults"][-1]["value"] = "'DejaVu Sans Mono 11.5'"
+        self.assertEqual([f["family"] for f in sc.plan_font_families(plan)],
+                         ["Noto Sans", "DejaVu Sans Mono"])
+        # Only the font settings are read: the wallpaper is a string too.
+        self.assertEqual(len(sc.plan_font_families(PLAN)), 0)
+
+
 class PlanDefaultsTest(unittest.TestCase):
     def test_the_plan_is_the_list_of_defaults(self):
         # What is asserted comes from the plan, not from a constant in the checker.
