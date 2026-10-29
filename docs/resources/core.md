@@ -83,13 +83,13 @@ redistribution constraints. DeskOS ships `centos-stream-10` and `rhel-10` in
 | `displayManager`, `removePackages`, `unavailablePackages[]` | `*.service`; package names; `{name, reason}` | no |
 | `gnome.dconfDatabase` / `gnome.keepsVendorDefaults` | name; boolean | one of the two |
 | `gnome.loginScreen`, `gnome.loginScreenDatabase`, `gnome.appFolders`, `gnome.enabledExtensions`, `gnome.extensions[]`, `gnome.appLauncher` | boolean; name; boolean; string list; `{name, uuid, package}` or `{name, uuid, source{version, url, sha256}}`; `{package, command}` | `appLauncher` yes |
-| `boot.splashKernelArgument`, `.quietKernelArgument`, `.plymouthPackages`, `.plymouthDracutModule`, `.spinnerFrames`, `updates.imageUpdateUnits`, `flatpak.package`, `flatpak.preinstall` | kernel arguments; package names; module; `{package, imageDir}`; `*.service`, `*.timer`; package name; boolean | yes |
+| `boot.splashKernelArgument`, `.quietKernelArgument`, `.plymouthPackages`, `.plymouthDracutModule`, `.spinnerFrames`, `updates.imageUpdateUnits`, `flatpak.package`, `flatpak.preinstall` | kernel arguments; package names; module; `{package, imageDir}`; `*.service`, `*.timer`; package name; boolean | arguments, plymouth, `updates`, `preinstall` yes |
 | `trust.anchorsDir`, `.blocklistDir`, `.updateCommand`, `iconCache.package`, `.command`, `downloads.baseFetches`, `.package` | `/etc/...`; command; package name; command; boolean; package name | anchors, command, `iconCache`, `baseFetches` yes |
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
 platform, `members` (its metapackage names) for a deb one. `rpmFiles`,
 `RpmRepository` and `AptRepository` are each one manager's; a platform whose
-manager is not that one fails at compile time.
+manager is not that one fails at compile time when one is requested.
 
 **A package or tool name belongs to a platform, never to Core**: `flatpak.package`,
 `trust.updateCommand`, `iconCache.package` with `iconCache.command`. A platform that

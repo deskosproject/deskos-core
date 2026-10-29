@@ -191,8 +191,10 @@ exact `at` allows five minutes. A missed window is never caught up.
 Core sets image updates daily on AC power; system Flatpak updates are the EL
 family's policy. `automatic: false` keeps the platform updater masked and
 schedules nothing; no image intent keeps the platform's rebooting timer. Masks
-live in `/etc`, so a local unmask survives updates. **Not supported:** metered
-networks, and a catch-up run when AC returns. Checked with
+live in `/etc`, so a local unmask survives updates. A staging run skipped on
+battery is not lost: a generated udev rule starts the same service when AC comes
+online, and `ConditionACPower` still decides, so a battery-only event does nothing.
+**Not supported:** metered networks. Checked with
 `systemd-analyze verify` and on a CentOS Stream 10 VM: the update staged with the
 same boot ID, a reboot booted it with rollback intact, the bootc timer stayed
 masked, and the Flatpak update succeeded. Not checked: RHEL 10, battery. The
