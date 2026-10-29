@@ -104,6 +104,28 @@ The configuration above exists to remove those lines. With it, Anaconda asks for
 the disk, the partitioning and LUKS. Dropping it does not make the installer
 friendlier, it makes it unattended and destructive.
 
+### A private registry
+
+`bootc-image-builder` records the reference the ISO was built from and nothing
+else: **no credentials**. The ISO embeds the image, so installing does not contact
+the registry; the first `bootc upgrade` does.
+
+The installed machine reads `/etc/ostree/auth.json`, in the containers auth format
+and mode `0600`. `/run/ostree/auth.json` works for one boot:
+
+```json
+{ "auths": { "registry.example.com": { "auth": "<base64 of user:token>" } } }
+```
+
+`printf '%s' 'user:token' | base64` produces the value, and the token needs pull
+only. For `ghcr.io` the user is a GitHub account and the token a personal access
+token with `read:packages`.
+
+Deliver the file from provisioning: configuration management, cloud-init, or a
+kickstart `%post`. RHEL's own guide warns that a kickstart carrying credentials
+exposes them to anyone with the ISO, so keep the token scoped to pull and rotate
+it. Never bake it into the image.
+
 ### 3. Build the ISO
 
 ```bash
