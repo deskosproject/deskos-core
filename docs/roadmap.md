@@ -219,6 +219,25 @@ one PR per group, each with its check.
 
 ## Later
 
+- **Retire the v1 repositories from the organization (proposed 2026-10-29).**
+  `deskosproject` lists about 120 repositories. Eight are current: core,
+  infrastructure, site, ubuntu, ubuntu-bootc, brand and the two templates. The rest
+  is the 2016-2018 RPM packaging of the first attempt. They are noise in the
+  organization list and in search, and none should be deleted: that history is the
+  record of how the project got here.
+
+  Plan: create `deskosproject-archive`, transfer every repository whose last push is
+  before 2019 (the `*-rpm` set, the packager, livemedia and the old website),
+  archive each one there so it is read-only, and set its description to point at
+  the current project. GitHub redirects the old URLs, so links in old issues and
+  posts keep working. Check before transferring anything that publishes a container
+  image or a Pages site: package names follow the repository, and a Pages URL does
+  not redirect.
+
+  Acceptance: `deskosproject` lists only current repositories; the archived ones
+  stay readable and clonable with their tags and releases; a sample of old links
+  resolves.
+
 - Lockfiles for binary artifacts and base digests, once release experience shows
   which inputs need them.
 - `deskosctl track` resolves pins, verifies the SHA-256 and with `--fresh` reports
