@@ -15,8 +15,12 @@
 
 DeskOS compiles a workstation from text. You describe the machine (applications,
 desktop settings, branding, update policy) in YAML resources, and DeskOS produces
-a bootable Linux image. The image is built, scanned, booted and, on CentOS Stream
-10, signed and published.
+a bootable Linux image.
+
+**DeskOS is not a distribution you consume.** The published CentOS Stream 10 image
+exists so you can try it today. The product is your own golden image, built from
+your resources, installed with an ISO you make yourself. Two template repositories
+do that with a fork and one workflow.
 
 A workstation is one file:
 
@@ -42,10 +46,39 @@ resulting plan records where every value came from.
   </picture>
 </p>
 
-## Try it
+## Build your own golden image
 
-The published image is `quay.io/deskos/deskos-core-centos-stream-10`. On a machine
-that already runs bootc:
+Start from a template, not from our image:
+
+| Template | What it is |
+|---|---|
+| [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | **Use this template**, edit four YAML files, and one workflow builds your image on a GitHub-hosted runner and pushes it to `ghcr.io`. Public by default. |
+| [`deskos-template-rhel10`](https://github.com/deskosproject/deskos-template-rhel10) | The same for RHEL 10, on **your** entitled RHEL runner, into **your** private registry. Fork it privately. |
+
+Both templates stop at the container image: you pull it and build the ISO with
+`bootc-image-builder`, because where an ISO lives and who signs it are your
+decisions. [Installing DeskOS](docs/install.md#option-2-build-your-own-then-install-it)
+has the full command.
+
+If you prefer to run the compiler here, the same three commands work:
+
+```bash
+./bin/deskosctl validate ./examples/centos-stream-10
+./bin/deskosctl render ./examples/centos-stream-10 \
+    --workstation example-centos-stream-10 --output ./dist/centos
+sudo podman build -t localhost/deskos-centos:test ./dist/centos
+```
+
+`deskosctl` is a single binary from
+[Releases](https://github.com/deskosproject/deskos-core/releases), with no Go
+toolchain needed. Every resource kind, with an example, is in
+[resources.md](docs/resources.md).
+
+## Try the published image
+
+For an evaluation, not for a fleet. The image is
+`quay.io/deskos/deskos-core-centos-stream-10`. On a machine that already runs
+bootc:
 
 ```bash
 sudo bootc switch quay.io/deskos/deskos-core-centos-stream-10:stable
@@ -87,21 +120,6 @@ digest, and summarised at [deskos.org/evidence](https://deskos.org/evidence/).
 
 The full matrix, with what is and is not verified on each platform, is
 [platforms.md](docs/platforms.md).
-
-## Build your own
-
-```bash
-./bin/deskosctl validate ./examples/centos-stream-10
-./bin/deskosctl render ./examples/centos-stream-10 \
-    --workstation example-centos-stream-10 --output ./dist/centos
-sudo podman build -t localhost/deskos-centos:test ./dist/centos
-```
-
-Then write a disk from it, or push it to a registry your machines can reach, as
-[Installing DeskOS](docs/install.md) describes. `deskosctl` is a single binary
-from [Releases](https://github.com/deskosproject/deskos-core/releases), with no Go
-toolchain needed. Every resource kind, with an example, is in
-[resources.md](docs/resources.md).
 
 ## What DeskOS is not
 
