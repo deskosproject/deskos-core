@@ -209,6 +209,30 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 	}
 
+	if v, ok := get(KeyShowUserList); ok {
+		if !pl.Gnome.LoginScreen {
+			l.errs.Add(fmt.Errorf("%s does not provide a GDM login screen that reads the DeskOS dconf database; %s cannot be applied\n  set by: %s",
+				c.Platform.ID(), KeyShowUserList, describe(v.Provenance)))
+		} else {
+			l.set(KeyShowUserList, "/org/gnome/login-screen/disable-user-list", "b",
+				strconv.FormatBool(!v.Value.(bool)), v.Provenance)
+		}
+	}
+
+	if v, ok := get(KeyBanner); ok {
+		if !pl.Gnome.LoginScreen {
+			l.errs.Add(fmt.Errorf("%s does not provide a GDM login screen that reads the DeskOS dconf database; %s cannot be applied\n  set by: %s",
+				c.Platform.ID(), KeyBanner, describe(v.Provenance)))
+		} else {
+			text := v.Value.(string)
+			l.set(KeyBanner, "/org/gnome/login-screen/banner-message-enable", "b",
+				strconv.FormatBool(text != ""), v.Provenance)
+			if text != "" {
+				l.set(KeyBanner, "/org/gnome/login-screen/banner-message-text", "s", gvString(text), v.Provenance)
+			}
+		}
+	}
+
 	for key, gkey := range map[string]string{
 		KeyFontInterface: "font-name",
 		KeyFontDocument:  "document-font-name",

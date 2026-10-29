@@ -16,6 +16,7 @@ item needs when no field exists is in [GNOME coverage](../gnome-coverage.md).
 | `appearance.fonts.interface`, `.document`, `.monospace`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}` | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
+| `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
 | `session.idle.blankAfter`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
 
 ```yaml
@@ -82,6 +83,17 @@ Set the boolean, then list `lockdown.<field>` under `locks`. `disableLockScreen`
 weakens security: use it only when another mechanism locks the session. Online
 accounts and repartitioning are not here: one is per-provider configuration, the
 other a polkit/udisks policy.
+
+### Greeter
+
+The user list and the text banner on the login screen. Both need a platform that
+declares `gnome.loginScreen`: the keys go to the database the greeter reads, and a
+platform without one fails composition with that reason (invariant 9).
+
+| Field | Effect |
+|---|---|
+| `login.showUserList` | `false` hides the list, so people type their name; the key is written either way |
+| `login.banner` | the message above the prompt; an empty string turns it off, and leaving the field out changes nothing. GNOME folds a long message into two columns and cannot read it from a file |
 
 ## `Theme`
 
