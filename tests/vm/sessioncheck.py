@@ -746,6 +746,7 @@ except Exception as exc:  # an image without the desktop, or without the binding
 # A declared favorite that needs no network and starts in one window; PROCESS is
 # the name its Exec launches, used only to clean up.
 TARGET = "org.gnome.Calculator.desktop"
+# pkill -x takes the 15-character comm, not the 21-character command name.
 PROCESS = "gnome-calculator"
 WINDOW_ROLES = (pyatspi.ROLE_FRAME, pyatspi.ROLE_WINDOW, pyatspi.ROLE_DIALOG)
 
@@ -840,7 +841,7 @@ else:
 
 # 3. Leave the desktop as it was found: the close *through the tree* is the fourth
 #    scenario, not this one, so the application is terminated, not clicked shut.
-subprocess.run(["pkill", "-x", PROCESS], stdout=subprocess.DEVNULL,
+subprocess.run(["pkill", "-f", "/usr/bin/" + PROCESS], stdout=subprocess.DEVNULL,
                stderr=subprocess.DEVNULL)
 deadline = time.time() + 10
 gone = False
