@@ -1,8 +1,8 @@
 # Platforms
 
 The canonical status of every platform DeskOS compiles onto, and how to get a
-machine from each **today**. Every other page links here instead of repeating a
-matrix; when a platform changes, this is the one table to edit.
+machine from each **today**. When a platform changes, this is the one table to
+edit.
 
 DeskOS compiles the same Core intent onto a platform's own bootc base
 ([ADR 0004](adr/0004-core-is-platform-independent.md)). A platform whose vendor
@@ -18,11 +18,10 @@ Ubuntu 26.04 is that case, and it is built and published in a repository of its 
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
 
-`(vendor)` in the table means the base is the platform's own supplier's: Red Hat
-for RHEL, the CentOS project for CentOS Stream. The distinction matters beyond
-the base: the desktop a session starts with is the vendor's on a platform that
-declares `gnome.keepsVendorDefaults`, and DeskOS's own where it does not
-(ADR 0016).
+`(vendor)` means the platform's own supplier's base: Red Hat for RHEL, the CentOS
+project for CentOS Stream. The desktop a session starts with is the vendor's on a
+platform that declares `gnome.keepsVendorDefaults`, and DeskOS's own where it does
+not (ADR 0016).
 
 "Composes and renders" means the workstation compiles to a deterministic plan
 and build context. It does **not** mean the image builds or boots — that is the
@@ -40,11 +39,11 @@ weekly example workflow. To build one locally or re-promote it, see
 ### CentOS Stream 10 — pull the image, then install
 
 The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as
-`:latest` and `:<commit>` by the weekly gate, with its digest
-and the run in [architecture.md](architecture.md#validation-status). A preview
-ISO built from a published image is at <https://download.deskos.org/>; verify its
-checksum. Or make a QCOW2 (or an Anaconda ISO) from the image with
-`bootc-image-builder`: [install.md](install.md#install-a-published-image).
+`:latest` and `:<commit>` by the weekly gate, with its digest and the run in
+[architecture.md](architecture.md#validation-status). A preview ISO built from a
+published image is at <https://download.deskos.org/>; verify its checksum. Or make
+a QCOW2 (or an Anaconda ISO) with `bootc-image-builder`:
+[install.md](install.md#install-a-published-image).
 
 ### RHEL 10 — build privately, never publish
 
@@ -55,12 +54,11 @@ and keeps it inside the organization; the RHEL EULA forbids redistributing it.
 ### Ubuntu 26.04 — built and published in its own repository
 
 Ubuntu has no bootc base from its vendor, so the project owns one, and both the
-base and the workstation that builds on it live in a repository of their own:
+base and the workstation live in a repository of their own:
 [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
-on base `deskosproject/deskos-ubuntu-bootc`. That repository documents how to
-build it, how to write a disk with `bootc install to-disk` — there is no Anaconda
-path on this platform — and what is worth testing
-([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
+on base `deskosproject/deskos-ubuntu-bootc`. It documents how to build it, how to
+write a disk with `bootc install to-disk` — there is no Anaconda path here — and
+what is worth testing ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
 This repository still **composes and renders** a Debian-family workstation, and
 its tests say so. It no longer builds, boots or publishes one: the virtual
@@ -88,8 +86,8 @@ vendor's lifecycle dates do not become DeskOS dates.
   reinstall, not an upgrade; the image reference is the boundary.
 - **Losing a maintainer or a vendor base:** the platform stops being maintained.
   It moves to an example root or is removed; it does not silently keep the
-  "published" status. A new maintainer or base re-enters through the
-  re-promotion steps below.
+  "published" status. A new maintainer or base re-enters through the re-promotion
+  steps in [example-platforms.md](example-platforms.md).
 - **Consumer notice:** a status change lands in this file and in the release
   notes. There is no telemetry and no automatic fleet action; a machine changes
   only when its update reference or its deployment changes.

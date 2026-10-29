@@ -1,11 +1,10 @@
 # Threat model and publication authority
 
 **Status: reviewed and merged 2026-10-24; priority-1 remediation and the
-tabletop are open.** This page separates what the repository shows from what
-only GitHub or an operator can confirm. It records no secret values and changes
-no infrastructure; every remediation that touches credentials, runners,
-registries or branch protection needs its own approval (AGENTS.md, "Requires
-maintainer approval").
+tabletop are open.** This page separates what the repository shows from what only
+GitHub or an operator can confirm. It records no secret values and changes no
+infrastructure; every remediation touching credentials, runners, registries or
+branch protection needs its own approval (AGENTS.md).
 
 ## Assets
 
@@ -76,28 +75,37 @@ now pinned by commit; an organization's are not yet.
 ## Tabletop
 
 **Run 2026-10-28.** Participants: the maintainer (deciding) and the agent
-(facilitating), in one session; the decisions below are the maintainer's,
-recorded the same day. The scenarios stay as the procedure for the next run.
-
-A serious finding or a compromised input reaches the release owner. Walk one of
+(facilitating), in one session; the decisions below are the maintainer's. A
+serious finding or a compromised input reaches the release owner: walk one of
 these, record the date, the digests and the decisions, and do not publish a
 recovery until a human authorizes it.
 
 ### What the exercise decided
 
-- **A — compromised upstream base.** Freeze publication by setting the repository
-  variable `PUBLISH_FREEZE`, with a sentence saying why: the gate, the installer,
-  the promotion and the mirror stop, and `:stable` keeps serving the last good
-  digest. Announce the affected digest, re-pin or wait for the vendor's rebuild,
-  then rebuild, scan, boot and publish a new digest. Machines that already staged
-  the old one keep it; there is no remote switch, and the advisory says so.
+- **A — compromised upstream base.** Set the repository variable `PUBLISH_FREEZE`,
+  with a sentence saying why: the gate, the installer, the promotion and the mirror
+  stop, and `:stable` keeps serving the last good digest. Re-pin to a known-good
+  earlier digest or wait for the vendor's rebuild, then rebuild, scan, boot and
+  publish a new digest. Machines that already staged the old one keep it unless the
+  user rolls back; there is no remote switch, and the advisory says so.
+- **B — compromised workflow or action.** Disable the affected workflow, rotate
+  tokens and the signing key as appropriate, and audit its recent runs and
+  artifacts. Signatures already issued under the old identity remain valid, which
+  is why the advisory names the affected digests rather than trusting deletion.
 - **C — compromised signing identity.** Rotate the quay robot, disable the
   workflow, and publish an advisory that **names the affected digests**: deleting
   a signature revokes nothing, and a new signature over an old digest is not a
-  fix — publish a new digest.
+  fix. Core's keyless certificate is short-lived but a signature it made remains
+  verifiable; an organization's public key is in the repository, so rotation means
+  a new key and telling verifiers.
+- **D — compromised registry.** Freeze pushes, verify the served digests against
+  the recorded `digest.txt`/`image.txt` and signatures, and restore from a trusted
+  push. Consumers may have cached or staged images; deleting a tag does not revoke
+  them.
 - **E — compromised maintainer account.** Revoke sessions and tokens, review the
-  merges, dispatches and releases in the window, and treat every image published
-  in it as suspect until rebuilt from a trusted commit.
+  merges, dispatches and releases in the window, and treat every image published in
+  it as suspect until rebuilt from a trusted commit. Branch protection and a second
+  approval reduce, but do not remove, this risk.
 
 ### What the exercise found
 
@@ -109,33 +117,6 @@ recovery until a human authorizes it.
   depends on that account being intact, and there is no second maintainer to do
   it. Accepted at this scale, named here, revisited when a second maintainer
   joins.
-
-**A. Compromised upstream base.** Stop promoting `latest` and announce that the
-affected digest is frozen. Re-pin to a known-good earlier digest or wait for the
-vendor's rebuild; rebuild, scan, boot and publish a new digest. Machines that
-already staged the old one keep it unless the user rolls back; there is no
-remote switch.
-
-**B. Compromised workflow or action.** Disable the affected workflow, rotate
-tokens and the signing key as appropriate, and audit its recent runs and
-artifacts. Signatures already issued under the old identity remain valid, which
-is why the advisory names the affected digests rather than trusting deletion.
-
-**C. Compromised signing identity.** Core's keyless certificate is short-lived,
-but a signature it made remains verifiable; an organization's public key is in the
-repository, so rotation means publishing a new key and telling verifiers. A new
-signature over the old digest is not a fix; publish a new digest and a new
-advisory.
-
-**D. Compromised registry.** Freeze pushes, verify the served digests against
-the recorded `digest.txt`/`image.txt` and signatures, and restore the registry
-from a trusted push. Consumers may have cached or staged images; deleting a tag
-does not revoke them.
-
-**E. Compromised maintainer account.** Revoke sessions and tokens, review recent
-merges, dispatches and releases, and treat any image published in the window as
-suspect until rebuilt from a trusted commit. Branch protection and a second
-approval reduce, but do not remove, this risk.
 
 **Deleting a tag or a signature does not revoke an image.** Registries and
 machines cache by digest; signatures can be copied; a transparency log is
