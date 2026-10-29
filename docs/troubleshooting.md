@@ -19,13 +19,13 @@ sudo deskos update --apply
 
 ## "No update available" right after a release
 
-The timer (`update-policy`) may have applied it already; it waits for a reboot:
+The timer may have applied it already; it waits for a reboot:
 
 ```bash
 sudo bootc status
 ```
 
-`Booted image` names the digest; if it is older than the published one:
+`Booted image` names the digest. If it is older than the published one:
 
 ```bash
 sudo deskos update --apply
@@ -52,8 +52,8 @@ systemctl status deskos-flatpak-preinstall.service
 journalctl -u deskos-flatpak-preinstall.service -b
 ```
 
-The unit refreshes the appstream data and installs the declared Flatpaks, and
-retries on failure; a stale Flathub summary is the usual cause:
+The unit refreshes the appstream data, installs the declared Flatpaks and retries
+on failure. A stale Flathub summary is the usual cause:
 
 ```bash
 sudo flatpak update --appstream
@@ -105,21 +105,19 @@ Declared favorites are part of the image; a store application is not:
 flatpak list --system --app
 ```
 
-Install it from Bazaar or with `flatpak install`; one that must exist before
+Install it from Bazaar or with `flatpak install`. One that must exist before
 login, or for every user, belongs in the image.
 
 ## An AD-joined machine cannot log in
 
-The join can succeed and still no account can log in. Three things cause it, in
-this order:
+Three things cause it, in this order:
 
 1. **The machine is not using the realm's DNS.** An AD client finds its domain
-   controller through DNS; if `/etc/resolv.conf` points somewhere else, the join
-   may fail with `Insufficient permissions` or the domain stays offline.
-   `resolvectl status` or NetworkManager must show the realm's resolver.
+   controller through DNS; if `/etc/resolv.conf` points elsewhere, the join fails
+   or the domain stays offline. `resolvectl status` must show the realm's resolver.
 
-2. **`realm join` leaves `access_provider = ad` with no rule, and that denies
-   everyone.** `getent passwd user@domain` resolves and `sssctl user-checks`
+2. **`realm join` leaves `access_provider = ad` with no rule, which denies
+   everyone.** `getent passwd user@domain` resolves, and `sssctl user-checks`
    answers `pam_acct_mgmt: Permission denied`. Admit accounts explicitly:
 
    ```bash
@@ -127,8 +125,8 @@ this order:
    ```
 
 3. **`sssd` started before the machine knew the realm.** It comes up marked
-   offline and does not discover the controller again on its own. Restart it
-   after the network is configured:
+   offline and does not rediscover the controller. Restart it after the network is
+   configured:
 
    ```bash
    sudo systemctl restart sssd

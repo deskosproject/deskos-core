@@ -3,27 +3,22 @@
 **Status: accepted, 2026-10-26.** The installer tree **floats**, and
 `installer-test.yml` is the guard: it installs the test-only ISO unattended and
 fails if Anaconda does not reach "Install finished". The pinned image is the
-installed system; the ISO is the delivery vehicle. This is a smaller promise
-than pinning, and it is the one we can keep today.
-
-The ISO is a delivery vehicle. What gets installed is an image digest; the
-installer decides how that image reaches a disk and what a person is asked on
-the way. That asymmetry is the whole question: pinning the image does not pin
-the installer, and today the installer floats.
+installed system; the ISO is delivery only, a smaller promise than pinning, and
+the one we can keep today.
 
 ## What floats
 
 - **Anaconda and lorax**, pulled from the distribution repositories when
-  `bootc-image-builder` builds the ISO. They are not covered by the image pin.
+  `bootc-image-builder` builds the ISO, outside the image pin.
 - **The kickstart** is ours, and it is versioned with the image.
 - **The payload image** is pinned: `bootc-image-builder` installs the digest the
   plan names, not `:latest`.
 
-So a rebuild days later can ship the same image with a different installer, and
-the same kickstart can behave differently. That is not hypothetical: a kickstart
-with `graphical --non-interactive` installed on one RHEL 10.2 build and aborted
-on another at the progress spoke (`User interaction required on standalone spoke
-ProgressSpoke`), then rebooted — which reads as a hardware failure to the person
+A rebuild days later can ship the same image with a different installer, and the
+same kickstart can behave differently. A kickstart with `graphical
+--non-interactive` installed on one RHEL 10.2 build and aborted on another at the
+progress spoke (`User interaction required on standalone spoke
+ProgressSpoke`), then rebooted, which reads as a hardware failure to the person
 holding the laptop.
 
 ## Options
@@ -38,23 +33,20 @@ holding the laptop.
 
 Record that it floats, and make the guard explicit:
 
-1. the test-only ISO installs unattended in CI (`installer-test.yml`), which is
-   the check that would have caught the ProgressSpoke abort;
+1. the test-only ISO installs unattended in CI (`installer-test.yml`), the check
+   that would have caught the ProgressSpoke abort;
 2. the ISO's README and the release note say the installer tree floats, so a
-   difference between two builds of the same image is expected rather than
-   surprising;
-3. revisit the vendored-installer option if a second installer regression
-   reaches a person.
+   difference between two builds of the same image is expected, not surprising;
+3. revisit the vendored-installer option if a second installer regression arrives.
 
-This is a smaller promise than pinning: the **installed system** is the digest we
-tested, and the **installer** is whatever the vendor shipped that day, checked by
-an unattended install.
+The **installed system** is the digest we tested; the **installer** is whatever
+the vendor shipped that day, checked by an unattended install.
 
 ## What this does not decide
 
 - Whether an organization's RHEL ISO follows the same rule. Its entitlement and
   mirroring are the organization's, not Core's.
-- Whether `installer-test.yml` becomes a gate. It takes about 45 minutes and
-  needs KVM; today it is dispatch-only.
+- Whether `installer-test.yml` becomes a weekly check. It takes about 45 minutes
+  and needs KVM; today it is dispatch-only.
 - Whether the published, interactive ISO is ever installed by a check. Its
   storage is interactive, so only a person completes it.

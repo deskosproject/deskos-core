@@ -1,10 +1,7 @@
 # Examples
 
-Seven resource roots, each one a thing DeskOS can be asked to compile. None is a template
-to copy wholesale: each shows **one axis**, and all of them reference the profiles this
-repository ships *by name*, so they compose against the same Core a flavor would. The
-AlmaLinux and Fedora roots carry their own Platform resources: they are example platforms,
-not shipped platforms.
+Five resource roots, each a thing DeskOS can compile, each showing **one axis**.
+The AlmaLinux and Fedora roots carry their own example Platform resources.
 
 | Example | Shows |
 |---|---|
@@ -16,15 +13,11 @@ not shipped platforms.
 
 ## How the names work
 
-- **A directory is named after its platform**, spelled the way its Platform resource spells
-  it. One spelling per platform, everywhere: `centos-stream-10`, `rhel-10`, and the example
-  `almalinux-10` and `fedora-45` examples.
-- **The workstation inside is `example-<platform>`**, and a variant says what it adds
-  (`deskos-ubuntu-org-packages` is the one in the Ubuntu repository). The workstations this repository *ships* are
-  `deskos-core-<platform>` instead: those are the ones a reader is meant to take
-  ([resources/workstations/](../resources/workstations/)).
-- **`organization-and-role/` is the exception**, and keeps a name about composition because it
-  is not about one platform.
+- **A directory is named after its platform**, spelled as its Platform resource
+  spells it: `centos-stream-10`, `rhel-10`, `almalinux-10`, `fedora-45`.
+- **The workstation inside is `example-<platform>`**; shipped ones are
+  `deskos-core-<platform>` ([resources/workstations/](../resources/workstations/)).
+- **`organization-and-role/` is the exception**: its name is about composition.
 
 ## Running one
 
@@ -35,7 +28,7 @@ deskosctl render   ./examples/centos-stream-10 --workstation example-centos-stre
 ```
 
 `make check` validates every example and CI renders them. The weekly
-[`examples-weekly.yml`](../.github/workflows/examples-weekly.yml) builds and boots the
-example AlmaLinux and Fedora platforms without publishing. The CentOS example is the one
-the PR gate builds on a VM. See [docs/platforms.md](../docs/platforms.md) for the shipped
-platforms and [docs/example-platforms.md](../docs/example-platforms.md) for the examples.
+[`examples-weekly.yml`](../.github/workflows/examples-weekly.yml) builds and
+boots the AlmaLinux and Fedora examples without publishing. See
+[docs/platforms.md](../docs/platforms.md) and
+[docs/example-platforms.md](../docs/example-platforms.md).

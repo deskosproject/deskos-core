@@ -1,27 +1,26 @@
-# Lifecycle tests: A → B → A
+# Lifecycle tests: A to B to A
 
-The design is [`docs/design/lifecycle.md`](../../docs/design/lifecycle.md). Two
-registry spikes ran on 2026-10-23 and are recorded there; this directory holds
-the evaluator and the driver, and the driver is **not** wired into CI yet.
+The design is [docs/design/lifecycle.md](../../docs/design/lifecycle.md).
+`.github/workflows/lifecycle.yml` runs the driver weekly and on dispatch; no pull
+request runs it.
 
-## What exists
+## What is here
 
-- `driver.py` — installs a disk from a source image, boots it under QEMU, stages
-  B from a local registry, reboots into it, rolls back to A, and optionally
-  interrupts an upgrade with a power loss. `--boot-failure` stages a candidate
-  with no init, verifies it cannot boot, recovers the previous GRUB entry from
-  the host and boots A. It writes a `/var` marker, edits a file under `/etc`, and
-  B ships a different `/etc` file, so the run reports what survives each
-  transition; it keeps each boot's journal. Writes `lifecycle.json` and
-  `summary.md` in the work directory.
-- `lifecycle.py` — the boot sequence, a parser for serial marker blocks and a
+- `driver.py` installs a disk from a source image, boots it under QEMU, stages B
+  from a local registry, reboots into it, rolls back to A, and can interrupt an
+  upgrade with a power loss. `--boot-failure` stages a candidate with no init,
+  verifies it cannot boot, recovers the previous GRUB entry from the host and boots
+  A. It writes a `/var` marker and edits a file under `/etc`, and B ships a
+  different `/etc` file, so the run reports what survives each transition. Output:
+  `lifecycle.json` and `summary.md` in the work directory.
+- `lifecycle.py` holds the boot sequence, a parser for serial marker blocks, and a
   fail-closed evaluator: a missing block, a missing key, an unknown image, a lost
-  `/var` marker, a deployment that did not stage or a rollback that was not
-  queued all fail.
-- `test_lifecycle.py` and `test_driver.py` — unit tests for both; `ci.yml` runs
-  them with the other harness unit tests.
+  `/var` marker, a deployment that did not stage, or a rollback that was not queued
+  all fail.
+- `test_lifecycle.py` and `test_driver.py` are the unit tests; `ci.yml` runs them
+  with the other harness tests.
 
-## Run the unit tests
+## Unit tests
 
 ```bash
 python3 -m unittest discover -s tests/lifecycle
@@ -38,18 +37,3 @@ python3 tests/lifecycle/driver.py \
   --image quay.io/deskos/deskos-core-centos-stream-10@sha256:<digest> \
   --workdir /var/tmp/lifecycle --keep --boot-failure
 ```
-
-It builds two test images from `--image` (A and B; B adds one marker file), pushes
-them to a `registry:2` on `127.0.0.1:5000`, installs with `bootc install to-disk`
-against `10.0.2.2:5000`, and drives the guest over SSH. `--interrupt` adds the
-power-loss run; `--boot-failure` adds a candidate with no init and recovers the
-previous entry by mounting the disk and setting the GRUB default. Nothing is
-published and the source image is not modified.
-
-## What is deliberately absent
-
-- A workflow. The driver takes about 20 minutes and needs privileged podman;
-  the first runs are manual, and it becomes a gate only after it has been green
-  on real builds for a while.
-- Reference screenshots and the session check: this tier is about deployments,
-  not about the desktop.

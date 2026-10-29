@@ -1,8 +1,8 @@
 # Session E2E through accessibility
 
 **Status: scenario 1 implemented 2026-10-29 (run `40795106343`, both images);
-scenarios 2–4 designed.** Drive a GNOME session the way a person does, and fail the
-gate where a user would be stuck.
+scenarios 2-4 designed.** Drive a GNOME session the way a person does, and fail
+the VM check where a user would be stuck.
 
 ## What exists, and what it does not prove
 
@@ -20,14 +20,14 @@ correctly but ignores input would pass every step but the launch.
 
 ## The shape
 
-The same transport, a different script: the guest runs an **accessibility driver**
-inside the session, writes one JSON line per step to the serial port, and the host
-asserts on those lines plus QMP frames taken between steps.
+The guest runs an **accessibility driver** inside the session, writes one JSON
+line per step to the serial port, and the host asserts on those lines plus QMP
+frames taken between steps. The driver speaks **AT-SPI through
+`python3-pyatspi`**, which the published image already carries.
 
-The driver speaks **AT-SPI through `python3-pyatspi`**, which the published image
-already carries. Checked against the installed SBOM of `sha256:871e59cc…`:
-`at-spi2-core 2.56.1`, `at-spi2-atk 2.56.1`, `python3-pyatspi 2.46.1`, `gjs 1.80.2`
-and `gnome-shell 49.5`.
+Checked against the installed SBOM of `sha256:871e59cc…`: `at-spi2-core 2.56.1`,
+`at-spi2-atk 2.56.1`, `python3-pyatspi 2.46.1`, `gjs 1.80.2` and
+`gnome-shell 49.5`.
 
 `gdbus` (in `glib2`, always present) stays as the fallback if an image ever ships
 without the binding, and the driver must fail with that reason rather than a
@@ -46,17 +46,17 @@ QMP screendump per step  ←    the screen a person saw
 Each is a small, bounded interaction with an assertion on the accessibility tree,
 not on pixels:
 
-1. **Launch an application and see its window.** The declared favorite is started
-   through its desktop entry with `gio launch` — the path its icon takes — and the
-   run asserts that a **new** application with at least one toplevel appears in the
-   tree. Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
+1. **Launch an application and see its window.** The declared favorite starts
+   through its desktop entry with `gio launch`, the path its icon takes, and the
+   run asserts that a **new** application with at least one toplevel appears.
+   Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
 
-   *Keyboard injection is deferred.* Mutter on Wayland rejects synthetic key events
-   from an ordinary client, and a root helper writing to `/dev/uinput` would go
-   around the desktop — the **wrong shape**. The supported route is the
-   **remote-desktop portal**, which a session-side helper uses to send input. Whether
-   that helper is packaged for EL10 is the open question, and it is not a
-   prerequisite for this assertion.
+   *Keyboard injection is deferred.* Mutter on Wayland rejects synthetic key
+   events from an ordinary client, and a root helper writing to `/dev/uinput`
+   would go around the desktop, the **wrong shape**. The supported route is the
+   **remote-desktop portal**, which a session-side helper uses to send input.
+   Whether that helper is packaged for EL10 is open, and it is not a prerequisite
+   for this assertion.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
    still broken.
@@ -64,12 +64,12 @@ not on pixels:
    password, assert the session returns. This exercises PAM and the lock screen
    without the greeter's separate session.
 4. **Open a file manager window and close it.** Assert the window appears and that
-   closing it returns to the previous state — a basic window-lifecycle check that
-   the session check cannot see.
+   closing it returns to the previous state, a basic window-lifecycle check the
+   session check cannot see.
 
-The **GDM greeter** stays out of the driver: it runs in its own session and bus, and
-reaching it from the autologin user is not something to fake. It remains what
-`bootcheck.py` does — a frame assertion — and the login logo is checked as a file.
+The **GDM greeter** stays out of the driver: it runs in its own session and bus,
+and reaching it from the autologin user is not something to fake. It remains what
+`bootcheck.py` does, a frame assertion, and the login logo is checked as a file.
 
 ## Determinism and cost
 
@@ -87,22 +87,21 @@ reaching it from the autologin user is not something to fake. It remains what
 
 The probe lists what is **already running** when the autostart script fires: the
 shell, its helper daemons and the portal. Scenario 1 therefore cannot pass by
-finding an application that was there all along — it must make one appear, and
-assert on a window in the tree rather than on the application's presence.
+finding an application that was there all along; it must make one appear, and
+assert on a window rather than on the application's presence.
 
 ## What it does not claim
 
-- Not an accessibility conformance test: it uses AT-SPI to drive, and says nothing
-  about whether an app is usable with a screen reader.
+- Not an accessibility conformance test: it drives through AT-SPI, and says
+  nothing about whether an app is usable with a screen reader.
 - Not every application: four scenarios, extended when a real defect escapes.
 - Not a substitute for the organization's field validation on hardware.
 
 ## What adopting it changes
 
-`promotion.yml` would move a digest only after the E2E job passed on that digest, so
-a session regression becomes a red gate instead of a user report. That is the
-milestone's second line, and it needs the first one implemented before it is worth
-promising.
+`promotion.yml` would move a digest only after the E2E job passed on that digest,
+so a session regression becomes a red check instead of a user report. That is the
+milestone's second line, and the first line comes first.
 
 ## First checklist
 
@@ -116,4 +115,5 @@ promising.
       through the desktop entry, a new application with a toplevel, then terminate
       it. The close *through the tree* stays scenario 4.
 - [ ] Then 2 to 4, one at a time, each with its failure message.
-- [ ] Wire the job into the gate, and only then into promotion.
+- [ ] Wire the remaining scenarios into the VM check, and only then into
+      promotion.

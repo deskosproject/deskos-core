@@ -4,23 +4,19 @@
 
 ## Context
 
-Organizations moving thousands of PCs to Linux need a *defined
-workstation*, not only a distribution. Runtime enforcement across a fleet
-is already solved by Ansible Automation Platform, Satellite, Foreman and
-MDM products.
+Organizations moving thousands of PCs to Linux need a *defined workstation*, not only a
+distribution. Ansible Automation Platform, Satellite, Foreman and MDM products already enforce
+state across a fleet.
 
 ## Decision
 
-**DeskOS compiles organizational intent into bootc OCI artifacts and stops
-there.** It has no controller, agent, reconciliation loop or fleet state.
-Mutable `/etc` drift on deployed machines is acknowledged and left to
-configuration management. Endpoint tooling observes (`status`) and acts only
-when a person asks it to, once (`update`, `rollback`): a single requested
-action is not reconciliation, and no loop, schedule or automatic enforcement
-lives in the endpoint.
+**DeskOS compiles organizational intent into bootc OCI artifacts and stops there.** It has no
+controller, agent, reconciliation loop or fleet state. `/etc` drift on deployed machines is
+expected and left to configuration management. Endpoint tooling observes (`status`) and acts only
+when a person asks, once (`update`, `rollback`). A single requested action is not reconciliation,
+and the endpoint holds no loop, schedule or automatic enforcement.
 
 ## Consequences
 
-DeskOS stays small and composes with existing fleet tools. An
-organization that requires guaranteed runtime enforcement must pair it
-with configuration management.
+DeskOS stays small and composes with existing fleet tools. An organization that needs guaranteed
+runtime enforcement must pair it with configuration management.

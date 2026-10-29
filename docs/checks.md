@@ -1,24 +1,21 @@
 # Checks and what a red run means
 
-What runs here, what each check proves, the evidence it keeps, and how to tell an
-infrastructure failure from an image defect. Required status checks are a GitHub
-setting outside the repository; this page lists what runs, not whether a branch
-protection rule exists.
+Required status checks are a GitHub setting outside the repository.
 
 ## What runs
 
-| Workflow | Trigger | Proves | Evidence |
+| Workflow | Trigger | Proves | Keeps |
 |---|---|---|---|
 | `ci.yml` | pull request, `main`, called by release | resources validate and render deterministically | job log |
 | `artifacts.yml` | pull request, `main`, dispatch | declared URLs resolve and bytes match their checksums; repositories look like repositories | job log and summary |
 | `vm-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
-| `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots and — on the schedule, or a `publish=true` dispatch from `main` — pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, evidence directory |
-| `iso.yml` | called by the gate; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
-| `promotion.yml` | the gate's success (`workflow_run`); dispatch | `:stable` moves only to a digest whose signature and every evidence object verify, with an approval record | approval record, job log |
-| `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the gate is dispatched when it is | job log |
+| `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots, and on the schedule (or a `publish=true` dispatch from `main`) pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, records directory |
+| `iso.yml` | called by the weekly build; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
+| `promotion.yml` | the weekly build's success (`workflow_run`); dispatch | `:stable` moves only to a digest whose signature and every stored record verify, with an approval record | approval record, job log |
+| `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the weekly build is dispatched when it is | job log |
 | `lifecycle.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
-| `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | AlmaLinux and Fedora examples build and boot; not published | boot/session/first-boot evidence |
+| `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | AlmaLinux and Fedora examples build and boot; not published | boot, session and first-boot records |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
 | `tool-image.yml` | `Containerfile` or compiler paths; dispatch | the `deskosctl` container builds and runs | job log |
 | `mirror-fedora.yml` | dispatch | a Fedora base is mirrored to DeskOS Quay | job log |
@@ -26,57 +23,45 @@ protection rule exists.
 | `identity-freeipa.yml` | daily 04:23 UTC; dispatch | a client image joins a disposable FreeIPA realm and the session proves the login | summary, frames |
 | `identity-ad.yml` | daily 04:47 UTC; dispatch | the same, against a disposable Samba AD domain controller | summary, frames |
 | `track.yml` | Mondays 05:17 UTC; dispatch | every checksum-pinned resource still resolves, and moves the ones the curated list covers, as a pull request | pull request |
-| `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed evidence store; a prefix with an index is refused without `force` | job log |
+| `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed record store; a prefix with an index is refused without `force` | job log |
 
 A scheduled run has no dispatch inputs. `supply-chain.yml` falls back to
-`fail-on: critical` explicitly, so the weekly run cannot silently run without a
-severity threshold, and since 2026-10-28 it publishes: gate, signature, evidence
-and promotion as for a dispatch. A dispatch with `publish=false` is the dry gate.
+`fail-on: critical`, so the weekly run has a severity threshold, and since
+2026-10-28 it publishes: signature, records, promotion. A dispatch with
+`publish=false` is the dry run.
 
 ## Reading a failure
 
-Classify before changing anything:
-
 - **Infrastructure or harness.** The job log shows a registry 503/EOF, a full
-  runner disk, a missing firmware path, a permission error, or no runner; the
-  image may be untouched. Fix the runner or retry, say which attempt produced the
-  result, and do not "fix" the image for this class.
-- **Image defect.** The build finished, then the boot, session or first-boot
-  check failed. Read the serial log, the failed-boot journal, the frames and the
-  structured summary before rerunning; a retry does not make an image boot.
+  runner disk, a missing firmware path, a permission error or no runner; the image
+  may be untouched. Fix the runner or retry, name the attempt, do not "fix" the
+  image.
+- **Image defect.** The build finished, then a boot, session or first-boot check
+  failed. Read the serial log, the failed-boot journal, the frames and the
+  summary before rerunning; a retry does not make an image boot.
 - **Installer defect.** `installer-test` builds but never finds `Install
-  finished`, or the screens never reach GNOME Initial Setup. That is the ISO,
-  not the image build.
-- **Unverified probe.** The artifact resolver reports a size above its bound as
-  **not verified**, or a repository body as inconclusive; `deskos check` reports
-  items as **not measurable here**. These are not passes. A check that could not
-  observe its target stays red.
+  finished`, or never reaches GNOME Initial Setup: the ISO, not the image build.
+- **Unverified probe.** A size above the resolver's bound is **not verified**, a
+  repository body may be inconclusive, and `deskos check` reports items as **not
+  measurable here**. None is a pass; an unobserved target stays red.
 
 The VM harness keeps `bootcheck-attempt1` beside the retried `bootcheck` when the
-splash retry runs, and workflow artifacts carry the run attempt in their name
-(`…-attempt-2`), so a re-run does not overwrite the first attempt's evidence.
+splash retry runs, and artifacts carry the run attempt in their name
+(`…-attempt-2`), so a re-run keeps the first attempt's records.
 
 ## Tested and published identity
 
-The publish path builds **one** image, boots that same image, and pushes it by
-digest:
-
-- `image.txt` records the local image ID;
-- `digest.txt` records the registry digest that was pushed;
-- `cosign-verify.txt` records verification against the pushed digest;
-- `identity.json` links the base digest, the produced image digest, the Plan and
-  the build context;
-- a machine reports what it boots with `bootc status` and `deskos report`.
-
-`:latest` is moved after the checks; `:<commit>` is a naming convention, not
-registry-enforced immutability. A digest is the exact identity, which is why
-anything beyond a lab pins one.
+The publish path builds **one** image, boots it, and pushes it by digest.
+`image.txt` holds the local image ID, `digest.txt` the pushed digest,
+`cosign-verify.txt` the verification, `identity.json` the base and image digests
+with the Plan and context. A machine reports its boot with `bootc status` and
+`deskos report`. `:latest` moves after the checks; `:<commit>` is a naming
+convention, not registry-enforced immutability.
 
 ## Workstation behavior matrix
 
-Ties a promoted image's claims to the probe behind them. **Instrumented** means
-the check adds a test user, autologin or a session script; **unmodified** means
-it boots the disk as shipped.
+Ties a promoted image's claims to its probe. **Instrumented** adds a test user,
+autologin or a session script; **unmodified** boots the disk as shipped.
 
 | Claim | Probe | Positive | Negative | Kind |
 |---|---|---|---|---|
@@ -100,30 +85,24 @@ it boots the disk as shipped.
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
 | Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
-| Published ISO carries the signed digest | `iso.yml` (called by the gate, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
+| Published ISO carries the signed digest | `iso.yml` (called by the weekly build, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
 
-A missing result, an unreadable value or a `not measurable` count is a failure
-or an explicit unverified item, not a pass. The session row is an **instrumented
-autologin session**, not proof of an interactive GDM login.
-
-**Not proved by these probes:** an interactive GDM login (the probes autologin),
-so the Wayland session type through GDM is unproved too; launching every declared
-favorite; Flatpak install after reconnection; suspend, battery, display and other
-hardware behavior (P1-07). Those are P1-06/P1-07 work, not implied claims.
+A missing result, an unreadable value or a `not measurable` count is a failure or
+an unverified item, not a pass. The session row is an **instrumented autologin
+session**, not proof of an interactive GDM login, so the Wayland session type
+through GDM is unproved too, as are launching every declared favorite, Flatpak
+install after reconnection, and suspend, battery, display and other hardware
+behavior (P1-07).
 
 ## What is not covered
 
-- The shutdown splash is captured in the session run's frame list but not
-  asserted: the guest powered off in 0.4 s and only one frame was captured, so
-  the assertion would be a race. A reboot splash needs a boot that reboots.
-
-- Bare metal, BIOS boot, Secure Boot and non-x86_64 are not tested.
+- Shutdown splash: captured, not asserted, since the guest powers off in 0.4 s
+  with one frame. A reboot splash needs a boot that reboots.
+- Bare metal, BIOS boot, Secure Boot and non-x86_64 are untested, and the image
+  build is not yet bit-for-bit reproducible.
 - No check installs the **published** ISO; its storage is interactive, so only a
   person completes it. The test-only ISO has the `installer-test` job.
-- The lifecycle check recovers a failed candidate through the previous GRUB
-  entry from the host, not through a person selecting it in the menu. Rollback
-  after a candidate reaches userspace is still manual.
-- Bit-for-bit reproducibility of images is not claimed; compilation is
-  deterministic, the image build is not yet bit-for-bit reproducible.
+- The lifecycle check recovers a failed candidate through the previous GRUB entry
+  from the host, not by a person; rollback after userspace is still manual.
 - RHEL composition and rendering are tested here; the entitled build and boot
   happen in the downstream organization.

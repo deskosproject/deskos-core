@@ -13,28 +13,21 @@ sudo deskos etc reset --all   # put /etc back to the image, with a backup
 ```
 
 Every Core image carries `/usr/bin/deskos` (ADR 0018), the runtime companion to
-`deskosctl`; it has no controller (ADR 0001), and `status` and `rollback` front
-`bootc`. `update` runs `bootc upgrade`, which changes the deployment the machine
-boots from, so it needs root; `report` and `check` are read-only. `--firmware`
-lists firmware updates with `fwupdmgr get-updates` and never applies them; the pin
-is `resources/software/deskos.yaml`.
-
-`check` measures **what the artifact declares** — the files it installs and
-generates, the dconf defaults it sets — and prints its scope on every run; it is
-not an audit of the whole machine. `report` lists the declared dconf locks and
-says that enforcement by the running session is not its measurement. The session
-check proves it: it writes each locked key and expects the write to fail.
+`deskosctl`, with no controller (ADR 0001); `status` and `rollback` front `bootc`.
+`update` runs `bootc upgrade`, so it needs root; `report` and `check` are read-only. `--firmware` lists updates with
+`fwupdmgr get-updates` and never applies them; the pin is
+`resources/software/deskos.yaml`. `check` measures what the artifact declares and
+prints its scope on every run, and `report` says that enforcement by the running
+session is not its measurement.
 
 ## What changed in /etc
 
 On a deployment that merges `/etc`, `deskos etc` compares the running `/etc` with
-the image's baseline at `/usr/etc` and lists modified, added and removed paths. It
-is read-only, needs no root, and refuses without that baseline.
-
-Runtime state is not an edit: NetworkManager connections, machine-id, SSH host
-keys, printer and Bluetooth state, sockets and caches are ignored by default.
-Patterns in `/etc/deskos/deskos.json` add more; `/etc/deskos/` itself is ignored
-and a policy difference reported separately.
+the baseline at `/usr/etc` and lists modified, added and removed paths. It is
+read-only, needs no root, and refuses without that baseline. Runtime state is not
+an edit: NetworkManager connections, machine-id, SSH host keys, printer and
+Bluetooth state, sockets and caches are ignored; `/etc/deskos/deskos.json` adds
+patterns, and `/etc/deskos/` itself is ignored.
 
 ```bash
 deskos etc                     # the differences, with a count of what was ignored
@@ -43,14 +36,14 @@ sudo deskos etc reset /etc/foo # put one path back to the image's version
 sudo deskos etc reset --all --dry-run
 ```
 
-`reset` copies the baseline back and keeps a timestamped copy of what it replaced
-under `/var/lib/deskos/etc-backup/`; it never touches `/etc/deskos/` unless you
-pass `--include-policy`.
+`reset` copies the baseline back and keeps a timestamped copy under
+`/var/lib/deskos/etc-backup/`; it never touches `/etc/deskos/` without
+`--include-policy`.
 
 ## How updates work
 
-Two base services and their timers run on the `UpdatePolicy` schedule (DeskOS
-Core: daily, on AC power):
+Two services and their timers run on the `UpdatePolicy` schedule (DeskOS Core:
+daily, on AC power):
 
 | Unit | Runs | Effect |
 |---|---|---|
@@ -59,29 +52,27 @@ Core: daily, on AC power):
 | `deskos-image-apply.timer` → `deskos-image-apply.service` (opt-in) | `deskos window`, then `bootc upgrade --apply --quiet` | applies the staged image and **reboots** inside the declared time |
 
 > **Platform scope.** Everything `bootc` here is on every shipped platform. The
-> Flatpak half exists only where the image declares a system Flatpak channel: the
-> EL family's `PackageSet/rhel-family` provides one, and DeskOS Core adds neither
-> the package nor the unit without a profile that selects it. A platform that
-> declares no channel fails composition for a `FlatpakSet`, and the AlmaLinux and
-> Fedora examples are not shipped support ([platforms.md](platforms.md)).
+> Flatpak half needs a system Flatpak channel: the EL family's
+> `PackageSet/rhel-family` provides one, and a platform with no channel fails
+> composition for a `FlatpakSet`. The AlmaLinux and Fedora examples are not shipped
+> support ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base image's
-own `bootc-fetch-apply-updates.timer` and `.service` are **masked**
+own `bootc-fetch-apply-updates.timer` and `.service` are masked
 ([ADR 0007](adr/0007-updatepolicy.md)).
 
 An organization sets the schedule or turns automation off in its own `UpdatePolicy`
 (`image.automatic`, `image.schedule`, `image.requireACPower`, and the `flatpak`
-equivalents); with `automatic: false` the service is written, but no timer, so
-`deskos update` runs it on demand ([resources/system.md](resources/system.md#updatepolicy)).
+equivalents); with `automatic: false` the service exists but no timer does, so
+`deskos update` runs it on demand ([system.md](resources/system.md#updatepolicy)).
 
-When `image.requireACPower` is set, the image also carries a udev rule that starts
-the staging service when AC comes online; the service still checks `ConditionACPower`.
-The service first runs `deskos window`, which checks the local weekday and
-`at`/window (and optional IANA timezone), so a timer that fires after suspend
-outside the interval does nothing. An exact `at` allows five minutes of grace, a
-`window` its full duration; there is no active-session check, the window is the
-maintenance contract.
+With `image.requireACPower`, a udev rule starts the staging service when AC comes
+online, and the service still checks `ConditionACPower`. The service first runs
+`deskos window`, which checks the local weekday and `at`/window (and optional IANA
+timezone), so a timer that fires after suspend outside the interval does nothing.
+An exact `at` allows five minutes of grace, a `window` its full duration; no
+active-session check exists, because the window is the contract.
 
 ## What happens in each situation
 
@@ -118,9 +109,8 @@ sudo reboot                                          # apply the staged image
 ```
 
 `deskos update` is the same staging step behind a guard: it refuses when this is
-not a bootc deployment or when bootc cannot read the deployment, and it reports —
-without refusing — an image that updates itself and what the plan owns under
-`/etc`.
+not a bootc deployment or bootc cannot read it, and reports, without refusing, an
+image that updates itself and what the plan owns under `/etc`.
 
 ## Roll back
 
@@ -130,15 +120,13 @@ sudo reboot
 ```
 
 `bootc rollback` reorders the boot entries: the deployment marked `rollback`
-becomes the next boot and the current one becomes the rollback, so rolling back
-again returns you. Files the image owns under `/etc` revert with the deployment; a
-local edit under `/etc` is kept (the merge is three-way, not a snapshot), and
-`/var` and home directories are preserved. The lifecycle check asserts both `/etc`
-cases on every run ([design](design/lifecycle.md#shape)).
+becomes the next boot, so rolling back again returns you. Image-owned files under
+`/etc` revert; a local edit under `/etc` is kept (the merge is three-way, not a
+snapshot), and `/var` and home directories are preserved. The lifecycle check
+asserts both `/etc` cases ([design](design/lifecycle.md#shape)).
 
-A rollback is not a backup: data already migrated under `/var` is not undone,
-choosing the previous deployment is manual, and the image ships no backup tool
-([recovery.md](recovery.md#rollback-is-not-a-backup)).
+A rollback is not a backup: data migrated under `/var` is not undone, and the image
+ships no backup tool ([recovery.md](recovery.md#rollback-is-not-a-backup)).
 
 ## Change where updates come from
 

@@ -1,57 +1,56 @@
 # DeskOS documentation
 
-New here? Read the [README](../README.md), then [Platforms](platforms.md).
+Start with the [README](../README.md), then [Platforms](platforms.md).
 
 ## The words this repository uses
 
-- **Core**: what this repository ships — the compiler, the resource model, the
-  profiles and reference workstations.
-- **Platform**: one operating-system target and every fact that comes with it
-  (`centos-stream-10`, `rhel-10`). Platform differences live here and nowhere
+- **Core**: what this repository ships: the compiler, the resource model, the
+  profiles and the reference workstations.
+- **Platform**: one operating-system target and the facts that come with it
+  (`centos-stream-10`, `rhel-10`). Platform differences live there and nowhere
   else.
-- **Base image**: what a platform starts `FROM` — the vendor's, or a project-owned
+- **Base image**: what a platform starts `FROM`: the vendor's, or a project-owned
   base where the vendor publishes none (ADR 0014).
 - **Workstation**: the thing a person installs: one platform plus the profiles to
   select.
 - **Profile**: a layer of intent (`foundation`, `organization`, `role`,
-  `workstation`) that selects resources; not a machine on its own.
-- **Baseline**: the boundary of what DeskOS manages — machine-wide state an
-  organization requires for any authorized user, before any `$HOME` exists
-  (ADR 0005). Not a layer, not a file.
+  `workstation`) that selects resources.
+- **Baseline**: what DeskOS manages at all: machine-wide state an organization
+  requires for any authorized user, before any `$HOME` exists (ADR 0005).
 - **Resource**: the declarative unit you write; one of fourteen kinds
   ([Resources](resources.md) lists all with an example).
-- **Desktop**: three things that are easy to mix up — the **session**, its
-  **defaults** (`GnomeProfile`), and its **look** (`Theme`, `deskos-look`). It is
-  also a platform fact: `gnome.keepsVendorDefaults` means DeskOS writes no
+- **Desktop**: the session, its defaults (`GnomeProfile`) and its look (`Theme`).
+  It is also a platform fact: `gnome.keepsVendorDefaults` means DeskOS writes no
   desktop default (ADR 0016).
 - **Flavor**: an organization's own resource root built on Core, referencing it by
   name and copying nothing.
-- **Artifact**: the deterministic **plan** and build **context**; the image
-  `podman build` makes from that context is what boots.
+- **Artifact**: the plan and build context; the image built from that context is
+  what boots.
 
 ## Pages
 
 | Page | What it is |
 |---|---|
-| [Platforms](platforms.md) | the canonical matrix: base owner, what is verified, how to install |
-| [Installing](install.md) | QCOW2, the Anaconda ISO, private RHEL builds |
-| [Architecture](architecture.md) | pipeline and boundary, model, composition, Plan, backend, evidence |
-| [Runtime behaviour](runtime.md) | baseline, Flatpaks, GNOME, boot, trust, updates, `/etc` drift, provisioning |
+| [Platforms](platforms.md) | the matrix: base owner, what is verified, how to install |
+| [Installing](install.md) | a published image, your own image, private RHEL builds |
+| [Architecture](architecture.md) | pipeline and boundary, model, composition, plan, backend |
+| [Runtime](runtime.md) | baseline, Flatpaks, GNOME, boot, trust, updates, `/etc` |
 | [Resources](resources.md) | the fourteen kinds, with examples |
-| [Compatibility](compatibility.md) | what stays stable, the fixture matrix, beta and 1.0 criteria |
+| [GNOME coverage](gnome-coverage.md) | each GNOME guide item, and whether a field carries it |
+| [Compatibility](compatibility.md) | what stays stable, the fixture matrix, 1.0 criteria |
 | [Operations](operations.md) | update, inspect, roll back, change the update source |
 | [Recovery](recovery.md) | install, first boot, registry, update and rollback failures |
-| [Diagnostics](diagnostics.md) | what a failure looks like, which class it is, next action |
-| [GNOME coverage](gnome-coverage.md) | every GNOME system-administration item, and whether a field carries it |
+| [Diagnostics](diagnostics.md) | what a failure looks like and what to do next |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
 | [Checks](checks.md) | what each workflow proves and how to read a red run |
-| [Threat model](threat-model.md) | assets, boundaries, controls and gaps, the incident tabletop |
+| [Threat model](threat-model.md) | assets, boundaries, controls, the incident tabletop |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |
-| [Installer ISO](installer-iso.md) | the kickstart, the build command, and what the installer asks before it erases a disk |
-| [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E, prior art |
-| [VM harness](../tests/vm/README.md) | the boot, session and first-boot checks and their limits |
-| [Roadmap](roadmap.md) · [ADRs](adr/README.md) | what is done and planned; the decisions behind it |
+| [Installer ISO](installer-iso.md) | the kickstart, the build command, the storage warning |
+| [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E |
+| [VM harness](../tests/vm/README.md) | the boot, session and first-boot checks |
+| [Roadmap](roadmap.md), [ADRs](adr/README.md) | what is done and planned, and the decisions |
 | [Research notes](research-notes.md) | a dated archive of what was measured |
+| [Style](style.md) | how these pages are written; `make style` and `make links` check it |
 
 ## Where the rest is
 
@@ -64,5 +63,3 @@ New here? Read the [README](../README.md), then [Platforms](platforms.md).
   cannot.
 - [Upstream findings](upstream.md): where a measured finding belongs and which
   ones are unfiled.
-- [Style](style.md): how these pages are written; `make check` runs the link
-  checker.
