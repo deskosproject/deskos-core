@@ -82,7 +82,7 @@ it boots the disk as shipped.
 |---|---|---|---|---|
 | Quiet graphical boot and splash | `bootcheck.py --expect-splash` | stable graphical frames and splash detected | text-only, blank or no stable frame | unmodified |
 | GNOME Initial Setup on first boot | `firstbootcheck.py` | the wizard and its session are present | no wizard, or a different session | unmodified |
-| Declared dconf defaults and vendor overrides | `sessioncheck.py` | each plan key reads back as declared | a value differs or cannot be read | instrumented |
+| Declared dconf defaults and vendor overrides | `sessioncheck.py` | each plan key reads back as declared; login-screen keys are read through the greeter's own profile | a value differs or cannot be read | instrumented |
 | Declared extensions load | `sessioncheck.py`, `gnome-extensions info` | state `ACTIVE`/`ENABLED` | missing or `ERROR` | instrumented |
 | Tray extension serves the session bus | `sessioncheck.py` | `StatusNotifierWatcher` present and accepts a registration | service absent or registration rejected | instrumented |
 | Favorites list matches the plan | `sessioncheck.py` | `favorite-apps` equals the declared list, in order | differs | instrumented |
