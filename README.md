@@ -52,7 +52,7 @@ Start from a template, not from our image:
 
 | Template | What it is |
 |---|---|
-| [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | **Use this template**, edit four YAML files, and one workflow builds your image on a GitHub-hosted runner and pushes it to `ghcr.io`. Public by default. |
+| [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | **Use this template**, edit four YAML files, and one workflow builds your image on a GitHub-hosted runner and pushes it to `ghcr.io`. The package starts private; one setting makes it public. |
 | [`deskos-template-rhel10`](https://github.com/deskosproject/deskos-template-rhel10) | The same for RHEL 10, on **your** entitled RHEL runner, into **your** private registry. Fork it privately. |
 
 Both templates stop at the container image: you pull it and build the ISO with

@@ -17,8 +17,10 @@ Two template repositories do Option 2 for you:
 | [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | GitHub-hosted runner, image to `ghcr.io`, public |
 | [`deskos-template-rhel10`](https://github.com/deskosproject/deskos-template-rhel10) | your entitled RHEL runner, image to your private registry |
 
-Fork one, edit the resources, run the workflow, pull the image and build the ISO
-with step 3 below. The templates stop at the image on purpose.
+Fork one, edit the resources, run the workflow, and pull the image. The template's
+README then builds the ISO with the same command as step 3 of Option 1; the
+templates stop at the image on purpose, because where an ISO lives is your
+decision.
 
 Either way the machine has **no user account**: GNOME Initial Setup creates the
 first one at first boot, and that account is the administrator.
