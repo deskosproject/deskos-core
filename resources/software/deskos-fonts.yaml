@@ -22,8 +22,13 @@ spec:
     - google-noto-sans-fonts
     - google-noto-serif-fonts
     - google-noto-sans-mono-fonts
-    # The office substitutes, plus their metric partners.
-    - liberation-fonts
+    # The office substitutes. Liberation's families are separate packages, and the
+    # meta package that names them all is spelled differently on each platform, so
+    # the set names the families themselves.
+    - liberation-sans-fonts
+    - liberation-serif-fonts
+    - liberation-mono-fonts
+    - liberation-narrow-fonts
     - google-carlito-fonts
     - google-crosextra-caladea-fonts
     # The distribution's own family: terminals and old applications ask for it by

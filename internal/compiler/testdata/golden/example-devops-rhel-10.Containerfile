@@ -47,7 +47,10 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'google-noto-sans-symbols-fonts' \
         'google-noto-serif-fonts' \
         'kubectl' \
-        'liberation-fonts' \
+        'liberation-mono-fonts' \
+        'liberation-narrow-fonts' \
+        'liberation-sans-fonts' \
+        'liberation-serif-fonts' \
         'libvirt' \
         'plymouth' \
         'plymouth-scripts' \

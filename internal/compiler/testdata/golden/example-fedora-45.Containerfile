@@ -32,7 +32,10 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'google-noto-sans-mono-fonts' \
         'google-noto-sans-symbols-fonts' \
         'google-noto-serif-fonts' \
-        'liberation-fonts' \
+        'liberation-mono-fonts' \
+        'liberation-narrow-fonts' \
+        'liberation-sans-fonts' \
+        'liberation-serif-fonts' \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \

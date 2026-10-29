@@ -356,7 +356,37 @@
     },
     {
       "type": "library",
-      "name": "liberation-fonts",
+      "name": "liberation-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-narrow-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-sans-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-serif-fonts",
       "properties": [
         {
           "name": "deskos:source",

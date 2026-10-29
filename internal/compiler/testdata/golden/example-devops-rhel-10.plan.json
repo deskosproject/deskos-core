@@ -465,7 +465,40 @@
         ]
       },
       {
-        "name": "liberation-fonts",
+        "name": "liberation-mono-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "liberation-narrow-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "liberation-sans-fonts",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-fonts",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "liberation-serif-fonts",
         "provenance": [
           {
             "resource": "PackageSet/deskos-fonts",
