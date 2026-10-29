@@ -53,6 +53,8 @@ const (
 	KeyPalette         = "appearance.palette"
 	KeyFavorites       = "shell.favorites"
 	KeyBlankAfter      = "session.idle.blankAfter"
+	KeyIdleDim         = "session.idle.dim"
+	KeyDimBrightness   = "session.idle.dimBrightness"
 	KeyLockEnabled     = "session.lock.enabled"
 	KeyLockDelay       = "session.lock.delay"
 	KeyDockPosition    = "dock.position"
@@ -109,7 +111,8 @@ var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactiv
 var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true, KeyIconTheme: true,
-	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyLockEnabled: true,
+	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
+	KeyDimBrightness: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
@@ -279,8 +282,13 @@ type Session struct {
 	Lock *Lock `json:"lock,omitempty"`
 }
 
+// Idle is what the machine does with an idle session: blank after a while, and
+// dim the screen before it blanks. Brightness only applies while Dim is on; it is
+// a percentage of the normal level, so 30 is dimmer than 60.
 type Idle struct {
-	BlankAfter string `json:"blankAfter,omitempty"`
+	BlankAfter    string `json:"blankAfter,omitempty"`
+	Dim           *bool  `json:"dim,omitempty"`
+	DimBrightness *int   `json:"dimBrightness,omitempty"`
 }
 
 type Lock struct {
@@ -639,6 +647,15 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %v", KeyBlankAfter, err)
 			} else {
 				set(KeyBlankAfter, secs, se.Idle.BlankAfter)
+			}
+		}
+		if se.Idle != nil {
+			if d := se.Idle.Dim; d != nil {
+				set(KeyIdleDim, *d, strconv.FormatBool(*d))
+			}
+			if b := se.Idle.DimBrightness; b != nil {
+				// The schema bounds it to 1..100: it is a percentage of the level.
+				set(KeyDimBrightness, *b, strconv.Itoa(*b))
 			}
 		}
 		if l := se.Lock; l != nil {

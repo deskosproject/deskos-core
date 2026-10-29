@@ -138,6 +138,14 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if v, ok := get(KeyBlankAfter); ok {
 		l.set(KeyBlankAfter, "/org/gnome/desktop/session/idle-delay", "u", gvUint32(v.Value.(Seconds)), v.Provenance)
 	}
+	if v, ok := get(KeyIdleDim); ok {
+		l.set(KeyIdleDim, "/org/gnome/settings-daemon/plugins/power/idle-dim", "b",
+			strconv.FormatBool(v.Value.(bool)), v.Provenance)
+	}
+	if v, ok := get(KeyDimBrightness); ok {
+		l.set(KeyDimBrightness, "/org/gnome/settings-daemon/plugins/power/idle-brightness", "i",
+			strconv.Itoa(v.Value.(int)), v.Provenance)
+	}
 	if v, ok := get(KeyLockEnabled); ok {
 		l.set(KeyLockEnabled, "/org/gnome/desktop/screensaver/lock-enabled", "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
 	}
