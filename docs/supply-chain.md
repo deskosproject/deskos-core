@@ -185,8 +185,10 @@ release.
 The policy the gate applies is
 [ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md):
 
-- **the blocking gate is `Critical`**; a digest with an unresolved Critical
-  is not promoted;
+- **the blocking gate is `Critical`**, by the **vendor's** severity for a package
+  the distribution ships (ADR 0012, amended 2026-10-29); an NVD score that differs
+  is recorded beside the match and does not move the gate. A digest with an
+  unresolved vendor Critical is not promoted;
 - **High is tracked, not blocking** by default: a full GNOME desktop with a
   browser and a distribution kernel always carries a large High count,
   mostly backported upstream or not reachable in context;
