@@ -24,4 +24,5 @@ conflicts name every contributor.
 
 Organizations override DeskOS Core *deliberately*. Two teams at one layer
 must resolve their disagreement explicitly instead of racing on file
-names. There are no removal semantics in `v1alpha1`.
+names. Removal exists only where a later ADR names it: `Platform.removePackages`
+(ADR 0022) and `flatpak.removeRemotes` (ADR 0017). There is no general subtraction.

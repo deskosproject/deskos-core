@@ -19,7 +19,9 @@ authorized user**, complete before any user's home directory exists:
 - system Flatpaks.
 
 Personal and project tooling (Homebrew, mise, SDKMAN, language version
-managers, dotfiles, personal Toolboxes) is **out of scope**.
+managers, dotfiles, personal Toolboxes) is **out of scope**. The one exception is
+`deskos-theme apply --user` (ADR 0013): a person runs it, and the resource model
+still does not manage `$HOME`.
 
 ## Consequences
 

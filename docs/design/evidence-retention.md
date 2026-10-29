@@ -6,7 +6,7 @@ first real digest is stored and verified: 16 objects for
 `sha256:96fe80d33023bdd4b674b45288e13a0e4aaedb935b09e154bc4adbc132f3fab6`.
 
 P0-05 asks that a historical image digest's evidence can still be retrieved and
-verified after workflow artifacts expire. Today it cannot.
+verified after workflow artifacts expire.
 
 ## What is true today
 
@@ -17,7 +17,6 @@ verified after workflow artifacts expire. Today it cannot.
   the SBOM bytes themselves are not attached.
 - The exception record is in Git and is attested; the raw scan and its effective
   exceptions are only in the artifact.
-- Release binaries have checksums but no signed source-to-binary attestation.
 - There is no index from `sha256:<image digest>` to its evidence and no
   verification command that fails when evidence is missing.
 
@@ -51,33 +50,20 @@ Use an **R2 object store keyed by image digest**, with a small per-digest
 `index.json` listing every evidence object and its SHA-256. Keep the existing
 attestation naming the SBOM hash; the index resolves that hash to bytes.
 
-- Core evidence is **public**, in `deskos-evidence-public`; organization-owned
-  evidence is **private**, in a bucket owned by that organization.
+- Core evidence is **public** (`deskos-evidence-public`); organization evidence is
+  **private**, in a bucket owned by that organization.
 - The object key is `<namespace>/<repository>/sha256/<hex>/`, for example
-  `deskos/deskos-core-centos-stream-10/sha256/<hex>/index.json`. The path is
-  independent of the registry host, so moving an image to another registry does
-  not move its evidence.
-- The upload token is scoped to the bucket or prefix and staged as a secret, never
-  in `argv` or the repository.
+  `deskos/deskos-core-centos-stream-10/sha256/<hex>/index.json`, independent of
+  the registry host, so moving an image does not move its evidence.
+- The upload token is scoped to the bucket or prefix and staged as a secret,
+  never in `argv` or the repository.
 - **Every published image digest is retained.** Garbage collection may delete
-  only temporary or unpublished objects, never evidence for a digest that was
-  published.
-- The index starts **unsigned**. The signed image attestation already names the
-  SBOM SHA-256, so replacing the index or an object fails the comparison. Signing
-  the index is a later hardening step, not a prerequisite.
+  only temporary or unpublished objects.
+- The index starts **unsigned**; the signed image attestation names the SBOM
+  SHA-256, so replacing the index or an object fails the comparison.
 
-The public bucket and `evidence.deskos.org` are provisioned, and the
-`evidence-write` environment carries the public upload credential. The
-`tests/evidence/upload.py` uploader and a separate evidence job are merged. The
-first real digest was uploaded and all 16 objects were fetched back and verified
-from the public URL. The organization's private bucket token is separate.
-
-Start with **one digest** as a lab: upload the installed SBOM, scan report, Plan,
-identity record and a README; fetch them from a clean machine; verify hashes and
-the image signature. Only then move the upload into the publish workflow.
-
-The index must not be authoritative by itself: if an object is missing or its
-hash differs, verification **fails**. A 404 is not "no known issues". The pair exists at
+The index must not be authoritative by itself: a missing object or a differing
+hash **fails** verification. A 404 is not "no known issues". The pair exists at
 [`tests/evidence/index.py`](../../tests/evidence/index.py) and
 [`tests/evidence/verify.py`](../../tests/evidence/verify.py): one builds the
 sorted index and refuses symlinks, the other checks the index, rejects traversal
@@ -85,9 +71,8 @@ and duplicate names, and hashes every named object.
 
 ## CI configuration
 
-The publish job uses the GitHub environment `evidence-write`. Keep the
-non-sensitive configuration as environment variables and only the credential
-as secrets:
+The publish job uses the GitHub environment `evidence-write`. Non-sensitive
+configuration is environment variables; only the credential is a secret.
 
 **Variables**
 
@@ -105,12 +90,11 @@ EVIDENCE_S3_ACCESS_KEY_ID
 EVIDENCE_S3_SECRET_ACCESS_KEY
 ```
 
-The endpoint contains the account ID, the bucket name and the public base URL
-are public, and the region is `auto`. The access key ID is not usable alone,
-but it is kept as a secret so GitHub masks it in logs. The secret access key is
-the credential.
+The endpoint contains the account ID; the bucket name and public base URL are
+public, and the region is `auto`. The access key ID is kept secret so GitHub
+masks it in logs; the secret access key is the credential.
 
-## Retrieval procedure (to test with the first digest)
+## Retrieval procedure
 
 ```bash
 digest=sha256:…
@@ -124,34 +108,25 @@ cosign verify <image@$digest> …       # identity policy from supply-chain.md
 ```
 
 The public bucket and `evidence.deskos.org` are defined in
-`deskos-infrastructure`; the private bucket and token owner are still to
-provision. They are not assumptions in the commands above.
+`deskos-infrastructure`; the private bucket and token owner are to provision.
 
 ## Repair and deletion
 
 An upload can fail after the image is published. The durable artifact keeps the
 evidence for 14 days, so `evidence-maintenance.yml` can **backfill** the digest
-from that run's artifact and verify the stored copy from the public URL. The
-artifact names its own digest, and the job refuses a mismatch: a backfill cannot
-attach one run's evidence to another digest.
+from that run's artifact and verify the stored copy; the artifact names its own
+digest and a mismatch is refused.
 
-Deletion is the other half of the retention rule. `tests/evidence/prune.py`
-lists and deletes one digest prefix; it is a dry run until `--apply`,
-`--confirm` must repeat the exact prefix, and a prefix that has an `index.json`
-is refused unless `--force` is given. Garbage collection may therefore remove
-only a prefix that never became valid, never the evidence of a published digest.
-The maintenance workflow takes the same digest, namespace and repository and
-requires `force` for the indexed case.
+`tests/evidence/prune.py` lists and deletes one digest prefix; it is a dry run
+until `--apply`, `--confirm` must repeat the exact prefix, and a prefix with an
+`index.json` is refused unless `--force` is given.
 
-The first upload is the reason this path exists: it indexed the whole checkout
-instead of the durable artifact and never wrote `index.json`. Its digest,
-`sha256:36824c3e…`, was published, so the repair is a backfill, not a deletion.
-
-That repair was exercised on 2026-10-26: `prune` removed the 332 objects of the
-failed upload, and `backfill` published the 16 objects from run `40244202449`'s
-durable artifact. Fetching them back from `evidence.deskos.org` and running
-`verify.py` reported `verified 16 object(s)`. The evidence for
-`sha256:96fe80d3…` was not touched.
+That path was used on 2026-10-26: `prune` removed the 332 objects of a failed
+upload (`sha256:36824c3e…`, which indexed the whole checkout and never wrote
+`index.json`), and `backfill` published the 16 objects from run `40244202449`'s
+durable artifact. Fetching them from
+`evidence.deskos.org` and running `verify.py` reported `verified 16 object(s)`.
+The evidence for `sha256:96fe80d3…` was not touched.
 
 ## Open decisions
 

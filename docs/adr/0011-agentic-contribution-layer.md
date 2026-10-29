@@ -4,13 +4,11 @@
 
 ## Context
 
-The industry is converging on "agentic software factories": several vendor
-projects describe agents that triage issues, propose fixes and review changes.
-Two things are being conflated: an **industrial** factory that produces
-hardened, reproducible, attested artifacts
-([ADR 0010](0010-artifact-evidence-and-supply-chain.md)), and an **agentic
-maintenance** layer that proposes changes. `AGENTS.md` already
-carries the contribution rules, but the decision is not recorded here.
+The industry is converging on "agentic software factories": several vendor projects describe agents that triage
+issues, propose fixes and review changes. Two things are being conflated: an **industrial** factory that produces
+hardened, reproducible, attested artifacts ([ADR 0010](0010-artifact-evidence-and-supply-chain.md)), and an
+**agentic maintenance** layer that proposes changes. `AGENTS.md` carries the contribution rules, but the decision
+is not recorded here.
 
 ## Decision
 

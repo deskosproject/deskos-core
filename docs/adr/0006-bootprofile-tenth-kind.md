@@ -30,6 +30,7 @@ arguments, scripts or theme files.
 
 ## Consequences
 
-The public API has **exactly ten kinds**; a test enforces the count.
+The public API has **fourteen kinds** today (ten when this decision was taken);
+a test enforces the count.
 Splash artwork is a typed asset; there are no script themes and no
 package-owned theme files are replaced.
