@@ -10,6 +10,20 @@ spec:
     # core: a server platform has no use for them.
     - kind: PackageSet
       name: deskos-fonts
+    # Georgia's and Overpass's families, which EL10 does not package; they land in
+    # the font directory fontconfig reads, pinned by checksum.
+    - kind: BinaryArtifact
+      name: gelasio
+    - kind: BinaryArtifact
+      name: gelasio-italic
+    - kind: BinaryArtifact
+      name: gelasio-license
+    - kind: BinaryArtifact
+      name: overpass
+    - kind: BinaryArtifact
+      name: overpass-italic
+    - kind: BinaryArtifact
+      name: overpass-license
     - kind: GnomeProfile
       name: deskos-core
     # Tray icons, on every workstation: Fedora delivers Fedora's package, EL10 the

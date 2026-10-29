@@ -15,9 +15,8 @@ spec:
   #
   #   Calibri -> Carlito, Cambria -> Caladea, Arial/Times/Courier -> Liberation.
   #
-  # Georgia's replacement, Gelasio, is not packaged for EL10 and a font cannot be
-  # placed with BinaryArtifact today, which only writes under /usr/local/bin. Until
-  # one of those changes, Georgia falls back to DejaVu Serif.
+  # Georgia's replacement, Gelasio, is not packaged for EL10, so it arrives as a
+  # pinned artifact in /usr/local/share/fonts (deskos-fonts-artifacts.yaml).
   packages:
     # Latin, Greek and Cyrillic text, in the three shapes a document mixes.
     - google-noto-sans-fonts

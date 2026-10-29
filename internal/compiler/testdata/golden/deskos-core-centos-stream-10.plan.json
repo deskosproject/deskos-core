@@ -423,6 +423,108 @@
             "source": "resources/software/deskos.yaml:1"
           }
         ]
+      },
+      {
+        "artifact": "gelasio-italic",
+        "version": "1.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/Gelasio-Italic%5Bwght%5D.ttf",
+        "sha256": "52559e845a4d33514e5f93bb9ae7dbeae1894a53f2c565a15f18af40cd337c09",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Gelasio-Italic.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/gelasio-italic",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:22"
+          }
+        ]
+      },
+      {
+        "artifact": "gelasio-license",
+        "version": "1.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/OFL.txt",
+        "sha256": "b393cb01867c919b44381512120dc3e4c954c7b47e2035c405f3a324799a4d29",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Gelasio-OFL.txt",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/gelasio-license",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:35"
+          }
+        ]
+      },
+      {
+        "artifact": "gelasio",
+        "version": "1.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/Gelasio%5Bwght%5D.ttf",
+        "sha256": "4daecea457258c9ebeb8bc99ed3fd24353618bfad3ea4b93fa0b5d0468fc04e4",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Gelasio.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/gelasio",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:6"
+          }
+        ]
+      },
+      {
+        "artifact": "overpass-italic",
+        "version": "4.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/Overpass-Italic%5Bwght%5D.ttf",
+        "sha256": "3b45ac4193930bbeb491b5c76227afd5991607712f0d16d6bc5d74db6bbd8172",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Overpass-Italic.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/overpass-italic",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:64"
+          }
+        ]
+      },
+      {
+        "artifact": "overpass-license",
+        "version": "4.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/OFL.txt",
+        "sha256": "86e5ff25c701ec446d20b1a85b02ee6d36de8503a7288a4c948f5459809af1f0",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Overpass-OFL.txt",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/overpass-license",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:77"
+          }
+        ]
+      },
+      {
+        "artifact": "overpass",
+        "version": "4.0",
+        "url": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/Overpass%5Bwght%5D.ttf",
+        "sha256": "970717df17a7f9911dee45f60695d05bfa9d745fa0a11fc5c348371fa21f0073",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Overpass.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/overpass",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-fonts-artifacts.yaml:49"
+          }
+        ]
       }
     ],
     "files": [

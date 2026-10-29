@@ -36,7 +36,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Disallow fingerprint login | PAM, fprintd and a reader | **outside**: hardware and PAM, not image intent |
 | Lock down extensions | `shell enabled-extensions`, `development-tools` | **modelled** since 2026-10-29 (`shell.extensions`, `shell.developmentTools`) |
 | **Appearance** | | |
-| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Liberation, DejaVu, Carlito, Caladea and the URW base 35 |
+| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35 |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |
 | Lock screen shield | `screensaver picture-uri` | **modelled** since 2026-10-29 (`appearance.lockShield`; the wallpaper is the default) |
