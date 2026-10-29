@@ -17,12 +17,16 @@ on:
         description: Boot and check the session without joining, to isolate a boot hang from the join
         type: boolean
         default: false
-  # Identity-only paths exercise the workflow before it is merged and when the
-  # fixture or the harness changes; it is not a per-pull-request check.
+  # It is not a per-pull-request check. These paths exercise it before a change
+  # merges, and they name code and fixtures only: editing a README under
+  # tests/identity/ used to start a 20-minute run.
   pull_request:
     paths:
       - .github/workflows/identity-ad.yml
-      - tests/identity/**
+      - tests/identity/*.sh
+      - tests/identity/*.py
+      - tests/identity/resources/**
+      - tests/identity/samba/**
       - tests/vm/sessioncheck.py
       - tests/vm/test_sessioncheck.py
 
@@ -30,9 +34,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: identity-ad
-  # A newer push supersedes the run in flight: these are nightly checks,
-  # not gates, and a stale 20-minute run behind a fix is wasted time.
+  # Per ref, so a pull request cannot cancel the nightly run or another pull
+  # request: one global group meant the newest push cancelled everyone else's
+  # check and left it red without running.
+  group: identity-ad-${{ github.ref }}
   cancel-in-progress: true
 
 env:

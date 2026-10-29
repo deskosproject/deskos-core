@@ -20,8 +20,8 @@ Required status checks are a GitHub setting outside the repository.
 | `tool-image.yml` | `Containerfile` or compiler paths; dispatch | the `deskosctl` container builds and runs | job log |
 | `mirror-fedora.yml` | dispatch | a Fedora base is mirrored to DeskOS Quay | job log |
 | `renovate.yml` | daily; dispatch | opens pin-update pull requests; it never merges | pull requests |
-| `identity-freeipa.yml` | daily 04:23 UTC; dispatch | a client image joins a disposable FreeIPA realm and the session proves the login | summary, frames |
-| `identity-ad.yml` | daily 04:47 UTC; dispatch | the same, against a disposable Samba AD domain controller | summary, frames |
+| `identity-freeipa.yml` | daily 04:23 UTC; dispatch; pull request when the identity fixture or the session harness changes | a client image joins a disposable FreeIPA realm and the session proves the login | summary, frames |
+| `identity-ad.yml` | daily 04:47 UTC; dispatch; pull request when the identity fixture or the session harness changes | the same, against a disposable Samba AD domain controller | summary, frames |
 | `track.yml` | Mondays 05:17 UTC; dispatch | every checksum-pinned resource still resolves, and moves the ones the curated list covers, as a pull request | pull request |
 | `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed record store; a prefix with an index is refused without `force` | job log |
 
