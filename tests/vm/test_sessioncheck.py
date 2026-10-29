@@ -49,6 +49,9 @@ def reported(plan):
     """
     out = {}
     for i, d in enumerate(sc.plan_defaults(plan)):
+        if (d.get("key") or "").startswith("/org/gnome/login-screen/"):
+            out[f"greeter_{i}"] = d["value"]
+            continue
         out[f"dconf_{i}"] = out[f"dconfdb_{i}"] = d["value"]
     for i, d in enumerate(sc.plan_vendor_defaults(plan)):
         out[f"vendor_{i}"] = out[f"vendordb_{i}"] = d["value"]
@@ -386,6 +389,49 @@ class ParseEvaluateTest(unittest.TestCase):
         self.assertTrue(c["pass"])
         self.assertIn("e2e_launch_app=gnome-calculator", c["detail"])
         self.assertIn("e2e_launch_frames=Calculator", c["detail"])
+
+    def test_a_login_screen_default_is_read_from_the_greeter(self):
+        # The greeter's database is not the session's, so the claim is one read from
+        # the profile GDM uses; the fixture reports it as the plan declares it.
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/disable-user-list", "type": "b", "value": "true"})
+        name = sc.GREETER_CHECK_PREFIX + "/org/gnome/login-screen/disable-user-list"
+        c = next(c for c in sc.evaluate(dict(GOOD, **reported(plan)), plan) if c["check"] == name)
+        self.assertTrue(c["pass"])
+        self.assertEqual(c["coverage"]["greeter"], "verified")
+        self.assertNotIn("plan default /org/gnome/login-screen/disable-user-list",
+                         {x["check"] for x in sc.evaluate(dict(GOOD, **reported(plan)), plan)})
+
+    def test_a_greeter_default_that_differs_fails(self):
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/disable-user-list", "type": "b", "value": "true"})
+        i = len(sc.plan_defaults(plan)) - 1
+        values = dict(GOOD, **reported(plan))
+        values[f"greeter_{i}"] = "false"
+        c = next(c for c in sc.evaluate(values, plan)
+                 if c["check"] == sc.GREETER_CHECK_PREFIX + "/org/gnome/login-screen/disable-user-list")
+        self.assertFalse(c["pass"])
+        self.assertEqual(c["coverage"]["greeter"], "different")
+
+    def test_a_greeter_default_that_cannot_be_read_is_unverified(self):
+        # A read the guest did not make is not a pass and not a mismatch: the
+        # summary counts it as unverified and names the check.
+        plan = copy.deepcopy(PLAN)
+        plan["artifact"]["dconf"]["defaults"].append(
+            {"key": "/org/gnome/login-screen/banner-message-text", "type": "s", "value": "'Lab'"})
+        i = len(sc.plan_defaults(plan)) - 1
+        values = dict(GOOD, **reported(plan))
+        del values[f"greeter_{i}"]
+        checks = sc.evaluate(values, plan)
+        c = next(c for c in checks if c["check"] == sc.GREETER_CHECK_PREFIX + "/org/gnome/login-screen/banner-message-text")
+        self.assertFalse(c["pass"])
+        self.assertEqual(c["coverage"]["greeter"], "missing")
+        summary = sc.greeter_coverage(checks)
+        self.assertEqual(summary["declared"], 1)
+        self.assertEqual(summary["verified"], 0)
+        self.assertEqual(len(summary["unverified"]), 1)
 
     def test_an_offline_boot_asserts_the_session_and_the_missing_route(self):
         # The browser page and the Flatpak store need the network this boot
