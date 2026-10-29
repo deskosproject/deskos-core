@@ -567,10 +567,10 @@
         "name": "ptyxis",
         "provenance": [
           {
-            "resource": "GnomeProfile/deskos-fonts",
-            "profile": "deskos-gnome",
-            "layer": "foundation",
-            "source": "resources/desktop/deskos-fonts.yaml:1"
+            "resource": "GnomeProfile/example-devops-desktop",
+            "profile": "example-devops",
+            "layer": "role",
+            "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
           }
         ]
       },
@@ -1002,14 +1002,14 @@
         {
           "key": "/org/gnome/Ptyxis/font-name",
           "type": "s",
-          "value": "'DejaVu Sans Mono 11'",
+          "value": "'Red Hat Mono 11'",
           "setting": "appearance.fonts.terminal",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-fonts",
-              "profile": "deskos-gnome",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-fonts.yaml:1"
+              "resource": "GnomeProfile/example-devops-desktop",
+              "profile": "example-devops",
+              "layer": "role",
+              "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
             }
           ]
         },
@@ -1020,10 +1020,10 @@
           "setting": "appearance.fonts.terminal",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-fonts",
-              "profile": "deskos-gnome",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-fonts.yaml:1"
+              "resource": "GnomeProfile/example-devops-desktop",
+              "profile": "example-devops",
+              "layer": "role",
+              "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
             }
           ]
         },
