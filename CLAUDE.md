@@ -1,385 +1,164 @@
-# CLAUDE.md: DeskOS Engineering Rules
+# CLAUDE.md: DeskOS engineering rules
 
 ## Mission
 
-DeskOS is an open workstation artifact factory.
-
-Its central thesis is:
-
-> A workstation is compiled from organizational intent.
-
-"Workstation" is the composition kind: the resource an organization
-authors. It compiles into a workstation *image* (a bootable container
-image). It is not a Fedora Workstation edition and not a distribution
-edition.
-
-DeskOS deterministically compiles declarative workstation definitions
-into Linux workstation artifacts.
+DeskOS compiles a workstation from organizational intent. "Workstation" is the
+composition kind an organization authors; it compiles into a workstation *image*,
+not a distribution edition.
 
 ## Hard boundary
 
-DeskOS is **not configuration management**.
+DeskOS owns the artifact and does not reconcile running endpoints. Never add fleet
+controllers, reconciliation or endpoint enforcement to solve a problem that
+belongs to Ansible, Satellite, Foreman, MDM or EDR.
 
-DeskOS owns the artifact.
+## Compiler flow
 
-It does not continuously reconcile running endpoints.
+    resources -> validation -> reference resolution -> deterministic composition
+      -> typed IR (Plan) -> backend -> build context
 
-Do not add fleet controllers, runtime reconciliation, or endpoint
-configuration enforcement to solve problems that belong to Ansible,
-Satellite, Foreman, MDM, EDR or similar systems.
-
-## Core architecture
-
-The required compiler flow is:
-
-    resources
-        ->
-    validation
-        ->
-    reference resolution
-        ->
-    deterministic composition
-        ->
-    typed IR / Plan
-        ->
-    backend
-        ->
-    artifact build context
-
-Never shortcut this to:
-
-    YAML -> Containerfile template
-
-Providers emit typed IR.
-
-They do not execute shell commands during planning.
+Never shortcut this to YAML → Containerfile templating. Providers emit typed IR
+and execute no shell during planning.
 
 ## Resource API
 
-Public DeskOS resources use:
-
-    apiVersion
-    kind
-    metadata
-    spec
-
-API groups live under `deskos.org`.
-
-Current API version is `v1alpha1`.
-
-The resource envelope is inspired by Kubernetes API design.
-
-Do not add Kubernetes runtime dependencies, controllers, CRDs or etcd.
+`apiVersion` / `kind` / `metadata` / `spec`, groups under `deskos.org`, current
+version `v1alpha1`. Kubernetes-inspired envelope, no Kubernetes runtime
+dependencies, controllers, CRDs or etcd.
 
 ## Composition
 
-File ordering is never precedence.
+File order is never precedence. Layers: `foundation < organization < role <
+workstation`. A higher layer may override a lower scalar on purpose; different
+values at one layer are errors. Sets union deterministically. Preserve provenance
+so a conflict names every contributor.
 
-Profile semantic layers are:
+## Core
 
-    foundation < organization < role < workstation
-
-Higher layers may intentionally override lower-layer scalar defaults.
-
-Conflicting values at the same layer are errors.
-
-Set-like state such as package lists composes by deterministic union.
-
-Preserve provenance so conflict errors can identify the contributing
-resources.
-
-## DeskOS Core
-
-DeskOS Core is a semantic workstation foundation, not the CentOS image.
-
-The same Core intent must be usable with:
-
-- CentOS Stream 10;
-- RHEL 10.
-
-A RHEL workstation must start from the official RHEL bootc base rather
-than inheriting from the CentOS DeskOS image.
-
-## No flavors
-
-Do not create DeskOS editions such as Developer, Enterprise, Gaming, KDE,
-LTS or HWE.
-
-Organizations create concrete Workstation resources by composing:
-
-    Platform
-    + DeskOS Core
-    + organization profiles
-    + role profiles
+Core is a semantic foundation, not the CentOS image, and must serve CentOS Stream
+10 and RHEL 10 alike. A RHEL workstation starts from the official RHEL bootc base,
+never from the CentOS DeskOS image. No editions (Developer, Enterprise, Gaming,
+KDE, LTS, HWE); organizations compose `Platform + Core + organization + role`.
 
 ## Managed baseline
 
-DeskOS manages organization-required machine-wide baseline state.
-
-DeskOS does not attempt to manage every user's development environment.
-
-Do not introduce Homebrew, Brewfiles, mise, asdf, SDKMAN, language
-version managers, dotfiles or user-specific Toolbox contents into the
-core resource model.
-
-If the organization requires a tool for every authorized user, it may
-belong to system baseline state.
-
-If it belongs to an individual project workflow, it is outside DeskOS.
+Manage machine-wide state that any authorized user needs; never a personal
+environment. No Homebrew, Brewfiles, mise, asdf, SDKMAN, version managers,
+dotfiles or personal Toolbox contents in the core model.
 
 ## Software acquisition
 
-Prefer, in order:
-
-1. distribution RPM;
-2. official vendor RPM repository;
-3. verified official upstream binary/archive;
-4. system Flatpak for suitable desktop applications;
-5. future managed PWA when appropriate.
-
-Do not use curl-pipe-shell installers.
-
-Binary artifacts require cryptographic checksums.
+Prefer distribution RPM; official vendor repository; verified upstream binary;
+system Flatpak; later a managed web application. No curl-pipe-shell. Binaries need
+cryptographic checksums.
 
 ## GNOME
 
-Expose semantic administrator concepts.
-
-Do not make users author raw dconf/GSettings keys for normal supported
-features.
-
-Core should provide reasonable defaults.
-
-Organization and role profiles may override those defaults through
-explicit semantic precedence.
-
-Defaults and locks mean different things:
-
-- defaults are artifact-supplied values that users, the `local`/`site`
-  dconf databases and runtime configuration management may override;
-- a lock is artifact-level enforcement. A lock in the DeskOS (`distro`)
-  database also wins over `local` and `site`, so runtime tools cannot
-  change the value.
-
-DeskOS Core never locks. Lock a setting only when the organization wants
-the image to enforce it, never for settings that Ansible, Satellite or
-similar tools are expected to manage.
-
-Avoid GNOME forks, Shell patches, Mutter patches, random COPRs and
-unsupported theme hacks.
+Expose semantic administrator concepts; do not make users write raw dconf keys for
+supported features. Core supplies defaults that organization and role profiles
+override by layer. A **default** can be overridden by the user, `local`/`site` or
+runtime configuration management; a **lock** enforces the value in the image and
+beats `local` and `site`. Core never locks. No GNOME or Mutter forks, Shell
+patches, random COPRs or theme hacks.
 
 ## Scripts
 
-Bash is not the architecture.
-
-Containerfile RUN commands generated from typed operations are normal.
-
-Arbitrary user-supplied shell in resource YAML is not allowed.
-
-Do not solve a missing abstraction by adding generic `script`,
-`postInstall`, or `command` escape hatches.
+Bash is not the architecture. Containerfile steps generated from typed operations
+are normal; user-supplied shell in resources is not. Never add `script`,
+`postInstall` or `command` escape hatches.
 
 ## Determinism
 
-Identical semantic inputs must produce byte-identical plans and rendered
-build contexts.
-
-No timestamps.
-
-No random identifiers.
-
-Sort map/set outputs explicitly.
-
-Say "deterministic compilation/rendering" or "reproducible workstation
-definition". Do not claim bit-for-bit reproducible images until base
-images, repository content and keys are pinned.
+Identical semantic inputs produce byte-identical plans and build contexts: no
+timestamps, no random identifiers, explicitly sorted output. Say "deterministic
+compilation and rendering"; never claim a bit-for-bit reproducible image until
+bases, repository content and keys are pinned.
 
 ## Credentials
 
-Never place:
-
-- registry credentials;
-- RHSM usernames/passwords;
-- activation keys;
-- signing keys;
-- domain join secrets;
-- enrollment tokens;
-
-inside workstation resources, generated artifacts or Git history.
-
-Factory credentials are external inputs to CI/build environments.
+Registry credentials, RHSM credentials and activation keys, signing keys, join
+secrets and enrolment tokens never enter resources, artifacts or Git history.
+Factory credentials are external inputs to CI.
 
 ## RHEL
 
-RHEL-derived bootc images must not be publicly redistributed.
-
-Rendering RHEL build contexts without credentials must remain possible.
-
-RHEL evidence is exactly what `docs/architecture.md`, "Validation
-status", records: composition and rendering are validated; the entitled
-RHEL 10.2 build of the example workstation (image `0e65bf4b...`, pinned
-base) passed `bootc container lint` with every layer free of build-host
-subscription state, and its QCOW2 passed `bootcheck.py` and
-`sessioncheck.py` under nested KVM. That build is historical: the RHEL
-factory host was retired and this repository no longer runs a RHEL build or
-publishes a `deskos/rhel10` status. RHEL build and boot validation now runs
-in a downstream organization's repository on GitHub-hosted runners.
-There is no RHEL job in this repository's GitHub Actions and no E2E test.
-Flatpak preinstall on RHEL is shown only by a private workstation build: a
-system `flatpak preinstall` in the image installed its Flathub apps once
-the Platform excluded `redhat-flatpak-preinstall-firefox`. Do not claim more
-until a build shows it.
-
-Do not weaken architecture merely because the current developer machine
-cannot perform an authenticated RHEL build.
+RHEL-derived bootc images are never publicly redistributed, and rendering a RHEL
+context without credentials must stay possible. RHEL evidence is exactly what
+`docs/architecture.md` ("Validation status") records: composition and rendering
+are tested here; the entitled 10.2 build (`0e65bf4b`) and its VM checks are
+historical, and that validation now runs in a downstream organization's
+repository. There is no RHEL job here and no E2E test. Do not claim more until a
+build shows it, and do not weaken the architecture because this machine cannot
+run an authenticated build.
 
 ## Scope discipline
 
-Before adding a feature, ask:
+Ask of every feature: does this help an organization define and compile its
+workstation artifact? If not, it does not belong in Core. Prefer one abstraction
+proved by a real case over several half-implemented kinds.
 
-> Does this help an organization define and compile its workstation
-> artifact?
+## Kinds
 
-If not, it probably does not belong in DeskOS Core.
+Fourteen public kinds: `Platform`, `Profile`, `Workstation`, `PackageSet`,
+`RpmRepository`, `AptRepository` (ADR 0015), `BinaryArtifact`, `FlatpakRemote`,
+`FlatpakSet`, `GnomeProfile`, `BootProfile` (ADR 0006), `UpdatePolicy` (ADR 0007),
+`TrustAnchor` (ADR 0009), `Theme` (ADR 0013). Do not expand the list casually.
 
-Prefer proving one abstraction with a real testcase over adding many
-half-implemented resource types.
+## Out of scope for the compiler
 
-## Current milestone
-
-Current public resource kinds are limited to:
-
-- Platform
-- Profile
-- Workstation
-- PackageSet
-- RpmRepository
-- AptRepository (ADR 0015)
-- BinaryArtifact
-- FlatpakRemote
-- FlatpakSet
-- GnomeProfile
-- BootProfile (ADR 0006)
-- UpdatePolicy (ADR 0007)
-- TrustAnchor (ADR 0009)
-- Theme (ADR 0013)
-
-Do not expand that list casually.
-
-## Out of scope for current milestone
-
-Do not implement unless explicitly requested:
-
-- FreeIPA/AD enrollment;
-- configuration management;
-- endpoint reconciliation;
-- Fleet;
-- OpenSCAP execution;
-- OSCAL;
-- SBOM generation;
-- SLSA;
-- Cosign;
-- Rekor;
-- lockfiles;
-- CUE;
-- KCL;
-- external provider loading;
-- update CLI;
-- firmware management;
-- PWA resources;
-- Azure DevOps adapters;
-- Tekton adapters;
-- GitLab mirrors;
-- multi-architecture builds;
-- AI/LLM integrations.
-
-Document extension points instead.
+Enrolment, configuration management, reconciliation, fleet work, OpenSCAP and
+OSCAL execution, lockfiles, CUE, KCL, external provider loading, firmware
+management, PWA resources, CI-provider adapters, multi-architecture builds and
+LLM integration. Evidence, SBOM and signing live around the artifact in the
+pipeline, never inside compiler semantics
+([ADR 0010](docs/adr/0010-artifact-evidence-and-supply-chain.md)). Document
+extension points instead of implementing them.
 
 ## AI
 
-AI may propose source changes.
-
-AI is not part of DeskOS compiler semantics.
-
-The compiler must remain deterministic and usable without any model or
-SaaS API.
+AI may propose source changes; it is not part of compiler semantics. The compiler
+stays deterministic and usable with no model and no network.
 
 ## Testing
 
-Every semantic behavior must be represented by focused tests.
-
-Important properties include:
-
-- loading;
-- schema validation;
-- unknown GVK rejection;
-- reference resolution;
-- composition;
-- conflict detection;
-- profile-order independence;
-- deterministic JSON plans;
-- deterministic render output;
-- CentOS Core golden plan;
-- RHEL example golden plan.
-
-Tests should verify architecture, not just code coverage.
+Every semantic behaviour has focused tests: loading, schema validation, unknown
+GVK rejection, reference resolution, composition, conflict detection,
+profile-order independence, deterministic plan JSON and render output, and the
+CentOS and RHEL golden plans. Test architecture, not coverage.
 
 ## External references
 
-When changing bootc, RHEL, CentOS, GNOME or Flatpak integration, verify
-current authoritative upstream documentation rather than relying on old
-examples or memory.
-
-Published write-ups of image-based OS factories are useful for architecture
-lessons.
-
-It is not the DeskOS resource-model specification.
+Verify current authoritative upstream documentation for bootc, RHEL, CentOS,
+GNOME and Flatpak. Write-ups of other factories are useful for architecture
+lessons; they are not the resource-model specification.
 
 ## Working style
 
-Inspect before rewriting.
-
-Keep dependencies small.
-
-Prefer boring, readable Go.
-
-Avoid premature repository splitting.
-
-Avoid speculative framework code.
-
-Do not publish artifacts or modify remote services without explicit
-human instruction.
-
-At the end of substantial work, explain:
-
-- what changed;
-- why;
-- tests run;
-- assumptions;
-- known gaps;
-- next recommended milestone.
+Inspect before rewriting. Keep dependencies small; prefer boring, readable Go; no
+premature repository splits or speculative framework code. Never publish
+artifacts or change remote services without explicit human instruction. End
+substantial work with what changed, why, tests run, assumptions, known gaps and
+the next milestone.
 
 ## Repository map
 
-- `cmd/deskosctl`: the factory CLI.
+- `cmd/deskosctl`: the factory CLI; `cmd/deskos`: the runtime companion.
 - `internal/model`: envelope, GVK, layers, provenance.
-- `internal/loader`: YAML roots to resources; no kind knowledge.
+- `internal/loader`: YAML roots to resources, no kind knowledge.
 - `internal/schema`: embedded JSON Schema validation (`schemas/`).
 - `internal/registry`: GVK to provider dispatch.
 - `internal/providers/{core,software,desktop,system}`: typed decoding,
-  contributions and lowering per API group; `internal/providers/assets`:
-  asset reads confined to the resource root.
+  contributions and lowering; `internal/providers/assets`: reads confined to the
+  resource root.
 - `internal/compose`: reference resolution and layered composition.
-- `internal/plan`: the typed Plan (IR).
+- `internal/plan`: the typed Plan.
 - `internal/backends/containerfile`: Plan to build context.
-- `internal/sbom`: declared CycloneDX SBOM of a Plan
-  ([supply-chain.md](docs/supply-chain.md)).
+- `internal/sbom`: declared CycloneDX SBOM ([supply-chain.md](docs/supply-chain.md)).
 - `internal/textplan`: the text form of `deskosctl plan`.
 - `internal/compiler`: pipeline wiring and the architecture, golden and
-  composition tests. Refresh goldens with
-  `go test ./internal/compiler -update` and review the diff.
-- `tests/vm`: QEMU boot and instrumented session checks for built disks
+  composition tests. Refresh goldens with `go test ./internal/compiler -update`
+  and review the diff.
+- `tests/vm`: QEMU boot and instrumented session checks
   (`python3 -m unittest discover -s tests/vm` for their unit tests).
-- `.github/workflows`: `ci.yml` (checks on push and pull requests),
-  `vm-bootcheck.yml` (manual CS10 build, boot and session checks) and
-  `release.yml` (tag-driven `deskosctl` release).
+- `.github/workflows`: `ci.yml`, `vm-bootcheck.yml`, `supply-chain.yml`,
+  `promotion.yml`, `iso.yml` and `release.yml`.
