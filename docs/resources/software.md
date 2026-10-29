@@ -59,13 +59,19 @@ list.
 
 ## `BinaryArtifact`
 
-A verified upstream binary, **pinned by version and SHA-256**:
+A verified upstream file, **pinned by version and SHA-256**:
 
 | Field | Type | Notes |
 |---|---|---|
 | `version`, `source.url`, `source.sha256` | `^[0-9A-Za-z][0-9A-Za-z._+-]*$`; https URL; `sha256:<64 hex>` | |
 | `archive` | `none` or `tar.gz` | |
-| `files[].path`, `.destination`, `.mode` | path inside the archive; `/usr/local/bin/...` or `/usr/bin/deskos`; `0755` or `0555` | |
+| `files[].path`, `.destination` | path inside the archive; `/usr/local/bin/<name>`, `/usr/local/share/fonts/<name>.<ttf|otf|ttc|txt>` or `/usr/bin/deskos` | |
+| `files[].mode` | `0755` or `0555` for an executable, `0644` or `0444` for a font | default: `0755`, or `0644` in the font directory |
+
+A font goes under `/usr/local/share/fonts` because fontconfig reads that directory
+and no package owns it, so a family the platform does not package can still ship
+pinned by checksum (ADR 0018). The extension is part of the rule: the destination
+is a font or the licence text beside it, never any other payload.
 
 ```yaml
 spec:

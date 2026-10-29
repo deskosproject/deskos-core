@@ -39,10 +39,10 @@
               "path": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
               "destination": {
                 "type": "string",
-                "pattern": "^(/usr/local/bin/[A-Za-z0-9][A-Za-z0-9._+-]*|/usr/bin/deskos)$",
-                "description": "A binary lands under /usr/local/bin, which belongs to no package. The one exception is the runtime companion at /usr/bin/deskos, named here so sudo's secure_path finds it (ADR 0018)."
+                "pattern": "^(/usr/local/bin/[A-Za-z0-9][A-Za-z0-9._+-]*|/usr/local/share/fonts/[A-Za-z0-9][A-Za-z0-9._+-]*\\.(ttf|otf|ttc|txt)|/usr/bin/deskos)$",
+                "description": "A binary lands under /usr/local/bin, which belongs to no package. The one exception is the runtime companion at /usr/bin/deskos, named here so sudo's secure_path finds it (ADR 0018). A font lands under /usr/local/share/fonts, which fontconfig reads and no package owns; a text file beside it carries the licence (ADR 0018, amended 2026-10-29)."
               },
-              "mode": { "enum": ["0755", "0555"] }
+              "mode": { "enum": ["0444", "0555", "0644", "0755"], "description": "0755 or 0555 for an executable, 0644 or 0444 for a font; the decoder pairs the mode with the destination." }
             }
           }
         },

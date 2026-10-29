@@ -90,12 +90,12 @@ func DeclaredScope(p *plan.Plan) Scope {
 			len(db.Locks)))
 	}
 	if n := len(a.Binaries); n > 0 {
-		// The binaries are files the plan installs too, but not in the list above: they
-		// arrive through the artifact step, and this check does not read them. Saying so
-		// is the difference between a scope a reader can trust and one it can only guess
-		// at; the session check is what asserts them, on a machine that has just booted.
+		// These are files the plan installs too, but not in the list above: they arrive
+		// through the artifact step, and this check does not read them. Saying so is the
+		// difference between a scope a reader can trust and one it can only guess at;
+		// the session check is what asserts them, on a machine that has just booted.
 		s.NotChecked = append(s.NotChecked, fmt.Sprintf(
-			"the bytes of the binaries the plan installs (%d), for an artifact that is a single file: "+
+			"the bytes of the files the plan installs through an artifact (%d), for an artifact that is a single file: "+
 				"the session check asserts them before a user can change anything", n))
 	}
 	return s

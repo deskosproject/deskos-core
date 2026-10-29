@@ -227,6 +227,33 @@ func TestEveryFetchCarriesTheRetriesAndTheBounds(t *testing.T) {
 	}
 }
 
+// A font is data: it is copied to the font directory with the mode the plan
+// declares and no execute bit, so the build cannot make it look like a program
+// (ADR 0018, amended 2026-10-29).
+func TestFontArtifactInstallsWithoutAnExecuteBit(t *testing.T) {
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
+	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{
+		Artifact: "gelasio", Version: "1", URL: "https://example.org/Gelasio.ttf", Archive: "none",
+		SHA256: strings.Repeat("a", 64), Destination: "/usr/local/share/fonts/Gelasio.ttf", Mode: "0644",
+	}}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cf string
+	for _, f := range files {
+		if f.Path == ContainerfilePath {
+			cf = string(f.Data)
+		}
+	}
+	if !strings.Contains(cf, "install -D -m 0644") || !strings.Contains(cf, "/usr/local/share/fonts/Gelasio.ttf") {
+		t.Errorf("the font is not installed with its declared mode:\n%s", cf)
+	}
+	if strings.Contains(cf, "-m 0755") {
+		t.Errorf("the font is installed as an executable:\n%s", cf)
+	}
+}
+
 func TestBinaryArchiveMemberGuard(t *testing.T) {
 	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
 	p.Artifact.Binaries = []plan.VerifiedBinaryInstall{{

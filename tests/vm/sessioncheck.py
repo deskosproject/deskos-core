@@ -98,7 +98,7 @@ VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
 DCONF_PROFILE_PATH = "/etc/dconf/profile/deskos-qa-defaults"
 DEFAULT_CHECK_PREFIX = "plan default "
 GREETER_CHECK_PREFIX = "greeter default "
-BINARY_CHECK_PREFIX = "plan binary "
+BINARY_CHECK_PREFIX = "plan artifact file "
 VENDOR_CHECK_PREFIX = "plan vendor default "
 # Sentinels for what the guest read; neither can be a GVariant text value, so they
 # are told apart from a value the key really has.
