@@ -31,7 +31,8 @@ on:
       - "cmd/**"
       - "schemas/**"
       - "go.mod"
-      - "tests/vm/**"
+      - "tests/vm/*.py"
+      - "tests/vm/config.toml"
       - ".github/workflows/vm-bootcheck.yml"
   push:
     branches: [main]
@@ -42,7 +43,8 @@ on:
       - "cmd/**"
       - "schemas/**"
       - "go.mod"
-      - "tests/vm/**"
+      - "tests/vm/*.py"
+      - "tests/vm/config.toml"
       - ".github/workflows/vm-bootcheck.yml"
 
 permissions:
