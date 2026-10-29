@@ -208,23 +208,21 @@ developer role. No new kinds, no escape hatches, and they call the released
 `deskosctl`. Acceptance: a newcomer follows it, ends with a booted machine, and
 writes down where they got stuck.
 
-### GNOME system administration coverage (proposed 2026-10-29)
+### GNOME system administration coverage (audited 2026-10-29)
 
-Read the [GNOME System Administration
-Guide](https://help.gnome.org/system-admin-guide/) end to end, with every linked
-page, and give each item a verdict: expressible today, missing field, candidate
-kind (with the ADR it needs), or out of scope with a reason.
+Every page of the [GNOME System Administration
+Guide](https://help.gnome.org/system-admin-guide/) has a verdict in
+[gnome-coverage.md](gnome-coverage.md): modelled, partial, artifact, a missing
+field, a candidate kind, or refused with the invariant that refuses it.
 
-The first pass already shows the split: dconf defaults and locks cover more than
-expected (dim, blank, compose key, greeter banner, user list, lock shield,
-wallpaper); fonts and backgrounds are a `BinaryArtifact` plus a profile key, not
-one field; file associations, NetworkManager connections, custom sessions and an
-NFS home profile are ADR candidates; autostart and kiosk mode are out under
-invariant 5.
+The audit corrected the guess this section used to carry. The vocabulary is
+**closed** — there is no raw dconf field — so **fourteen** guide items are
+modelled exactly and four partially, not "most of them". Nine fields are cheap and
+need no kind; a NetworkManager connection needs an ADR (secrets at runtime);
+a polkit action file is a security surface and may be refused; autostart, custom
+sessions and single-application mode are refused under invariant 5.
 
-Deliverable: `docs/gnome-coverage.md`, one row per page, then one issue per gap.
-Declining an item with a reason is a result. The count of public kinds stays at
-fourteen until an ADR says otherwise.
+Next: one issue per field, one PR per group, each with its check.
 
 ## Open work
 
