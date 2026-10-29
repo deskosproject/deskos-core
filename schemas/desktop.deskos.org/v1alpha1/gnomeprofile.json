@@ -35,6 +35,7 @@
             "dock.position", "dock.behavior", "dock.iconSize", "dock.showTrash",
             "software.updates",
             "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
+            "shell.developmentTools",
             "clock.showWeekday", "clock.format",
             "keyboard.numLock", "keyboard.terminal", "keyboard.xkbOptions",
             "power.buttonAction",
@@ -117,6 +118,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "developmentTools": { "type": "boolean" },
             "favorites": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/desktopId" } },
             "hotCorners": { "type": "boolean" },
             "welcomeTour": { "type": "boolean" },
