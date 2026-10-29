@@ -5,6 +5,11 @@ Guide](https://help.gnome.org/system-admin-guide/) a DeskOS image can carry, pag
 by page. Audited 2026-10-29 against `GnomeProfile` and the providers, not against
 the guide's own assumption that any dconf key is a setting.
 
+This page is also the evidence for [ADR 0024](adr/0024-what-a-desktop-platform-must-expose.md):
+a desktop is adopted because it exposes file-based configuration with precedence
+and a lock layer that a check can read, not because it is popular. The audit is
+how "GNOME meets that today" is a claim instead of an opinion.
+
 The vocabulary is **closed** (`settings.additionalProperties: false`): a key is
 reachable only when a semantic field lowers to it. There is no raw-dconf escape,
 by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
