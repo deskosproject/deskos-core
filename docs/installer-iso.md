@@ -62,8 +62,9 @@ reboot
 - No `lang`, `keyboard`, `timezone`, `network` or hostname: the installer asks, and
   the ISO carries the image so the install works offline. The `Localization` and
   `Timezone` modules must be enabled for those spokes to appear.
-- `xconfig --startxonboot`: without a target Anaconda sets `multi-user.target`, and
-  the installed workstation boots to a text login.
+- `xconfig --startxonboot`: a DeskOS image already sets `graphical.target` in the
+  image, and the install without this line still reached GNOME Initial Setup. Keep
+  it for a base that does not set a target.
 - `graphical` runs the graphical UI. Without `--non-interactive`, a complete
   kickstart installs without a click and an incomplete one waits on the summary
   hub instead of aborting. RHEL 10.2's Anaconda aborts a graphical non-interactive
@@ -81,18 +82,26 @@ the options DeskOS uses, and the ones to avoid:
 | Answer language, keyboard or time zone instead of asking | `lang`, `keyboard`, `timezone` in the kickstart | the ISO carries the image, so this works offline |
 | Set the hostname or bring up the network | `network` in the kickstart | optional; a wired install works without it |
 | Leave no root password | `rootpw --lock` | with no `user` line, GNOME Initial Setup creates the first account |
-| Boot into a graphical session after install | `xconfig --startxonboot` | without a target, Anaconda sets `multi-user.target` and the machine boots to a text login |
+| Boot into a graphical session after install | `xconfig --startxonboot` | DeskOS images already set `graphical.target`; keep it for a base that does not |
 | Graphical or text installer | `graphical` or `text` | `text` is the choice on a host with no display |
 | Partitioning, disk selection | `clearpart` and `autopart` | **avoid**: the person installing chooses the disk and LUKS, and `clearpart --all` erases every disk the installer sees |
 | Encryption | `autopart --encrypted --passphrase=...` | **avoid**: the passphrase would sit in the ISO in clear text |
 | Extra packages or files | `%post` | **avoid**: that is image content, and it belongs in the image; secrets in a kickstart are visible to anyone with the ISO |
 | Unattended install | `--non-interactive` | **avoid on RHEL 10**: measured abort at the progress screen (`User interaction required on standalone spoke ProgressSpoke`) |
 
-Without a `config.toml`, bootc-image-builder still produces an ISO, and the
-installer still asks for the disk, but the language and time zone spokes are
-missing and the installed system lands on `multi-user.target`. That combination has
-not been installed end to end here; the configuration above is what the published
-preview uses.
+**Without a `config.toml`, bootc-image-builder writes its own kickstart, and that
+one is not interactive.** Its `osbuild-base.ks` and `osbuild.ks`, read from an ISO
+built without a configuration on 2026-10-29, answer language, keyboard and time
+zone, lock root, run `clearpart --all` and `autopart --nohome --type=plain`, and
+finish with `reboot --eject`.
+
+That ISO was installed in a QEMU VM with UEFI and one empty disk: it asked nothing,
+wiped the disk, installed, rebooted and reached GNOME Initial Setup. It works, and
+it is destructive: any other disk the installer sees goes with it.
+
+The configuration above exists to remove those lines. With it, Anaconda asks for
+the disk, the partitioning and LUKS. Dropping it does not make the installer
+friendlier, it makes it unattended and destructive.
 
 ### 3. Build the ISO
 
