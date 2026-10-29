@@ -1,7 +1,7 @@
 # Installer ISO
 
 An installer ISO is built locally from a DeskOS image with bootc-image-builder's
-`anaconda-iso` type. The ISO **embeds the image and installs it offline** with the
+`anaconda-iso` type (older builder releases called the same output `iso`). The ISO **embeds the image and installs it offline** with the
 kickstart below.
 
 **Requirements:** Linux with rootful Podman and about 15 GB free.

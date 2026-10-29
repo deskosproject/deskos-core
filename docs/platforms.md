@@ -43,7 +43,7 @@ The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as
 [architecture.md](architecture.md#validation-status). A preview ISO built from a
 published image is at <https://download.deskos.org/>; verify its checksum. Or make
 a QCOW2 (or an Anaconda ISO) with `bootc-image-builder`:
-[install.md](install.md#install-a-published-image).
+[install.md](install.md#option-1-install-the-published-image).
 
 ### RHEL 10 — build privately, never publish
 

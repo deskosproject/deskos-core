@@ -1,38 +1,48 @@
 # Installing DeskOS
 
-Install a published image, or build your own and install that. You need **Linux
-with rootful Podman** and about **20 GB free**.
+Two ways to end up with a machine:
 
-> [!NOTE]
-> The **container images** are published, and `bootc-image-builder` turns one into
-> a disk on your machine. A **CentOS Stream 10 preview ISO** is also published at
-> <https://download.deskos.org/>; verify its `SHA256SUMS` before booting it. No
-> QCOW2, RHEL or Ubuntu ISO is published by this repository.
+- **Option 1 — install the published image.** Nothing is compiled: take the
+  CentOS Stream 10 image the pipeline built, scanned and booted, write a disk or an
+  ISO from it, install it.
+- **Option 2 — build your own image, then install it.** Author a `Workstation` in a
+  resource root, render it, build it, and install the result. RHEL 10 is this
+  option on an entitled base.
 
-## Install a published image
+Either way the machine has **no user account**: GNOME Initial Setup creates the
+first one at first boot, and that account is the administrator.
 
-One platform publishes an image that the gate built, scanned and booted. Ubuntu
-publishes its own, from its own repository:
+**You need:** Linux x86_64 with rootful Podman, about **20 GB** free, and either
+KVM for a virtual machine or a spare disk for a machine.
 
-| Platform | Image |
-|---|---|
-| CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` |
+## Option 1: install the published image
 
-Each has `:latest` (the newest image that passed the boot and session checks) and
-a `:<commit>` tag, moved together by the weekly gate (or a `publish=true`
-dispatch). Beyond a lab, **pin the verified digest**:
-[architecture.md](architecture.md#validation-status) has it and its run.
+### 1. Pick the reference
 
-### Write a QCOW2 disk
+| Platform | Image | Tags |
+|---|---|---|
+| CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
 
-Resolve `:latest` to a digest first, so a publish between the pull and the build
-cannot change what you install:
+`:latest` is the newest image that passed the gate and `:stable` is the digest a
+promotion accepted. Outside a lab, **pin the verified digest**:
+[validation status](architecture.md#validation-status) names the current one.
+
+### 2. Resolve it to a digest
+
+A publish between the pull and the build would otherwise change what you install.
 
 ```bash
-image=quay.io/deskos/deskos-core-centos-stream-10:latest
+image=quay.io/deskos/deskos-core-centos-stream-10:stable
 sudo podman pull "$image"
 digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
+echo "$digest"
+```
 
+### 3. Write a disk — or make an installer ISO
+
+**A QCOW2 for a virtual machine:**
+
+```bash
 mkdir -p output
 sudo podman run --rm -it --privileged --pull=missing \
     --security-opt label=type:unconfined_t \
@@ -44,108 +54,166 @@ sudo podman run --rm -it --privileged --pull=missing \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
 
-The disk is `output/qcow2/disk.qcow2` (*10.5 GiB virtual* by default), with no
-user account baked in: GNOME Initial Setup creates the first one at first boot.
+The disk is `output/qcow2/disk.qcow2` (10.5 GiB virtual). `--no-default-kernel-args`
+keeps the image's own quiet graphical boot. CI pins the builder by digest; to build
+exactly what CI built, replace `:latest` with
+`@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b`.
 
-- `--no-default-kernel-args` keeps the image's own boot arguments (quiet
-  graphical splash) instead of the builder's serial console.
-- The CI pins this builder by digest, and `:latest` has moved past it. To build
-  exactly what CI built, replace the builder reference with
-  `quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b`.
+**An installer ISO, if you want the Anaconda flow.** `anaconda-iso` is the current
+name for this output; older builder releases called it `iso`.
 
-### Or make an installer ISO
+```bash
+cat > config.toml <<'EOF'
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Localization",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+]
 
-> [!WARNING]
-> **An installer ISO erases every disk it is pointed at.** Read
-> [installer-iso.md](installer-iso.md) before you build one: it carries the
-> kickstart DeskOS needs and the warning in full.
+[customizations.installer.kickstart]
+contents = """
+graphical
+rootpw --lock
+xconfig --startxonboot
+reboot
+"""
+EOF
 
-Use `--type anaconda-iso` with that kickstart in `config.toml`; **the ISO bakes
-in the reference it is built from, and that is what the installed machine follows
-for every later `bootc upgrade`.**
+sudo podman run --rm --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output -v ./config.toml:/config.toml:ro \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type anaconda-iso --config /config.toml \
+    --chown "$(id -u):$(id -g)" \
+    "quay.io/deskos/deskos-core-centos-stream-10@$digest"
+```
 
-## Build your own, then install it
+The ISO is `output/bootiso/install.iso`. The kickstart answers nothing about
+storage: Anaconda asks for language, keyboard, timezone, network (optional), the
+disk and LUKS, and erases **the disk you select** — read that screen, and note
+that encryption is opt-in. The test-only ISO under `tests/installer/` is a
+different fixture: its kickstart runs `clearpart --all`, which erases every disk
+the installer sees.
 
-For an organization that authors its own workstation, for RHEL (which DeskOS
-never publishes), and for anyone who wants the whole pipeline. It needs **git**.
+> [!IMPORTANT]
+> The disk and the ISO both bake in the reference they were built from, and **that
+> is what the installed machine follows for every later `bootc upgrade`**. The
+> kickstarts and the reasoning behind them are in
+> [installer-iso.md](installer-iso.md).
 
-1. Get `deskosctl` from
-   [GitHub Releases](https://github.com/deskosproject/deskos-core/releases):
-   version-less asset names track the latest release, a `vX.Y.Z` name pins one,
-   and no Go toolchain is needed. The checkout and the download commands are in
-   [development.md](development.md#releases).
+A **preview ISO** is also published at <https://download.deskos.org/>; verify its
+`SHA256SUMS` before booting it.
 
-2. Render a shipped example, or a resource root of your own, and build it:
+### 4. Boot it
 
-   ```bash
-   ./bin/deskosctl render ./examples/centos-stream-10 \
-       --workstation example-centos-stream-10 --output ./dist/centos
-   sudo podman build -t localhost/deskos-centos:test ./dist/centos
-   ```
+Attach the disk to a VM with UEFI firmware, or write the ISO to a USB stick. The
+machine reaches GNOME Initial Setup; create the first user there. `deskos report`
+then shows the Plan the image carries, and `bootc status` the deployment it
+follows.
 
-3. Write the disk with the `bootc-image-builder` command above, with
-   `image=localhost/deskos-centos:test` and `"$image"` as its last argument. A
-   `localhost/` image is **not an update source**: an installed machine updates
-   from the reference it was built from, so anything beyond a lab disk needs a
-   published reference those machines can reach.
+## Option 2: build your own, then install it
 
-## RHEL 10 (private builds only)
+Use this when you author your own resource root: an organization's packages,
+desktop defaults and update policy. The example below lives in a checkout, so this
+option starts with **git**; `deskosctl` itself is a binary.
 
-RHEL 10 is never published **by DeskOS**: the EULA forbids redistributing it, so
-an organization with a subscription builds its own and pushes it only to a
-registry private to that organization. You need a **RHEL 10 host or build machine
-registered with your subscription and logged in to `registry.redhat.io`** (the
-base and the builder are entitled content), plus rootful Podman.
+### 1. Get `deskosctl`
 
-1. Get `deskosctl` as in step 1 above.
+Download the binary from
+[GitHub Releases](https://github.com/deskosproject/deskos-core/releases):
+version-less asset names track the latest release, a `vX.Y.Z` name pins one. The
+exact commands, including the checksum check, are in
+[development.md](development.md#releases).
 
-2. Declare a RHEL 10 workstation in a resource root of your own, for example
-   `my-org/workstations/core-rhel-10.yaml`:
+### 2. Author the workstation
 
-   ```yaml
-   apiVersion: core.deskos.org/v1alpha1
-   kind: Workstation
-   metadata:
-     name: deskos-core-rhel-10
-   spec:
-     displayName: DeskOS Core (RHEL 10)
-     platformRef: rhel-10
-     profiles: [deskos-core, deskos-gnome]
-   ```
+A `Workstation` is one platform plus the profiles it is made of. The shipped
+example is complete:
 
-   > [!IMPORTANT]
-   > `deskos-core` carries the packages and the update policy, and `deskos-gnome`
-   > carries DeskOS's GNOME defaults (ADR 0016). A workstation that wants them
-   > selects both; one whose platform ships its own desktop, like Ubuntu, selects
-   > only `deskos-core`.
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-centos-stream-10
+spec:
+  platformRef: centos-stream-10
+  profiles: [deskos-core, deskos-gnome, deskos-dock]
+```
 
-3. Render and build it, tagged with the reference your machines should update
-   from, in a registry that is **private to your organization**:
+`deskos-core` carries packages and the update policy; `deskos-gnome` and
+`deskos-dock` carry the desktop defaults (ADR 0016). Every kind is in
+[resources.md](resources.md).
 
-   ```bash
-   ./bin/deskosctl render ./my-org \
-       --workstation deskos-core-rhel-10 --output ./dist/deskos-core-rhel-10
-   sudo podman build -t registry.example.com/deskos/core-rhel-10:latest \
-       ./dist/deskos-core-rhel-10
-   ```
+### 3. Render and build
 
-4. Make the QCOW2 (or the ISO) with the `bootc-image-builder` command above,
-   using the **RHEL** builder
-   `registry.redhat.io/rhel10/bootc-image-builder@sha256:3087a30a2891cd63505b5585f7f154a4eaaa8221aa1afcd50ae80cbecfdc5f97`
-   and the image `registry.example.com/deskos/core-rhel-10:latest`.
+```bash
+./bin/deskosctl validate ./examples/centos-stream-10
+./bin/deskosctl render ./examples/centos-stream-10 \
+    --workstation example-centos-stream-10 --output ./dist/centos
+sudo podman build -t localhost/deskos-centos:test ./dist/centos
+```
 
-In the image DeskOS builds and tests, every layer is free of the build host's
-subscription state (see [validation status](architecture.md#validation-status));
-a build you make is your own to check. The image, disks and ISOs are **still RHEL
-derivatives**: push them only to private registries and storage.
+### 4. Install it
 
-## Ubuntu 26.04
+A locally built image has no registry digest, so pass the tag itself as the last
+argument:
 
-An Ubuntu disk is not built here any more: the platform, its base and its
-workstations live in
-[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
-which carries the steps — the image, the compressed OCI layout, `bootc install
-to-disk` and the `--target-imgref` that decides what the machine updates from
-afterwards ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). What
-this repository still does with a Debian-family platform is compose and render
-it, and the tests are what say so.
+```bash
+mkdir -p output
+sudo podman run --rm -it --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type qcow2 --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" \
+    localhost/deskos-centos:test
+```
+
+For an ISO, use the `config.toml` and `--type anaconda-iso` command from Option 1
+with the same last argument.
+
+A `localhost/` image is a lab artifact, not an update source: a machine installed
+from it follows a reference no registry has, so it cannot update. To go further,
+tag it with the reference the machines will follow and push it where they can
+reach it:
+
+```bash
+sudo podman tag localhost/deskos-centos:test registry.example.com/deskos/core:stable
+sudo podman push registry.example.com/deskos/core:stable
+```
+
+Then build from that reference — step 2's `image=` line, or the tag as the last
+argument — and changing the tag is how the next version reaches installed
+machines.
+
+## RHEL 10: private builds only
+
+RHEL 10 is **never published by DeskOS**: the EULA forbids redistributing it. An
+organization with a subscription builds it on a **host registered with that
+subscription and logged in to `registry.redhat.io`**, and pushes only to a
+registry private to the organization.
+
+The steps are Option 2 with two changes: the workstation uses `platformRef:
+rhel-10`, and the disk or ISO is built with the RHEL builder
+`registry.redhat.io/rhel10/bootc-image-builder@sha256:3087a30a2891cd63505b5585f7f154a4eaaa8221aa1afcd50ae80cbecfdc5f97`.
+
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-core-rhel-10
+spec:
+  displayName: DeskOS Core (RHEL 10)
+  platformRef: rhel-10
+  profiles: [deskos-core, deskos-gnome]
+```
+
+In the image this repository builds, every layer is free of the build host's
+subscription state ([validation status](architecture.md#validation-status)); a
+build you make is your own to check. These are still RHEL derivatives: keep them
+in private registries and storage.
+
+No QCOW2 and no RHEL ISO are published. The platform matrix is
+[platforms.md](platforms.md).

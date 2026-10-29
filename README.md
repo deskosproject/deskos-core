@@ -53,7 +53,7 @@ machine follows is also what `bootc upgrade` moves it to.
 
 To install onto a disk instead, make a QCOW2 or an ISO from the same published
 image — no compiler involved — as
-[**Installing DeskOS**](docs/install.md#install-a-published-image) describes.
+[**Installing DeskOS**](docs/install.md#option-1-install-the-published-image) describes.
 
 Two shipped platforms are compiled from this repository; one publishes an image,
 and the table says what has actually been verified on each:
