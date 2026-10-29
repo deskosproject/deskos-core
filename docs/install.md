@@ -56,13 +56,48 @@ user account baked in: GNOME Initial Setup creates the first one at first boot.
 ### Or make an installer ISO
 
 > [!WARNING]
-> **An installer ISO erases every disk it is pointed at.** Read
-> [installer-iso.md](installer-iso.md) before you build one: it carries the
-> kickstart DeskOS needs and the warning in full.
+> The installer asks for language, keyboard, timezone, network (optional), the
+> disk and LUKS, and then erases **the disk you select** — read the destination
+> screen. LUKS is opt-in. The test-only ISO under `tests/installer/` is different:
+> its kickstart runs `clearpart --all`, which erases every disk the installer
+> sees. [installer-iso.md](installer-iso.md) explains both.
 
-Use `--type anaconda-iso` with that kickstart in `config.toml`; **the ISO bakes
-in the reference it is built from, and that is what the installed machine follows
-for every later `bootc upgrade`.**
+```bash
+image=quay.io/deskos/deskos-core-centos-stream-10:latest
+sudo podman pull "$image"
+digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
+
+mkdir -p output
+cat > config.toml <<'EOF'
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Localization",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+]
+
+[customizations.installer.kickstart]
+contents = """
+graphical
+rootpw --lock
+xconfig --startxonboot
+reboot
+"""
+EOF
+
+sudo podman run --rm --privileged --pull=missing \
+    --security-opt label=type:unconfined_t \
+    -v ./output:/output -v ./config.toml:/config.toml:ro \
+    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    quay.io/centos-bootc/bootc-image-builder:latest \
+    build --type anaconda-iso --config /config.toml \
+    --chown "$(id -u):$(id -g)" \
+    "quay.io/deskos/deskos-core-centos-stream-10@$digest"
+```
+
+The ISO is `output/bootiso/install.iso`. `anaconda-iso` is the current name for
+this output: older builder releases called it `iso`. **The ISO bakes in the
+reference it is built from, and that is what the installed machine follows for
+every later `bootc upgrade`.**
 
 ## Build your own, then install it
 

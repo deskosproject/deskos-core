@@ -47,7 +47,7 @@ New here? Read the [README](../README.md), then [Platforms](platforms.md).
 | [Checks](checks.md) | what each workflow proves and how to read a red run |
 | [Threat model](threat-model.md) | assets, boundaries, controls and gaps, the incident tabletop |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |
-| [Installer ISO](installer-iso.md) | the kickstart, and the warning that it erases every disk |
+| [Installer ISO](installer-iso.md) | the kickstart, the build command, and what the installer asks before it erases a disk |
 | [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E, prior art |
 | [VM harness](../tests/vm/README.md) | the boot, session and first-boot checks and their limits |
 | [Roadmap](roadmap.md) · [ADRs](adr/README.md) | what is done and planned; the decisions behind it |
