@@ -80,6 +80,8 @@ GOOD = {
     "browser_fetch": "ok", "browser_content": "ok", "browser_screenshot": "yes",
     "browser_firefox_requests": "2",
     "default_routes": "0",
+    "e2e_apps": "3",
+    "e2e_app_names": "gnome-shell,org.gnome.Nautilus,org.gnome.Settings",
     "deskos_report_exit": "0", "deskos_report_workstation": "ws",
     "deskos_check_exit": "0",
     "system_failed_units": "", "user_failed_units": "",
@@ -331,6 +333,27 @@ class ParseEvaluateTest(unittest.TestCase):
         values = {k: v for k, v in GOOD.items() if k != "firefox_present"}
         failed = {c["check"] for c in sc.evaluate(values, PLAN) if not c["pass"]}
         self.assertIn("the guest says whether Firefox is installed", failed)
+
+    def test_an_image_without_the_binding_fails_accessibility(self):
+        # A missing pyatspi is a read that did not happen, not a pass: the
+        # interactions that follow are built on this interface.
+        bad = dict(GOOD, e2e_apps="0", e2e_app_names="", e2e_error="import:No module named 'pyatspi'")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"the session exposes its applications through AT-SPI"})
+
+    def test_a_registry_that_returns_nothing_fails_accessibility(self):
+        bad = dict(GOOD, e2e_apps="0", e2e_app_names="")
+        c = next(c for c in sc.evaluate(bad, PLAN)
+                 if c["check"] == "the session exposes its applications through AT-SPI")
+        self.assertFalse(c["pass"])
+        self.assertIn("e2e_app_names=", c["detail"])
+
+    def test_the_accessibility_check_reports_what_it_saw(self):
+        c = next(c for c in sc.evaluate(GOOD, PLAN)
+                 if c["check"] == "the session exposes its applications through AT-SPI")
+        self.assertTrue(c["pass"])
+        self.assertIn("e2e_apps=3", c["detail"])
+        self.assertIn("org.gnome.Settings", c["detail"])
 
     def test_an_offline_boot_asserts_the_session_and_the_missing_route(self):
         # The browser page and the Flatpak store need the network this boot

@@ -84,6 +84,7 @@ JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
 # exist until first login, so nothing can be seeded there in advance. A
 # system-wide autostart runs them in whichever account GDM logs in.
 QA_SCRIPT_PATH = "/var/lib/deskos-qa/deskos-qa-check.sh"
+E2E_PROBE_PATH = "/var/lib/deskos-qa/e2e-apps.py"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
 AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
@@ -704,7 +705,8 @@ echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
-{reads}{locks}{skel}{appcheck}echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
+{reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
+echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
 test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo "firefox_screenshot=no"
@@ -712,6 +714,48 @@ test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo 
 }} > "$out.tmp"
 mv "$out.tmp" "$out"
 """
+
+def e2e_probe():
+    """The first E2E step: what the session exposes through AT-SPI.
+
+    It is the same interface a screen reader uses, so it proves the accessibility
+    stack is live before any interaction is scripted on top of it. It waits for the
+    desktop instead of assuming it is there when the session starts; if the binding
+    or the registry is missing, it says which, and the summary reports a read that
+    did not happen rather than a pass.
+    """
+    return r'''#!/usr/bin/python3
+# Applications the accessibility registry knows, through the binding the image
+# carries (python3-pyatspi 2.46 in the published image; nothing older is assumed).
+import time
+
+try:
+    import pyatspi
+except Exception as exc:  # an image without the desktop, or without the binding
+    print(f"e2e_error=import:{exc}")
+    raise SystemExit(0)
+
+deadline = time.time() + 20
+names = []
+error = ""
+while time.time() < deadline:
+    try:
+        desktop = pyatspi.Registry.getDesktop(0)
+        names = sorted({app.name for app in desktop if app and app.name})
+    except Exception as exc:
+        error = f"registry:{exc}"
+        time.sleep(1)
+        continue
+    if names:
+        break
+    time.sleep(1)
+
+if not names and error:
+    print(f"e2e_error={error}")
+print(f"e2e_apps={len(names)}")
+print("e2e_app_names=" + ",".join(names)[:900])
+'''
+
 
 def gdm_conf(user):
     return f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={user}\n"
@@ -850,6 +894,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"f {AUTOSTART_PATH} 0644 root root - {tmpfiles_arg(AUTOSTART)}",
             f"f {QA_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(script)}",
             f"f {QA_PROBE_PATH} 0755 root root - {tmpfiles_arg(session_probe())}",
+            f"f {E2E_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_probe())}",
             f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
@@ -1342,6 +1387,15 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
 
     check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
           f"session_type={values.get('session_type')}")
+    # Accessibility: the session must expose its applications through AT-SPI, the
+    # interface a screen reader uses. This is the ground the interactions are built
+    # on; it proves the stack is live and that the driver can see the desktop. An
+    # image without the binding reports which read did not happen, not a pass.
+    apps = values.get("e2e_apps", "")
+    check("the session exposes its applications through AT-SPI",
+          values.get("e2e_error") in (None, "") and apps.isdigit() and int(apps) >= 1,
+          f"e2e_apps={apps or 'unread'} e2e_error={values.get('e2e_error') or 'none'} "
+          f"e2e_app_names={values.get('e2e_app_names') or 'unread'}")
     if join_user:
         check("domain join completed", values.get("join_ok") == "yes",
               f"join_ok={values.get('join_ok')}")
