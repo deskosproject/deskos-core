@@ -408,26 +408,13 @@ asserted on the accessibility tree and not on pixels.
   would use them, so a check fails where a user would be stuck.
 - Promotion gates: only digests that passed E2E move forward. That needs the first
   part implemented before it is worth promising.
-- **Prior art, surveyed 2026-10-29.** Three shapes exist, and none of them is a
-  drop-in dependency:
-  - **Distribution-level OS testers** install an image in a VM, send synthetic
-    input and compare the screen against stored reference images. Cover the
-    installer and the desktop, and cost most in re-recording references when the
-    UI moves.
-  - **Desktop automation through the accessibility tree**, driven by a Python
-    binding with a helper that bridges input over Wayland's remote-desktop
-    portal. This is what the vendors' own desktop QA uses, and at least one
-    image-based distribution ships it as a reusable pull-request gate.
-  - **Post-build gates** that boot a published digest and run upgrade, rollback
-    and persistence scenarios. `lifecycle.yml` already is this shape.
-
-  We are the second shape, with the third already in place. Two things are worth
-  taking from the survey: the **Wayland input bridge** (through the desktop
-  portal, which is supported, instead of a root helper writing to `/dev/uinput`,
-  which is not), and the **10–15 minute budget for a full pass**, which is what
-  makes a suite survive as a gate. Nothing surveyed removes the need for our own
-  transport: the artifact stays unmodified, and a suite that needs an agent
-  baked into the image is not a check on the artifact.
+- **Prior art, surveyed 2026-10-29.** Three families of practice — reference-screen
+  OS testers, accessibility-tree automation with a portal-side input bridge, and
+  post-build digest gates — with what each proves and costs in
+  [session-e2e-prior-art.md](design/session-e2e-prior-art.md). We are the second,
+  and the third already exists (`lifecycle.yml`). The survey changed the
+  input-injection plan (the portal, not `/dev/uinput`) and set a time budget for a
+  full pass; it also says what we do not copy, and why names are left out.
 
 ## Milestone 5: identity and provisioning
 
