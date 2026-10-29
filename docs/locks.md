@@ -57,8 +57,10 @@ different setting, not covered by this lock.
 ## What can be locked
 
 - **Windows:** `windows.buttons`, `windows.buttonPlacement`.
-- **Appearance:** `appearance.wallpaper`, `.loginLogo`, `.fonts.interface`,
-  `.fonts.document`, `.fonts.monospace`, `.iconTheme`, `.cursorTheme`,
+- **Appearance:** `appearance.wallpaper`, `.loginLogo`, `.lockShield`,
+  `.fonts.interface`, `.fonts.document`, `.fonts.monospace`, `.fonts.titlebar`,
+  `.fonts.terminal`, `.fonts.textScaling`, `.fonts.antialiasing`, `.fonts.hinting`,
+  `.fonts.rgbaOrder`, `.fonts.lcdfilter`, `.iconTheme`, `.cursorTheme`,
   `.colorScheme`, `.accentColor`.
 - **Shell:** `shell.favorites`, `shell.hotCorners`, `shell.welcomeTour`,
   `shell.workspaces`, `shell.appFolders`, `shell.extensions`.
