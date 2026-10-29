@@ -23,7 +23,7 @@
           "uniqueItems": true,
           "items": { "enum": [
             "windows.buttons", "windows.buttonPlacement",
-            "appearance.wallpaper", "appearance.loginLogo",
+            "appearance.wallpaper", "appearance.loginLogo", "appearance.lockShield",
             "appearance.fonts.interface", "appearance.fonts.document", "appearance.fonts.monospace",
             "appearance.iconTheme", "appearance.cursorTheme",
             "appearance.colorScheme", "appearance.accentColor",
@@ -108,6 +108,7 @@
               }
             },
             "loginLogo": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+            "lockShield": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
             "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
             "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
             "colorScheme": { "enum": ["default", "prefer-dark", "prefer-light"] },

@@ -13,7 +13,7 @@ layered; the shipped platforms are EL10, where GNOME is the vendor desktop; and 
 desktop, with an answer that has stayed implicit.
 
 The first audit of the GNOME System Administration Guide ([gnome-coverage.md](../gnome-coverage.md)) gives the
-numbers: **eighteen** guide items are modelled exactly, two partially, and the refusals are the ones the invariants
+numbers: **nineteen** guide items are modelled exactly, one partially, and the refusals are the ones the invariants
 force.
 
 ## Decision
