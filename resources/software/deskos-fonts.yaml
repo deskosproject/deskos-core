@@ -50,6 +50,3 @@ spec:
     # Palatino, Bookman, Century Schoolbook, Chancery and Symbol families a
     # document exported from an office suite names without embedding a font.
     - urw-base35-fonts
-  # Chinese, Japanese and Korean are deliberately absent: DeskOS does not target
-  # those markets, and a workstation that needs them adds the families to its own
-  # package list.
