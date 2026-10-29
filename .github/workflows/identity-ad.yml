@@ -34,9 +34,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: identity-ad
-  # A newer push supersedes the run in flight: these are nightly checks,
-  # not gates, and a stale 20-minute run behind a fix is wasted time.
+  # Per ref, so a pull request cannot cancel the nightly run or another pull
+  # request: one global group meant the newest push cancelled everyone else's
+  # check and left it red without running.
+  group: identity-ad-${{ github.ref }}
   cancel-in-progress: true
 
 env:
