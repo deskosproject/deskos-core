@@ -157,6 +157,14 @@
             "buttonAction": { "enum": ["nothing", "suspend", "hibernate", "interactive"] }
           }
         },
+        "login": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "showUserList": { "type": "boolean" },
+            "banner": { "type": "string" }
+          }
+        },
         "lockdown": {
           "type": "object",
           "additionalProperties": false,

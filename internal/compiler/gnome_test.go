@@ -260,6 +260,79 @@ func TestKeepsVendorDefaultsAndALoginScreenConflict(t *testing.T) {
 	mustFail(t, err, "gnome.loginScreen is declared although the platform keeps its vendor's desktop defaults")
 }
 
+// The greeter reads its own database, so a login-screen key declared in a profile
+// must land there and not beside the session defaults; the backend splits by path.
+func TestLoginScreenFieldsReachTheGreeterDatabase(t *testing.T) {
+	const (
+		disableUserList = "/org/gnome/login-screen/disable-user-list"
+		bannerEnable    = "/org/gnome/login-screen/banner-message-enable"
+		bannerText      = "/org/gnome/login-screen/banner-message-text"
+	)
+	platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
+		"    dconfDatabase: distro\n    loginScreen: true\n    loginScreenDatabase: gdm\n", 1)
+	for _, tc := range []struct {
+		name, defaults, wantDisable, wantEnable, wantText string
+	}{
+		{"the user list is hidden and a banner shown", "    login:\n      showUserList: false\n      banner: 'Lab machine'\n", "true", "true", "'Lab machine'"},
+		{"an explicit empty banner turns the message off", "    login:\n      banner: ''\n", "", "false", ""},
+		{"showUserList true writes GNOME's key, not only its absence", "    login:\n      showUserList: true\n", "false", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := fixture{"platform.yaml": platform}.with(fixture{
+				"ws.yaml":   workstation("ws", "core"),
+				"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+				"g.yaml":    gnome("core", tc.defaults),
+			}).dir(t)
+			p := mustPlan(t, "ws", dir)
+			got, ok := dconf(p, disableUserList)
+			switch {
+			case tc.wantDisable == "" && ok:
+				t.Fatalf("disable-user-list is present as %q, want the key untouched", got)
+			case tc.wantDisable != "" && !ok:
+				t.Fatalf("disable-user-list is missing, want %q", tc.wantDisable)
+			case tc.wantDisable != "" && got != tc.wantDisable:
+				t.Fatalf("disable-user-list = %q, want %q", got, tc.wantDisable)
+			}
+			if tc.wantEnable != "" {
+				got, ok := dconf(p, bannerEnable)
+				if !ok || got != tc.wantEnable {
+					t.Fatalf("banner-message-enable = %q (present %v), want %q", got, ok, tc.wantEnable)
+				}
+			} else if _, ok := dconf(p, bannerEnable); ok {
+				t.Fatalf("banner-message-enable must be untouched")
+			}
+			if tc.wantText == "" {
+				if _, ok := dconf(p, bannerText); ok {
+					t.Fatalf("banner-message-text must be absent when the banner is empty")
+				}
+				return
+			}
+			if got, _ := dconf(p, bannerText); got != tc.wantText {
+				t.Fatalf("banner-message-text = %q, want %q", got, tc.wantText)
+			}
+		})
+	}
+}
+
+func TestLoginScreenFieldsNeedAGreeter(t *testing.T) {
+	// No loginScreen: the greeter's database is unknown, so writing the key would
+	// be an intention nobody reads. The platform gap is named (invariant 9).
+	for _, tc := range []struct{ name, defaults, setting string }{
+		{"banner", "    login:\n      banner: 'Lab machine'\n", "login.banner"},
+		{"user list", "    login:\n      showUserList: false\n", "login.showUserList"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := base.with(fixture{
+				"ws.yaml":   workstation("ws", "core"),
+				"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+				"g.yaml":    gnome("core", tc.defaults),
+			}).dir(t)
+			_, err := planOf(t, "ws", dir)
+			mustFail(t, err, "does not provide a GDM login screen that reads the DeskOS dconf database", tc.setting)
+		})
+	}
+}
+
 const (
 	enabledExtensionsKey = "/org/gnome/shell/enabled-extensions"
 	appIndicatorUUID     = "appindicatorsupport@rgcjonas.gmail.com"

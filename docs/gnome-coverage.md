@@ -40,8 +40,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Default favorite applications | `shell favorite-apps` | **modelled**, order-sensitive and checked |
 | **Login** | | |
 | Greeter logo | `login-screen logo` | **modelled** (`appearance.loginLogo`) |
-| Disable the user list | `login-screen disable-user-list` | **gap: field** — the platform already declares the GDM database |
-| Text banner on the greeter | `login-screen banner-message-enable`, `-text` | **gap: two fields**; the text cannot come from a file |
+| Disable the user list | `login-screen disable-user-list` | **modelled** since 2026-10-29 (`login.showUserList`) |
+| Text banner on the greeter | `login-screen banner-message-enable`, `-text` | **modelled** since 2026-10-29 (`login.banner`), any length, never from a file |
 | Default session per user | AccountsService `XSession` | **outside**: a provisioning choice for one account |
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
 | Automatic logout when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **gap: fields**, and a policy that can lose unsaved work |
@@ -65,9 +65,10 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 Three different bills, and conflating them is how a backlog grows without
 shipping:
 
-- **Nine fields are cheap**: dim and brightness, the greeter's user list and
-  banner, the extension lock for Looking Glass, a distinct lock shield, idle
-  logout, XKB layouts and the NFS profile line. Each is a scalar (or two) in
+- **Seven fields are cheap**: dim and brightness, the extension lock for Looking
+  Glass, a distinct lock shield, idle logout, XKB layouts and the NFS profile
+  line (the greeter's two left this list on 2026-10-29). Each is a scalar (or two)
+  in
   `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
   the count stays at fourteen.
 - **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
@@ -79,10 +80,11 @@ shipping:
 
 ## Decisions this produces
 
-1. Add the nine fields above, one PR per group, each with its check.
+1. Add the remaining seven fields, one PR per group, each with its check; the
+   greeter's two shipped on 2026-10-29.
 2. Open the NetworkManager connection ADR if an organization asks; refuse polkit
    unless one shows a real need.
 3. Keep the refusals written down here rather than rediscovered in review.
 4. Correct the roadmap: it claimed dconf defaults and locks covered more than
-   expected. They cover **fourteen** guide items exactly and four partially, which
-   is a different claim.
+   expected. They covered **fourteen** guide items exactly and four partially at the
+   audit, which is a different claim; the greeter's two now bring it to sixteen.

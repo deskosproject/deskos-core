@@ -70,6 +70,8 @@ const (
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
 	KeyPowerButton     = "power.buttonAction"
+	KeyShowUserList    = "login.showUserList"
+	KeyBanner          = "login.banner"
 
 	// The GNOME lockdown keys. Setting one to true disables the capability;
 	// locking it makes the choice read-only. The names mirror the dconf keys so
@@ -111,7 +113,7 @@ var knownKeys = map[string]bool{
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
-	KeyPowerButton: true, KeyExtensions: true,
+	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
 	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
 	KeyLockdownDisableUserSwitching: true, KeyLockdownDisableApplicationHandlers: true,
@@ -153,6 +155,17 @@ type Settings struct {
 	Keyboard     *Keyboard     `json:"keyboard,omitempty"`
 	Power        *Power        `json:"power,omitempty"`
 	Lockdown     *Lockdown     `json:"lockdown,omitempty"`
+	Login        *Login        `json:"login,omitempty"`
+}
+
+// Login is the greeter: the user list and the text banner. Both lower to the
+// database GDM reads, which the platform declares with gnome.loginScreen, so a
+// platform without a greeter fails composition instead of writing a key nobody
+// reads. A banner with no text turns the message off; leaving the field out
+// changes nothing.
+type Login struct {
+	ShowUserList *bool   `json:"showUserList,omitempty"`
+	Banner       *string `json:"banner,omitempty"`
 }
 
 // Lockdown is the set of GNOME capabilities a managed profile can turn off.
@@ -466,6 +479,21 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		}
 		enum(KeyColorScheme, a.ColorScheme, colorSchemes)
 		enum(KeyAccentColor, a.AccentColor, accentColors)
+	}
+
+	if lg := s.Login; lg != nil {
+		if lg.ShowUserList != nil {
+			set(KeyShowUserList, *lg.ShowUserList, strconv.FormatBool(*lg.ShowUserList))
+		}
+		if lg.Banner != nil {
+			// GNOME has no length limit and folds a long message into two columns;
+			// a NUL byte is the one thing it cannot carry.
+			if strings.ContainsRune(*lg.Banner, 0) {
+				bad("%s: the banner cannot contain a NUL byte", KeyBanner)
+			} else {
+				set(KeyBanner, *lg.Banner, *lg.Banner)
+			}
+		}
 	}
 
 	if sh := s.Shell; sh != nil {
