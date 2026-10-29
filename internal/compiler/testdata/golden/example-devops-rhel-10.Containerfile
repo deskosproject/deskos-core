@@ -39,8 +39,12 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'google-carlito-fonts' \
         'google-chrome-stable' \
         'google-crosextra-caladea-fonts' \
+        'google-noto-color-emoji-fonts' \
+        'google-noto-sans-cjk-vf-fonts' \
         'google-noto-sans-fonts' \
+        'google-noto-sans-math-fonts' \
         'google-noto-sans-mono-fonts' \
+        'google-noto-sans-symbols-fonts' \
         'google-noto-serif-fonts' \
         'kubectl' \
         'liberation-fonts' \

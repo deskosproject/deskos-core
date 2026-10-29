@@ -3,7 +3,9 @@ kind: PackageSet
 metadata:
   name: deskos-fonts
 spec:
-  # The families an office document expects, plus the ones the desktop draws with.
+  # Every family a workstation needs to draw text without asking the user to
+  # install anything: the interface, an office document, a terminal, and the
+  # scripts a document can arrive in.
   #
   # The Microsoft families cannot be shipped: Georgia, Calibri, Cambria, Arial and
   # Times New Roman are proprietary. These are the metric-compatible replacements,
@@ -13,14 +15,26 @@ spec:
   #   Calibri -> Carlito, Cambria -> Caladea, Arial/Times/Courier -> Liberation.
   #
   # Georgia's replacement, Gelasio, is not packaged for EL10 and a font cannot be
-  # placed with BinaryArtifact today, which only writes under /usr/local/bin.
+  # placed with BinaryArtifact today, which only writes under /usr/local/bin. Until
+  # one of those changes, Georgia falls back to DejaVu Serif.
   packages:
-    - liberation-fonts
-    - dejavu-sans-fonts
-    - dejavu-serif-fonts
-    - dejavu-sans-mono-fonts
-    - google-carlito-fonts
-    - google-crosextra-caladea-fonts
+    # Latin, Greek and Cyrillic text, in the three shapes a document mixes.
     - google-noto-sans-fonts
     - google-noto-serif-fonts
     - google-noto-sans-mono-fonts
+    # The office substitutes, plus their metric partners.
+    - liberation-fonts
+    - google-carlito-fonts
+    - google-crosextra-caladea-fonts
+    # The distribution's own family: terminals and old applications ask for it by
+    # name, and it is what fontconfig picks when nothing else matches.
+    - dejavu-sans-fonts
+    - dejavu-serif-fonts
+    - dejavu-sans-mono-fonts
+    # Chinese, Japanese and Korean. The variable font is one file for all three
+    # scripts, 33 MB installed instead of 130 MB for the static families.
+    - google-noto-sans-cjk-vf-fonts
+    # Color emoji, and the symbols and math a document uses without naming a font.
+    - google-noto-color-emoji-fonts
+    - google-noto-sans-symbols-fonts
+    - google-noto-sans-math-fonts

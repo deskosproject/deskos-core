@@ -276,6 +276,26 @@
     },
     {
       "type": "library",
+      "name": "google-noto-color-emoji-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-sans-cjk-vf-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "google-noto-sans-fonts",
       "properties": [
         {
@@ -286,7 +306,27 @@
     },
     {
       "type": "library",
+      "name": "google-noto-sans-math-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "google-noto-sans-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-sans-symbols-fonts",
       "properties": [
         {
           "name": "deskos:source",
