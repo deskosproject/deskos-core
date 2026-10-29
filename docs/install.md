@@ -68,9 +68,9 @@ sudo podman run --rm -it --privileged --pull=missing \
 ```
 
 The disk is `output/qcow2/disk.qcow2` (10.5 GiB virtual). `--no-default-kernel-args`
-keeps the image's own quiet graphical boot. CI pins the builder by digest; to build
-exactly what CI built, replace `:latest` with
-`@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b`.
+keeps the image's own quiet graphical boot. CI pins this builder by digest, in the
+workflow; here `:latest` is fine, and a pinned digest is a line you add when you
+need to build exactly what a past run built.
 
 **An installer ISO, if you want the Anaconda flow.** `anaconda-iso` is the current
 name for this output; older builder releases called it `iso`.
@@ -212,7 +212,7 @@ registry private to the organization.
 
 The steps are Option 2 with two changes: the workstation uses `platformRef:
 rhel-10`, and the disk or ISO is built with the RHEL builder
-`registry.redhat.io/rhel10/bootc-image-builder@sha256:3087a30a2891cd63505b5585f7f154a4eaaa8221aa1afcd50ae80cbecfdc5f97`.
+`registry.redhat.io/rhel10/bootc-image-builder:latest`.
 
 ```yaml
 apiVersion: core.deskos.org/v1alpha1
