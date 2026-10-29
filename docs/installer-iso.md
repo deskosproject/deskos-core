@@ -57,8 +57,9 @@ reboot
 
 - `rootpw --lock` and no `user`: GNOME Initial Setup creates the first account, so
   there is no root password to guess.
-- No `clearpart` and no `autopart`: the disk, the partitioning and LUKS belong to
-  whoever installs.
+- No `clearpart` and no `autopart`: the builder's own kickstart has both, which is
+  why this one replaces it. The disk, the partitioning and LUKS belong to whoever
+  installs.
 - No `lang`, `keyboard`, `timezone`, `network` or hostname: the installer asks, and
   the ISO carries the image so the install works offline. The `Localization` and
   `Timezone` modules must be enabled for those spokes to appear.
@@ -88,11 +89,16 @@ the options DeskOS uses, and the ones to avoid:
 | Extra packages or files | `%post` | **avoid**: that is image content, and it belongs in the image; secrets in a kickstart are visible to anyone with the ISO |
 | Unattended install | `--non-interactive` | **avoid on RHEL 10**: measured abort at the progress screen (`User interaction required on standalone spoke ProgressSpoke`) |
 
-Without a `config.toml`, bootc-image-builder still produces an ISO, and the
-installer still asks for the disk, but the language and time zone spokes are
-missing and the installed system lands on `multi-user.target`. That combination has
-not been installed end to end here; the configuration above is what the published
-preview uses.
+**Without a `config.toml`, bootc-image-builder writes its own kickstart, and that
+one is not interactive.** Read from the ISO built without a configuration on
+2026-10-29, its `osbuild-base.ks` and `osbuild.ks` answer language, keyboard and
+time zone, lock root, run `clearpart --all` and `autopart --nohome --type=plain`,
+and finish with `reboot --eject`. An install from that ISO asks nothing and erases
+every disk the installer sees.
+
+The configuration above exists to remove those lines: with it, Anaconda asks for
+the disk, the partitioning and LUKS. Dropping it does not make the installer
+friendlier, it makes it unattended and destructive.
 
 ### 3. Build the ISO
 
