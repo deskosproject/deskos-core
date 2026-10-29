@@ -330,7 +330,8 @@ When changing bootc, RHEL, CentOS, GNOME or Flatpak integration, verify
 current authoritative upstream documentation rather than relying on old
 examples or memory.
 
-Bluefin's `THEPATTERN.md` is useful for factory architecture lessons.
+Published write-ups of image-based OS factories are useful for architecture
+lessons.
 
 It is not the DeskOS resource-model specification.
 

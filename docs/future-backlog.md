@@ -814,8 +814,8 @@ administrators, including those using agents, without expanding compiler semanti
 
 **Action:** Use pilot findings to select a small explanation/UX problem: Plan diff,
 why a value exists, validated proposed YAML, migration review or update visibility.
-Study relevant Bluefin/Omarchy lessons in discoverability, coherent defaults and
-accessibility only when they address that problem. Prefer existing CLI/JSON and
+Study lessons from other image-based desktops in discoverability, coherent
+defaults and accessibility only when they address that problem. Prefer existing CLI/JSON and
 documentation over a custom agent platform or more themes.
 
 **Acceptance:** A proposal ties a measurable user obstacle to a bounded improvement

@@ -156,9 +156,8 @@ automation.
 opt-in, the same principle as the artifact factory: DeskOS never phones
 home and never aggregates user data centrally.
 
-**Reuse before building.** Prefer an existing orchestrator — for example
-Hive, part of KubeStellar (CNCF Sandbox) — over an agent runner written
-into this repository. The orchestrator is infrastructure around DeskOS,
+**Reuse before building.** Prefer an orchestrator that already exists in a
+CNCF project over an agent runner written into this repository. The orchestrator is infrastructure around DeskOS,
 not part of it, and must never become a compiler dependency.
 
 This section is the operating procedure of
