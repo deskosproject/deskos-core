@@ -45,7 +45,6 @@ contents = """
 # Graphical Anaconda, and nothing else is answered.
 graphical
 rootpw --lock
-xconfig --startxonboot
 reboot
 """
 ```
@@ -62,8 +61,11 @@ reboot
 - No `lang`, `keyboard`, `timezone`, `network` or hostname: the installer asks, and
   the ISO carries the image so the install works offline. The `Localization` and
   `Timezone` modules must be enabled for those spokes to appear.
-- `xconfig --startxonboot`: without a target Anaconda sets `multi-user.target`, and
-  the installed workstation boots to a text login.
+- No `xconfig --startxonboot`: Anaconda sets the default target itself
+  (`ConfigureSystemdDefaultTargetTask`): `graphical.target` when a package provides
+  `service(graphical-login)`, which gdm does, and `multi-user.target` otherwise.
+  DeskOS ships gdm, so the line does nothing here, and the install without it
+  reached GNOME Initial Setup. Keep it only for a base with no graphical login.
 - `graphical` runs the graphical UI. Without `--non-interactive`, a complete
   kickstart installs without a click and an incomplete one waits on the summary
   hub instead of aborting. RHEL 10.2's Anaconda aborts a graphical non-interactive
@@ -81,18 +83,48 @@ the options DeskOS uses, and the ones to avoid:
 | Answer language, keyboard or time zone instead of asking | `lang`, `keyboard`, `timezone` in the kickstart | the ISO carries the image, so this works offline |
 | Set the hostname or bring up the network | `network` in the kickstart | optional; a wired install works without it |
 | Leave no root password | `rootpw --lock` | with no `user` line, GNOME Initial Setup creates the first account |
-| Boot into a graphical session after install | `xconfig --startxonboot` | without a target, Anaconda sets `multi-user.target` and the machine boots to a text login |
+| Boot into a graphical session after install | nothing to do | Anaconda picks `graphical.target` when gdm is installed and `multi-user.target` otherwise; `xconfig --startxonboot` is the historical way to force the first |
 | Graphical or text installer | `graphical` or `text` | `text` is the choice on a host with no display |
 | Partitioning, disk selection | `clearpart` and `autopart` | **avoid**: the person installing chooses the disk and LUKS, and `clearpart --all` erases every disk the installer sees |
 | Encryption | `autopart --encrypted --passphrase=...` | **avoid**: the passphrase would sit in the ISO in clear text |
 | Extra packages or files | `%post` | **avoid**: that is image content, and it belongs in the image; secrets in a kickstart are visible to anyone with the ISO |
 | Unattended install | `--non-interactive` | **avoid on RHEL 10**: measured abort at the progress screen (`User interaction required on standalone spoke ProgressSpoke`) |
 
-Without a `config.toml`, bootc-image-builder still produces an ISO, and the
-installer still asks for the disk, but the language and time zone spokes are
-missing and the installed system lands on `multi-user.target`. That combination has
-not been installed end to end here; the configuration above is what the published
-preview uses.
+**Without a `config.toml`, bootc-image-builder writes its own kickstart, and that
+one is not interactive.** Its `osbuild-base.ks` and `osbuild.ks`, read from an ISO
+built without a configuration on 2026-10-29, answer language, keyboard and time
+zone, lock root, run `clearpart --all` and `autopart --nohome --type=plain`, and
+finish with `reboot --eject`.
+
+That ISO was installed in a QEMU VM with UEFI and one empty disk: it asked nothing,
+wiped the disk, installed, rebooted and reached GNOME Initial Setup. It works, and
+it is destructive: any other disk the installer sees goes with it.
+
+The configuration above exists to remove those lines. With it, Anaconda asks for
+the disk, the partitioning and LUKS. Dropping it does not make the installer
+friendlier, it makes it unattended and destructive.
+
+### A private registry
+
+`bootc-image-builder` records the reference the ISO was built from and nothing
+else: **no credentials**. The ISO embeds the image, so installing does not contact
+the registry; the first `bootc upgrade` does.
+
+The installed machine reads `/etc/ostree/auth.json`, in the containers auth format
+and mode `0600`. `/run/ostree/auth.json` works for one boot:
+
+```json
+{ "auths": { "registry.example.com": { "auth": "<base64 of user:token>" } } }
+```
+
+`printf '%s' 'user:token' | base64` produces the value, and the token needs pull
+only. For `ghcr.io` the user is a GitHub account and the token a personal access
+token with `read:packages`.
+
+Deliver the file from provisioning: configuration management, cloud-init, or a
+kickstart `%post`. RHEL's own guide warns that a kickstart carrying credentials
+exposes them to anyone with the ISO, so keep the token scoped to pull and rotate
+it. Never bake it into the image.
 
 ### 3. Build the ISO
 

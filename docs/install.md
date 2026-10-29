@@ -87,7 +87,6 @@ enable = [
 contents = """
 graphical
 rootpw --lock
-xconfig --startxonboot
 reboot
 """
 EOF
@@ -230,6 +229,11 @@ In the image this repository builds, every layer is free of the build host's
 subscription state ([validation status](architecture.md#validation-status)); a
 build you make is your own to check. These are still RHEL derivatives: keep them
 in private registries and storage.
+
+A private registry means the installed machine needs credentials for the first
+`bootc upgrade`: `/etc/ostree/auth.json`, supplied by provisioning, never by the
+image or the ISO. [Installer ISO](installer-iso.md#a-private-registry) has the file
+and the warning.
 
 No QCOW2 and no RHEL ISO are published. The platform matrix is
 [platforms.md](platforms.md).
