@@ -135,6 +135,10 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if f, ok := get(KeyFavorites); ok {
 		l.set(KeyFavorites, "/org/gnome/shell/favorite-apps", "as", gvStrings(f.Value.([]string)), f.Provenance)
 	}
+	if v, ok := get(KeyDevTools); ok {
+		l.set(KeyDevTools, "/org/gnome/shell/development-tools", "b",
+			strconv.FormatBool(v.Value.(bool)), v.Provenance)
+	}
 	if v, ok := get(KeyBlankAfter); ok {
 		l.set(KeyBlankAfter, "/org/gnome/desktop/session/idle-delay", "u", gvUint32(v.Value.(Seconds)), v.Provenance)
 	}

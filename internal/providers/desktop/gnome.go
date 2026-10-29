@@ -72,6 +72,7 @@ const (
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
 	KeyPowerButton     = "power.buttonAction"
+	KeyDevTools        = "shell.developmentTools"
 	KeyShowUserList    = "login.showUserList"
 	KeyBanner          = "login.banner"
 
@@ -117,6 +118,7 @@ var knownKeys = map[string]bool{
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
 	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
+	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
 	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
 	KeyLockdownDisableUserSwitching: true, KeyLockdownDisableApplicationHandlers: true,
@@ -237,12 +239,13 @@ type Font struct {
 }
 
 type Shell struct {
-	Favorites   []string    `json:"favorites,omitempty"`
-	HotCorners  *bool       `json:"hotCorners,omitempty"`
-	WelcomeTour *bool       `json:"welcomeTour,omitempty"`
-	Workspaces  any         `json:"workspaces,omitempty"`
-	AppFolders  []AppFolder `json:"appFolders,omitempty"`
-	Extensions  []Extension `json:"extensions,omitempty"`
+	Favorites        []string    `json:"favorites,omitempty"`
+	DevelopmentTools *bool       `json:"developmentTools,omitempty"`
+	HotCorners       *bool       `json:"hotCorners,omitempty"`
+	WelcomeTour      *bool       `json:"welcomeTour,omitempty"`
+	Workspaces       any         `json:"workspaces,omitempty"`
+	AppFolders       []AppFolder `json:"appFolders,omitempty"`
+	Extensions       []Extension `json:"extensions,omitempty"`
 }
 
 // Extension turns one platform-declared GNOME Shell extension on or off. Naming a
@@ -505,6 +508,10 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 	}
 
 	if sh := s.Shell; sh != nil {
+		if dt := sh.DevelopmentTools; dt != nil {
+			// GNOME Shell's Looking Glass and the integrated debugger.
+			set(KeyDevTools, *dt, strconv.FormatBool(*dt))
+		}
 		if sh.Favorites != nil {
 			seen := map[string]bool{}
 			for _, f := range sh.Favorites {
