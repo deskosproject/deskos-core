@@ -5,9 +5,9 @@
 ## Context
 
 Organizations want to set the hot corners, the workspace count, app grid
-folders, the clock and a terminal shortcut, as Bluefin does with GSettings
-overrides and dconf files. Without semantic fields they would need raw
-dconf keys, which `GnomeProfile` does not accept.
+folders, the clock and a terminal shortcut, which an image of this shape sets
+today with GSettings overrides and dconf keyfiles. Without semantic fields they
+would need raw dconf keys, which `GnomeProfile` does not accept.
 
 ## Decision
 

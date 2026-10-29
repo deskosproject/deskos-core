@@ -16,10 +16,10 @@ Two facts constrain the design:
   "AI"; AGENTS.md invariant 11). It resolves no package versions, reads no
   host files and scans no bytes. Only the **built OCI image** has the
   installed content and the resolved versions.
-- The industry push toward "agentic software factories" (Bluefin's Hive,
-  Red Hat's Hummingbird) mixes two separable things: an **industrial
-  factory** that produces hardened, reproducible, attested artifacts, and
-  an **agentic maintenance** layer that proposes changes. The first is
+- The industry push toward "agentic software factories" mixes two separable
+  things: an **industrial factory** that produces hardened, reproducible,
+  attested artifacts, and an **agentic maintenance** layer that proposes
+  changes. The first is
   worth having on its own; the second is governed separately
   (AGENTS.md, "Agentic contribution").
 

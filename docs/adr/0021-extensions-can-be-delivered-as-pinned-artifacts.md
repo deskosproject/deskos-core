@@ -19,8 +19,8 @@ case where they do not. Measured on 2026-10-20:
   `libdbusmenu-gtk3.so.4` come from CRB, which CentOS Stream does not enable and
   RHEL does not support. The same transaction resolves on AlmaLinux 10, where CRB
   is enabled by default.
-- Building the extension from its git repository (what Bluefin LTS does in
-  `21-build-gnome-extensions.sh`) produces the same bytes upstream already
+- Building the extension from its git repository, as one image-based
+  distribution does in a build script, produces the same bytes upstream already
   publishes as a release zip, with a compiler toolchain in the build and a commit
   pin that is harder to verify than a pinned artifact.
 

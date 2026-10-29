@@ -22,8 +22,8 @@ shipped reference workstation already selects `Profile/deskos-reference-apps`,
 which preinstalls the Flathub Flatpak `io.github.kolunmi.Bazaar`. Keeping GNOME
 Software as a second store is inconsistent on every platform, not only Fedora.
 
-Bluefin solves the same problem with a build-script exclusion list and
-`dnf5 -y remove` after its installs. DeskOS forbids shell hooks and
+Images of this shape solve the same problem with a build-script exclusion list
+and `dnf5 -y remove` after the installs. DeskOS forbids shell hooks and
 YAML-to-Containerfile escape hatches (ADR 0005), so the equivalent has to be a
 typed resource fact and a typed Plan operation, not a script embedded in a
 resource.

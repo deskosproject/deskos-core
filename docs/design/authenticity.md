@@ -1,10 +1,9 @@
 # Consumer-side image authenticity
 
-**Status: decided, 2026-10-25.** DeskOS Core follows the projectbluefin model:
-keyless OIDC signatures, no key file and no consumer enforcement; verification
-is manual. An organization that chooses enforcement keeps a key outside its
-repository and uses a key-based policy, so `bootc` can reject an unsigned
-update. The key-based recipe is verified in the lab; that organization's policy,
+**Status: decided, 2026-10-25.** DeskOS Core signs keyless with OIDC: no key
+file, no consumer enforcement, and verification is manual. An organization that
+chooses enforcement keeps a key outside its repository and uses a key-based
+policy, so `bootc` can reject an unsigned update. The key-based recipe is verified in the lab; that organization's policy,
 installer and key-rotation paths are not. This document changes no DeskOS Core
 image policy or key.
 
@@ -20,8 +19,8 @@ where each model stops.
   for the workflow's OIDC identity and Rekor records the signature. Three
   attestations are attached (SBOM reference, reviewed exceptions, accepted
   matches).
-- **Core decided on 2026-10-25 to follow projectbluefin:** keyless signatures,
-  no key file, and no enforcement on the installed machine. A person verifies a
+- **Core decided on 2026-10-25:** keyless signatures, no key file, and no
+  enforcement on the installed machine. A person verifies a
   digest manually. An organization that chooses enforcement keeps key-based
   signing; making that signature a policy requirement on update is that
   organization's work.
@@ -149,13 +148,14 @@ composefs by the ostree-only `/run/ostree-booted` test (#177); with the fix in
 #178, `deskos update` stages the signed image and the unit runs `bootc upgrade`
 instead of being skipped.
 
-**Bluefin has two signing models, not a migration.** Bluefin Classic
-(`ghcr.io/ublue-os/bluefin`) is key-based with a `cosign.pub`; the newer
-`projectbluefin` images are keyless. `projectbluefin/common` carries the
-key-based policy for `ghcr.io/ublue-os`, not for the keyless projectbluefin
-repository, so `--enforce-container-sigpolicy` does not protect the latter.
-The open issue there is the keyless Fulcio identity, not whether the key-based
-policy works. No repository-wide identity regex is used as release
+**Key-based policy and keyless signing are different things, not two steps of
+one migration.** An image that ships a `cosign.pub` and a `sigstoreSigned`
+policy for its *key-based* predecessor gets no enforcement on its own keyless
+tags: the policy names a public key, and there is a Fulcio certificate instead.
+`--enforce-container-sigpolicy` therefore protects the old repository and not
+the keyless one, which is how an image can appear to enforce and not enforce at
+the same time. The open problem is the keyless Fulcio identity, not whether the
+key-based policy works. No repository-wide identity regex is used as release
 authorization here.
 
 **Upstream status (2026-10-25).** containers/image's `fulcio` policy accepts
@@ -200,8 +200,8 @@ version and the containers/image version.
 
 ## Decisions
 
-- **Decided 2026-10-25:** Core follows projectbluefin — keyless OIDC, no key
-  file, no consumer enforcement, manual verification. An organization that
+- **Decided 2026-10-25:** Core signs keyless with OIDC — no key file, no
+  consumer enforcement, manual verification. An organization that
   chooses enforcement keeps key-based signing; key custody, rotation and backup
   stay downstream (P0-04).
 - How an enforcing organization bakes the policy into the image or provisions

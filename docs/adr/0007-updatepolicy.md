@@ -20,10 +20,11 @@ Plain `bootc upgrade` downloads the new image and queues it as a staged
 deployment; `ostree-finalize-staged.service` applies it at the next
 ordinary shutdown or reboot. `--download-only` instead locks the staged
 deployment so a reboot discards it, and `--check` only fetches metadata.
-Bluefin's `uupd` runs `bootc upgrade --quiet` (no `--apply`) and
-`flatpak update -y --noninteractive`, from a timer with `Persistent=true`
-and a random delay, with `ConditionACPower=true` in a drop-in; Bluefin LTS,
-also built on CentOS Stream 10, masks both bootc units.
+A sibling image-based distribution runs `bootc upgrade --quiet` (no
+`--apply`) and `flatpak update -y --noninteractive` from a timer with
+`Persistent=true`, a random delay and `ConditionACPower=true` in a drop-in; a
+CentOS-derived one masks both bootc units. The two disagree, which is the point:
+this is a policy a workstation must be able to choose.
 
 None of the ten kinds can hold this intent: it is not GNOME, boot or
 platform configuration, and `Workstation` has no layering.
