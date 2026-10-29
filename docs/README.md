@@ -33,6 +33,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 |---|---|
 | [Platforms](platforms.md) | the matrix: base owner, what is verified, how to install |
 | [Installing](install.md) | a published image, your own image, private RHEL builds |
+| Templates | [CentOS Stream 10](https://github.com/deskosproject/deskos-template-cs10), [RHEL 10](https://github.com/deskosproject/deskos-template-rhel10): fork, build your image, make your ISO |
 | [Architecture](architecture.md) | pipeline and boundary, model, composition, plan, backend |
 | [Runtime](runtime.md) | baseline, Flatpaks, GNOME, boot, trust, updates, `/etc` |
 | [Resources](resources.md) | the fourteen kinds, with examples |
