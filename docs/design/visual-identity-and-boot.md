@@ -197,7 +197,8 @@ AlmaLinux/Fedora example platforms in the weekly workflow; the Ubuntu platform i
 own repository, which vendors the same harness; RHEL on the retired factory host):
 Tier A without reference matching
 (`bootcheck.py`, pixel classes) and a Tier B subset (`sessioncheck.py`,
-systemd credentials over SMBIOS and a serial report, no SSH or qecore);
+systemd credentials over SMBIOS and a serial report, no SSH and no external test
+framework);
 see [`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)
 Milestone 3 for what remains. *The rest of this section is the proposal.*
 
@@ -215,21 +216,24 @@ failures and propose fixes; it cannot mark a failing gate as passed.
   references within a tolerance; shutdown and reboot complete. This is
   the only tier that proves *untouched* first boot.
 - **Tier B, instrumented session.** A disposable derived test layer or
-  first-boot test provisioning adds a test user, SSH key, autologin and
-  qecore; every perturbation is listed in the report. Scenarios: GDM logo
+  first-boot test provisioning adds a test user, an SSH key and autologin;
+  every perturbation is listed in the report. Scenarios: GDM logo
   and session wallpaper/logo, favorites exist and launch, browser loads a
   local test page served by the harness, offline login (network detached
   via QEMU monitor), reboot and shutdown splash, dconf defaults and locks.
 - **Tier C, lifecycle.** bootc upgrade to a second candidate, reboot,
   rollback; kargs and initramfs follow the deployment.
 
-Bluefin's testsuite (`projectbluefin/testsuite` at
-`66d66512e7cfc608f39a5240af97928071eac409`, 2026-09-27) shows the pattern:
-QEMU on `ubuntu-latest`, serial log artifact, behave + qecore-headless.
-Its `e2e.yml` boots with `selinux=0`, masks about twenty services
-(including `NetworkManager-wait-online`, `firewalld`,
-`flatpak-preinstall`) and pre-bakes GDM autologin, so it is Tier B only.
-Proposal: a small DeskOS-owned behave suite using qecore directly, reusing
-Bluefin's harness ideas (QEMU invocation, readiness polling, serial
-capture), rather than adopting the Bluefin suite; qecore on EL10 is
-unverified and needs a spike.
+A suite published as a reusable pull-request gate (read 2026-09-27, described
+without names in [session-e2e-prior-art.md](session-e2e-prior-art.md)) shows the
+pattern: QEMU on a hosted runner, the serial log as the artifact, a BDD runner over
+an accessibility driver. That suite boots with SELinux off, masks about twenty
+services (including `NetworkManager-wait-online`, `firewalld` and the Flatpak
+preinstall) and pre-bakes GDM autologin, so what it proves is an instrumented
+boot, not the artifact as shipped.
+
+Proposal: keep our own harness — the transport already exists and reports every
+perturbation it makes — and take the ideas (QEMU invocation, readiness polling,
+serial capture), not the suite. What reusing it outright would require is exactly
+what we refuse: test packages inside the image, and services masked to make it
+boot.

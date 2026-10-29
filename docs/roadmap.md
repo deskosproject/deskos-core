@@ -351,6 +351,49 @@ they call the released `deskosctl`. The acceptance is the same for each — some
 who has never built a DeskOS image follows it, ends with a booted machine, and
 writes down where they got stuck.
 
+### GNOME system administration coverage (proposed 2026-10-29)
+
+Read the [GNOME System Administration
+Guide](https://help.gnome.org/system-admin-guide/) end to end — Setup, User
+settings, Appearance, Login, Network & hardware, Software, Other — with every
+linked page, and decide for each item whether it is **expressible today**, a
+**missing field**, a **candidate kind**, or **deliberately out of scope**.
+
+The guide is the closest thing GNOME has to a list of what an administrator
+changes on a machine. The model's credibility depends on being able to say which
+of those a DeskOS image can carry and which it refuses, with a reason.
+
+What the first pass shows, before writing anything:
+
+- **Expressible today** as `GnomeProfile` dconf defaults and locks, because a
+  default is a typed key at a path and the model does not restrict which one:
+  idle dim and brightness, screen blank and lock, the compose key, the greeter's
+  banner text and user-list switch, the lock-screen shield, and any typed
+  wallpaper key.
+- **Two resources, not one.** Extra fonts and extra backgrounds are a
+  `BinaryArtifact` placing the files plus a `GnomeProfile` key naming them; the
+  guide's `/usr/share/...` step is the artifact's destination, and the model
+  already says so.
+- **Missing fields worth a decision.** The GDM dconf profile carries a `file-db`
+  line written by the platform's package; the check must stay on the greeter
+  actually reading the database we write, not on the file existing.
+- **Candidate kinds, each needing an ADR:** a file association (`mimeapps.list`),
+  a NetworkManager connection (VPN and 802.1X, secrets supplied at runtime and
+  never in the image), a custom session file, and an NFS home profile (the
+  `service-db:keyfile/user` line). **Autostart entries and kiosk mode are out**:
+  both are an arbitrary `Exec` in a directory, which invariant 5 refuses, and a
+  kiosk is a session definition, not a workstation default.
+- **Out of scope, said plainly:** per-user files under `$HOME`, fingerprint
+  readers the image does not drive, and anything that only a running desktop can
+  change.
+
+Deliverable: `docs/gnome-coverage.md`, one table row per guide page with the
+verdict and the reason, linked from the roadmap and from
+`resources/desktop.md`; then one issue per missing field or candidate kind, each
+naming the ADR it needs. The guide is a menu, not a backlog: declining an item
+with a reason is a result, and the count of new kinds stays at fourteen until an
+ADR says otherwise.
+
 ## Milestone 4: workstation E2E
 
 **Designed 2026-10-29, not implemented.** See
@@ -365,6 +408,13 @@ asserted on the accessibility tree and not on pixels.
   would use them, so a check fails where a user would be stuck.
 - Promotion gates: only digests that passed E2E move forward. That needs the first
   part implemented before it is worth promising.
+- **Prior art, surveyed 2026-10-29.** Three families of practice — reference-screen
+  OS testers, accessibility-tree automation with a portal-side input bridge, and
+  post-build digest gates — with what each proves and costs in
+  [session-e2e-prior-art.md](design/session-e2e-prior-art.md). We are the second,
+  and the third already exists (`lifecycle.yml`). The survey changed the
+  input-injection plan (the portal, not `/dev/uinput`) and set a time budget for a
+  full pass; it also says what we do not copy, and why names are left out.
 
 ## Milestone 5: identity and provisioning
 
