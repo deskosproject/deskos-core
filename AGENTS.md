@@ -97,7 +97,7 @@ Core workflows run on **GitHub-hosted standard runners only**. A self-hosted or
 factory runner is never a fallback: it would change the trust boundary. An
 organization may run its own pipeline; that is not a Core workflow.
 
-    make check        # gofmt, go vet, go test, validate, links
+    make check        # gofmt, go vet, go test, validate, links, style
     python3 -m unittest discover -s tests/vm   # VM harness; CI runs it, make check does not
     go test ./internal/compiler -update   # refresh goldens, then review the diff
 
@@ -128,7 +128,7 @@ kinds, signing, secrets, releases and registries are out of scope for automation
   a maintainer's approval.
 - Never `Co-authored-by:`. A human reviews and owns every change.
 
-**Evidence, not telemetry.** Reports are user-owned and opt-in; DeskOS never
+**Records, not telemetry.** Reports are user-owned and opt-in; DeskOS never
 phones home and never aggregates user data centrally.
 
 **Reuse before building.** Prefer an orchestrator that already exists in a CNCF
