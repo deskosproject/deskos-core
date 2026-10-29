@@ -97,6 +97,7 @@ VENDOR_KEYS_PATH = "/var/lib/deskos-qa/vendor-defaults.keys"
 # invariant 8; docs/research-notes.md, "GNOME administration").
 DCONF_PROFILE_PATH = "/etc/dconf/profile/deskos-qa-defaults"
 DEFAULT_CHECK_PREFIX = "plan default "
+GREETER_CHECK_PREFIX = "greeter default "
 BINARY_CHECK_PREFIX = "plan binary "
 VENDOR_CHECK_PREFIX = "plan vendor default "
 # Sentinels for what the guest read; neither can be a GVariant text value, so they
@@ -277,6 +278,15 @@ def default_reads(image_database, vendor):
         f"mapfile -t dconf_keys < {DCONF_KEYS_PATH}\n"
         'for i in "${!dconf_keys[@]}"; do\n'
         '  k="${dconf_keys[$i]}"\n'
+        '  case "$k" in\n'
+        '    /org/gnome/login-screen/*)\n'
+        '      # The greeter reads its own database, not the session\'s.\n'
+        '      g=$(DCONF_PROFILE=gdm dconf read "$k" 2>/dev/null) || g="' + ERROR + '"\n'
+        '      if [ -z "$g" ]; then g="' + UNSET + '"; fi\n'
+        '      echo "greeter_$i=$g"\n'
+        '      continue\n'
+        '      ;;\n'
+        '  esac\n'
         f'  v=$(dconf read "$k" 2>/dev/null) || v="{ERROR}"\n'
         '  if [ -z "$v" ]; then v="' + UNSET + '"; fi\n'
         '  echo "dconf_$i=$v"\n' + image_read + "done\n" + vendor_read
@@ -1464,6 +1474,19 @@ def default_coverage(checks):
             "unverified": unverified}
 
 
+def greeter_coverage(checks):
+    """The login-screen defaults and whether the greeter's database carries them.
+
+    These keys live in the database GDM reads, so there is one read and one claim;
+    a missing read is reported as unread, not counted as verified.
+    """
+    declared = [c for c in checks if c.get("coverage", {}).get("source") == "dconf greeter"]
+    return {"declared": len(declared),
+            "verified": sum(1 for c in declared if c["coverage"]["greeter"] == "verified"),
+            "unverified": [{"check": c["check"], "state": c["coverage"]["greeter"], "detail": c["detail"]}
+                           for c in declared if c["coverage"]["greeter"] != "verified"]}
+
+
 def check_status(c):
     if c.get("skipped"):
         return "SKIP"
@@ -1718,6 +1741,17 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         ok, detail, skipped = default_verdict(difference_id("dconf", key), image, session, where)
         check(DEFAULT_CHECK_PREFIX + key, ok, detail, skipped=skipped,
               coverage={"source": "dconf", "key": key, "image": image[0], "session": session[0]})
+    # A login-screen default has one read and one claim: the greeter's own
+    # database carries the value. There is no second axis, because the session's
+    # profile never sees the key and asking it would report a correct image as
+    # unverified.
+    for i, d in enumerate(plan_defaults(plan)):
+        key, typ = d["key"], d.get("type")
+        if not key.startswith("/org/gnome/login-screen/"):
+            continue
+        state, phrase = read_state(d["value"], values.get(f"greeter_{i}"), key, typ, "the greeter reads")
+        check(GREETER_CHECK_PREFIX + key, state == "verified", phrase,
+              coverage={"source": "dconf greeter", "key": key, "greeter": state})
     # A lock is enforcement, not a rendered file: the session tries to write the
     # key and must fail, and the value must be the one it had before the attempt.
     for i, lock in enumerate(plan_locks(plan)):
@@ -1871,6 +1905,7 @@ def main():
         result["checks"] = evaluate(values, plan, journal, skel_rels, offline=a.offline,
                                     join_user=join["user"] if join else None, gdm_user=gdm_user)
         result["plan_defaults"] = default_coverage(result["checks"])
+        result["plan_greeter"] = greeter_coverage(result["checks"])
         result["plan_binaries"] = binary_summary(result["checks"])
         result["platform_diagnostics"] = platform_diagnostics(values, journal)
         ok = summary["result"] == "pass" and all(c["pass"] for c in result["checks"])
@@ -1890,6 +1925,12 @@ def main():
                      f"{s['in_session']} verified in the session, {len(s['unverified'])} unverified reads")
         for c in s["unverified"]:
             lines.append(f"  - {c['check']} [{c['axis']}: {c['state']}] ({c['detail']})")
+    if result.get("plan_greeter", {}).get("declared"):
+        g = result["plan_greeter"]
+        lines.append(f"- Greeter defaults: {g['declared']} declared; {g['verified']} verified in the "
+                     f"greeter database, {len(g['unverified'])} unverified reads")
+        for c in g["unverified"]:
+            lines.append(f"  - {c['check']} [{c['state']}] ({c['detail']})")
     if "plan_binaries" in result:
         b = result["plan_binaries"]
         lines.append(f"- Plan binaries: {b['declared']} declared; {b['checksum_verified']} verified against the checksum the plan pins, "
