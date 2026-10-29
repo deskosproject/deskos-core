@@ -1,6 +1,6 @@
 # Threat model and publication authority
 
-**Status: reviewed and merged 2026-10-24; the tabletop ran on 2026-10-28, and the
+**Status: reviewed and merged 2026-10-24; the incident exercise ran on 2026-10-28, and the
 priority-1 items still open are listed at the end.** This page separates what the repository shows from what only GitHub or
 an operator can confirm. Every remediation touching credentials, runners,
 registries or branch protection needs its own approval (AGENTS.md).
@@ -71,7 +71,7 @@ The remaining priority-1 item most changes the risk: a pull request that runs on
 entitled self-hosted host. Core's first-party actions are pinned by commit; an
 organization's are not.
 
-## Tabletop
+## Incident exercise
 
 **Run 2026-10-28** by the maintainer (deciding) and the agent (facilitating). A
 serious finding or a compromised input reaches the release owner: walk one of these,

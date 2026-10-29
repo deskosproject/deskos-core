@@ -108,7 +108,7 @@ eight days old, so a missed tick costs a day, not a release.
 Publication stops from the repository settings: set the variable `PUBLISH_FREEZE`
 with a sentence saying why. The weekly build, the installer, the promotion and the
 mirror then do nothing, and `:stable` keeps serving the last good digest
-([tabletop](threat-model.md)).
+([incident exercise](threat-model.md)).
 
 ### The installer
 

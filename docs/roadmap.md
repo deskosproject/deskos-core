@@ -153,7 +153,7 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 | P0-01 actionable check failures | closed | attempt-suffixed artifacts (14 days) beside the retry; `identity.json`; failed-boot journal kept |
 | P0-02 upgrade, rollback, state | closed, one residual | `lifecycle.yml` green 2026-10-26 (run `40305080925`); ostree-write interruption untested |
 | P0-03 consumer-side enforcement | closed by decision | keyless signature, manual verification; an organization enforcing keeps key-based signing |
-| P0-04 bound build authority, rehearse incidents | closed | tabletop ran 2026-10-28 ([threat-model.md](threat-model.md)) and produced `PUBLISH_FREEZE`; one-person residual recorded |
+| P0-04 bound build authority, rehearse incidents | closed | incident exercise ran 2026-10-28 ([threat-model.md](threat-model.md)) and produced `PUBLISH_FREEZE`; one-person residual recorded |
 | P0-05 digest-indexed records | closed | `evidence.deskos.org`; `promotion.yml` refuses unverified records; SLSA v1 provenance |
 | P0-06 promotion of one digest | closed | first automatic move 2026-10-28, `sha256:871e59cc…`, ISO `:stable` `sha256:9803337b…` |
 | P0-07 released-image risk over time | closed | rescan procedure in [supply-chain.md](supply-chain.md) |

@@ -43,7 +43,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 | [Diagnostics](diagnostics.md) | what a failure looks like and what to do next |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
 | [Checks](checks.md) | what each workflow proves and how to read a red run |
-| [Threat model](threat-model.md) | assets, boundaries, controls, the incident tabletop |
+| [Threat model](threat-model.md) | assets, boundaries, controls, the incident exercise |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |
 | [Installer ISO](installer-iso.md) | the kickstart, the build command, the storage warning |
 | [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E |

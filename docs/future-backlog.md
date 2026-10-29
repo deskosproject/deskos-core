@@ -71,10 +71,10 @@ reach a compromised machine is written down.
 ### P0-04: Bound build authority, rehearse incidents
 **Proposed · M.** Document the PR → privileged build → records → publish
 boundaries; review branch protection, tokens, OIDC scopes and action pins; run a
-tabletop (compromised base, workflow, signing identity or registry) that freezes
+exercise (compromised base, workflow, signing identity or registry) that freezes
 channels, finds affected digests and publishes a recovery.
 **Done when:** a reviewed threat model names an owner per control or gap, and the
-tabletop produced a working freeze and a recovery path.
+exercise produced a working freeze and a recovery path.
 [Threat model](threat-model.md) · [ADR 0011](adr/0011-agentic-contribution-layer.md)
 
 <a id="p0-05"></a>
@@ -208,7 +208,7 @@ private instructions, and knows where to report a vulnerability.
 **Proposed · M.** Define reviewer and maintainer duties, appointments, decision and
 disagreement paths, RFC and ADR triggers, release approval and transfer; map
 ownership of compiler, platforms, tests, docs and supply chain.
-**Done when:** a tabletop absence shows who can review, stop a release, communicate
+**Done when:** a dry run of the absence shows who can review, stop a release, communicate
 and recover infrastructure, or records that nobody can.
 [governance.md](governance.md)
 
