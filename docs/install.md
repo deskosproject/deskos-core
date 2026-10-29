@@ -7,12 +7,11 @@ with rootful Podman** and about **20 GB free**.
 > The **container images** are published, and `bootc-image-builder` turns one into
 > a disk on your machine. A **CentOS Stream 10 preview ISO** is also published at
 > <https://download.deskos.org/>; verify its `SHA256SUMS` before booting it. No
-> QCOW2, RHEL or Ubuntu ISO is published by this repository.
+> QCOW2 or RHEL ISO is published by this repository.
 
 ## Install a published image
 
-One platform publishes an image that the gate built, scanned and booted. Ubuntu
-publishes its own, from its own repository:
+One platform publishes an image that the gate built, scanned and booted:
 
 | Platform | Image |
 |---|---|
@@ -101,8 +100,9 @@ every later `bootc upgrade`.**
 
 ## Build your own, then install it
 
-For an organization that authors its own workstation, for RHEL (which DeskOS
-never publishes), and for anyone who wants the whole pipeline. It needs **git**.
+For a resource root of your own: author the workstation, render it, build it, and
+install the result with the steps above. It needs **git**. RHEL is the same flow on
+an entitled base, in its own section below.
 
 1. Get `deskosctl` from
    [GitHub Releases](https://github.com/deskosproject/deskos-core/releases):
@@ -151,8 +151,8 @@ base and the builder are entitled content), plus rootful Podman.
    > [!IMPORTANT]
    > `deskos-core` carries the packages and the update policy, and `deskos-gnome`
    > carries DeskOS's GNOME defaults (ADR 0016). A workstation that wants them
-   > selects both; one whose platform ships its own desktop, like Ubuntu, selects
-   > only `deskos-core`.
+   > selects both; one whose platform keeps its vendor's desktop selects only
+   > `deskos-core`.
 
 3. Render and build it, tagged with the reference your machines should update
    from, in a registry that is **private to your organization**:
@@ -173,14 +173,3 @@ In the image DeskOS builds and tests, every layer is free of the build host's
 subscription state (see [validation status](architecture.md#validation-status));
 a build you make is your own to check. The image, disks and ISOs are **still RHEL
 derivatives**: push them only to private registries and storage.
-
-## Ubuntu 26.04
-
-An Ubuntu disk is not built here any more: the platform, its base and its
-workstations live in
-[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu),
-which carries the steps — the image, the compressed OCI layout, `bootc install
-to-disk` and the `--target-imgref` that decides what the machine updates from
-afterwards ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)). What
-this repository still does with a Debian-family platform is compose and render
-it, and the tests are what say so.
