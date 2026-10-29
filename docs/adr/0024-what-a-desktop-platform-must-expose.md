@@ -45,8 +45,8 @@ defaults back.
 **Another desktop is added the same way GNOME was**: its own kind, ADR, schema,
 lowering, its own coverage audit against its own administrator guide, and checks
 in the VM harness. It is not a flag, a profile field or a second `GnomeProfile`
-variant. A desktop that cannot meet criteria 1, 2 and 7 is not adopted, however
-popular it is.
+variant. A desktop that cannot meet criteria 1, 2 and 7 is not adopted until it
+can, whatever its reach.
 
 **Adoption is argued on these criteria and on measured evidence, never on the
 reputation of a desktop or its community.** This repository does not rank
@@ -56,9 +56,8 @@ desktops, and the documentation does not name competitors to argue against them.
 
 - `GnomeProfile` remains the only desktop kind. `Theme` and `BootProfile` stay
   GNOME-adjacent by their own ADRs, not by this one.
-- A desktop contribution arrives with requirements, not with enthusiasm: an audit
-  like GNOME's, a kind, and checks. The cost of that work is the answer to "why
-  not X", and it is visible before anyone starts.
+- A desktop contribution arrives with an audit like GNOME's, a kind and checks.
+  That work is the cost of "why not X", and it is visible before anyone starts.
 - The audit is evidence with a date. A new GNOME major release re-runs it; an item
   that stops being expressible is a defect in the model, not a footnote.
 - Refusals stay refusals: autostart, custom sessions and kiosk mode are an `Exec`
