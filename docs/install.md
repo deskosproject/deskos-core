@@ -2,10 +2,10 @@
 
 Two ways to end up with a machine:
 
-- **Option 1 — install the published image.** Nothing is compiled: take the
+- **Option 1: install the published image.** Nothing is compiled: take the
   CentOS Stream 10 image the pipeline built, scanned and booted, write a disk or an
   ISO from it, install it.
-- **Option 2 — build your own image, then install it.** Author a `Workstation` in a
+- **Option 2: build your own image, then install it.** Author a `Workstation` in a
   resource root, render it, build it, and install the result. RHEL 10 is this
   option on an entitled base.
 
@@ -23,7 +23,7 @@ KVM for a virtual machine or a spare disk for a machine.
 |---|---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
 
-`:latest` is the newest image that passed the gate and `:stable` is the digest a
+`:latest` is the newest image that passed the weekly build and `:stable` is the digest a
 promotion accepted. Outside a lab, **pin the verified digest**:
 [validation status](architecture.md#validation-status) names the current one.
 
@@ -38,7 +38,7 @@ digest="$(sudo podman image inspect --format '{{.Digest}}' "$image")"
 echo "$digest"
 ```
 
-### 3. Write a disk — or make an installer ISO
+### 3. Write a disk, or make an installer ISO
 
 **A QCOW2 for a virtual machine:**
 
@@ -91,7 +91,7 @@ sudo podman run --rm --privileged --pull=missing \
 
 The ISO is `output/bootiso/install.iso`. The kickstart answers nothing about
 storage: Anaconda asks for language, keyboard, timezone, network (optional), the
-disk and LUKS, and erases **the disk you select** — read that screen, and note
+disk and LUKS, and erases **the disk you select**. Read that screen, and note
 that encryption is opt-in. The test-only ISO under `tests/installer/` is a
 different fixture: its kickstart runs `clearpart --all`, which erases every disk
 the installer sees.
@@ -184,8 +184,8 @@ sudo podman tag localhost/deskos-centos:test registry.example.com/deskos/core:st
 sudo podman push registry.example.com/deskos/core:stable
 ```
 
-Then build from that reference — step 2's `image=` line, or the tag as the last
-argument — and changing the tag is how the next version reaches installed
+Then build from that reference (step 2's `image=` line, or the tag as the last
+argument), and changing the tag is how the next version reaches installed
 machines.
 
 ## RHEL 10: private builds only

@@ -5,7 +5,7 @@ Part of the [resource model](../resources.md): the kinds that add packages, repo
 ## `PackageSet`
 
 Packages, RPM groups (named by the Platform, e.g. `groups: [workstation]`) and
-units to enable:
+units:
 
 | Field | Type | Notes |
 |---|---|---|
@@ -14,13 +14,11 @@ units to enable:
 | `enableUnits`, `rpmFiles[].url`, `.sha256`, `.gpgKeyFile` | `*.service` etc.; https URL; `sha256:<64 hex>`; relative path | signed RPMs published without a repository |
 
 The foundation names its metapackage group and no packages: the base already
-carries what a desktop needs. A browser, firewall and application channel are
-platform or organization choices (`PackageSet/rhel-family`); they cannot live in the
-foundation, since composition unions sets and offers no removal (ADR 0003), so every
-platform would carry them (ADR 0014). `rpmFiles` needs a non-floating https URL, the
-SHA-256 and `gpgKeyFile`, the vendor's ASCII-armored key inside the resource root, or
-the build fails; another checksum or key for the same URL conflicts, and a set naming
-the other manager's kind fails once its platform is known.
+carries what a desktop needs. A browser, firewall and application channel belong to
+a platform or organization (`PackageSet/rhel-family`), since composition unions sets
+and offers no removal (ADR 0003), so the foundation would impose them everywhere
+(ADR 0014). `rpmFiles` needs a non-floating https URL, the SHA-256 and `gpgKeyFile`
+in the resource root, or the build fails.
 
 ## `RpmRepository`
 
@@ -35,8 +33,8 @@ An **official vendor repository**:
 spec: {id: code, baseURL: https://packages.microsoft.com/yumrepos/vscode, gpgKeyFiles: [keys/microsoft.asc]}
 ```
 
-The keys are **local assets** placed in the image (`/etc/pki/rpm-gpg/`), so the
-repository file references them by `file://` and dnf never trusts a fetched key.
+The keys are **local assets** in the image (`/etc/pki/rpm-gpg/`), so the repository
+file references them by `file://` and dnf never trusts a fetched key.
 
 ## `AptRepository`
 
@@ -54,11 +52,10 @@ spec: {id: vscode, baseURL: https://packages.microsoft.com/repos/code, suite: st
 It renders as one **deb822** stanza in `/etc/apt/sources.list.d/deskos-<id>.sources`
 and its key as `/etc/apt/keyrings/deskos-<sha256>.asc`, both copied before the first
 package transaction. `Signed-By` names the keyring, so an unsigned APT source is not
-expressible; a repository of one manager is not another's (ADR 0015). Three rules
-come from apt: suite and components are one decision (an archive-path suite ends
-with `/` and takes none); the id must be letters, digits, dots, hyphens and
-underscores, because apt silently ignores any other name in `sources.list.d`; and
-`architectures` omitted, apt uses its own list.
+expressible (ADR 0015). Apt rules apply: suite and components are one decision; the
+id takes only letters, digits, dots, hyphens and underscores, because apt ignores
+other names in `sources.list.d`; with `architectures` omitted, apt uses its own
+list.
 
 ## `BinaryArtifact`
 
@@ -87,9 +84,8 @@ A graphical application can also declare a **`desktopEntry`** for the menu and d
 | `categories`, `startupWMClass` | registered freedesktop categories known to the platforms' `desktop-file-validate`, at least one a main category (`ConsoleOnly` is not accepted); optional window class, so the dock groups windows under the launcher |
 
 `Exec` and `TryExec` are **not authored**: they are the destination of the
-artifact's only file, so `desktopEntry` requires exactly one file; the entry also
-sets `Type=Application` and `Terminal=false`, and two artifacts that declare the
-same `id` conflict unless their entries are identical.
+artifact's only file, so `desktopEntry` requires exactly one file. Two artifacts
+with the same `id` conflict unless their entries are identical.
 
 ## `FlatpakRemote` and `FlatpakSet`
 
@@ -111,9 +107,9 @@ it has no `gpgKeyFile` and no `collectionID`. A registry that asks for credentia
 names its authenticator, for example `org.flatpak.Authenticator.Oci`; the machine
 supplies them, and the artifact never carries a token. DeskOS writes
 `/usr/share/flatpak/remotes.d/<name>.flatpakrepo`, which cannot carry an
-authenticator, so a remote that names one also gets a unit that points the remote
-at it; the credentials stay on the machine, for example in
-`/etc/flatpak/oci-auth.json`, and are not part of the image.
+authenticator, so a remote that names one also gets a unit that points the remote at
+it. The credentials stay on the machine, for example in `/etc/flatpak/oci-auth.json`,
+and are not part of the image.
 
 ```yaml
 spec: {remote: flathub, applications: [{id: io.github.kolunmi.Bazaar, branch: stable}]}

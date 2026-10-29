@@ -2,8 +2,8 @@
 
 > **Dated archive.** These are findings as they were checked, not current
 > status. Current status lives in [platforms.md](platforms.md); the pipeline is
-> in [architecture.md](architecture.md). Some numbers here — a Go version, a
-> package version, a base image — are deliberately the values of the day.
+> in [architecture.md](architecture.md). Some numbers here (a Go version, a
+> package version, a base image) are deliberately the values of the day.
 
 Sections are dated where they were checked; undated sections were
 retrieved on 2026-09-27. **"Verified"** means checked against a primary
@@ -514,7 +514,7 @@ On the host, the unit's
   - CS10 Core on bare-metal AMD, and any RHEL guest;
   - whether the GitHub-hosted run (AMD family 25) has the same cause: it
     predates these diagnostics.
-- Local evidence, not part of the repository:
+- Local records, not part of the repository:
   `/tmp/deskos-mcediag-evidence-20260929/` and `/tmp/deskos-mcediag-report.md`.
 
 ## Tray icons on GNOME (2026-10-20)
@@ -525,10 +525,10 @@ apps). Measured the same day, on the pinned bases:
 
 | Platform | `gnome-shell-extension-appindicator` |
 |---|---|
-| Fedora 45 | `66-1.fc45`, published **only in `updates-testing`** — the prerelease base enables that repository |
+| Fedora 45 | `66-1.fc45`, published **only in `updates-testing`**; the prerelease base enables that repository |
 | CentOS Stream 10 | absent from baseos, appstream, extras and extras-common |
 | AlmaLinux 10 | absent from baseos, appstream, extras and crb |
-| EPEL 10 | `61-1.el10_2`, Shell 45–49, but **uninstallable on CentOS Stream 10**: it requires `libappindicator-gtk3`, whose `libdbusmenu-glib.so.4`/`libdbusmenu-gtk3.so.4` come from **CRB** (enabled on AlmaLinux, disabled on CentOS Stream and not part of RHEL's supported set) |
+| EPEL 10 | `61-1.el10_2`, Shell 45 to 49, but **uninstallable on CentOS Stream 10**: it requires `libappindicator-gtk3`, whose `libdbusmenu-glib.so.4`/`libdbusmenu-gtk3.so.4` come from **CRB** (enabled on AlmaLinux, disabled on CentOS Stream and not part of RHEL's supported set) |
 
 Consequences:
 
@@ -537,7 +537,7 @@ Consequences:
   installs Fedora's package.
 - EL10 does not ship it from its vendor repositories. Enabling EPEL is not enough
   on CentOS Stream 10: the package's `libappindicator-gtk3` dependency needs
-  `libdbusmenu`, which is in CRB — enabled on AlmaLinux, disabled on CentOS Stream
+  `libdbusmenu`, which is in CRB: enabled on AlmaLinux, disabled on CentOS Stream
   and outside RHEL's supported set. Measured: the transaction resolves on AlmaLinux
   10 and fails on CentOS Stream 10 with `nothing provides libdbusmenu-glib.so.4`.
   A pinned `RpmFile` does not help either: it cannot satisfy a dependency the
@@ -547,9 +547,9 @@ Consequences:
   The package name stays in `unavailablePackages`.
 - **BetterTrayIcons** (`nexaknight/BetterTrayIcons`, `BetterTrayIcons@nexaknight.com`)
   is not an alternative we can ship: it replaces AppIndicator rather than
-  complementing it — its `metadata.json` declares
+  complementing it; its `metadata.json` declares
   `appindicatorsupport@rgcjonas.gmail.com`, `ubuntu-appindicators@ubuntu.com` and
-  `trayIconsReloaded@selfmade.pl` as conflicts — it is GPL-3.0, Wayland only, and
+  `trayIconsReloaded@selfmade.pl` as conflicts. It is GPL-3.0, Wayland only, and
   it is distributed through extensions.gnome.org, not a distribution repository
   (not packaged in Fedora 45's repositories on 2026-10-20). It stays a per-user
   install.
@@ -573,12 +573,12 @@ The first Fedora 45 boot checks never reached a graphical screen: the guest
 stopped in dracut's emergency shell, with a btrfs disk and again with ext4, so
 the root filesystem was never prepared and ACPI shutdown was ignored.
 
-The first hypothesis — a host-only initramfs — was **wrong**. Fedora already
+The first hypothesis, a host-only initramfs, was **wrong**. Fedora already
 sets `hostonly=no` in `/usr/lib/dracut/dracut.conf.d/20-atomic-nohostonly.conf`,
 and passing `--no-hostonly` changed nothing. Measured instead: the base image's
 initramfs carries the ostree and composefs pieces (7 and 2 matches), while the
 initramfs the build regenerates carries **none** (0 and 0). The dracut modules
-explain it — `50ostree`'s `check()` returns 255, which means "include only when
+explain it: `50ostree`'s `check()` returns 255, which means "include only when
 explicitly asked", and `51bootc`'s says in as many words *"We are never installed
 by default"*. CentOS Stream 10 includes them anyway (its check returns 0): a
 plain rebuild keeps 6 `ostree` matches and boots.

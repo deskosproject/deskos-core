@@ -1,15 +1,15 @@
 # Recovering a workstation
 
 What to do when an install, a first boot, an update or a rollback does not go as
-expected, and what evidence to collect before changing anything. Normal operation
-is in [operations.md](operations.md); the installer is in
-[installer-iso.md](installer-iso.md). Nothing on this page phones home.
+expected, and what to collect before changing anything. Normal operation is in
+[operations.md](operations.md); the installer is in
+[installer-iso.md](installer-iso.md). Nothing here phones home.
 
 ## The installer does not finish
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
-| Anaconda exits at the progress screen and the machine reboots | The kickstart used `graphical --non-interactive`, which RHEL 10.2's Anaconda treats as an error (`User interaction required on standalone spoke ProgressSpoke`) | Use an ISO whose kickstart does not pass the flag; the published kickstarts in this repository do not. The failure is visible in the installer console before the reboot |
+| Anaconda exits at the progress screen and the machine reboots | The kickstart used `graphical --non-interactive`, which RHEL 10.2's Anaconda treats as an error (`User interaction required on standalone spoke ProgressSpoke`) | Use an ISO whose kickstart does not pass the flag; the published kickstarts here do not. The failure is visible in the installer console before the reboot |
 | The summary says the kickstart is insufficient and **Begin Installation** stays disabled | The published ISO leaves storage to you; that is not a failure | Choose the disk and, if wanted, LUKS, on **Installation Destination**, then begin |
 | The machine does not boot the ISO | Secure Boot is on, the medium is damaged, or the machine is not booting UEFI | Verify the published checksum, write the ISO again, boot UEFI with Secure Boot off |
 | An unattended test install stops on the summary | The test-only ISO was not used | Build and boot the ISO from [tests/installer](../tests/installer/README.md); do not add its answers to the published ISO |
@@ -32,9 +32,9 @@ reboot, so a failed download does not take the machine down.
 
 | Symptom | Likely cause | What to do |
 |---|---|---|
-| `deskos update` or the timer fails | Registry unreachable, DNS, credentials, or no free space | A manual run prints the error; for the timer read `journalctl -u deskos-image-update.service -b`. `bootc status` shows whether anything was staged; the previous deployment keeps running. Retry when the cause is fixed |
+| `deskos update` or the timer fails | Registry unreachable, DNS, credentials, or no free space | A manual run prints the error; for the timer read `journalctl -u deskos-image-update.service -b`. `bootc status` shows whether anything was staged, and the previous deployment keeps running. Retry when the cause is fixed |
 | The update is staged but nothing happens | No reboot yet, or `image.apply` is off | `bootc status` shows the staged deployment. Reboot when convenient, or let the configured apply window do it |
-| A scheduled apply did not reboot | Outside the window, on battery, or the machine was off | The apply timer is not persistent and the service checks AC power and the window. Inspect `journalctl -u deskos-image-apply.service -b`; the next window is the next chance |
+| A scheduled apply did not reboot | Outside the window, on battery, or the machine was off | The apply timer is not persistent, and the service checks AC power and the window. Inspect `journalctl -u deskos-image-apply.service -b`; the next window is the next chance |
 | The download fills the disk | Image layers plus the staged deployment need space | Free space under `/var`, then retry. `bootc status` says whether a deployment is staged |
 
 A metered connection is not detected; the timer behaves as on any other
@@ -45,17 +45,16 @@ connection.
 The previous deployment is still on the disk. Recovery is manual: DeskOS does not
 switch back on its own.
 
-1. In the boot menu, choose the previous entry. The menu lists the deployments
-   the machine keeps.
+1. In the boot menu, choose the previous entry.
 2. If the machine boots but the new deployment is current, run
    `sudo bootc rollback` and reboot. That queues the previous deployment.
 3. If no entry boots, boot a rescue environment (for example the installer ISO's
    rescue entry, if it has one), mount the installation, and use your backup.
    There is no automatic rescue.
 
-After recovering, keep the evidence from the failed boot: `journalctl -b -1` from
-the working deployment, `bootc status`, and the boot menu entries. A candidate
-that does not boot is exactly the case the lifecycle check does not cover yet
+After recovering, keep the records from the failed boot: `journalctl -b -1` from
+the working deployment, `bootc status`, and the boot menu entries. A candidate that
+does not boot is exactly the case the lifecycle check does not cover yet
 ([design](design/lifecycle.md)).
 
 ## Rollback is not a backup

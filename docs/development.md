@@ -42,14 +42,14 @@ workstation (`--format json` prints the canonical plan):
    sudo podman build -t localhost/deskos-core-centos-stream-10 ./dist/deskos-core-centos-stream-10
    ```
 
-The QCOW2 and ISO commands in [Installing DeskOS](install.md) work with
+The QCOW2 and ISO commands in [Installing DeskOS](install.md) take
 `localhost/deskos-core-centos-stream-10` as the image reference, and
 [tests/vm/README.md](../tests/vm/README.md) boots the disk and checks the session.
 
 ### Example: baseline and role
 
 An example that composes an organization baseline and a developer role on RHEL 10
-reuses DeskOS resources *without copying them*
+reuses DeskOS resources without copying them
 ([README](../examples/organization-and-role/README.md)):
 
 ```bash
@@ -67,8 +67,6 @@ reuses DeskOS resources *without copying them*
 
 ## CLI
 
-The artifact-factory CLI is `deskosctl`:
-
 | Command | Purpose |
 |---|---|
 | `validate` | checks resources and composition |
@@ -79,9 +77,9 @@ The artifact-factory CLI is `deskosctl`:
 
 The declared SBOM and where a CVE scan fits are in [supply-chain.md](supply-chain.md).
 
-The CLI is also published as a **container**, `quay.io/deskos/deskosctl:<tag>`,
-from a release tag and signed like the other release artifacts. The embedded Core
-travels inside the image, so only the output directory needs a mount:
+The CLI is also published as a container, `quay.io/deskos/deskosctl:<tag>`, from a
+release tag and signed like the other release artifacts. The embedded Core travels
+inside the image, so only the output directory needs a mount:
 
 ```bash
 mkdir -p out
@@ -90,12 +88,11 @@ podman run --rm --userns=keep-id -v "$PWD/out":/out:z \
     --workstation deskos-core-centos-stream-10 --output /out
 ```
 
-Your own resources are an **extra** root — one that adds resources, not one that
-repeats the Core, or the load fails with "defined again". `--userns=keep-id` maps
-your uid so the tool can write the output, and `:z` relabels the mount: on an
-SELinux-enforcing host, reading an unrelabeled root fails with `permission denied`,
-and relabeling a whole checkout can fail on root-owned artifacts, so mount the
-resource tree rather than the repository:
+Your own resources are an **extra** root, one that adds resources rather than
+repeating the Core, which fails the load with "defined again". `--userns=keep-id`
+maps your uid so the tool can write the output, and `:z` relabels the mount: on an
+SELinux host an unrelabeled root fails with `permission denied`, and relabeling a
+whole checkout can fail on root-owned artifacts, so mount the resource tree:
 
 ```bash
 podman run --rm --userns=keep-id \

@@ -4,9 +4,9 @@ Part of the [resource model](../resources.md): the kinds that shape the GNOME se
 
 ## `GnomeProfile`
 
-**GNOME intent** in administrator vocabulary. An organization layer overrides
-the Core defaults it names. The vocabulary is closed on purpose: what a guide
-item needs when no field exists is in [GNOME coverage](../gnome-coverage.md).
+**GNOME intent** in administrator vocabulary. An organization layer overrides the
+Core defaults it names. The vocabulary is closed: what a guide item needs when no
+field exists is in [GNOME coverage](../gnome-coverage.md).
 
 | Field | Values | Default |
 |---|---|---|
@@ -17,7 +17,7 @@ item needs when no field exists is in [GNOME coverage](../gnome-coverage.md).
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}` | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
-| `session.idle.blankAfter`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
+| `session.idle.blankAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
 
 ```yaml
 apiVersion: desktop.deskos.org/v1alpha1
@@ -45,33 +45,30 @@ spec:
       position: bottom
 ```
 
-- **`applications.*`** names the desktop entry for a document role; Core owns the
-  role-to-MIME table and writes `/etc/xdg/mimeapps.list`, and a user's
-  `~/.config/mimeapps.list` still wins: a default, not a lock.
+- **`applications.*`** names the desktop entry for a document role. Core owns the
+  role-to-MIME table and writes `/etc/xdg/mimeapps.list`; a user's
+  `~/.config/mimeapps.list` still wins, so it is a default, not a lock.
 - **`appFolders`** replaces GNOME's built-in folders: declare every folder the app
   grid should have, and a higher layer replaces the list. Not available on RHEL
   10.2, whose GNOME Shell 49.4 overwrites them at first login.
-- **`extensions`** decides one UUID at a time, the dock included; the install uses
+- **`extensions`** decides one UUID at a time, the dock included. The install uses
   the package or pinned artifact the platform's catalog names
   ([ADR 0021](../adr/0021-extensions-can-be-delivered-as-pinned-artifacts.md),
-  [ADR 0017](../adr/0017-extensions-flatpak-remote-and-power-button.md)), and a
-  UUID nobody provides fails a session check rather than passing silently.
-- **`dock.*`** is what DeskOS models for Dash to Dock, applied only while its
-  extension is enabled through `shell.extensions`
-  ([ADR 0005](../adr/0005-managed-baseline-boundary.md)).
+  [ADR 0017](../adr/0017-extensions-flatpak-remote-and-power-button.md)); a UUID
+  nobody provides fails a session check rather than passing silently.
+- **`dock.*`** models Dash to Dock; it applies only while `shell.extensions`
+  enables that extension ([ADR 0005](../adr/0005-managed-baseline-boundary.md)).
 
 ### Locks
 
-A profile makes a setting read-only with `spec.locks`, using the same semantic
-names as `defaults`. A lock is a dconf lock in the image's database, not a runtime
-agent: it needs an effective value and stops the running user from changing the
-key, but not a higher layer from choosing another composed value. Core never locks
+`spec.locks` makes a setting read-only, using the same names as `defaults`; it is a
+dconf lock in the image's database, not a runtime agent. Core never locks
 (invariant 8); see [locks.md](../locks.md).
 
 ### Lockdown
 
-GNOME has a set of capabilities a managed profile can turn off; each is a boolean
-under `defaults.lockdown`, and a lock makes the chosen value read-only.
+Each capability a managed profile can turn off is a boolean under
+`defaults.lockdown`; a lock makes the chosen value read-only.
 
 | Field | GNOME key | Effect |
 |---|---|---|
@@ -80,15 +77,13 @@ under `defaults.lockdown`, and a lock makes the chosen value read-only.
 | `mountRemovableStorageReadOnly`, `disableUserAdministration` | `mount-removable-storage-devices-as-read-only`, `user-administration-disabled` | removable storage mounts read-only; user administration is disabled |
 
 Set the boolean, then list `lockdown.<field>` under `locks`. `disableLockScreen`
-weakens security: use it only when another mechanism locks the session. Online
-accounts and repartitioning are not here: one is per-provider configuration, the
-other a polkit/udisks policy.
+weakens security: use it only when another mechanism locks the session.
 
 ### Greeter
 
-The user list and the text banner on the login screen. Both need a platform that
-declares `gnome.loginScreen`: the keys go to the database the greeter reads, and a
-platform without one fails composition with that reason (invariant 9).
+The user list and the login banner. Both need a platform that declares
+`gnome.loginScreen`, because the keys go to the database the greeter reads; a
+platform without one fails composition (invariant 9).
 
 | Field | Effect |
 |---|---|
@@ -98,7 +93,7 @@ platform without one fails composition with that reason (invariant 9).
 ## `Theme`
 
 A **named, reusable look**: a palette on GNOME's own surfaces, in the same setting
-domain as `GnomeProfile`, so it layers and locks like any appearance setting:
+domain as `GnomeProfile`, so it layers and locks like any appearance setting.
 
 | Field | Values | Required |
 |---|---|---|
@@ -122,12 +117,11 @@ spec:
   **`accent`** is mapped **by hue** (a light green stays green), with a `slate`
   fallback for near-achromatic colors.
 - **`palette`** generates named-color overrides for **GTK4/libadwaita and GTK3**
-  (`/etc/skel/.config/gtk-{4,3}.0/gtk.css`) and, with the six normal ANSI colors,
-  a **Ptyxis terminal palette**
-  (`/etc/skel/.local/share/org.gnome.Ptyxis/palettes/`), which users the installer
-  or GNOME Initial Setup create inherit.
+  (`/etc/skel/.config/gtk-{4,3}.0/gtk.css`) and, with the six normal ANSI colors, a
+  **Ptyxis terminal palette** (`/etc/skel/.local/share/org.gnome.Ptyxis/palettes/`),
+  which users the installer or GNOME Initial Setup create inherit.
 - **`wallpaper`**, **`fonts`**, **`iconTheme`** and **`cursorTheme`** have the
   same shapes and lowering as in `GnomeProfile.appearance`.
 
-A native GTK3 theme, terminals and a GNOME Shell recoloring are still out; see
-[ADR 0013](../adr/0013-theme.md).
+A native GTK3 theme, terminals and a GNOME Shell recoloring are still out
+([ADR 0013](../adr/0013-theme.md)).

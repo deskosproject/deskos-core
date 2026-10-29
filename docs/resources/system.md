@@ -4,15 +4,15 @@ Part of the [resource model](../resources.md): the kinds that describe boot, upd
 
 ## `BootProfile`
 
-**Boot appearance**: graphical splash, quiet boot and the splash watermark.
+Boot appearance: graphical splash, quiet boot and the splash watermark.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `splash`, `quiet` | `graphical` or `text`; boolean | no | `text` adds no splash argument and no initramfs rebuild; `quiet: false` adds no `quiet` |
 | `watermark` | asset inside the resource root | no | a PNG, at most 1024x1024; needs an effective `splash: graphical` |
 
-Core ships `deskos-boot` (the boot behaviour, no artwork) and `deskos-splash`
-(the DeskOS lockup), which needs `deskos-boot` for a graphical splash to sit on.
+Core ships `deskos-boot` (boot behaviour, no artwork) and `deskos-splash` (the
+DeskOS lockup), which needs `deskos-boot` for a splash to sit on.
 
 ```yaml
 apiVersion: system.deskos.org/v1alpha1
@@ -34,7 +34,8 @@ spec:
 ## `UpdatePolicy`
 
 **Unattended updates** of the image and of system Flatpaks. By default the image
-update stages the next image and applies at the next reboot the user makes.
+update stages the next image and applies at the next reboot
+([operations.md](../operations.md#how-updates-work)).
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
@@ -52,13 +53,13 @@ spec:
     requireACPower: true
 ```
 
-`requireACPower` also installs a udev rule that starts the staging service when
-AC comes online; the daily timer remains the schedule. Core sets the **image**
-policy only: `flatpak:` is deliberately absent
+`requireACPower` also installs a udev rule that starts the staging service when AC
+comes online; the daily timer remains the schedule. Core sets the **image** policy
+only: `flatpak:` is deliberately absent
 ([`resources/system/deskos-core-updates.yaml`](../../resources/system/deskos-core-updates.yaml)),
-because declaring it in the foundation would impose an application channel on
-every platform. Units and operation:
-[runtime.md](../runtime.md#updates), [operations.md](../operations.md).
+because the foundation must not impose an application channel on every platform.
+Units and operation: [runtime.md](../runtime.md#updates),
+[operations.md](../operations.md).
 
 ## Scheduled apply
 
@@ -81,10 +82,10 @@ spec:
       timezone: Europe/Madrid      # optional; machine local zone when omitted
 ```
 
-The apply timer is `Persistent=false`: a missed window waits for the next one
-instead of rebooting at the next boot, and the `deskos window` `ExecCondition`
-rejects a timer that fires after suspend. An organization that only wants
-staging never sets `apply`
+The apply timer is `Persistent=false`, and the `deskos window` `ExecCondition`
+rejects a timer that fires after suspend: a missed window waits for the next one
+([operations.md](../operations.md#how-updates-work)). An organization that only
+wants staging never sets `apply`
 ([ADR 0023](../adr/0023-scheduled-apply-window.md)).
 
 ## `TrustAnchor`
@@ -103,18 +104,16 @@ spec:
       file: ../assets/example-root-ca.crt
 ```
 
-Anchors are keyed by `name`: one certificate under a name deduplicates, a
-different one under the same name conflicts at any layer. The Platform supplies
-the anchors directory and the update command — `/etc/pki/ca-trust/source/anchors/`
-and `update-ca-trust` on the EL platforms. The private key is neither needed nor
-accepted. A `blocklist` entry such as
-`{name: compromised-root-ca, file: ../assets/compromised-root-ca.pem}` lowers to
+Anchors are keyed by `name`: one certificate deduplicates, a different one under
+the same name conflicts at any layer. The Platform supplies the directory and the
+update command: `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust` on the EL
+platforms. The private key is neither needed nor accepted. A `blocklist` entry such
+as `{name: compromised-root-ca, file: ../assets/compromised-root-ca.pem}` lowers to
 `trust.blocklistDir` (`/etc/pki/ca-trust/source/blocklist/` on EL), which p11-kit
-reads as distrusted: the certificate stays out of every extracted bundle, so a
-chain ending at it is rejected. See [runtime.md](../runtime.md#trust-store).
+reads as distrusted, so a chain ending at it is rejected
+([runtime.md](../runtime.md#trust-store)).
 
-The rescue path for a compromised CA is a resource, not a script, and composes
-at any layer, the workstation layer included. Core ships `deskos-trust` with the
-October 2026 eMudhra roots (RHSB-2026-012); an organization adds its own through
-its profiles and drops an entry once the platform's `ca-certificates` no longer
-ships that root.
+The rescue path for a compromised CA is a resource, not a script, and composes at
+any layer. Core ships `deskos-trust` with the October 2026 eMudhra roots
+(RHSB-2026-012); an organization adds its own through its profiles and drops an
+entry once the platform's `ca-certificates` no longer ships that root.

@@ -4,9 +4,8 @@ Part of the [resource model](../resources.md): the kinds that define what is bui
 
 ## `Workstation`
 
-A concrete build target: **one platform plus profiles**; profile order is *not*
-precedence. It compiles into a workstation **image** — the machine you author,
-not a distribution edition.
+A concrete build target: one platform plus profiles. Profile order is not
+precedence. It compiles into a workstation image, not a distribution edition.
 
 | Field | Type | Required |
 |---|---|---|
@@ -30,19 +29,19 @@ spec:
 ```
 
 `deskosctl plan ./examples/organization-and-role --workstation
-example-devops-centos-stream-10` shows **which layer won each setting**.
+example-devops-centos-stream-10` shows which layer won each setting.
 
-A workstation can also **retire a Flatpak remote the base ships**:
+A workstation can retire a Flatpak remote the base ships:
 `removeRemotes: [{name: flathub, reason: apps come from the organization's own
-remote}]`. A remote the composition also declares is a contradiction and fails; a
-`FlatpakSet` names its remote as a declared resource, so it is covered. The removal
-is image-level, **not** `flatpak uninstall`: applications already installed from
-that remote stay on an updated machine, and DeskOS never forces
+remote}]`. Declaring the same remote in the composition is a contradiction and
+fails; a `FlatpakSet` names its remote as a declared resource, so it is covered.
+The removal is image-level, not `flatpak uninstall`: applications already installed
+from that remote stay on an updated machine, and DeskOS never forces
 ([ADR 0017](../adr/0017-extensions-flatpak-remote-and-power-button.md)).
 
 ## `Profile`
 
-Places resources at **one semantic layer**:
+Places resources at one semantic layer:
 
 | Field | Type | Required |
 |---|---|---|
@@ -65,13 +64,13 @@ spec:
 
 ## `Platform`
 
-Facts about an OS target: its bootc base image, **its package manager** (`rpm` or
-`deb`), its package-group mapping, GNOME, boot, image update and Flatpak
-capabilities, **whether its base can fetch a verified artifact**, and its
-redistribution constraints. DeskOS ships `centos-stream-10` and `rhel-10` in
-[`resources/platforms/`](../../resources/platforms/); the status of each is
-[platforms.md](../platforms.md). A platform only being *evaluated* carries its own
-`Platform` resource in an example root instead.
+Facts about an OS target: bootc base image, package manager (`rpm` or `deb`),
+package-group mapping, GNOME, boot, image update and Flatpak capabilities, whether
+the base can fetch a verified artifact, and redistribution constraints. DeskOS
+ships `centos-stream-10` and `rhel-10` in
+[`resources/platforms/`](../../resources/platforms/), with status in
+[platforms.md](../platforms.md). A platform still being evaluated carries its own
+`Platform` resource in an example root.
 
 | Field | Type | Required |
 |---|---|---|
@@ -87,34 +86,30 @@ redistribution constraints. DeskOS ships `centos-stream-10` and `rhel-10` in
 | `trust.anchorsDir`, `.blocklistDir`, `.updateCommand`, `iconCache.package`, `.command`, `downloads.baseFetches`, `.package` | `/etc/...`; command; package name; command; boolean; package name | anchors, command, `iconCache`, `baseFetches` yes |
 
 A package-group mapping names the platform's own members: `rpmGroups` for an RPM
-platform, `members` (its metapackage names) for a deb one. `rpmFiles`,
-`RpmRepository` and `AptRepository` are each one manager's; a platform whose
-manager is not that one fails at compile time when one is requested.
+platform, `members` for a deb one. `rpmFiles`, `RpmRepository` and `AptRepository`
+each belong to one manager, and a platform with the other one fails at compile time
+when either is requested.
 
-**A package or tool name belongs to a platform, never to Core**: `flatpak.package`,
-`trust.updateCommand`, `iconCache.package` with `iconCache.command`. A platform that
-declares nothing where a name is needed reports the gap at compile time (invariant
-9): an icon on a platform with no `iconCache` fails composition.
+A package or tool name belongs to a platform, never to Core: `flatpak.package`,
+`trust.updateCommand`, `iconCache.package` with `iconCache.command`. A platform
+that declares nothing where a name is needed reports the gap at compile time
+(invariant 9).
 
-A `BinaryArtifact` or an `RpmFile` has to be *fetched*: `downloads.baseFetches` says
-whether the base can fetch, and `downloads.package` names the fetcher on a base that
-cannot. Without the fact, composition fails naming the platform and the resource; a
-base without a fetcher gets that package added to the plan, with the provenance of
-the download that needed it
-([ADR 0019](../adr/0019-a-platform-says-whether-its-base-can-fetch.md)); what it
-fetches *with* stays Core's own choice.
+A `BinaryArtifact`, or a package in `PackageSet.rpmFiles`, has to be fetched. `downloads.baseFetches` says
+whether the base can fetch, and `downloads.package` names the fetcher where it
+cannot; without the fact, composition fails naming the platform and the resource
+([ADR 0019](../adr/0019-a-platform-says-whether-its-base-can-fetch.md)).
 
-`gnome.keepsVendorDefaults: true` replaces `gnome.dconfDatabase` on a base that
-ships a desktop of its own; DeskOS then writes no GNOME default or lock, and a
-profile setting any GNOME value there fails composition. `gnome.loginScreen: true`
-also needs `gnome.loginScreenDatabase`, the database GDM reads (`gdm` on the EL
-family and Fedora): the greeter reads its own dconf profile, so login-screen
-defaults written beside the desktop defaults install a key it never shows (#246).
+`gnome.keepsVendorDefaults: true` replaces `gnome.dconfDatabase` on a base with a
+desktop of its own: DeskOS writes no GNOME default or lock there, and a profile
+setting any GNOME value fails composition. `gnome.loginScreen: true` also needs
+`gnome.loginScreenDatabase`, the database GDM reads (`gdm` on the EL family and
+Fedora); the greeter reads its own dconf profile, so a key written beside the
+desktop defaults never shows (#246).
 
 `removePackages` differs from a group's `excludePackages`: an exclusion only stops
-that group transaction from installing a member, and cannot remove a package the
-base already carries. The build removes `removePackages` after every install
-transaction, skips names that are not installed, does not autoremove dependencies,
-and fails if a named package is still present. Explicitly installing one is a
-contradiction and fails. RPM-only in v1alpha1
+that transaction from installing a member, and cannot remove a package the base
+carries. The build removes `removePackages` after every install transaction, skips
+names that are not installed, does not autoremove dependencies, and fails if a
+named package remains. RPM-only in v1alpha1
 ([ADR 0022](../adr/0022-removing-packages-a-platform-must-not-carry.md)).

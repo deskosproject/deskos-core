@@ -1,8 +1,7 @@
 # Architecture decision records
 
-Every decision behind DeskOS, oldest first. Each ADR is short —
-context, decision, consequences — and where this repository documents something
-that disagrees with one, the ADR wins.
+Every decision behind DeskOS, oldest first. Each ADR is short (context, decision,
+consequences), and where another page disagrees with one, the ADR wins.
 
 The number of public kinds grew over time, so some ADR *titles* say "the tenth
 kind" while the API now has **fourteen**; the count is in
@@ -19,7 +18,7 @@ kind" while the API now has **fourteen**; the count is in
 | [0007: UpdatePolicy as the eleventh public kind](0007-updatepolicy.md) | accepted |
 | [0008: GnomeProfile shell, clock and keyboard settings](0008-gnome-shell-clock-keyboard.md) | accepted |
 | [0009: TrustAnchor as the twelfth public kind](0009-trustanchor.md) | accepted |
-| [0010: Artifact evidence and the supply-chain gate](0010-artifact-evidence-and-supply-chain.md) | accepted |
+| [0010: Artifact records and the supply-chain check](0010-artifact-evidence-and-supply-chain.md) | accepted |
 | [0011: The agentic contribution layer](0011-agentic-contribution-layer.md) | accepted |
 | [0012: Vulnerability-severity and VEX policy](0012-vulnerability-severity-and-vex-policy.md) | accepted |
 | [0013: Theme as the thirteenth public kind](0013-theme.md) | accepted |

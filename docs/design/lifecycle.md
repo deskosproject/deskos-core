@@ -3,9 +3,8 @@
 **Status:** design, evaluator, driver and a weekly workflow on `main`
 (2026-10-24; boot-failure recovery 2026-10-25; full workflow green 2026-10-26).
 Run `40305080925` (2026-10-26, first **scheduled**) took the full path in 7
-steps; no pull request runs it.
-A staged update and a manual rollback were validated once on a CS10 VM; the
-weekly workflow is what repeats them.
+steps; no pull request runs it. A staged update and a manual rollback were
+validated once on a CS10 VM; the weekly workflow repeats them.
 
 ## What the spike proved (2026-10-23)
 
@@ -72,8 +71,7 @@ a **third image C**, because upgrading to B after the rollback stages nothing.
   a non-booting candidate by setting the previous GRUB entry from the host.
 - **Application data.** `/var` and local `/etc` edits survive a rollback because
   neither is snapshotted. An upgrade that rewrites `/var` is not undone by
-  rolling back; the operator restores from their own backup, and the marker is
-  not a migration.
+  rolling back; the operator restores from their own backup.
 
 ## Candidate that does not boot: accepted host-side recovery
 
@@ -89,7 +87,7 @@ sets that index in `/boot/grub2/grubenv`, boots again, and verifies A.
 `lifecycle.json`, the recovered `bootc status`, and the `/var` marker; a
 candidate that never boots, a wrong-digest recovery and a lost marker fail.
 
-**Not covered.** UEFI firmware menu behavior, BIOS, an unattended rescue
+**Not covered.** UEFI firmware menu behaviour, BIOS, an unattended rescue
 rollback, and a login-screen failure after boot.
 
 ## Lab result: a candidate that does not boot (2026-10-25)
@@ -102,7 +100,7 @@ On the 24 GiB lab disk, setting the on-disk GRUB default to the previous entry
 `tests/lifecycle/driver.py` builds A and B, pushes them, installs with `bootc
 install to-disk` and boots. `--interrupt` adds the power-loss run;
 `--boot-failure` adds D and the host-side GRUB recovery. It needs rootful podman,
-qemu, `qemu-nbd`, `skopeo` and `/dev/kvm`, and is **not a pull-request gate**:
+qemu, `qemu-nbd`, `skopeo` and `/dev/kvm`, and is **not a pull-request check**:
 `ci.yml` runs its unit tests, and `lifecycle.yml` runs it weekly and by hand.
 
 ## Markers and evaluation
@@ -131,18 +129,18 @@ image, and the `/var` and `/etc` state.
 
 ## Cost and placement
 
-Two image builds, one disk, five boots: roughly 45–60 minutes.
+Two image builds, one disk, five boots: roughly 45-60 minutes.
 
 ## Open questions
 
-1. **Insecure registry over NAT — answered (2026-10-23).** Plain HTTP works; no
+1. **Insecure registry over NAT: answered (2026-10-23).** Plain HTTP works; no
    ostree repo is needed.
-2. **`--target-imgref` — answered (2026-10-23).** Only `bootc install to-disk`
+2. **`--target-imgref`: answered (2026-10-23).** Only `bootc install to-disk`
    has it; BIB's pinned build does not.
-3. **Where to stop the interrupt — answered for the first window (2026-10-23).**
+3. **Where to stop the interrupt: answered for the first window (2026-10-23).**
    A kill during the layer download is recovered; the ostree-write and
    post-deployment windows are untested.
-4. **Time budget for a retry — no lock observed (2026-10-23).** If a future
-   bootc introduces one, the assertion must read the reason, not sleep.
-5. **SELinux and the bootc install — answered for the host side (2026-10-23).**
+4. **Time budget for a retry: no lock observed (2026-10-23).** If a future bootc
+   introduces one, the assertion must read the reason, not sleep.
+5. **SELinux and the bootc install: answered for the host side (2026-10-23).**
    The guest side is plain bootc.

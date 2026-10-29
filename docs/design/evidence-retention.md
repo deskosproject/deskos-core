@@ -1,24 +1,24 @@
 # Durable evidence for a published digest
 
 **Status: implemented and exercised, 2026-10-26.** The R2 buckets,
-`evidence.deskos.org`, the public upload token and the uploader are in place. The
-first real digest is stored and verified: 16 objects for
+`evidence.deskos.org`, the public upload token and the uploader are in place, and
+the first real digest is stored and verified: 16 objects for
 `sha256:96fe80d33023bdd4b674b45288e13a0e4aaedb935b09e154bc4adbc132f3fab6`.
 
-P0-05 asks that a historical image digest's evidence can still be retrieved and
-verified after workflow artifacts expire.
+P0-05 asks that the records for a historical image digest survive workflow
+artifact expiry.
 
 ## What is true today
 
-- Workflow evidence (declared and installed SBOMs, Grype report, Plan, boot and
-  session results, digests, signature verification) is a GitHub artifact with
-  `retention-days: 14` (attempt-suffixed since P0-01).
-- The image carries a signed attestation that names the **SHA-256 of the SBOM**;
-  the SBOM bytes themselves are not attached.
-- The exception record is in Git and is attested; the raw scan and its effective
+- Workflow records (declared and installed SBOMs, Grype report, Plan, boot and
+  session results, digests, signature check) are a GitHub artifact with
+  `retention-days: 14`, attempt-suffixed since P0-01.
+- The image carries a signed attestation naming the **SHA-256 of the SBOM**; the
+  SBOM bytes are not attached.
+- The exception record is in Git and attested; the raw scan and its effective
   exceptions are only in the artifact.
-- There is no index from `sha256:<image digest>` to its evidence and no
-  verification command that fails when evidence is missing.
+- Nothing maps `sha256:<image digest>` to its records, and no command fails when
+  a record is missing.
 
 ## Requirements
 
@@ -26,44 +26,44 @@ verified after workflow artifacts expire.
 2. **Immutable**: an object for a digest cannot be silently replaced.
 3. **Integrity**: every object is addressed by its own SHA-256; a missing or
    changed object fails retrieval.
-4. **Access split**: Core evidence public; RHEL evidence private to the
-   organization. No credential in the repository.
-5. **Bounded cost and retention**: a deletion/GC policy is stated, not implied.
-6. **Verify without the build**: a person can check evidence for a digest using
-   the image's signature and the stored hashes.
-7. **No recursive promise**: evidence is not embedded into the image after the
-   digest is computed.
+4. **Access split**: Core records public, RHEL records private to the
+   organization, no credential in the repository.
+5. **Bounded cost**: a written deletion and GC policy.
+6. **Verify without the build**: a person checks a digest's records against the
+   image signature and the stored hashes.
+7. **No recursion**: records are not embedded in the image after the digest is
+   computed.
 
 ## Options
 
 | Option | Strengths | Problems |
 |---|---|---|
-| **OCI 1.1 referrers** on the image registry (quay for Core, zot for RHEL) | travels next to the digest; consumers already use `oras`/`cosign`; no second store | registry referrers support and garbage collection differ and are unverified for quay; deleting the subject may take evidence with it; large SBOMs are unusual registry blobs |
-| **Object store** (R2 or an organization bucket) keyed `sha256/<digest>/…` | immutable keys, cheap, already used by the download site; public/private buckets are straightforward | needs a scoped upload credential in CI and a public-read decision; no automatic link from the image |
-| **Git repository** for JSON evidence | reviewable history, no new infrastructure | SBOMs and scan output are large; binary in Git is a poor fit; every upload is a commit |
-| **GitHub Release assets** | durable enough and easy to fetch | tied to a release tag, not every build; release authority is heavier than the gate |
+| **OCI 1.1 referrers** on the image registry (quay for Core, zot for RHEL) | travels next to the digest; consumers already use `oras`/`cosign`; no second store | referrers support and GC differ per registry and are unverified for quay; deleting the subject may take the records with it; large SBOMs are unusual registry blobs |
+| **Object store** (R2 or an organization bucket) keyed `sha256/<digest>/…` | immutable keys, cheap, already used by the download site; public and private buckets are simple | needs a scoped upload credential in CI and a public-read decision; no automatic link from the image |
+| **Git repository** for JSON records | reviewable history, no new infrastructure | SBOMs and scan output are large; binary in Git is a poor fit; every upload is a commit |
+| **GitHub Release assets** | durable enough and easy to fetch | tied to a release tag, not every build; release authority is heavier than the weekly build |
 | **GitHub artifacts** | already produced | 14 days; explicitly not durable |
 
 ## Decision (2026-10-25)
 
-Use an **R2 object store keyed by image digest**, with a small per-digest
-`index.json` listing every evidence object and its SHA-256. Keep the existing
-attestation naming the SBOM hash; the index resolves that hash to bytes.
+Use an **R2 object store keyed by image digest**, with a per-digest `index.json`
+listing every record object and its SHA-256. The attestation still names the SBOM
+hash; the index resolves that hash to bytes.
 
-- Core evidence is **public** (`deskos-evidence-public`); organization evidence is
-  **private**, in a bucket owned by that organization.
-- The object key is `<namespace>/<repository>/sha256/<hex>/`, for example
+- Core records are **public** (`deskos-evidence-public`); organization records
+  are **private**, in a bucket that organization owns.
+- The key is `<namespace>/<repository>/sha256/<hex>/`, for example
   `deskos/deskos-core-centos-stream-10/sha256/<hex>/index.json`, independent of
-  the registry host, so moving an image does not move its evidence.
+  the registry host, so moving an image does not move its records.
 - The upload token is scoped to the bucket or prefix and staged as a secret,
   never in `argv` or the repository.
-- **Every published image digest is retained.** Garbage collection may delete
-  only temporary or unpublished objects.
-- The index starts **unsigned**; the signed image attestation names the SBOM
-  SHA-256, so replacing the index or an object fails the comparison.
+- **Every published digest is retained.** GC may delete only temporary or
+  unpublished objects.
+- The index starts **unsigned**; the attested SBOM SHA-256 makes a replaced
+  index or object fail the comparison.
 
-The index must not be authoritative by itself: a missing object or a differing
-hash **fails** verification. A 404 is not "no known issues". The pair exists at
+The index is not authoritative by itself: a missing object or a differing hash
+**fails** verification, and a 404 is not "no known issues". The two scripts are
 [`tests/evidence/index.py`](../../tests/evidence/index.py) and
 [`tests/evidence/verify.py`](../../tests/evidence/verify.py): one builds the
 sorted index and refuses symlinks, the other checks the index, rejects traversal
@@ -112,21 +112,21 @@ The public bucket and `evidence.deskos.org` are defined in
 
 ## Repair and deletion
 
-An upload can fail after the image is published. The durable artifact keeps the
-evidence for 14 days, so `evidence-maintenance.yml` can **backfill** the digest
-from that run's artifact and verify the stored copy; the artifact names its own
-digest and a mismatch is refused.
+An upload can fail after the image is published. The workflow artifact keeps the
+records for 14 days, so `evidence-maintenance.yml` can **backfill** the digest
+from that run's artifact and check the stored copy; the artifact names its own
+digest, and a mismatch is refused.
 
-`tests/evidence/prune.py` lists and deletes one digest prefix; it is a dry run
-until `--apply`, `--confirm` must repeat the exact prefix, and a prefix with an
-`index.json` is refused unless `--force` is given.
+`tests/evidence/prune.py` lists and deletes one digest prefix. It is a dry run
+until `--apply`, `--confirm` must repeat the exact prefix, and a prefix holding
+an `index.json` is refused unless `--force` is given.
 
-That path was used on 2026-10-26: `prune` removed the 332 objects of a failed
-upload (`sha256:36824c3e…`, which indexed the whole checkout and never wrote
+That path ran on 2026-10-26: `prune` removed the 332 objects of a failed upload
+(`sha256:36824c3e…`, which indexed the whole checkout and never wrote
 `index.json`), and `backfill` published the 16 objects from run `40244202449`'s
-durable artifact. Fetching them from
-`evidence.deskos.org` and running `verify.py` reported `verified 16 object(s)`.
-The evidence for `sha256:96fe80d3…` was not touched.
+artifact. Fetching them from `evidence.deskos.org` and running `verify.py`
+reported `verified 16 object(s)`. The records for `sha256:96fe80d3…` were not
+touched.
 
 ## Open decisions
 
@@ -140,8 +140,8 @@ The evidence for `sha256:96fe80d3…` was not touched.
 
 ## Non-goals
 
-- No telemetry or fleet inventory; this is evidence about an artifact, not about
+- No telemetry or fleet inventory; this is a record about an artifact, not about
   who runs it.
-- No post-build SBOM embedded in the image (that would change the digest).
-- No SLSA level claim; this design only makes existing evidence durable and
+- No post-build SBOM embedded in the image, which would change the digest.
+- No SLSA level claim; this design only makes existing records durable and
   retrievable.

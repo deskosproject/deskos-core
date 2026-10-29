@@ -21,17 +21,17 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Browse GSettings, dconf, profiles, keyfiles | dconf profile and keyfiles | **modelled**: the lowerer writes `distro.d` keyfiles and Platforms declare the database |
 | Custom default values | dconf defaults | **modelled**, with provenance and layering |
 | Lock down specific settings | dconf locks | **modelled**; Core ships none (invariant 8) |
-| Store settings over NFS | `service-db:keyfile/user` first line of the profile | **gap: field** — the platform owns the profile, and no field asks for it |
+| Store settings over NFS | `service-db:keyfile/user` first line of the profile | **gap: field**: the platform owns the profile, and no field asks for it |
 | Why not GSettings overrides | vendor overrides | **modelled** for the first-boot wallpaper only; no general field |
 | **User settings** | | |
-| Dim screen when idle | `plugins.power idle-dim`, `idle-brightness`, `session idle-delay` | **partial**: idle delay is modelled; dim and brightness are **gap: two fields** |
+| Dim screen when idle | `plugins.power idle-dim`, `idle-brightness`, `session idle-delay` | **modelled** since 2026-10-29 (`session.idle.blankAfter`, `.dim`, `.dimBrightness`) |
 | Enable the compose key | `input-sources xkb-options` | **modelled** (`keyboard.xkbOptions`: `compose:caps`, `compose:menu`, `compose:ralt`, `compose:rctrl`) |
 | Disallow online accounts | `online-accounts whitelisted-providers` | **gap: field**, or declined: an account is a person's, not the image's |
 | Single-application mode | custom session plus a wrapper `Exec` | **refused**: arbitrary shell (invariant 5) |
 | Disable command line | `lockdown disable-command-line` | **modelled** |
 | Disable file saving | `lockdown disable-save-to-disk` | **modelled** |
 | Disable printing | `lockdown disable-printing` | **modelled** |
-| Disable repartitioning | a polkit `.policy` file for udisks2 | **gap: decision** — a file with security semantics, not a key; a kind here is a new surface |
+| Disable repartitioning | a polkit `.policy` file for udisks2 | **gap: decision**: a file with security semantics, not a key; a kind here is a new surface |
 | Disable logout and switching | `lockdown disable-log-out`, `disable-user-switching` | **modelled** |
 | Disallow fingerprint login | PAM, fprintd and a reader | **outside**: hardware and PAM, not image intent |
 | Lock down extensions | `shell enabled-extensions`, `development-tools` | **partial**: the list is modelled and lockable; Looking Glass is **gap: field** |
@@ -51,11 +51,11 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
 | Automatic logout when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **gap: fields**, and a policy that can lose unsaved work |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
-| Multiple keyboard layouts at the greeter | `localectl set-x11-keymap`, XKB layouts | **gap: field** — options are modelled, layouts are not |
+| Multiple keyboard layouts at the greeter | `localectl set-x11-keymap`, XKB layouts | **gap: field**: options are modelled, layouts are not |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
 | **Network and hardware** | | |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |
-| Default VPN settings | NetworkManager `system-connections` | **gap: kind** — a connection profile, with secrets supplied at runtime |
+| Default VPN settings | NetworkManager `system-connections` | **gap: kind**: a connection profile, with secrets supplied at runtime |
 | **Software** | | |
 | Enable machine-wide extensions | `shell enabled-extensions` | **modelled** (`shell.extensions`, plus the platform's catalog) |
 | Custom MIME type | XML under `/usr/share/mime` plus `update-mime-database` | **artifact**: a package or a placed file, not a field |
@@ -70,10 +70,9 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 Three different bills, and conflating them is how a backlog grows without
 shipping:
 
-- **Seven fields are cheap**: dim and brightness, the extension lock for Looking
-  Glass, a distinct lock shield, idle logout, XKB layouts and the NFS profile
-  line (the greeter's two left this list on 2026-10-29). Each is a scalar (or two)
-  in
+- **Five fields are cheap**: the extension lock for Looking Glass, a distinct
+  lock shield, idle logout, XKB layouts and the NFS profile line. Each is a
+  scalar (or two) in
   `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
   the count stays at fourteen.
 - **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
@@ -85,11 +84,12 @@ shipping:
 
 ## Decisions this produces
 
-1. Add the remaining seven fields, one PR per group, each with its check; the
-   greeter's two shipped on 2026-10-29.
+1. Add the remaining five fields, one PR per group, each with its check; the
+   greeter's two shipped on 2026-10-29, and dim and brightness with them.
 2. Open the NetworkManager connection ADR if an organization asks; refuse polkit
    unless one shows a real need.
 3. Keep the refusals written down here rather than rediscovered in review.
 4. Correct the roadmap: it claimed dconf defaults and locks covered more than
-   expected. They covered **fourteen** guide items exactly and four partially at the
-   audit, which is a different claim; the greeter's two now bring it to sixteen.
+   expected. At the audit they covered **fourteen** guide items exactly and four
+   partially, which is a different claim. The greeter's two and the power pair have
+   since added three, so the table above reads seventeen and three.

@@ -1,85 +1,75 @@
 # Compatibility
 
-What DeskOS promises to keep working between releases, what it rejects, and how
-a change that cannot be kept is migrated. The project is pre-1.0: this policy
-makes breaks deliberate and documented, not impossible.
+What stays stable between releases, what is rejected, and how a break is migrated.
+The project is pre-1.0: this policy makes breaks deliberate and documented.
 
 ## Surfaces
 
 | Surface | Promise |
 |---|---|
-| **Resource API** (`v1alpha1` YAML, fields and kinds) | Public. Unknown fields and unknown kinds are rejected, never ignored. Exactly fourteen kinds; a fifteenth needs an explicit decision (ADR 0015 and successors) |
-| **Plan** (`plan.deskos.org/v1alpha1`) | Internal contract between the compiler and the backends/companion, not a general API. The companion of a release reads the plans that release renders; mixing releases is unsupported |
-| **`deskosctl`** | Command names, flags and exit codes are stable. Human-readable text may change; `plan --format json` follows the Plan format and `sbom` follows CycloneDX |
-| **`deskos`** | Command names and exit codes are stable. Human-readable `report`/`check` text may change; `window` keeps its exit-code contract for systemd |
-| **Image reference** | `:latest` moves; `:<commit>` is a naming convention, not registry-enforced immutability; a digest is exact. An installed machine follows the reference it was installed from until a person changes it |
-| **Core and organization resources** | Organizations add resources in their own root; they never redefine Core's. Duplicate definitions follow ADR 0003 |
+| **Resource API** (`v1alpha1` YAML, fields and kinds) | public; unknown fields and kinds are rejected, never ignored; fourteen kinds, and a fifteenth needs a decision |
+| **Plan** (`plan.deskos.org/v1alpha1`) | contract between compiler, backends and companion; a companion reads the plans its own release renders, and mixing releases is unsupported |
+| **`deskosctl`** | command names, flags and exit codes stable; human text may change; `plan --format json` follows the Plan format and `sbom` follows CycloneDX |
+| **`deskos`** | command names and exit codes stable; `report` and `check` text may change; `window` keeps its exit-code contract for systemd |
+| **Image reference** | `:latest` moves; `:<commit>` is a naming convention, not immutable; a digest is exact; an installed machine follows the reference it was installed from |
+| **Core and organization resources** | organizations add resources in their own root and never redefine Core's; duplicates follow ADR 0003 |
 
 ## Versioning and migration
 
-- Releases are semver tags `vX.Y.Z`; no tag is moved.
-- **Patch** releases fix defects. They do not change resource schemas, Plan
-  shape, command names, flags or exit codes.
-- **Minor** releases may make a pre-1.0 breaking change only with all of:
-  a migration note, a reviewed golden diff, and a test or fixture covering the
-  old and new form. Without those, the change waits.
-- **Schema-incompatible** changes bump `apiVersion`; **Plan-shape** changes bump
-  the `format` string and require the matching companion. The compiler may
-  reject an old input with a message, but it does not guess a migration.
-- **Deprecation** is announced in this page and the release notes at least one
-  minor release before removal; the field keeps working until then. No field
-  has been deprecated yet.
-- **Automatic promotion does not exist**: a tag, a `latest` alias, or a release
-  is a human decision. Nothing promotes a version on a green run.
+- Releases are semver `vX.Y.Z` tags, and no tag moves.
+- **Patch** releases fix defects and change no schema, Plan shape, command, flag or
+  exit code.
+- **Minor** releases may break pre-1.0 only with a migration note, a reviewed
+  golden diff, and a fixture covering the old and new form.
+- A schema break bumps `apiVersion`; a Plan-shape change bumps `format` and needs
+  the matching companion. The compiler rejects an old input and does not guess a
+  migration.
+- A deprecation is announced here and in the release notes one minor before
+  removal. None has happened yet.
+- Nothing promotes itself: a tag, a `stable` alias and a release are human
+  decisions.
 
 ## Fixture matrix
 
-The classes are the contract; the tests are how it is enforced.
-
-| Input | Class | Evidence |
+| Input | Class | Checked by |
 |---|---|---|
-| Core and the example organization compose and render | **compatible** | `make check`; `internal/compiler/golden_test.go` |
-| A resource at a higher layer overrides a scalar | **compatible** | `internal/compiler/compose_test.go` (ADR 0003) |
-| The same keyed definition at several layers deduplicates | **compatible** | `internal/compiler/compose_test.go` |
-| An unknown field | **rejected** | `internal/compiler/architecture_test.go` (`unknown field`) |
-| A fifteenth kind | **rejected** | `internal/compiler/architecture_test.go` (exactly 14) |
-| Two different definitions of one keyed resource | **rejected** | `internal/compiler/compose_test.go` (`composition conflict`) |
-| Two different scalars in one layer | **rejected** | `internal/compiler/compose_test.go` (`same layer conflict`) |
-| A renamed or removed field | **migratable by edit** | no automatic migration exists; the release note gives the old→new mapping and the compiler rejects the old form |
-| A Plan from release N read by release N's companion | **compatible** | the image ships its companion; `deskos report/check` tests |
-| A Plan from release N read by another release's companion | **unsupported** | stated here; no cross-release fixture |
-| `deskosctl` invalid input | **rejected** | exit 1 (`cmd/deskosctl/main_test.go`) |
-| `deskosctl` usage error | **rejected** | exit 2 (same) |
-| `deskos window` outside the allowed time | **rejected** | exit 1 (`cmd/deskos/window_test.go`) |
-| `deskos window` bad arguments | **rejected** | exit 2 (same) |
+| Core and the example organization compose and render | compatible | `make check`, `golden_test.go` |
+| A higher layer overrides a scalar | compatible | `compose_test.go` (ADR 0003) |
+| One keyed definition at several layers deduplicates | compatible | `compose_test.go` |
+| An unknown field | rejected | `architecture_test.go` |
+| A fifteenth kind | rejected | `architecture_test.go` (exactly fourteen) |
+| Two different keyed definitions | rejected | `compose_test.go` |
+| Two different scalars in one layer | rejected | `compose_test.go` |
+| A renamed or removed field | migratable by edit | the release note gives old and new; the compiler rejects the old form |
+| A Plan read by its own release's companion | compatible | the image ships its companion; `deskos report/check` tests |
+| A Plan read by another release's companion | unsupported | stated here, no cross-release fixture |
+| Invalid input to `deskosctl` | rejected | exit 1 |
+| A usage error | rejected | exit 2 |
+| `deskos window` outside its window | rejected | exit 1 |
+| `deskos window` with bad arguments | rejected | exit 2 |
 
-Golden updates are changes under review, not a fix for a red test: run
-`go test ./internal/compiler -update`, review the diff, and explain it in the
-pull request. An agent never self-merges that diff.
+A golden update is a change under review, not a fix for a red test: run
+`go test ./internal/compiler -update`, read the diff, explain it in the pull
+request, and let a person merge it.
 
-## Promotion to beta and 1.0
+## Beta and 1.0
 
-Measured, not calendar-based; each gate is a human decision.
+By decision, not by calendar.
 
-**Beta** requires all of:
+**Beta** needs an organization outside the maintainer's own use running a pinned
+release, two consecutive minors with the matrix green, a migration note for every
+break in that window, and the support and security entry points named.
 
-1. at least one organization outside the maintainer's own use runs a pinned
-   release in a documented resource root;
-2. two consecutive minor releases with the fixture matrix green and no open
-   compatibility defect;
-3. a migration note for every breaking change in that window;
-4. the support and security entry points named in P1-02/P2-01.
+**1.0** needs beta for at least one minor with that external use, no resource or
+Plan break for two minors, fixtures for the previous two passing in CI, and a
+maintainer decision. Fourteen kinds is the ceiling unless a separate decision
+changes it.
 
-**1.0** requires beta for at least one minor release with that external use,
-no resource or Plan break for two consecutive minors, fixtures for the previous
-two minors passing in CI, and an explicit maintainer decision. Fourteen kinds is
-the ceiling unless a separate decision changes it; promotion does not add kinds.
+## What is not promised
 
-## Explicit non-promises
-
-- No LTS or vendor-lifecycle promise; see [platforms.md](platforms.md).
+- No LTS or vendor-lifecycle promise ([platforms.md](platforms.md)).
 - No cross-release guarantee for the Plan or the companion.
-- No bit-for-bit reproducible image claim; compilation is deterministic, the
-  image build is not yet bit-for-bit reproducible.
-- No promise that network inputs stay available; their checks and gaps are in
+- No bit-for-bit reproducible image: compilation is deterministic, the image build
+  is not.
+- No promise that a network input stays available; their checks are in
   [supply-chain.md](supply-chain.md#inputs-and-who-moves-them).
