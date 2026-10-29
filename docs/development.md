@@ -75,6 +75,12 @@ reuses DeskOS resources without copying them
 | `sbom` | writes the declared CycloneDX SBOM of one workstation |
 | `version` | prints the release version and commit (`dev` and the Git revision for local builds) |
 
+`render` writes into an empty or missing directory, or one it wrote before: it
+records every file in `generated-manifest.json` and replaces only those. It
+**refuses** a non-empty directory that is not a previous render, and refuses a
+previous render whose files were edited, rather than deleting something it did not
+create.
+
 The declared SBOM and where a CVE scan fits are in [supply-chain.md](supply-chain.md).
 
 The CLI is also published as a container, `quay.io/deskos/deskosctl:<tag>`, from a
