@@ -333,6 +333,66 @@ func TestLoginScreenFieldsNeedAGreeter(t *testing.T) {
 	}
 }
 
+func TestIdleDimReachesThePowerPlugin(t *testing.T) {
+	// The guide's "dim the screen when idle" is two keys beside the idle delay, and
+	// they live in gsd's power plugin, not in the session schema.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    session:\n      idle:\n        blankAfter: 5m\n"+
+			"        dim: true\n        dimBrightness: 30\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/desktop/session/idle-delay":                    "uint32 300",
+		"/org/gnome/settings-daemon/plugins/power/idle-dim":        "true",
+		"/org/gnome/settings-daemon/plugins/power/idle-brightness": "30",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+}
+
+func TestDimBrightnessIsAPercentage(t *testing.T) {
+	for _, value := range []string{"0", "101"} {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+			"g.yaml":    gnome("core", "    session:\n      idle:\n        dimBrightness: "+value+"\n"),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		mustFail(t, err, "schema validation failed", "dimBrightness")
+	}
+}
+
+func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
+	// The lock list is a schema enum: a setting that lowers but is missing from it
+	// cannot be locked, which is how the two greeter fields shipped without one.
+	// Every key the composed plan carries must therefore be lockable.
+	for _, tc := range []struct{ setting, yaml string }{
+		{"session.idle.dim", "    session:\n      idle:\n        dim: true\n"},
+		{"login.banner", "    login:\n      banner: 'Lab machine'\n"},
+		{"login.showUserList", "    login:\n      showUserList: false\n"},
+	} {
+		t.Run(tc.setting, func(t *testing.T) {
+			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
+				"    dconfDatabase: distro\n    loginScreen: true\n    loginScreenDatabase: gdm\n", 1)
+			profileYAML := strings.Replace(gnome("core", tc.yaml), "spec:\n",
+				"spec:\n  locks: ["+tc.setting+"]\n", 1)
+			dir := fixture{"platform.yaml": platform}.with(fixture{
+				"ws.yaml":   workstation("ws", "core"),
+				"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+				"g.yaml":    profileYAML,
+			}).dir(t)
+			p := mustPlan(t, "ws", dir)
+			if p.Artifact.Dconf == nil || len(p.Artifact.Dconf.Locks) == 0 {
+				t.Fatalf("%s is declared and lockable but produced no lock", tc.setting)
+			}
+		})
+	}
+}
+
 const (
 	enabledExtensionsKey = "/org/gnome/shell/enabled-extensions"
 	appIndicatorUUID     = "appindicatorsupport@rgcjonas.gmail.com"
