@@ -45,9 +45,21 @@ QMP screendump per step  ←    the screen a person saw
 Each is a small, bounded interaction with an assertion on the accessibility tree,
 not on pixels:
 
-1. **Open the overview and launch an application.** Super, type the app name, Enter,
-   and assert the app's window appears in the tree with the expected name. This is
-   the cheapest proof that keyboard input reaches the shell.
+1. **Launch an application and see its window.** The declared favorite is started
+   through its desktop entry with `gio launch` — the path its icon takes — and the
+   run asserts that a **new** application with at least one toplevel appears in the
+   tree. Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
+
+   *Keyboard injection is deferred, with the reason.* Super, typing the name and
+   Enter need synthetic key events, and Mutter on Wayland does not accept them from
+   an ordinary client. Doing it properly means a **root helper writing to
+   `/dev/uinput`**, delivered as another unit, which is a step of its own and not a
+   prerequisite for the assertion above: the window either appears in the tree or it
+   does not, whichever way it was asked to appear.
+
+   The launch asserts a *new* application, because the first run showed the registry
+   already lists the shell, its `gsd-*` daemons and the portal: finding one of those
+   would prove nothing.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
    still broken.
@@ -109,5 +121,8 @@ promising.
       ordinary application was open, which is exactly what the next step has to
       change.
 - [ ] Scenario 1 only, asserted in the harness and reported in the summary.
+      Implemented 2026-10-29: launch through the desktop entry, a new application
+      with a toplevel in the tree, and the application terminated afterwards. The
+      close *through the tree* stays scenario 4.
 - [ ] Then 2 to 4, one at a time, each with its failure message.
 - [ ] Wire the job into the gate, and only then into promotion.

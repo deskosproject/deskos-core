@@ -716,17 +716,25 @@ mv "$out.tmp" "$out"
 """
 
 def e2e_probe():
-    """The first E2E step: what the session exposes through AT-SPI.
+    """The first E2E step: what the session exposes, and an application it opens.
 
     It is the same interface a screen reader uses, so it proves the accessibility
-    stack is live before any interaction is scripted on top of it. It waits for the
-    desktop instead of assuming it is there when the session starts; if the binding
-    or the registry is missing, it says which, and the summary reports a read that
-    did not happen rather than a pass.
+    stack is live before any interaction is scripted on top of it, and then it
+    launches one declared favorite through its desktop entry -- the path a click
+    takes -- and waits for a window to appear in the tree. It waits for states
+    instead of assuming them; if the binding, the registry or the window is
+    missing, it says which, and the summary reports a read that did not happen
+    rather than a pass.
+
+    Keyboard injection (Super, typing the name) is not here: Mutter on Wayland
+    does not accept synthetic keys, and uinput needs a root helper. That is a
+    separate step, and this one is worth having on its own.
     """
     return r'''#!/usr/bin/python3
-# Applications the accessibility registry knows, through the binding the image
-# carries (python3-pyatspi 2.46 in the published image; nothing older is assumed).
+# The desktop's own accessibility tree, through the binding the image carries
+# (python3-pyatspi 2.46 in the published image; nothing older is assumed).
+import os
+import subprocess
 import time
 
 try:
@@ -735,25 +743,114 @@ except Exception as exc:  # an image without the desktop, or without the binding
     print(f"e2e_error=import:{exc}")
     raise SystemExit(0)
 
-deadline = time.time() + 20
-names = []
-error = ""
-while time.time() < deadline:
+# A declared favorite that needs no network and starts in one window; PROCESS is
+# the name its Exec launches, used only to clean up.
+TARGET = "org.gnome.Calculator.desktop"
+PROCESS = "gnome-calculator"
+WINDOW_ROLES = (pyatspi.ROLE_FRAME, pyatspi.ROLE_WINDOW, pyatspi.ROLE_DIALOG)
+
+
+def apps():
+    """The applications the registry knows, keyed by name."""
     try:
         desktop = pyatspi.Registry.getDesktop(0)
-        names = sorted({app.name for app in desktop if app and app.name})
     except Exception as exc:
-        error = f"registry:{exc}"
-        time.sleep(1)
-        continue
-    if names:
+        return None, f"registry:{exc}"
+    found = {}
+    for app in desktop:
+        try:
+            found[app.name] = app
+        except Exception:
+            continue
+    return found, ""
+
+
+def windows(app):
+    """The toplevels an application exposes; a session daemon exposes none."""
+    out = []
+    try:
+        for child in app:
+            try:
+                if child.getRole() in WINDOW_ROLES:
+                    out.append(child.name or "?")
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return out
+
+
+def entry_path(app_id):
+    roots = ("/usr/share/applications", "/usr/local/share/applications",
+             "/var/lib/flatpak/exports/share/applications",
+             os.path.expanduser("~/.local/share/applications"))
+    for root in roots:
+        path = os.path.join(root, app_id)
+        if os.path.exists(path):
+            return path
+    return ""
+
+
+# 1. The stack is live before anything is scripted on it.
+deadline = time.time() + 20
+baseline, error = {}, ""
+while time.time() < deadline:
+    baseline, error = apps()
+    if baseline:
         break
     time.sleep(1)
-
+names = sorted(baseline or {})
 if not names and error:
     print(f"e2e_error={error}")
 print(f"e2e_apps={len(names)}")
 print("e2e_app_names=" + ",".join(names)[:900])
+
+# 2. One application, opened the way its icon opens it, and seen in the tree.
+path = entry_path(TARGET)
+print(f"e2e_launch_entry={path or 'missing'}")
+if not path:
+    print("e2e_launch_ok=no")
+    print("e2e_launch_reason=no-desktop-entry")
+    raise SystemExit(0)
+
+proc = subprocess.Popen(["gio", "launch", path], start_new_session=True,
+                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+deadline = time.time() + 30
+opened, frame_names = "", []
+while time.time() < deadline:
+    now, _ = apps()
+    for name, app in (now or {}).items():
+        if name in baseline:
+            continue
+        frames = windows(app)
+        if frames:
+            opened, frame_names = name, frames
+            break
+    if opened:
+        break
+    time.sleep(1)
+
+if opened:
+    print(f"e2e_launch_ok=yes")
+    print(f"e2e_launch_app={opened}")
+    print("e2e_launch_frames=" + ",".join(frame_names)[:200])
+else:
+    print("e2e_launch_ok=no")
+    print(f"e2e_launch_exit={proc.poll()}")
+
+# 3. Leave the desktop as it was found: the close *through the tree* is the fourth
+#    scenario, not this one, so the application is terminated, not clicked shut.
+subprocess.run(["pkill", "-x", PROCESS], stdout=subprocess.DEVNULL,
+               stderr=subprocess.DEVNULL)
+deadline = time.time() + 10
+gone = False
+while time.time() < deadline:
+    now, _ = apps()
+    if now is not None and opened and opened not in now:
+        gone = True
+        break
+    time.sleep(1)
+print("e2e_launch_closed=" + ("yes" if gone else "no"))
 '''
 
 
@@ -1396,6 +1493,16 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
           values.get("e2e_error") in (None, "") and apps.isdigit() and int(apps) >= 1,
           f"e2e_apps={apps or 'unread'} e2e_error={values.get('e2e_error') or 'none'} "
           f"e2e_app_names={values.get('e2e_app_names') or 'unread'}")
+    # Scenario 1: the entry launches, and the window is in the tree. A session that
+    # starts an application the accessibility tree never sees is stuck for anyone
+    # who uses the tree -- a screen reader, or the next scenario.
+    check("an application opens from its desktop entry",
+          values.get("e2e_launch_ok") == "yes",
+          f"e2e_launch_ok={values.get('e2e_launch_ok') or 'unread'} "
+          f"e2e_launch_app={values.get('e2e_launch_app') or 'unread'} "
+          f"e2e_launch_frames={values.get('e2e_launch_frames') or 'unread'} "
+          f"e2e_launch_reason={values.get('e2e_launch_reason') or 'none'} "
+          f"e2e_launch_exit={values.get('e2e_launch_exit') or 'none'}")
     if join_user:
         check("domain join completed", values.get("join_ok") == "yes",
               f"join_ok={values.get('join_ok')}")
