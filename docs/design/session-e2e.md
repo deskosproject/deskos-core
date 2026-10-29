@@ -22,11 +22,15 @@ The same transport, a different script: the guest runs an **accessibility driver
 inside the session, writes one JSON line per step to the serial port, and the host
 asserts on those lines plus QMP frames taken between steps.
 
-The driver speaks **AT-SPI over D-Bus with `gdbus`**, which is in every image
-(`glib2`), rather than with a Python binding: `at-spi2-core` arrives with GNOME, but
-`python3-pyatspi` is not installed today and cannot be added to the artifact just
-for a test. The first spike confirms `rpm -q at-spi2-core` in the published image;
-if a Python binding is ever present, it is a convenience, not a requirement.
+The driver speaks **AT-SPI through `python3-pyatspi`**, which the published image
+already carries. Checked against the installed SBOM of `sha256:871e59cc…`:
+`at-spi2-core 2.56.1`, `at-spi2-atk 2.56.1`, `python3-pyatspi 2.46.1`, `gjs 1.80.2`
+and `gnome-shell 49.5`. An earlier version of this page said the binding was absent;
+that was the base image, not the artifact.
+
+`gdbus` (in `glib2`, always present) stays as the fallback if an image ever ships
+without the binding, and the driver must fail with that reason rather than a
+traceback. A test still may not add a package to the artifact it tests.
 
 ```
 host                          guest (autologin session)
@@ -87,8 +91,9 @@ promising.
 
 ## First checklist
 
-- [ ] Confirm `at-spi2-core` and the AT-SPI bus are present in the published image.
-- [ ] A `gdbus` call that lists the applications the registry knows, from the
+- [x] Confirm the AT-SPI stack is in the published image: done against the installed
+      SBOM of `sha256:871e59cc…` (`at-spi2-core`, `at-spi2-atk`, `python3-pyatspi`).
+- [ ] A `pyatspi` call that lists the applications the registry knows, from the
       injected script, over the serial transport.
 - [ ] Scenario 1 only, asserted in the harness and reported in the summary.
 - [ ] Then 2 to 4, one at a time, each with its failure message.

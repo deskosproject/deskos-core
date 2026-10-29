@@ -355,8 +355,9 @@ writes down where they got stuck.
 
 **Designed 2026-10-29, not implemented.** See
 [session-e2e.md](design/session-e2e.md): the transport the session check already
-uses, an accessibility driver inside the guest speaking AT-SPI over D-Bus with
-`gdbus` (no package the artifact does not carry), and four bounded scenarios —
+uses, an accessibility driver inside the guest speaking AT-SPI through the binding
+the image already carries (`python3-pyatspi`, confirmed in the installed SBOM),
+and four bounded scenarios —
 launch an app, reach a Settings page, lock and unlock, open and close a window —
 asserted on the accessibility tree and not on pixels.
 
