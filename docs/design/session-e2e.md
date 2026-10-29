@@ -50,12 +50,15 @@ not on pixels:
    run asserts that a **new** application with at least one toplevel appears in the
    tree. Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
 
-   *Keyboard injection is deferred, with the reason.* Super, typing the name and
-   Enter need synthetic key events, and Mutter on Wayland does not accept them from
-   an ordinary client. Doing it properly means a **root helper writing to
-   `/dev/uinput`**, delivered as another unit, which is a step of its own and not a
-   prerequisite for the assertion above: the window either appears in the tree or it
-   does not, whichever way it was asked to appear.
+   *Keyboard injection is deferred, and the survey says how it should be done.*
+   Mutter on Wayland rejects synthetic key events from an ordinary client. A root
+   helper writing to `/dev/uinput` would work only by going around the desktop, so
+   that is recorded as the **wrong shape**, not as the plan. The supported route is
+   the **remote-desktop portal**, which a session-side helper uses to send input and
+   which other desktop automation stacks use on Wayland for exactly this. Whether
+   that helper is packaged for EL10 is the open question; it is a step of its own,
+   and not a prerequisite for the assertion above, which does not care how the window
+   was asked to appear.
 
    The launch asserts a *new* application, because the first run showed the registry
    already lists the shell, its `gsd-*` daemons and the portal: finding one of those
