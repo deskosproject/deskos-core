@@ -43,6 +43,7 @@ const (
 	KeyAppPDFViewer    = "applications.pdfViewer"
 	KeyWallpaper       = "appearance.wallpaper"
 	KeyLoginLogo       = "appearance.loginLogo"
+	KeyLockShield      = "appearance.lockShield"
 	KeyFontInterface   = "appearance.fonts.interface"
 	KeyFontDocument    = "appearance.fonts.document"
 	KeyFontMonospace   = "appearance.fonts.monospace"
@@ -111,6 +112,7 @@ var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactiv
 
 var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
+	KeyLockShield:    true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
 	KeyDimBrightness: true, KeyLockEnabled: true,
@@ -215,6 +217,7 @@ type Applications struct {
 type Appearance struct {
 	Wallpaper   *Wallpaper `json:"wallpaper,omitempty"`
 	LoginLogo   string     `json:"loginLogo,omitempty"`
+	LockShield  string     `json:"lockShield,omitempty"`
 	Fonts       *Fonts     `json:"fonts,omitempty"`
 	IconTheme   string     `json:"iconTheme,omitempty"`
 	CursorTheme string     `json:"cursorTheme,omitempty"`
@@ -456,6 +459,17 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %s must be a .png or .svg file with a simple name", KeyLoginLogo, as.Path)
 			default:
 				set(KeyLoginLogo, Asset{Path: as.Path, SHA256: as.SHA256, File: as.File}, as.Path)
+			}
+		}
+		if a.LockShield != "" {
+			as, err := assets.Read(res, a.LockShield)
+			switch {
+			case err != nil:
+				bad("%s: %v", KeyLockShield, err)
+			case !assetNameRE.MatchString(path.Base(as.Path)):
+				bad("%s: %s must be a .png, .jpg, .jpeg or .svg file with a simple name", KeyLockShield, as.Path)
+			default:
+				set(KeyLockShield, Asset{Path: as.Path, SHA256: as.SHA256, File: as.File}, as.Path)
 			}
 		}
 		if f := a.Fonts; f != nil {

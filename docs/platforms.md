@@ -69,7 +69,7 @@ configuration with precedence, a lock layer, a greeter database, a first-boot se
 that can be skipped or preconfigured, an extension policy the image decides, an
 offline expression, and state a check can read. Popularity is not one of them.
 GNOME on EL10 meets all seven, and [the audit](gnome-coverage.md) records it:
-eighteen guide items modelled exactly, two partially, the refusals named. Another desktop needs a kind, an ADR
+nineteen guide items modelled exactly, one partially, the refusals named. Another desktop needs a kind, an ADR
 and an audit, not a flag.
 
 ## Support and retirement

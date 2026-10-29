@@ -380,6 +380,39 @@ func TestDevelopmentToolsReachTheShell(t *testing.T) {
 	}
 }
 
+func TestLockShieldCanDifferFromTheWallpaper(t *testing.T) {
+	// The guide changes the lock screen shield independently of the wallpaper. The
+	// wallpaper also writes the shield key, so a profile that names its own must win
+	// and the key must be written once.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    appearance:\n      wallpaper:\n        light: bg.svg\n"+
+			"      lockShield: shield.svg\n"),
+		"bg.svg":     "<svg/>",
+		"shield.svg": "<svg/>",
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	if got, _ := dconf(p, "/org/gnome/desktop/background/picture-uri"); got != "'file:///usr/share/deskos/backgrounds/bg.svg'" {
+		t.Errorf("wallpaper = %q", got)
+	}
+	if got, _ := dconf(p, "/org/gnome/desktop/screensaver/picture-uri"); got != "'file:///usr/share/deskos/backgrounds/shield.svg'" {
+		t.Errorf("shield = %q, want the lockShield asset", got)
+	}
+	if n := len(p.Artifact.Dconf.Defaults); n == 0 {
+		t.Fatal("no dconf defaults")
+	}
+	var seen int
+	for _, d := range p.Artifact.Dconf.Defaults {
+		if d.Key == "/org/gnome/desktop/screensaver/picture-uri" {
+			seen++
+		}
+	}
+	if seen != 1 {
+		t.Fatalf("screensaver picture-uri written %d times, want 1", seen)
+	}
+}
+
 func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 	// The lock list is a schema enum: a setting that lowers but is missing from it
 	// cannot be locked, which is how the two greeter fields shipped without one.
@@ -389,6 +422,7 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"login.banner", "    login:\n      banner: 'Lab machine'\n"},
 		{"login.showUserList", "    login:\n      showUserList: false\n"},
 		{"shell.developmentTools", "    shell:\n      developmentTools: false\n"},
+		{"appearance.lockShield", "    appearance:\n      lockShield: shield.svg\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",
@@ -396,9 +430,10 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 			profileYAML := strings.Replace(gnome("core", tc.yaml), "spec:\n",
 				"spec:\n  locks: ["+tc.setting+"]\n", 1)
 			dir := fixture{"platform.yaml": platform}.with(fixture{
-				"ws.yaml":   workstation("ws", "core"),
-				"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
-				"g.yaml":    profileYAML,
+				"ws.yaml":    workstation("ws", "core"),
+				"core.yaml":  profile("core", "foundation", "GnomeProfile/core"),
+				"g.yaml":     profileYAML,
+				"shield.svg": "<svg/>",
 			}).dir(t)
 			p := mustPlan(t, "ws", dir)
 			if p.Artifact.Dconf == nil || len(p.Artifact.Dconf.Locks) == 0 {
