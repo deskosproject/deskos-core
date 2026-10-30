@@ -156,6 +156,10 @@ jobs:
             | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
 
       - name: Resolve the digest and skip when stable already serves it
+        # The request step sets SKIP when the gate did not publish (a red leg, a
+        # dry run): there is no REPO or DIGEST to resolve, and without this guard
+        # the workflow failed with "REPO: unbound variable" instead of a no-op.
+        if: env.SKIP != 'yes'
         run: |
           set -euo pipefail
           if [ -z "${DIGEST:-}" ]; then
