@@ -45,6 +45,12 @@ applications go to Flatpak (ADR 0005). The platform installs
 so Bazaar is the application store (ADR 0022), and declares the terminal, the
 extensions and the boot arguments as facts, the same way the EL10 platforms do.
 
+The workstation carries `deskos-look`, so Fedora boots with the DeskOS splash:
+Plymouth's stock spinner frames from the vendor package, made the default theme
+and copied into the initramfs, which the build asserts. Fedora's own wallpaper is
+replaced by the DeskOS one, exactly as on CentOS Stream 10; a workstation that
+wants only the boot behaviour and not the look takes `deskos-boot`.
+
 ## Status
 
 | | |

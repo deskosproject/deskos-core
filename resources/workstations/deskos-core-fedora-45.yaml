@@ -8,9 +8,13 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
+    # Fedora carries its own font families and icon theme, like EL10 does; the
+    # Core desktop keeps them rather than importing another platform's.
     - fedora
-    # Fedora's own wallpaper stays; DeskOS owns the text and the splash arguments.
-    - deskos-boot
+    # The DeskOS look and boot behaviour: the splash is DeskOS's own theme built
+    # from the platform's spinner frames, and the boot check asserts it. A
+    # workstation with only `deskos-boot` would boot with Fedora's default theme.
+    - deskos-look
     - firefox
     - deskos-dock
     - deskos-reference-apps

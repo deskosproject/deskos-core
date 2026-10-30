@@ -118,21 +118,26 @@ jobs:
             artifact: vm-evidence-core-centos-stream-10
             image: localhost/deskos-core-centos-stream-10:ci
             rootfs: xfs
+            config: tests/vm/config.toml
           - workstation: example-devops-centos-stream-10
             root: examples/organization-and-role
             artifact: vm-evidence-example-devops-centos-stream-10
             image: localhost/example-devops-centos-stream-10:ci
             rootfs: xfs
+            config: tests/vm/config.toml
           # Fedora's base already carries the desktop, so this is the leg that
           # proves a shipped platform whose GNOME comes from the vendor image
           # rather than from a package group. Its root is btrfs: bootc cannot
           # infer a default for the Fedora base and bib stops with
-          # "missing required info: DefaultRootFs" without --rootfs.
+          # "missing required info: DefaultRootFs" without --rootfs. And btrfs
+          # does not take the filesystem customization the EL10 disk uses, so
+          # this leg passes its own config rather than a silently ignored one.
           - workstation: deskos-core-fedora-45
             root: ""
             artifact: vm-evidence-core-fedora-45
             image: localhost/deskos-core-fedora-45:ci
             rootfs: btrfs
+            config: tests/vm/config-btrfs.toml
     env:
       WS: ${{ matrix.workstation }}
       ROOT: ${{ matrix.root }}
@@ -220,7 +225,7 @@ jobs:
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK/output:/output" \
-            -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
+            -v "$PWD/${{ matrix.config }}:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             "$BIB" build --type qcow2 --rootfs "$ROOTFS" --config /config.toml \
             --no-default-kernel-args --chown "$(id -u):$(id -g)" "$IMAGE"

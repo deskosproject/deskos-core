@@ -1,0 +1,6 @@
+# Test disks with a btrfs root. bootc-image-builder rejects
+# `customizations.filesystem` for btrfs ("not supported") and would otherwise
+# apply config.toml's 24 GiB root silently to nothing, so this leg carries its
+# own file: the builder sizes the btrfs root itself, and the session and
+# first-boot checks are what prove that size is enough for the preinstalled
+# Flatpaks.
