@@ -142,6 +142,23 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	if v, ok := get(KeyBlankAfter); ok {
 		l.set(KeyBlankAfter, "/org/gnome/desktop/session/idle-delay", "u", gvUint32(v.Value.(Seconds)), v.Provenance)
 	}
+	for key, gkey := range map[string]string{
+		KeyIdleAction:     "/org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type",
+		KeyIdleBatteryAct: "/org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type",
+	} {
+		if v, ok := get(key); ok {
+			l.set(key, gkey, "s", gvString(v.Value.(string)), v.Provenance)
+		}
+	}
+	for key, gkey := range map[string]string{
+		KeyIdleAfter:      "/org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-timeout",
+		KeyIdleBatteryAft: "/org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-timeout",
+	} {
+		if v, ok := get(key); ok {
+			// These two are plain integers in seconds, not uint32.
+			l.set(key, gkey, "i", strconv.FormatUint(uint64(v.Value.(Seconds)), 10), v.Provenance)
+		}
+	}
 	if v, ok := get(KeyIdleDim); ok {
 		l.set(KeyIdleDim, "/org/gnome/settings-daemon/plugins/power/idle-dim", "b",
 			strconv.FormatBool(v.Value.(bool)), v.Provenance)

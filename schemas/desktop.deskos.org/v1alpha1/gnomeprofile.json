@@ -41,6 +41,8 @@
             "appearance.colorScheme", "appearance.accentColor",
             "shell.favorites",
             "session.idle.blankAfter", "session.idle.dim", "session.idle.dimBrightness",
+            "session.idle.action", "session.idle.after",
+            "session.idle.batteryAction", "session.idle.batteryAfter",
             "session.lock.enabled", "session.lock.delay",
             "login.showUserList", "login.banner",
             "shell.extensions",
@@ -301,6 +303,10 @@
               "additionalProperties": false,
               "properties": {
                 "blankAfter": { "anyOf": [{ "const": "never" }, { "$ref": "#/$defs/duration" }] },
+                "action": { "enum": ["blank", "suspend", "shutdown", "hibernate", "interactive", "nothing", "logout"], "description": "What an idle machine does on AC. Declared with after." },
+                "after": { "anyOf": [{ "const": "never" }, { "$ref": "#/$defs/duration" }], "description": "How long a machine is idle before action happens on AC." },
+                "batteryAction": { "enum": ["blank", "suspend", "shutdown", "hibernate", "interactive", "nothing", "logout"], "description": "The same, on battery. Declared with batteryAfter." },
+                "batteryAfter": { "anyOf": [{ "const": "never" }, { "$ref": "#/$defs/duration" }] },
                 "dim": { "type": "boolean" },
                 "dimBrightness": { "type": "integer", "minimum": 1, "maximum": 100 }
               }

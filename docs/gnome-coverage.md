@@ -53,7 +53,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Text banner on the greeter | `login-screen banner-message-enable`, `-text` | **modelled** since 2026-10-29 (`login.banner`), any length, never from a file |
 | Default session per user | AccountsService `XSession` | **outside**: a provisioning choice for one account |
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
-| Automatic logout when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **gap: fields**, and a policy that can lose unsaved work |
+| Automatic logout, suspend or shutdown when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **modelled** since 2026-10-30 (`session.idle.action`, `.after`, `.batteryAction`, `.batteryAfter`); a policy that can lose unsaved work, so the pair is explicit |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
 | Multiple keyboard layouts | `input-sources sources` | **modelled** since 2026-10-30 (`keyboard.layouts`, in switch order; the key lands in the distro database, which GDM's profile also reads) |
 | Multiple keyboard layouts at the console | `localectl set-x11-keymap`, `/etc/vconsole.conf` | **gap: field**: the session layouts are modelled, the console keymap is not |

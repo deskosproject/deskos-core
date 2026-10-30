@@ -489,6 +489,50 @@ func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
 	}
 }
 
+func TestIdleActionLowersToThePowerPlugin(t *testing.T) {
+	// A timeout and its action are one policy; GNOME keeps them in two keys, the
+	// type as a string and the timeout as plain integer seconds.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    session:\n      idle:\n        action: suspend\n"+
+			"        after: 30m\n        batteryAction: logout\n        batteryAfter: 15m\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type":         "'suspend'",
+		"/org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-timeout":      "1800",
+		"/org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type":    "'logout'",
+		"/org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-timeout": "900",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+}
+
+func TestIdleActionIsChecked(t *testing.T) {
+	load := func(idle string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+			"g.yaml":    gnome("core", "    session:\n      idle:\n"+idle),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	if err := load("        action: suspend\n        after: 30m\n"); err != nil {
+		t.Fatalf("a pair is valid: %v", err)
+	}
+	if err := load("        action: nothing\n        after: never\n"); err != nil {
+		t.Fatalf("nothing forever is a valid pair: %v", err)
+	}
+	mustFail(t, load("        action: suspend\n"), "declared together")
+	mustFail(t, load("        after: 30m\n"), "declared together")
+	mustFail(t, load("        action: explode\n        after: 30m\n"), "must be one of")
+	mustFail(t, load("        action: suspend\n        after: never\n"), "needs a timeout")
+}
+
 func TestProxyLowersToTheSystemProxy(t *testing.T) {
 	// A corporate proxy is one decision with several keys. Declaring a server for
 	// a protocol other than http has to turn use-same-proxy off, because GNOME
@@ -685,6 +729,7 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"appearance.fonts.textScaling", "    appearance:\n      fonts:\n        textScaling: 1.25\n"},
 		{"keyboard.layouts", "    keyboard:\n      layouts: [{layout: us}]\n"},
 		{"network.proxy.mode", "    network:\n      proxy:\n        mode: none\n"},
+		{"session.idle.action", "    session:\n      idle:\n        action: suspend\n        after: 30m\n"},
 		{"privacy.rememberRecentFiles", "    privacy:\n      rememberRecentFiles: false\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {

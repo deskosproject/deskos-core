@@ -21,7 +21,7 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `privacy.*` | booleans, plus `recentFilesMaxAge` (days, -1 keeps every recent file) and `oldFilesAge` (1 to 3650 days) | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
-| `session.idle.blankAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
+| `session.idle.blankAfter`, `.action`, `.after`, `.batteryAction`, `.batteryAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
 
 ```yaml
 apiVersion: desktop.deskos.org/v1alpha1
@@ -111,6 +111,14 @@ Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which 
 what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
 not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
 The terminal follows the monospace family unless a profile names one.
+
+**Idle action.** `session.idle.action` is what an idle machine does and
+`.after` is when: `blank`, `suspend`, `shutdown`, `hibernate`, `interactive`,
+`nothing` or `logout`, with the same pair on battery in `.batteryAction` and
+`.batteryAfter`. They are declared together, because a timeout without an action
+or an action without a timeout is a policy that does nothing, and `never` is only
+valid with `nothing`. `blankAfter` and the dim fields are the screen, not the
+machine: the screen can blank long before the machine suspends.
 
 **Proxy.** `network.proxy` is the system proxy GNOME and the apps that read it
 use: `none` ignores everything, `auto` reads the PAC file in `autoconfigUrl`, and

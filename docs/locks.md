@@ -64,7 +64,9 @@ different setting, not covered by this lock.
   `.colorScheme`, `.accentColor`.
 - **Shell:** `shell.favorites`, `shell.hotCorners`, `shell.welcomeTour`,
   `shell.workspaces`, `shell.appFolders`, `shell.extensions`.
-- **Session, dock:** `session.idle.blankAfter`, `session.lock.enabled`,
+- **Session, dock:** `session.idle.blankAfter`, `session.idle.action`,
+  `session.idle.after`, `session.idle.batteryAction`, `session.idle.batteryAfter`,
+  `session.lock.enabled`,
   `session.lock.delay`, `dock.position`, `dock.behavior`, `dock.iconSize`,
   `dock.showTrash`.
 - **Software:** `software.updates`.

@@ -61,6 +61,10 @@ const (
 	KeyPalette         = "appearance.palette"
 	KeyFavorites       = "shell.favorites"
 	KeyBlankAfter      = "session.idle.blankAfter"
+	KeyIdleAction      = "session.idle.action"
+	KeyIdleAfter       = "session.idle.after"
+	KeyIdleBatteryAct  = "session.idle.batteryAction"
+	KeyIdleBatteryAft  = "session.idle.batteryAfter"
 	KeyIdleDim         = "session.idle.dim"
 	KeyDimBrightness   = "session.idle.dimBrightness"
 	KeyLockEnabled     = "session.lock.enabled"
@@ -137,6 +141,10 @@ func ExtensionSetting(uuid string) string { return extensionKeyPrefix + uuid }
 // writes one dconf key for the whole list (docs/adr/0017).
 const KeyExtensions = "shell.extensions"
 
+// idleActions are the values GNOME's power plugin accepts for an idle machine.
+// "logout" is how a workstation ends a session that nobody is using.
+var idleActions = []string{"blank", "suspend", "shutdown", "hibernate", "interactive", "nothing", "logout"}
+
 // powerButtonActions are the values GNOME's power plugin accepts.
 var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactive"}
 
@@ -156,6 +164,7 @@ var knownKeys = map[string]bool{
 	KeyFontTitlebar: true, KeyFontTerminal: true, KeyTextScaling: true,
 	KeyFontAA: true, KeyFontHinting: true, KeyFontRGBA: true, KeyFontLCD: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
+	KeyIdleAction: true, KeyIdleAfter: true, KeyIdleBatteryAct: true, KeyIdleBatteryAft: true,
 	KeyDimBrightness: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
@@ -416,6 +425,15 @@ type Idle struct {
 	BlankAfter    string `json:"blankAfter,omitempty"`
 	Dim           *bool  `json:"dim,omitempty"`
 	DimBrightness *int   `json:"dimBrightness,omitempty"`
+	// Action and After are what an idle machine does on AC and when: suspend,
+	// hibernate, shut down, log out, blank, ask, or nothing. They are declared
+	// together, because a timeout with no action and an action with no timeout are
+	// both a policy that does nothing. BatteryAction and BatteryAfter are the same
+	// pair on battery.
+	Action        string `json:"action,omitempty"`
+	After         string `json:"after,omitempty"`
+	BatteryAction string `json:"batteryAction,omitempty"`
+	BatteryAfter  string `json:"batteryAfter,omitempty"`
 }
 
 type Lock struct {
@@ -934,6 +952,36 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 			}
 		}
 		if se.Idle != nil {
+			for _, pair := range []struct {
+				actionKey, afterKey, action, after string
+			}{
+				{KeyIdleAction, KeyIdleAfter, se.Idle.Action, se.Idle.After},
+				{KeyIdleBatteryAct, KeyIdleBatteryAft, se.Idle.BatteryAction, se.Idle.BatteryAfter},
+			} {
+				if pair.action == "" && pair.after == "" {
+					continue
+				}
+				if pair.action == "" || pair.after == "" {
+					bad("%s and %s are declared together: a timeout without an action, or an action without a timeout, does nothing",
+						pair.actionKey, pair.afterKey)
+					continue
+				}
+				if !slices.Contains(idleActions, pair.action) {
+					bad("%s: expected %s, got %q", pair.actionKey, strings.Join(idleActions, ", "), pair.action)
+					continue
+				}
+				secs, err := parseDuration(pair.after, true)
+				if err != nil {
+					bad("%s: %v", pair.afterKey, err)
+					continue
+				}
+				if secs == 0 && pair.action != "nothing" {
+					bad("%s: %q needs a timeout; use \"never\" only with nothing", pair.afterKey, pair.action)
+					continue
+				}
+				set(pair.actionKey, pair.action, pair.action)
+				set(pair.afterKey, secs, pair.after)
+			}
 			if d := se.Idle.Dim; d != nil {
 				set(KeyIdleDim, *d, strconv.FormatBool(*d))
 			}
