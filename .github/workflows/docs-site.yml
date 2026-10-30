@@ -1,0 +1,77 @@
+name: docs-site
+
+# The documentation site at docs.deskos.org, built from docs/ and website/.
+#
+# It is its own GitHub Pages site and not a directory of deskos.org: the
+# marketing site is deliberately buildless ("no build step, no framework") and
+# says that docs belong in the repository. The content and the site that renders
+# it live here, so a page and its navigation are reviewed in one pull request.
+#
+# A pull request builds the site and uploads it; main deploys it. The Pages site
+# is enabled in the repository settings with "GitHub Actions" as its source and
+# docs.deskos.org as its custom domain (website/README.md, and the DNS record in
+# deskos-infrastructure).
+on:
+  pull_request:
+    paths:
+      - docs/**
+      - website/**
+      - .github/workflows/docs-site.yml
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - website/**
+      - .github/workflows/docs-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      # `npm ci` installs exactly the lockfile, so a build here and a build on a
+      # laptop are the same dependencies.
+      - name: Install the site's dependencies
+        run: npm ci --prefix website
+
+      - name: Build the site
+        run: npm run build --prefix website
+
+      # The Pages artifact is the built site. A pull request stops here: the
+      # build is the check, and nothing is published from a branch.
+      - name: Package the built site
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: website/build
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      # The token of this repository, scoped to Pages: no separate credential.
+      pages: write
+      id-token: write
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

@@ -1,3 +1,7 @@
+---
+slug: /
+---
+
 # Mission
 
 DeskOS compiles a workstation from declared intent into a bootable image.

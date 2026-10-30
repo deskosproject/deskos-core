@@ -11,7 +11,7 @@ BIN_RUNTIME := bin/deskos
 # passed on the command line.
 EXAMPLE   := ./examples/organization-and-role
 
-.PHONY: build test test-evidence fmt fmt-check vet check validate links style plan-centos plan-example render-centos render-example sbom-example golden clean
+.PHONY: build test test-evidence fmt fmt-check vet check validate links style plan-centos plan-example render-centos render-example sbom-example golden docs-site clean
 
 build:
 	$(GO) build -o $(BIN) ./cmd/deskosctl
@@ -49,8 +49,8 @@ validate: build
 	$(BIN) validate ./examples/centos-stream-10
 	$(BIN) validate ./examples/almalinux-10
 	$(BIN) validate ./examples/rhel-10
-# Fedora 45 is a shipped platform (resources/platforms/); the example root
-# references it by name like the other per-platform examples.
+# Fedora 45 is a shipped platform (resources/platforms/), so it is validated with
+# the Core tree the binary carries; the identity fixture is the exception.
 	$(BIN) validate tests/identity/resources
 
 plan-centos: build
@@ -71,6 +71,12 @@ sbom-example: build
 
 golden:
 	$(GO) test ./internal/compiler -update
+
+# The documentation site (website/README.md). Node, not Go: it is not part of
+# `check`, and CI builds it in docs-site.yml.
+docs-site:
+	npm ci --prefix website
+	npm run build --prefix website
 
 clean:
 	rm -rf bin dist
