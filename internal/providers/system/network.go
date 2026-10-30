@@ -23,9 +23,11 @@ var DomainNetworkProfiles = compose.Domain{ID: "network-profile", Label: "networ
 // (docs/adr/0027).
 const NetworkProfilesDir = "/etc/NetworkManager/system-connections"
 
-// NetworkCertsDir is where a profile's CA certificate is placed. It is public
-// material; the private key and the password are never image content.
-const NetworkCertsDir = "/usr/share/deskos/certs"
+// NetworkCertsDir is where a profile's CA certificate is placed. It is the
+// platform's PKI tree, whose files carry cert_t: NetworkManager may read them and
+// a private key placed in the same tree is not left with the generic etc_t a new
+// directory would get.
+const NetworkCertsDir = "/etc/pki/tls/certs"
 
 // NetworkProfileSpec is the public spec: a typed subset of an 802.1X connection.
 type NetworkProfileSpec struct {
@@ -33,6 +35,9 @@ type NetworkProfileSpec struct {
 	SSID        string `json:"ssid,omitempty"`
 	EAP         string `json:"eap"`
 	CACert      string `json:"caCert,omitempty"`
+	ClientCert  string `json:"clientCert,omitempty"`
+	PrivateKey  string `json:"privateKey,omitempty"`
+	Secret      string `json:"secret,omitempty"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect *bool  `json:"autoconnect,omitempty"`
 	Priority    *int   `json:"priority,omitempty"`
@@ -52,6 +57,9 @@ type NetworkProfile struct {
 	EAP         string `json:"eap"`
 	CACertPath  string `json:"caCertPath,omitempty"`
 	CACertSHA   string `json:"caCertSha256,omitempty"`
+	ClientCert  string `json:"clientCert,omitempty"`
+	PrivateKey  string `json:"privateKey,omitempty"`
+	Secret      string `json:"secret"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect bool   `json:"autoconnect"`
 	Priority    int    `json:"priority"`
@@ -62,6 +70,12 @@ type NetworkProfile struct {
 var (
 	networkNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 	networkHostRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.-]*$`)
+	// A client certificate names the machine, so it is a path the fleet fills and
+	// never an asset of the repository. The standard PKI tree is used because its
+	// SELinux type is cert_t and NetworkManager is allowed to read it; a directory
+	// of our own would be etc_t and would need a policy we ship (docs/adr/0027).
+	networkCertRE = regexp.MustCompile(`^/etc/pki/tls/certs/[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	networkKeyRE  = regexp.MustCompile(`^/etc/pki/tls/private/[A-Za-z0-9][A-Za-z0-9._-]*$`)
 	// The methods NetworkManager documents for 802-1x.eap.
 	networkEAP = []string{"leap", "md5", "tls", "peap", "ttls", "sim", "fast", "pwd"}
 )
@@ -92,6 +106,25 @@ func (networkProfile) Decode(res *model.Resource) error {
 	}
 	if !contains(networkEAP, s.EAP) {
 		errs.Add(model.Errorf(res, "eap %q must be one of %s", s.EAP, strings.Join(networkEAP, ", ")))
+	}
+	switch s.EAP {
+	case "tls":
+		if !networkCertRE.MatchString(s.ClientCert) || !networkKeyRE.MatchString(s.PrivateKey) {
+			errs.Add(model.Errorf(res, "eap tls needs clientCert under /etc/pki/tls/certs/ and privateKey under /etc/pki/tls/private/"))
+		}
+		if s.Secret != "" && s.Secret != "none" {
+			errs.Add(model.Errorf(res, "eap tls takes secret none: a certificate needs no password"))
+		}
+	default:
+		if s.ClientCert != "" || s.PrivateKey != "" {
+			errs.Add(model.Errorf(res, "clientCert and privateKey are only read for eap tls"))
+		}
+		if s.Secret == "none" {
+			errs.Add(model.Errorf(res, "secret none is only valid for eap tls"))
+		}
+		if s.Secret != "" && s.Secret != "agent" {
+			errs.Add(model.Errorf(res, "secret %q must be agent or none", s.Secret))
+		}
 	}
 	if s.ServerName != "" && !networkHostRE.MatchString(s.ServerName) {
 		errs.Add(model.Errorf(res, "serverName %q must be a host name", s.ServerName))
@@ -126,10 +159,19 @@ func contains(list []string, v string) bool {
 func (networkProfile) Contribute(res *model.Resource, s *compose.Scope) error {
 	obj := res.Object.(*NetworkProfileObject)
 	spec := obj.Spec
+	secret := spec.Secret
+	if secret == "" {
+		if spec.EAP == "tls" {
+			secret = "none"
+		} else {
+			secret = "agent"
+		}
+	}
 	p := NetworkProfile{
 		Name: res.Metadata.Name, Type: spec.Type, SSID: spec.SSID, EAP: spec.EAP,
 		ServerName: spec.ServerName, UUID: connectionUUID(res.Metadata.Name),
-		Autoconnect: true,
+		Autoconnect: true, ClientCert: spec.ClientCert, PrivateKey: spec.PrivateKey,
+		Secret: secret,
 	}
 	if spec.Autoconnect != nil {
 		p.Autoconnect = *spec.Autoconnect
@@ -138,7 +180,7 @@ func (networkProfile) Contribute(res *model.Resource, s *compose.Scope) error {
 		p.Priority = *spec.Priority
 	}
 	if obj.CACert != nil {
-		p.CACertPath = path.Join(NetworkCertsDir, p.Name+".crt")
+		p.CACertPath = path.Join(NetworkCertsDir, "deskos-"+p.Name+".crt")
 		p.CACertSHA = obj.CACert.SHA256
 		p.CACertFile = obj.CACert.File
 	}
@@ -202,7 +244,15 @@ func networkKeyfile(np NetworkProfile) string {
 	}
 	b.WriteString("\n[802-1x]\n")
 	fmt.Fprintf(&b, "eap=%s;\n", np.EAP)
-	b.WriteString("password-flags=1\n")
+	switch np.Secret {
+	case "none":
+		// EAP-TLS: the certificate and key the fleet placed, and no secret.
+		fmt.Fprintf(&b, "client-cert=%s\n", np.ClientCert)
+		fmt.Fprintf(&b, "private-key=%s\n", np.PrivateKey)
+	default:
+		// A session agent supplies the password; the file carries none.
+		b.WriteString("password-flags=1\n")
+	}
 	if np.CACertPath != "" {
 		fmt.Fprintf(&b, "ca-cert=%s\n", np.CACertPath)
 	} else {

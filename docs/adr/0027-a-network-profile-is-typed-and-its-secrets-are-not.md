@@ -44,6 +44,8 @@ subset of an 802.1X profile and no secret in it.**
 | `eap` | one of NetworkManager's methods |
 | `caCert` | an asset in the resource root, pinned by digest, placed for NetworkManager to read |
 | `serverName` | `domain-suffix-match`: the certificate name the server must present |
+| `clientCert`, `privateKey` | where the fleet places this machine's certificate and key, for EAP-TLS: `/etc/pki/tls/certs/` and `/etc/pki/tls/private/` |
+| `secret` | `agent` (a session agent supplies it) or `none` (EAP-TLS needs no secret) |
 | `autoconnect`, `priority` | whether the machine joins it on its own, and how it ranks |
 
 The compiler generates the keyfile at
@@ -62,6 +64,48 @@ server name but carries no identity **cannot authenticate until the fleet suppli
 one**. What the image buys is the part that must be identical everywhere and that
 is dangerous to get wrong, which is the trust decision: which CA, which server
 name, which method, and whether the machine joins on its own.
+
+### The first secret
+
+"The fleet supplies it" is circular on a network that requires 802.1X to reach the
+fleet, and agent-owned is worse than it sounds: NetworkManager asks a **session**
+agent, and before anyone logs in there is none, so the machine is offline at boot
+and at the greeter. Three paths actually work, and the image has to make room for
+them instead of pretending one of them is automatic:
+
+1. **EAP-TLS with a machine certificate.** The CA is public and travels in the
+   image; the client certificate and its key are per machine, placed by
+   provisioning or the fleet. There is no secret to ask for, so the machine joins
+   before login. This is why `secret: none` and the two paths exist: the image says
+   *where* the machine's credentials live, and the fleet puts them there. The paths
+   are `/etc/pki/tls/certs/` and `/etc/pki/tls/private/`, the platform's PKI tree,
+   because its files carry `cert_t` and NetworkManager may read them; a directory of
+   our own would be `etc_t` and would need a policy we ship (measured on EL10 with
+   `matchpathcon`).
+
+   The key can live in the TPM instead of a file, and that is a real path but not a
+   free one. `tpm2-pkcs11` keeps the key inside the TPM and exposes it as a PKCS#11
+   token; NetworkManager accepts a PKCS#11 URI in `802-1x.private-key`
+   (`pkcs11:...;type=private`), and `wpa_supplicant` needs
+   `TPM2_PKCS11_STORE=/etc/tpm2_pkcs11`. It also needs an SELinux module that lets
+   `NetworkManager_t` write the token database and open `tpm_device_t`, and a PIN
+   decision: the published recipe puts `pin-value` in the URI, which is a secret in
+   the keyfile, and the alternative is a PIN the fleet supplies. DeskOS does not
+   model it yet; a profile names a key file, and an organization that wants the TPM
+   has those three pieces to solve first.
+2. **An onboarding VLAN or MAC-based admission.** The switch admits an unknown
+   machine to a quarantine network, the fleet configures it there, and the port
+   moves to production. DeskOS does not control the switch; what it can do is say
+   that the first boot has to happen there, and the deployment page must say it.
+3. **A per-machine secret written at provisioning.** A kickstart `%post` or a fleet
+   run writes the password into the keyfile with `password-flags=0`, mode `0600`.
+   It is fleet state, not image content, and it makes the keyfile a file the fleet
+   owns: `deskos check` will report it as a difference from the declared file,
+   because it is one.
+
+Password methods stay `agent` in the image, which is right for a laptop a person
+logs into and wrong for a desktop that must be on the network at boot. That is the
+honest split, and the ADR does not hide it behind "the fleet supplies it".
 
 ## Alternatives rejected
 

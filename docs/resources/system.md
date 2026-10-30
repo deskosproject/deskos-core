@@ -129,6 +129,8 @@ An 802.1X connection: the trust decision and the policy, with no secret in it
 | `ssid` | one line, 1 to 32 characters | wifi only | refused on ethernet |
 | `eap` | `leap`, `md5`, `tls`, `peap`, `ttls`, `sim`, `fast`, `pwd` | yes | NetworkManager's methods |
 | `caCert` | PEM certificate inside the resource root | no | omitted, the system trust store is used |
+| `clientCert`, `privateKey` | paths under `/etc/deskos/network/` | EAP-TLS | where the fleet places this machine's certificate and key |
+| `secret` | `agent` or `none` | no | `agent` asks a session agent after login; `none` is EAP-TLS, which needs nothing |
 | `serverName` | host name | no | the name the server's certificate must present |
 | `autoconnect`, `priority` | boolean; -999 to 999 | no | default `true` and `0` |
 
@@ -142,10 +144,29 @@ spec:
 ```
 
 The compiler writes `/etc/NetworkManager/system-connections/<name>.nmconnection`,
-mode `0600`, with `password-flags=1`: NetworkManager asks a session agent for the
-secret instead of storing one. **There is no password, no private key and no
-identity field**, because a secret in a resource is a secret published, and an
-identity names a machine or a person that the image would share across the fleet.
-The profile is therefore inert until the fleet supplies an identity; what the
-image guarantees is the part that must be identical everywhere, which is the CA,
-the server name and the method.
+mode `0600`, with no password and no identity: a secret in a resource is a secret
+published, and an identity names a machine or a person the image would share
+across the fleet.
+
+**A password method is `secret: agent`**, so NetworkManager asks a session agent
+after a login. It does not connect at boot or at the greeter, because before a
+login there is no agent.
+
+**EAP-TLS is `secret: none`**: the CA travels in the image, and the machine's
+certificate and key are paths the fleet fills under `/etc/pki/tls/certs/` and
+`/etc/pki/tls/private/`, so the machine joins before anyone logs in. The image says
+where they live; it never carries them. Those directories are the platform's PKI
+tree and their files carry `cert_t`, which NetworkManager may read; a directory of
+our own would be `etc_t`.
+
+The key can live in the TPM rather than a file: `tpm2-pkcs11` holds it and
+NetworkManager takes a PKCS#11 URI, but that needs `TPM2_PKCS11_STORE` for
+`wpa_supplicant`, an SELinux module for NetworkManager's TPM access, and a PIN
+decision. The profile models the file case; the TPM case is a later decision.
+
+A machine whose network requires 802.1X before the fleet can reach it has three
+ways in, and the image cannot choose for it: EAP-TLS with a machine certificate, an
+onboarding VLAN or MAC-based admission where the fleet configures it, or a
+per-machine secret written at provisioning with `password-flags=0`, which makes the
+keyfile a file the fleet owns and `deskos check` reports it as a difference
+([ADR 0027](../adr/0027-a-network-profile-is-typed-and-its-secrets-are-not.md)).

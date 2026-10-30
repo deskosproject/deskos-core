@@ -42,7 +42,7 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 	}
 	for _, want := range []string{
 		"id=corp\n", "type=wifi\n", "ssid=CorpWLAN\n", "eap=peap;\n",
-		"password-flags=1\n", "ca-cert=/usr/share/deskos/certs/corp.crt\n",
+		"password-flags=1\n", "ca-cert=/etc/pki/tls/certs/deskos-corp.crt\n",
 		"domain-suffix-match=radius.example.com\n", "autoconnect-priority=10\n",
 	} {
 		if !strings.Contains(keyfile.Content, want) {
@@ -58,7 +58,7 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 	// The CA certificate is placed as public material.
 	var placed bool
 	for _, f := range p.Artifact.Files {
-		if f.Path == "/usr/share/deskos/certs/corp.crt" {
+		if f.Path == "/etc/pki/tls/certs/deskos-corp.crt" {
 			placed = true
 			if f.Mode != "0644" {
 				t.Errorf("certificate mode %s, want 0644", f.Mode)
@@ -70,11 +70,69 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 	}
 }
 
+func TestNetworkProfileTLSCarriesNoSecret(t *testing.T) {
+	// EAP-TLS is the path that works before a login: a machine certificate the
+	// fleet places, and no secret to ask anyone for (docs/adr/0027).
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "NetworkProfile/wired"),
+		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: tls\n"+
+			"  clientCert: /etc/pki/tls/certs/wired.crt\n  privateKey: /etc/pki/tls/private/wired.key\n"+
+			"  serverName: radius.example.com\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	var content string
+	for _, f := range p.Artifact.GeneratedFiles {
+		if strings.HasSuffix(f.Path, "/wired.nmconnection") {
+			content = f.Content
+		}
+	}
+	for _, want := range []string{
+		"eap=tls;\n", "client-cert=/etc/pki/tls/certs/wired.crt\n",
+		"private-key=/etc/pki/tls/private/wired.key\n", "system-ca-certs=true\n",
+	} {
+		if !strings.Contains(content, want) {
+			t.Errorf("keyfile lacks %q:\n%s", want, content)
+		}
+	}
+	// Nothing is asked for, because nothing is needed.
+	if strings.Contains(content, "password-flags") {
+		t.Errorf("a TLS profile asks for a password:\n%s", content)
+	}
+	// The certificate is not in the image: it names the machine.
+	for _, f := range p.Artifact.Files {
+		if strings.Contains(f.Path, "/etc/deskos/network/") {
+			t.Errorf("the machine certificate was placed by the build: %s", f.Path)
+		}
+	}
+}
+
+func TestNetworkProfileSecretRules(t *testing.T) {
+	load := func(body string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "NetworkProfile/p"),
+			"p.yaml":    networkProfileYAML("p", body),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	// A password method defaults to the session agent, which works after a login.
+	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"); err != nil {
+		t.Fatalf("a PEAP profile is valid: %v", err)
+	}
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  secret: none\n"), "only valid for eap tls")
+	mustFail(t, load("  type: ethernet\n  eap: peap\n  clientCert: /etc/pki/tls/certs/a.crt\n"), "'not' failed")
+	mustFail(t, load("  type: ethernet\n  eap: tls\n"), "missing properties")
+	mustFail(t, load("  type: ethernet\n  eap: tls\n  clientCert: /tmp/a.crt\n  privateKey: /tmp/a.key\n"), "does not match pattern")
+	mustFail(t, load("  type: ethernet\n  eap: tls\n  clientCert: /etc/pki/tls/certs/a.crt\n  privateKey: /etc/pki/tls/private/a.key\n  secret: agent\n"), "secret none")
+}
+
 func TestNetworkProfileWithoutACertUsesTheSystemStore(t *testing.T) {
 	dir := base.with(fixture{
 		"ws.yaml":    workstation("ws", "core"),
 		"core.yaml":  profile("core", "foundation", "NetworkProfile/wired"),
-		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: tls\n  autoconnect: false\n"),
+		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: peap\n  autoconnect: false\n"),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	var content string
