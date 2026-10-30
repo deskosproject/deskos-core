@@ -44,6 +44,26 @@ and `sudo deskos update` must work without a full path. The path is fixed by the
 is the first release that publishes the asset: `resources/software/deskos.yaml` names it and its checksum,
 `deskos-core` references it, and the binary is part of the declared SBOM.
 
+### Amended 2026-10-29: a font is not a package
+
+A font that the platform does not package is the same problem `deskos` had: bytes that must arrive from somewhere
+with a checksum, in a directory no package owns. Every other answer is worse. A third-party repository moves the
+trust boundary to whoever runs it, and a rebuilt distribution package is a fork to maintain (the FreeType rebuild of
+2016 is the cautionary case, and the reason it is no longer needed: EL10's FreeType already enables subpixel
+rendering). A `FontPolicy` kind would be a fifteenth kind for one file format.
+
+So `BinaryArtifact` gains a second destination form: **`/usr/local/share/fonts/<file>`**, with a font extension
+(`ttf`, `otf`, `ttc`) or a text file for the licence that must travel beside the font. It is deliberate that the
+allowance names extensions: it must not become a way to place any payload in a directory that `/usr/local` does not
+interpret. fontconfig reads that directory with no configuration on EL10 and Fedora (measured 2026-10-29), so the
+files are found by every application the moment the image boots, and `deskos check` verifies them by digest and mode
+like any other file the plan installs.
+
+A font is data, so its mode is `0644` or `0444`, while an executable stays `0755` or `0555`; the decoder pairs the
+mode with the destination and rejects a font that claims to run or a binary that claims not to. A `desktopEntry`
+still launches an executable and refuses a font. The Plan keeps one list of the files an artifact places: they are
+files, not executables, and callers must not assume otherwise.
+
 ## Consequences
 
 - The logic lives in `internal/evidence`, which takes a `Probe` and never executes a command, and the machine's access

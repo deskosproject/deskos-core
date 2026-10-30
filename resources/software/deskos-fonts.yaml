@@ -1,0 +1,51 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-fonts
+spec:
+  # Every family a workstation needs to draw the text of the languages DeskOS
+  # targets, without asking the user to install anything: the interface, an office
+  # document, a terminal, emoji, and the symbols and math a document uses without
+  # naming a font.
+  #
+  # The Microsoft families cannot be shipped: Georgia, Calibri, Cambria, Arial and
+  # Times New Roman are proprietary. These are the metric-compatible replacements,
+  # which fontconfig substitutes by family name (30-metric-aliases.conf), so a
+  # document keeps its line breaks without the proprietary file:
+  #
+  #   Calibri -> Carlito, Cambria -> Caladea, Arial/Times/Courier -> Liberation.
+  #
+  # Georgia's replacement, Gelasio, is not packaged for EL10, so it arrives as a
+  # pinned artifact in /usr/local/share/fonts (deskos-fonts-artifacts.yaml).
+  packages:
+    # Latin, Greek and Cyrillic text, in the three shapes a document mixes.
+    - google-noto-sans-fonts
+    - google-noto-serif-fonts
+    - google-noto-sans-mono-fonts
+    # The platform's own text and display families, which is what Red Hat's
+    # desktop look uses and what a centos-bootc-derived workstation draws.
+    - redhat-text-fonts
+    - redhat-display-fonts
+    # The office substitutes. Liberation's families are separate packages, and the
+    # meta package that names them all is spelled differently on each platform, so
+    # the set names the families themselves.
+    - liberation-sans-fonts
+    - liberation-serif-fonts
+    - liberation-mono-fonts
+    - liberation-narrow-fonts
+    - google-carlito-fonts
+    - google-crosextra-caladea-fonts
+    # The distribution's own family: terminals and old applications ask for it by
+    # name, and it is what fontconfig picks when nothing else matches.
+    - dejavu-sans-fonts
+    - dejavu-serif-fonts
+    - dejavu-sans-mono-fonts
+    # Color emoji, and the symbols and math a document uses without naming a font.
+    - google-noto-color-emoji-fonts
+    - google-noto-sans-symbols-fonts
+    - google-noto-sans-math-fonts
+    # The 35 fonts every PDF and printer driver assume: Nimbus Roman, Sans and
+    # Mono stand in for Times, Helvetica and Courier, and the rest cover the
+    # Palatino, Bookman, Century Schoolbook, Chancery and Symbol families a
+    # document exported from an office suite names without embedding a font.
+    - urw-base35-fonts

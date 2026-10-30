@@ -71,6 +71,7 @@ var (
 	versionRE   = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]*$`)
 	sha256RE    = regexp.MustCompile(`^[0-9a-f]{64}$`)
 	commandRE   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+	fontNameRE  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*\.(ttf|otf|ttc|txt)$`)
 	appIDRE     = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*){2,}$`)
 	branchRE    = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 	collIDRE    = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*(\.[A-Za-z_][A-Za-z0-9_-]*)+$`)
@@ -510,10 +511,14 @@ type BinaryInstall struct {
 
 // BinaryDir is where BinaryArtifact installs executables; it belongs to no package.
 // CompanionPath is the one exception: sudo searches /usr/bin through secure_path and
-// does not search /usr/local/bin, so the runtime companion lands there (ADR 0018).
+// does not search /usr/local/bin, so the runtime companion lands there. FontDir is the
+// other: fontconfig reads it without configuration, and like /usr/local/bin it
+// belongs to no package, so a font travels as a pinned artifact rather than as a
+// package the platform does not carry (ADR 0018, amended 2026-10-29).
 const (
 	BinaryDir     = "/usr/local/bin"
 	CompanionPath = "/usr/bin/deskos"
+	FontDir       = "/usr/local/share/fonts"
 )
 
 var floatingVersions = map[string]bool{"latest": true, "stable": true, "current": true, "nightly": true, "master": true, "main": true}
@@ -559,12 +564,22 @@ func (binaryArtifact) Decode(res *model.Resource) error {
 	for i := range s.Files {
 		f := &s.Files[i]
 		if !safeDestination(f.Destination) {
-			errs.Add(model.Errorf(res, "destination %q is not allowed: executables may only be installed directly in %s, or the runtime companion at %s", f.Destination, BinaryDir, CompanionPath))
+			errs.Add(model.Errorf(res, "destination %q is not allowed: executables may only be installed directly in %s, or the runtime companion at %s; a font goes in %s", f.Destination, BinaryDir, CompanionPath, FontDir))
 		}
 		if seen[f.Destination] {
 			errs.Add(model.Errorf(res, "destination %q is used twice", f.Destination))
 		}
 		seen[f.Destination] = true
+		// A font is data and stays read-only; an executable runs.
+		if path.Dir(f.Destination) == FontDir {
+			if f.Mode == "" {
+				f.Mode = "0644"
+			}
+			if f.Mode != "0644" && f.Mode != "0444" {
+				errs.Add(model.Errorf(res, "mode %q is not allowed for a font (expected 0644 or 0444)", f.Mode))
+			}
+			continue
+		}
 		if f.Mode == "" {
 			f.Mode = "0755"
 		}
@@ -589,7 +604,19 @@ func safeDestination(d string) bool {
 	if d == CompanionPath {
 		return true
 	}
-	return path.Clean(d) == d && path.Dir(d) == BinaryDir && commandRE.MatchString(path.Base(d))
+	if path.Clean(d) != d {
+		return false
+	}
+	switch path.Dir(d) {
+	case BinaryDir:
+		return commandRE.MatchString(path.Base(d))
+	case FontDir:
+		// The extension keeps this allowance from becoming a way to place any
+		// payload; the license travels beside the font, as the OFL asks, so a
+		// text file is the one thing that is not a font.
+		return fontNameRE.MatchString(path.Base(d))
+	}
+	return false
 }
 
 func (binaryArtifact) Contribute(res *model.Resource, s *compose.Scope) error {

@@ -19,10 +19,28 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'dejavu-sans-fonts' \
+        'dejavu-sans-mono-fonts' \
+        'dejavu-serif-fonts' \
         'flatpak' \
+        'google-carlito-fonts' \
+        'google-crosextra-caladea-fonts' \
+        'google-noto-color-emoji-fonts' \
+        'google-noto-sans-fonts' \
+        'google-noto-sans-math-fonts' \
+        'google-noto-sans-mono-fonts' \
+        'google-noto-sans-symbols-fonts' \
+        'google-noto-serif-fonts' \
+        'liberation-mono-fonts' \
+        'liberation-narrow-fonts' \
+        'liberation-sans-fonts' \
+        'liberation-serif-fonts' \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
+        'redhat-display-fonts' \
+        'redhat-text-fonts' \
+        'urw-base35-fonts' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
@@ -44,6 +62,78 @@ RUN set -eu; \
     echo '344a099ba4ae4846b65c721ec14e3c92e9fd55c5e2c1d086b39a56b6cebe2d27  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     mkdir -p "$(readlink -m "$(dirname '/usr/bin/deskos')")"; \
     install -D -m 0755 "$tmp/download" '/usr/bin/deskos'; \
+    rm -rf "$tmp"
+
+# Binary artifact gelasio 1.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/Gelasio%5Bwght%5D.ttf'; \
+    echo '4daecea457258c9ebeb8bc99ed3fd24353618bfad3ea4b93fa0b5d0468fc04e4  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Gelasio.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Gelasio.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact gelasio-italic 1.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/Gelasio-Italic%5Bwght%5D.ttf'; \
+    echo '52559e845a4d33514e5f93bb9ae7dbeae1894a53f2c565a15f18af40cd337c09  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Gelasio-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Gelasio-Italic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact gelasio-license 1.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/a60a77e14f28abd4ef243a1b5dfc48df0cec5205/ofl/gelasio/OFL.txt'; \
+    echo 'b393cb01867c919b44381512120dc3e4c954c7b47e2035c405f3a324799a4d29  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Gelasio-OFL.txt')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Gelasio-OFL.txt'; \
+    rm -rf "$tmp"
+
+# Binary artifact overpass 4.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/Overpass%5Bwght%5D.ttf'; \
+    echo '970717df17a7f9911dee45f60695d05bfa9d745fa0a11fc5c348371fa21f0073  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Overpass.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Overpass.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact overpass-italic 4.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/Overpass-Italic%5Bwght%5D.ttf'; \
+    echo '3b45ac4193930bbeb491b5c76227afd5991607712f0d16d6bc5d74db6bbd8172  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Overpass-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Overpass-Italic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact overpass-license 4.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/overpass/OFL.txt'; \
+    echo '86e5ff25c701ec446d20b1a85b02ee6d36de8503a7288a4c948f5459809af1f0  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Overpass-OFL.txt')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Overpass-OFL.txt'; \
     rm -rf "$tmp"
 
 # GNOME extension appindicatorsupport@rgcjonas.gmail.com 66 (sha256-verified, docs/adr/0021)

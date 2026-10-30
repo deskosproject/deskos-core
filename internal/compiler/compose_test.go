@@ -396,14 +396,72 @@ spec:
 	if err := load(artifact(sha, "/usr/local/bin/tool")); err != nil {
 		t.Fatalf("valid artifact rejected: %v", err)
 	}
+	if err := load(artifact(sha, "/usr/local/share/fonts/Tool-Regular.ttf")); err != nil {
+		t.Fatalf("valid font artifact rejected: %v", err)
+	}
 	mustFail(t, load(artifact("", "/usr/local/bin/tool")), "sha256")
-	for _, dest := range []string{"/bin/tool", "/usr/local/bin/../../etc/passwd", "/usr/local/bin/sub/tool", "/etc/profile.d/tool"} {
+	for _, dest := range []string{
+		"/bin/tool", "/usr/local/bin/../../etc/passwd", "/usr/local/bin/sub/tool", "/etc/profile.d/tool",
+		// The font allowance is a font directory with a font extension, not a
+		// second place to put anything.
+		"/usr/local/share/fonts/sub/Tool.ttf", "/usr/local/share/fonts/../../etc/tool.ttf",
+		"/usr/local/share/fonts/tool.sh", "/usr/local/share/fonts/tool", "/usr/local/share/fonts/.ttf",
+	} {
 		mustFail(t, load(artifact(sha, dest)), "destination")
 	}
 	floating := strings.Replace(artifact(sha, "/usr/local/bin/tool"), "1.2.3/tool", "latest/tool", 1)
 	mustFail(t, load(floating), "floating location")
 	unknown := strings.Replace(artifact(sha, "/usr/local/bin/tool"), "  archive: tar.gz", "  archive: tar.gz\n  postInstall: rm -rf /", 1)
 	mustFail(t, load(unknown), "postInstall")
+}
+
+func TestFontArtifactIsDataNotAnExecutable(t *testing.T) {
+	// A font reaches /usr/local/share/fonts as a pinned file: no execute bit, a
+	// mode the decoder pairs with the destination, and no desktop entry, because a
+	// menu launches a program.
+	const sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+	doc := func(mode, dest string) string {
+		file := "{destination: " + dest + "}"
+		if mode != "" {
+			file = "{destination: " + dest + `, mode: "` + mode + `"}`
+		}
+		return `apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: tool
+spec:
+  version: 1.2.3
+  source:
+    url: https://example.org/tool/1.2.3/Tool-Regular.ttf
+    sha256: ` + sha + `
+  archive: none
+  files:
+    - ` + file + `
+`
+	}
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "BinaryArtifact/tool"),
+		"tool.yaml": doc("", "/usr/local/share/fonts/Tool-Regular.ttf"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	if len(p.Artifact.Binaries) != 1 {
+		t.Fatalf("expected one placed file, got %d", len(p.Artifact.Binaries))
+	}
+	if b := p.Artifact.Binaries[0]; b.Mode != "0644" || b.Destination != "/usr/local/share/fonts/Tool-Regular.ttf" {
+		t.Errorf("font placed as %q mode %s, want 0644", b.Destination, b.Mode)
+	}
+	// The schema allows all four modes, so the pairing is the decoder's job.
+	load := func(document string) error {
+		_, err := newCompiler(t).Load([]string{fixture{"b.yaml": document}.dir(t)})
+		return err
+	}
+	for _, mode := range []string{"0755", "0555"} {
+		mustFail(t, load(doc(mode, "/usr/local/share/fonts/Tool-Regular.ttf")), "not allowed for a font")
+	}
+	mustFail(t, load(strings.Replace(doc("", "/usr/local/share/fonts/Tool-Regular.ttf"),
+		"  archive: none", "  archive: none\n  desktopEntry: {id: org.example.Tool, name: Tool, icon: i.svg, categories: [Utility]}", 1)),
+		"a desktop entry launches an executable")
 }
 
 func TestBinaryArtifactTypedValidationWithoutSchema(t *testing.T) {

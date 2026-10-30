@@ -12,6 +12,8 @@ spec:
       name: example-virtualization
     - kind: PackageSet
       name: example-platform-tools
+    - kind: PackageSet
+      name: example-terminal-fonts
     - kind: BinaryArtifact
       name: openshift-client
     - kind: GnomeProfile

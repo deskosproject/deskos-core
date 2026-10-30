@@ -188,7 +188,10 @@ type ExtensionInstall struct {
 }
 
 // VerifiedBinaryInstall downloads an artifact, verifies its SHA-256,
-// optionally extracts one member and installs it with a fixed mode.
+// optionally extracts one member and installs it with a fixed mode. The
+// destination decides what the file is: an executable under /usr/local/bin, or a
+// font under /usr/local/share/fonts, which carries no execute bit (ADR 0018, as
+// amended 2026-10-29).
 type VerifiedBinaryInstall struct {
 	Artifact    string             `json:"artifact"`
 	Version     string             `json:"version"`

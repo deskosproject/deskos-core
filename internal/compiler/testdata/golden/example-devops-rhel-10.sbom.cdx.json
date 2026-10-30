@@ -85,6 +85,69 @@
     },
     {
       "type": "application",
+      "name": "gelasio",
+      "version": "1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4daecea457258c9ebeb8bc99ed3fd24353618bfad3ea4b93fa0b5d0468fc04e4"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Gelasio.ttf"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "gelasio-italic",
+      "version": "1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "52559e845a4d33514e5f93bb9ae7dbeae1894a53f2c565a15f18af40cd337c09"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Gelasio-Italic.ttf"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "gelasio-license",
+      "version": "1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b393cb01867c919b44381512120dc3e4c954c7b47e2035c405f3a324799a4d29"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Gelasio-OFL.txt"
+        }
+      ]
+    },
+    {
+      "type": "application",
       "name": "io.github.kolunmi.Bazaar",
       "version": "stable",
       "properties": [
@@ -131,6 +194,69 @@
         {
           "name": "deskos:remote",
           "value": "flathub"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "overpass",
+      "version": "4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "970717df17a7f9911dee45f60695d05bfa9d745fa0a11fc5c348371fa21f0073"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Overpass.ttf"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "overpass-italic",
+      "version": "4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3b45ac4193930bbeb491b5c76227afd5991607712f0d16d6bc5d74db6bbd8172"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Overpass-Italic.ttf"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "overpass-license",
+      "version": "4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "86e5ff25c701ec446d20b1a85b02ee6d36de8503a7288a4c948f5459809af1f0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/local/share/fonts/Overpass-OFL.txt"
         }
       ]
     },
@@ -196,6 +322,36 @@
     },
     {
       "type": "library",
+      "name": "dejavu-sans-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dejavu-sans-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "dejavu-serif-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "flatpak",
       "properties": [
         {
@@ -216,7 +372,47 @@
     },
     {
       "type": "library",
+      "name": "google-carlito-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "google-chrome-stable",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-crosextra-caladea-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-droid-sans-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-color-emoji-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -236,6 +432,16 @@
     },
     {
       "type": "library",
+      "name": "google-noto-sans-math-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "google-noto-sans-mono-fonts",
       "properties": [
         {
@@ -246,7 +452,67 @@
     },
     {
       "type": "library",
+      "name": "google-noto-sans-symbols-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "google-noto-serif-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "kubectl",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-narrow-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-sans-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "liberation-serif-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -316,6 +582,36 @@
     },
     {
       "type": "library",
+      "name": "redhat-display-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "redhat-mono-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "redhat-text-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "skopeo",
       "properties": [
         {
@@ -337,6 +633,16 @@
     {
       "type": "library",
       "name": "toolbox",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "urw-base35-fonts",
       "properties": [
         {
           "name": "deskos:source",

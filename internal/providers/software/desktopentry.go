@@ -154,6 +154,9 @@ func decodeDesktopEntry(res *model.Resource, spec *BinaryArtifactSpec, errs *mod
 
 	e := &DesktopEntry{ID: d.ID, Name: d.Name, Comment: d.Comment, Categories: d.Categories, StartupWMClass: d.StartupWMClass}
 	if len(spec.Files) == 1 {
+		if path.Dir(spec.Files[0].Destination) == FontDir {
+			bad("files[0].destination %q is a font, and a desktop entry launches an executable", spec.Files[0].Destination)
+		}
 		e.Exec = spec.Files[0].Destination
 	}
 	icon, err := assets.Read(res, d.Icon)

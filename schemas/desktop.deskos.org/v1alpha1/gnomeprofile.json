@@ -25,6 +25,8 @@
             "windows.buttons", "windows.buttonPlacement",
             "appearance.wallpaper", "appearance.loginLogo", "appearance.lockShield",
             "appearance.fonts.interface", "appearance.fonts.document", "appearance.fonts.monospace",
+            "appearance.fonts.antialiasing", "appearance.fonts.hinting",
+            "appearance.fonts.rgbaOrder", "appearance.fonts.lcdfilter",
             "appearance.iconTheme", "appearance.cursorTheme",
             "appearance.colorScheme", "appearance.accentColor",
             "shell.favorites",
@@ -104,7 +106,11 @@
               "properties": {
                 "interface": { "$ref": "#/$defs/font" },
                 "document": { "$ref": "#/$defs/font" },
-                "monospace": { "$ref": "#/$defs/font" }
+                "monospace": { "$ref": "#/$defs/font" },
+                "antialiasing": { "enum": ["none", "grayscale", "rgba"] },
+                "hinting": { "enum": ["none", "slight", "medium", "full"] },
+                "rgbaOrder": { "enum": ["rgb", "bgr", "vrgb", "vbgr"] },
+                "lcdfilter": { "enum": ["none", "default", "light", "legacy"] }
               }
             },
             "loginLogo": { "$ref": "../../common/definitions.json#/$defs/relativePath" },

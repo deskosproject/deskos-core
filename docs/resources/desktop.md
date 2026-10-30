@@ -14,6 +14,7 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `applications.browser`, `.fileManager`, `.textEditor`, `.imageViewer`, `.videoPlayer`, `.pdfViewer` | a `*.desktop` id | |
 | `appearance.wallpaper.light` (required), `.dark`, `appearance.loginLogo`, `.lockShield`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; theme names | |
 | `appearance.fonts.interface`, `.document`, `.monospace`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
+| `appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter` | `none`, `grayscale`, `rgba`; `none`, `slight`, `medium`, `full`; `rgb`, `bgr`, `vrgb`, `vbgr`; `none`, `default`, `light`, `legacy` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]`, `.developmentTools` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}`; boolean (`false` hides Looking Glass) | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
@@ -78,6 +79,17 @@ Each capability a managed profile can turn off is a boolean under
 
 Set the boolean, then list `lockdown.<field>` under `locks`. `disableLockScreen`
 weakens security: use it only when another mechanism locks the session.
+
+**Font rendering.** The four rendering settings write
+`/etc/fonts/conf.d/60-deskos-fonts.conf`, which fontconfig applies to every
+application, and mirror the same choice into the Xsettings keys X11 applications
+read. Declare only what you mean: an image that declares nothing keeps the
+distribution's choices. RGB and BGR depend on the panel, so Core picks neither.
+
+The families are separate from the rendering: `deskos-gnome` includes the
+`deskos-fonts` package set, so the interface, an office document, a terminal,
+color emoji and the symbol and math ranges all have a font without anyone
+installing one.
 
 ### Greeter
 

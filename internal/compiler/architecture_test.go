@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 	"github.com/deskosproject/deskos-core/internal/plan"
+	softwares "github.com/deskosproject/deskos-core/internal/providers/software"
 	"github.com/deskosproject/deskos-core/internal/schema"
 )
 
@@ -487,19 +489,26 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	if len(p.Artifact.RpmRepositories) != 0 {
 		t.Error("DeskOS Core adds third-party repositories")
 	}
-	// Core carries exactly one binary, and it is Core's own: the runtime tool every
-	// image ships so a machine can say what it was built from (ADR 0018). The name
-	// alone proves nothing, so this audits where it lands and where it comes from;
-	// anything else here would be a customer's software, which is what this test
-	// refuses.
-	if len(p.Artifact.Binaries) != 1 {
-		t.Fatalf("DeskOS Core declares %d binary artifact(s); it carries exactly its own runtime tool",
-			len(p.Artifact.Binaries))
+	// Core carries one executable, and it is Core's own: the runtime tool every image
+	// ships so a machine can say what it was built from (ADR 0018). The name alone
+	// proves nothing, so this audits where it lands and where it comes from.
+	executables := 0
+	for _, b := range p.Artifact.Binaries {
+		// A font is content, not software: the families the platform does not
+		// package travel as pinned artifacts, and organization-specific software
+		// still cannot (ADR 0018 as amended 2026-10-29).
+		if path.Dir(b.Destination) == softwares.FontDir {
+			continue
+		}
+		executables++
+		if b.Artifact != "deskos" || b.Destination != "/usr/bin/deskos" ||
+			!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
+			t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
+				b.Artifact, b.Destination, b.URL)
+		}
 	}
-	if b := p.Artifact.Binaries[0]; b.Artifact != "deskos" || b.Destination != "/usr/bin/deskos" ||
-		!strings.HasPrefix(b.URL, "https://github.com/deskosproject/deskos-core/releases/download/") {
-		t.Errorf("DeskOS Core installs %q to %q from %q; it may carry only its own runtime tool, from this project's releases",
-			b.Artifact, b.Destination, b.URL)
+	if executables != 1 {
+		t.Fatalf("DeskOS Core installs %d executables; it carries exactly its own runtime tool", executables)
 	}
 	if p.Artifact.Dconf != nil && len(p.Artifact.Dconf.Locks) != 0 {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")
