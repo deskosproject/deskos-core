@@ -93,6 +93,12 @@ const (
 	KeyProxyFTP        = "network.proxy.ftp"
 	KeyProxySOCKS      = "network.proxy.socks"
 
+	KeySearchExternal = "search.external"
+	KeySearchDisabled = "search.disabled"
+
+	KeyNotifBanners    = "notifications.banners"
+	KeyNotifLockScreen = "notifications.onLockScreen"
+
 	KeyPrivacyRememberRecent = "privacy.rememberRecentFiles"
 	KeyPrivacyRecentMaxAge   = "privacy.recentFilesMaxAge"
 	KeyPrivacyRememberApp    = "privacy.rememberAppUsage"
@@ -175,8 +181,10 @@ var knownKeys = map[string]bool{
 	KeyPrivacyOldTempFiles: true, KeyPrivacyOldTrashFiles: true, KeyPrivacyOldFilesAge: true,
 	KeyPrivacyReportProblems: true, KeyPrivacyUsageStats: true, KeyPrivacyCamera: true,
 	KeyPrivacyMicrophone: true, KeyPrivacySoundOutput: true, KeyPrivacyHideIdentity: true,
-	KeyPrivacyScreen: true,
-	KeyPowerButton:   true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
+	KeyPrivacyScreen:  true,
+	KeySearchExternal: true, KeySearchDisabled: true,
+	KeyNotifBanners: true, KeyNotifLockScreen: true,
+	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
 	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
@@ -208,20 +216,37 @@ type GnomeProfileSpec struct {
 }
 
 type Settings struct {
-	Windows      *Windows      `json:"windows,omitempty"`
-	Applications *Applications `json:"applications,omitempty"`
-	Appearance   *Appearance   `json:"appearance,omitempty"`
-	Shell        *Shell        `json:"shell,omitempty"`
-	Session      *Session      `json:"session,omitempty"`
-	Dock         *Dock         `json:"dock,omitempty"`
-	Software     *Software     `json:"software,omitempty"`
-	Clock        *Clock        `json:"clock,omitempty"`
-	Keyboard     *Keyboard     `json:"keyboard,omitempty"`
-	Power        *Power        `json:"power,omitempty"`
-	Lockdown     *Lockdown     `json:"lockdown,omitempty"`
-	Login        *Login        `json:"login,omitempty"`
-	Network      *Network      `json:"network,omitempty"`
-	Privacy      *Privacy      `json:"privacy,omitempty"`
+	Windows       *Windows       `json:"windows,omitempty"`
+	Applications  *Applications  `json:"applications,omitempty"`
+	Appearance    *Appearance    `json:"appearance,omitempty"`
+	Shell         *Shell         `json:"shell,omitempty"`
+	Session       *Session       `json:"session,omitempty"`
+	Dock          *Dock          `json:"dock,omitempty"`
+	Software      *Software      `json:"software,omitempty"`
+	Clock         *Clock         `json:"clock,omitempty"`
+	Keyboard      *Keyboard      `json:"keyboard,omitempty"`
+	Power         *Power         `json:"power,omitempty"`
+	Lockdown      *Lockdown      `json:"lockdown,omitempty"`
+	Login         *Login         `json:"login,omitempty"`
+	Network       *Network       `json:"network,omitempty"`
+	Privacy       *Privacy       `json:"privacy,omitempty"`
+	Search        *Search        `json:"search,omitempty"`
+	Notifications *Notifications `json:"notifications,omitempty"`
+}
+
+// Search is the shell's search surface: whether third-party providers may answer,
+// and which providers do not. A provider is named by its desktop id, which is what
+// GNOME lists in its own settings.
+type Search struct {
+	External *bool    `json:"external,omitempty"`
+	Disabled []string `json:"disabled,omitempty"`
+}
+
+// Notifications is what the desktop shows and where. A banner with a subject line
+// on a locked screen is a leak in an unattended office, so both are decisions.
+type Notifications struct {
+	Banners      *bool `json:"banners,omitempty"`
+	OnLockScreen *bool `json:"onLockScreen,omitempty"`
 }
 
 // Network holds the settings of the machine's network, as far as an image owns
@@ -742,6 +767,34 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		}
 		if px.UseSameProxy != nil {
 			set(KeyProxySame, *px.UseSameProxy, strconv.FormatBool(*px.UseSameProxy))
+		}
+	}
+
+	if s.Search != nil {
+		if ext := s.Search.External; ext != nil {
+			set(KeySearchExternal, *ext, strconv.FormatBool(*ext))
+		}
+		if s.Search.Disabled != nil {
+			seen := map[string]bool{}
+			for _, id := range s.Search.Disabled {
+				if !desktopIDRE.MatchString(id) {
+					bad("%s: %q is not a desktop file id (for example org.gnome.Nautilus.desktop)", KeySearchDisabled, id)
+				}
+				if seen[id] {
+					bad("%s: %q is listed twice", KeySearchDisabled, id)
+				}
+				seen[id] = true
+			}
+			set(KeySearchDisabled, s.Search.Disabled, strings.Join(s.Search.Disabled, ", "))
+		}
+	}
+
+	if n := s.Notifications; n != nil {
+		if b := n.Banners; b != nil {
+			set(KeyNotifBanners, *b, strconv.FormatBool(*b))
+		}
+		if l := n.OnLockScreen; l != nil {
+			set(KeyNotifLockScreen, *l, strconv.FormatBool(*l))
 		}
 	}
 
