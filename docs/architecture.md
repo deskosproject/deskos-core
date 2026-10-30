@@ -90,6 +90,25 @@ conflicts name every contributor. References are transitive (`PackageSet` to
 repositories, `FlatpakSet` to remote); included resources join at the includer's
 layer.
 
+## What each layer owns
+
+**The image carries policy, provisioning carries identity, Ansible carries state.**
+
+Three layers, and a field that belongs to the wrong one becomes either drift or a
+secret in a public artifact:
+
+| Layer | Owns | Examples |
+|---|---|---|
+| The image (a `Workstation`) | the baseline that must be identical on every machine of a fleet | appearance and fonts, locks, privacy defaults, proxy, idle and lock policy, default applications, update policy, trust anchors, Flatpak and extensions |
+| Provisioning (kickstart, PXE or Satellite) | the identity of one machine | hostname, network and 802.1X enrolment, disk layout, subscription, accounts and SSH keys, timezone and locale |
+| Ansible, after the fact | state that changes per machine or per person | printers, VPN credentials, certificates that rotate, software installed later, a user's own settings |
+
+A value that names a machine or a person is not image content, and a value that is
+a secret is not resource content: the image would make it identical everywhere and
+the repository would publish it. That is why `appearance.fonts.terminal` exists and
+a proxy password does not (ADR 0025), and why the fleet's identity starts at the
+installer, not in `deskosctl`.
+
 ## Providers and the registry
 
 `internal/registry` maps GVK to a provider. A provider decodes and validates one
