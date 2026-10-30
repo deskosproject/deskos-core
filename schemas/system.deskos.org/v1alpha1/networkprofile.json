@@ -36,6 +36,20 @@
           "$ref": "../../common/definitions.json#/$defs/relativePath",
           "description": "A PEM certificate in the resource root, placed where NetworkManager reads it. Omitted, the system trust store is used."
         },
+        "clientCert": {
+          "type": "string",
+          "pattern": "^/etc/deskos/network/[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "Where the fleet places this machine's client certificate, for EAP-TLS. A path, never an asset: the certificate names the machine."
+        },
+        "privateKey": {
+          "type": "string",
+          "pattern": "^/etc/deskos/network/[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "Where the fleet places this machine's private key, for EAP-TLS. Never image content."
+        },
+        "secret": {
+          "enum": ["agent", "none"],
+          "description": "agent: NetworkManager asks a session agent, so the profile works after a login, not at boot. none: EAP-TLS, which needs no secret and joins before login."
+        },
         "serverName": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*$",
@@ -57,6 +71,11 @@
           "if": { "properties": { "type": { "const": "wifi" } }, "required": ["type"] },
           "then": { "required": ["ssid"] },
           "else": { "not": { "required": ["ssid"] } }
+        },
+        {
+          "if": { "properties": { "eap": { "const": "tls" } }, "required": ["eap"] },
+          "then": { "required": ["clientCert", "privateKey"] },
+          "else": { "not": { "anyOf": [{ "required": ["clientCert"] }, { "required": ["privateKey"] }] } }
         }
       ]
     }
