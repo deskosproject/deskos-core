@@ -16,7 +16,7 @@ DeskOS **compiles artifact state**. It does not reconcile running machines.
 
 Keeping 4,000 machines in a state is configuration management's job (Ansible,
 Satellite, Foreman, MDM); DeskOS builds the baseline they operate on. No controller, agent or
-reconciliation loop exists or is planned. Scheduled updates ([Updates](#updates))
+reconciliation loop exists or is planned. Scheduled updates ([Updates](runtime.md#updates))
 are timers staging the next published image.
 
 ## Design principles
@@ -179,7 +179,7 @@ The Containerfile, in order:
 8. runs `dconf update`, regenerates the icon cache and the trust store, enables
    and masks units, sets the default target;
 9. installs the Plymouth theme and rebuilds the initramfs when
-   [Boot](#boot) needs them;
+   [Boot](runtime.md#boot) needs them;
 10. cleans caches and ends with `bootc container lint`.
 
 Every command comes from a typed operation; values are validated upstream and
