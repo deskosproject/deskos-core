@@ -242,7 +242,12 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **P3-02 watch upstream bases and GNOME**: drafted as
   [design/upstream-watch.md](design/upstream-watch.md), with one row per source,
   the check that would catch a change, and the threshold that turns it into work.
-  The other P3 items still need a sponsor, and most need a lab or a comparison
+- **P3-03 secure-installation responsibility**: drafted as
+  [design/secure-installation.md](design/secure-installation.md), with the
+  responsibility matrix, the combinations that are unsupported and the lab that
+  would measure them. The lab is not run: it needs an entitled RHEL build, a
+  software TPM and one physical machine.
+- The other P3 items still need a sponsor, and most need a lab or a comparison
   this repository cannot run.
 
 ## Later
