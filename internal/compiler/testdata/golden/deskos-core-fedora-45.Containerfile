@@ -14,6 +14,13 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
+# The platform's groups resolve to exactly this set
+COPY manifest/ /tmp/deskos-manifest/
+RUN set -eu; rpm -qa --qf '%{NAME}\n' | sort -u > /tmp/deskos-actual.txt; \
+    diff -u /tmp/deskos-manifest/packages.txt /tmp/deskos-actual.txt || { \
+        echo 'the installed packages differ from the platform manifest' >&2; exit 1; }; \
+    rm -rf /tmp/deskos-manifest /tmp/deskos-actual.txt
+
 # Packages
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \

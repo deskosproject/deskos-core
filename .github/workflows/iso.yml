@@ -9,8 +9,11 @@ name: iso
 # artifact: an image whose installer broke is still an image that was scanned,
 # booted and signed, and its evidence does not belong to this job.
 #
-# `supply-chain.yml` calls it with the digest it just published; a dispatch does
-# the same for any published digest, which is how a failed ISO is retried.
+# `supply-chain.yml` calls it once per published image; a dispatch does the same
+# for any published digest, which is how a failed ISO is retried. When the caller
+# names only the commit, the digest is resolved from `$IMAGE:$COMMIT` and the
+# gate's signature over the resolved digest is verified, so the installer is
+# still built from exactly what the gate published and signed.
 on:
   workflow_call:
     inputs:
@@ -19,12 +22,18 @@ on:
         required: true
         type: string
       digest:
-        description: Image digest the ISO is built from (sha256:…)
-        required: true
+        description: Image digest the ISO is built from (sha256:…); empty resolves $IMAGE:$COMMIT
+        required: false
+        default: ""
         type: string
       commit:
         description: Commit the image was built from; the ISO's first tag
         required: true
+        type: string
+      rootfs:
+        description: Root filesystem of the image, xfs or btrfs; bootc cannot always infer it
+        required: false
+        default: ""
         type: string
   workflow_dispatch:
     inputs:
@@ -33,12 +42,18 @@ on:
         required: true
         type: string
       digest:
-        description: Image digest the ISO is built from (sha256:…)
-        required: true
+        description: Image digest the ISO is built from (sha256:…); empty resolves $IMAGE:$COMMIT
+        required: false
+        default: ""
         type: string
       commit:
         description: Commit the image was built from; the ISO's first tag
         required: true
+        type: string
+      rootfs:
+        description: Root filesystem of the image, xfs or btrfs; bootc cannot always infer it
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -66,13 +81,16 @@ jobs:
       IMAGE: ${{ inputs.image }}
       DIGEST: ${{ inputs.digest }}
       COMMIT: ${{ inputs.commit }}
+      ROOTFS: ${{ inputs.rootfs }}
     steps:
       - name: Check the inputs
         run: |
           set -euo pipefail
-          case "$DIGEST" in sha256:*) ;; *) echo "::error::digest must start with sha256:"; exit 1 ;; esac
-          printf '%s' "${DIGEST#sha256:}" | grep -qE '^[0-9a-f]{64}$' \
-            || { echo "::error::digest must be sha256: and 64 lowercase hex"; exit 1; }
+          if [ -n "$DIGEST" ]; then
+            case "$DIGEST" in sha256:*) ;; *) echo "::error::digest must start with sha256:"; exit 1 ;; esac
+            printf '%s' "${DIGEST#sha256:}" | grep -qE '^[0-9a-f]{64}$' \
+              || { echo "::error::digest must be sha256: and 64 lowercase hex"; exit 1; }
+          fi
           printf '%s' "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$' \
             || { echo "::error::commit must be a hex commit"; exit 1; }
           echo "ISO_REPO=${IMAGE}-iso" >> "$GITHUB_ENV"
@@ -148,6 +166,17 @@ jobs:
             done
           }
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          # No digest given: the gate published this commit's image under its own
+          # tag, so pull that tag and read the digest back. The tag only locates
+          # the image; the signature check below is what binds the bytes to the
+          # gate, and it runs over whatever digest the pull returned.
+          if [ -z "$DIGEST" ]; then
+            retry sudo podman pull "$IMAGE:$COMMIT"
+            DIGEST="$(sudo podman image inspect --format '{{.Digest}}' "$IMAGE:$COMMIT")"
+            case "$DIGEST" in sha256:*) ;; *) echo "::error::$IMAGE:$COMMIT has no digest"; exit 1 ;; esac
+            printf 'DIGEST=%s\n' "$DIGEST" >> "$GITHUB_ENV"
+            echo "resolved $IMAGE:$COMMIT to $DIGEST"
+          fi
           cosign verify "$IMAGE@$DIGEST" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
@@ -157,11 +186,17 @@ jobs:
       - name: Build the ISO from that digest
         run: |
           set -euo pipefail
+          # An empty --rootfs is not the same as no flag: bootc infers a default
+          # for the EL bases, and Fedora's Silverblue has none, so the flag is
+          # passed only when the caller declares the filesystem.
+          rootfs=()
+          [ -n "$ROOTFS" ] && rootfs=(--rootfs "$ROOTFS")
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK:/output" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type anaconda-iso --chown "$(id -u):$(id -g)" "$IMAGE@$DIGEST"
+            "$BIB" build --type anaconda-iso "${rootfs[@]}" \
+            --chown "$(id -u):$(id -g)" "$IMAGE@$DIGEST"
           ls -lh "$WORK/bootiso/install.iso"
           ( cd "$WORK/bootiso" && sha256sum install.iso ) | tee iso.sha256
 

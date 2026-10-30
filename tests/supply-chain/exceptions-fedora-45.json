@@ -1,0 +1,167 @@
+{
+  "owner": "rarguello",
+  "review": "2026-11-30",
+  "base": {
+    "image": "quay.io/deskos/fedora-silverblue:45",
+    "digest": "sha256:d81de11d75fed47e420e08c04be879f65544bce7a83178a8ef8422f29df3d613"
+  },
+  "exceptions": [
+    {
+      "id": "GHSA-w889-685w-c8fh",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-pillow 12.3.0-3.fc45 is the Fedora Silverblue base image's own package (hplip requires it), and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 12.3.0-3.fc45, so no fixed build exists yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/METADATA"
+        },
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-332p-7hrc-92wf",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-pillow 12.3.0-3.fc45 is the Fedora Silverblue base image's own package (hplip requires it), and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 12.3.0-3.fc45, so no fixed build exists yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/METADATA"
+        },
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-8g5g-8vmr-9782",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-pillow 12.3.0-3.fc45 is the Fedora Silverblue base image's own package (hplip requires it), and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 12.3.0-3.fc45, so no fixed build exists yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/METADATA"
+        },
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-5x8w-8jj5-q52h",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-pillow 12.3.0-3.fc45 is the Fedora Silverblue base image's own package (hplip requires it), and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 12.3.0-3.fc45, so no fixed build exists yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/METADATA"
+        },
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-v9pv-5gc8-w2m6",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-pillow 12.3.0-3.fc45 is the Fedora Silverblue base image's own package (hplip requires it), and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 12.3.0-3.fc45, so no fixed build exists yet. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/METADATA"
+        },
+        {
+          "package": "pillow",
+          "type": "python",
+          "version": "12.3.0",
+          "path": "/usr/lib64/python3.15/site-packages/pillow-12.3.0.dist-info/top_level.txt"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6612",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-10-30, the same upstream binaries the EL10 record accepts. Not a false positive: golang.org/x/net is compiled into skopeo, podman and buildah as the Fedora Silverblue base image ships them, and DeskOS neither builds nor patches them, so the fix is Fedora's rebuild. A newer base was checked first: the pinned compose is today's, and its fedora and updates repositories still serve these builds. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/sysroot/ostree/repo/objects/2b/9e05183517660c9d28a9d875e6db695708f3a91fb75e7b7bd4b88fcb29c29f.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.56.0",
+          "path": "/usr/bin/skopeo"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/sysroot/ostree/repo/objects/90/51a1cb1dfada1c2a0dbae6257990b03537238eaaa112a9f9c398384de6e855.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/sysroot/ostree/repo/objects/fc/f91732e958af545dfed05ad0257bd1c8636ddbba6b0441c768e3fb5f723fee.file"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/usr/bin/buildah"
+        },
+        {
+          "package": "golang.org/x/net",
+          "type": "go-module",
+          "version": "v0.57.0",
+          "path": "/usr/bin/podman"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-6q48-6c7w-9gw2",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-10-30. Not a false positive: python3-certifi 2026.01.04-3.fc45 is the Fedora Silverblue base image's own package, and DeskOS neither builds nor patches it, so the fix is Fedora's rebuild. Checked first: the pinned compose's fedora and updates repositories still serve 2026.01.04-3.fc45, so no fixed build exists yet. The compromised intermediate belongs to a CA bundle the image ships; DeskOS does not add a certifi bundle of its own. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "certifi",
+          "type": "python",
+          "version": "2026.1.4",
+          "path": "/usr/lib/python3.15/site-packages/certifi-2026.1.4.dist-info/METADATA"
+        },
+        {
+          "package": "certifi",
+          "type": "python",
+          "version": "2026.1.4",
+          "path": "/usr/lib/python3.15/site-packages/certifi-2026.1.4.dist-info/top_level.txt"
+        }
+      ]
+    }
+  ]
+}

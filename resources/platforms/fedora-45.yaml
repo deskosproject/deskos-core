@@ -42,6 +42,11 @@ spec:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
     requiresSubscription: false
+  # The set the group below resolves to on this base digest: 1509 packages in
+  # Silverblue, 1857 after workstation-product-environment. Measured 2026-10-30
+  # with `dnf group install` on the mirrored digest, and verified by the build's
+  # own diff, so a comps change is a review rather than a surprise (docs/adr/0028).
+  packageManifest: manifests/fedora-45.txt
   packageGroups:
     - name: workstation
       # `workstation-product-environment` is a comps *environment* ("Fedora
