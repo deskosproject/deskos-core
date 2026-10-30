@@ -77,6 +77,7 @@ ships `centos-stream-10` and `rhel-10` in
 | `displayName`, `owner`, `tier` | one-line string; `vendor` or `organization` (`tier` needs `owner`) | `displayName` yes |
 | `family`, `release`, `architectures`, `packageManager` | `^[a-z][a-z0-9-]*$`; `^[0-9A-Za-z][0-9A-Za-z.-]*$`; `[x86_64]`; `rpm` or `deb` | yes |
 | `bootc.image`, `bootc.digest`, `distribution.redistributable`, `.requiresSubscription` | string; `sha256:<64 hex>`; boolean | image, `distribution` yes |
+| `packageManifest` | a file beside the resource, one package name per line | no | the set the groups must resolve to; the build fails when the installed set differs (ADR 0028) |
 | `packageGroups[].name`, `.rpmGroups` / `.members` | group name; string list | yes; one of the two |
 | `packageGroups[].excludePackages`, `.graphical` | package names; boolean | no |
 | `displayManager`, `removePackages`, `unavailablePackages[]` | `*.service`; package names; `{name, reason}` | no |

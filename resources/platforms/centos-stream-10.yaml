@@ -15,6 +15,10 @@ spec:
   distribution:
     redistributable: true
     requiresSubscription: false
+  # The set the groups below resolve to, on this base digest. A comps change that
+  # adds or drops a package fails the build with the difference, so it is reviewed
+  # rather than shipped (docs/adr/0028).
+  packageManifest: manifests/centos-stream-10.txt
   packageGroups:
     - name: workstation
       rpmGroups: [workstation-product-environment]

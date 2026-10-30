@@ -36,3 +36,4 @@ kind" while the API now has **fifteen**; the count is in
 | [0025: The terminal font is the platform's fact](0025-the-terminal-font-is-the-platforms-fact.md) | accepted |
 | [0026: The families are the workstation's choice, not the platform's](0026-the-families-are-the-workstations-choice.md) | accepted |
 | [0027: A network profile is a typed resource, and its secrets are not](0027-a-network-profile-is-typed-and-its-secrets-are-not.md) | accepted |
+| [0028: The installed package set is a manifest the build verifies](0028-the-installed-package-set-is-a-manifest.md) | accepted |
