@@ -227,7 +227,9 @@ one PR per group, each with its check.
 - **The desktop as a package list** (spike, 2026-10-30): measured the EL10 group at
   845 packages and compared the three options in
   [design/gnome-desktop-package-set.md](design/gnome-desktop-package-set.md). The
-  recommendation is a committed manifest the build verifies, not a hand-kept list.
+  chosen option, a committed manifest the build verifies, is
+  [ADR 0028](adr/0028-the-installed-package-set-is-a-manifest.md) and ships for
+  CentOS Stream 10; RHEL 10's manifest comes from an entitled build.
 
 ### P2, where each item stands
 

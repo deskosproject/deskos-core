@@ -51,6 +51,10 @@
             "requiresSubscription": { "type": "boolean" }
           }
         },
+        "packageManifest": {
+          "$ref": "../../common/definitions.json#/$defs/relativePath",
+          "description": "A file beside this resource with one installed package name per line: the set the groups resolve to. The build fails when the installed set differs, so a comps change is reviewed (ADR 0028)."
+        },
         "packageGroups": {
           "type": "array",
           "items": {

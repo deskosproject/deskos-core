@@ -35,6 +35,7 @@ const (
 	PlanPath          = "plan.json"
 	ManifestPath      = "generated-manifest.json"
 	reposDir          = "repos"
+	manifestDir       = "manifest"
 	// repoGPGDir is where repository signing keys are placed in the image;
 	// the repository files reference them by file://, never by URL.
 	repoGPGDir    = "/etc/pki/rpm-gpg"
@@ -140,6 +141,10 @@ func Render(p *plan.Plan) ([]File, error) {
 	}
 	for _, f := range p.Artifact.GeneratedFiles {
 		r.addImage(f.Path, parseMode(f.Mode), []byte(f.Content))
+	}
+	if len(p.Artifact.PackageManifest) > 0 {
+		r.add(path.Join(manifestDir, "packages.txt"), 0o644,
+			[]byte(strings.Join(p.Artifact.PackageManifest, "\n")+"\n"))
 	}
 	for _, a := range p.Artifact.TrustAnchors {
 		if err := r.addTrustCertificate(a.Asset, a.AssetFile, a.SHA256, a.Path); err != nil {
@@ -903,6 +908,18 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	if len(a.PackageGroups) > 0 {
 		w("\n# Package groups\n")
 		pkgTransaction(w, mgr, nil, mgr.groupInstall, groupArgs(mgr, a.PackageGroups))
+	}
+
+	// The groups are a distribution's list and can change under us; the manifest
+	// is ours. Checked after the group transaction and before the explicit
+	// packages, so the set compared is the base plus the groups (docs/adr/0028).
+	if len(a.PackageManifest) > 0 {
+		w("\n# The platform's groups resolve to exactly this set\n")
+		w("COPY %s/ /tmp/deskos-manifest/\n", manifestDir)
+		w("RUN set -eu; rpm -qa --qf '%%{NAME}\\n' | sort -u > /tmp/deskos-actual.txt; \\\n")
+		w("    diff -u /tmp/deskos-manifest/packages.txt /tmp/deskos-actual.txt || { \\\n")
+		w("        echo 'the installed packages differ from the platform manifest' >&2; exit 1; }; \\\n")
+		w("    rm -rf /tmp/deskos-manifest /tmp/deskos-actual.txt\n")
 	}
 
 	if len(a.Packages) > 0 {
