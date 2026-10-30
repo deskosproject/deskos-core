@@ -1,0 +1,59 @@
+name: docs-site
+
+# The documentation site at deskos.org/docs, built from docs/ and website/.
+#
+# It is a check and a build, not a publisher: the artifact is what a host serves,
+# and where that host is is a deployment decision (website/README.md). A pull
+# request that changes a page or the site builds it, so a broken link or an MDX
+# mistake fails here instead of at the host.
+on:
+  pull_request:
+    paths:
+      - docs/**
+      - website/**
+      - .github/workflows/docs-site.yml
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - website/**
+      - .github/workflows/docs-site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      # `npm ci` installs exactly the lockfile, so a build here and a build on a
+      # laptop are the same dependencies.
+      - name: Install the site's dependencies
+        run: npm ci --prefix website
+
+      - name: Build the site
+        run: npm run build --prefix website
+
+      # The static files are the artifact: point any host at it, or serve
+      # `website/build` under /docs/ (docusaurus.config.js sets that base URL).
+      - name: Keep the built site with the run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: docs-site-attempt-${{ github.run_attempt }}
+          path: website/build
+          retention-days: 14
+          if-no-files-found: error

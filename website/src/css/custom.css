@@ -1,0 +1,34 @@
+/**
+ * The site uses the documentation's own identity: the same lockup, a quiet
+ * accent, and nothing that competes with the pages.
+ */
+:root {
+  --ifm-color-primary: #1f5f8b;
+  --ifm-color-primary-dark: #1c5580;
+  --ifm-color-primary-darker: #1a5079;
+  --ifm-color-primary-darkest: #154265;
+  --ifm-color-primary-light: #226996;
+  --ifm-color-primary-lighter: #246e9d;
+  --ifm-color-primary-lightest: #297db1;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-heading-font-weight: 600;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #7fb6d8;
+  --ifm-color-primary-dark: #63a6cf;
+  --ifm-color-primary-darker: #559eca;
+  --ifm-color-primary-darkest: #3587b8;
+  --ifm-color-primary-light: #9bc6e1;
+  --ifm-color-primary-lighter: #a9cee6;
+  --ifm-color-primary-lightest: #d3e7f2;
+}
+
+.navbar__logo {
+  height: 1.9rem;
+}
+
+.markdown img {
+  /* The diagrams are wide; let them use the column. */
+  max-width: 100%;
+}
