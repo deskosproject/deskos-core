@@ -252,6 +252,10 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
   software TPM and one physical machine.
 - The other P3 items still need a sponsor, and most need a lab or a comparison
   this repository cannot run.
+- **P3-04 aarch64**: assessed and declined for now, with conditions, in
+  [design/aarch64.md](design/aarch64.md). The bases and the builder are already
+  multi-arch; the blockers are a per-architecture runtime pin, which is a model
+  decision, and an arm64 runner with aarch64 firmware, which is a test platform.
 
 ## Later
 
