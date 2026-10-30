@@ -224,6 +224,10 @@ one PR per group, each with its check.
 - **An outside reader on the walkthrough.** Unproven until one does it.
 - **Renovate outside Core.** `deskos-infrastructure` has no pins that move yet.
 - **Installed run of the published ISO** (#294), by a person, recorded.
+- **The desktop as a package list** (spike, 2026-10-30): measured the EL10 group at
+  845 packages and compared the three options in
+  [design/gnome-desktop-package-set.md](design/gnome-desktop-package-set.md). The
+  recommendation is a committed manifest the build verifies, not a hand-kept list.
 
 ### P2, where each item stands
 
