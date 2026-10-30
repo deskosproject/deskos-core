@@ -1,0 +1,12 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: NetworkProfile
+metadata:
+  name: example-corp-8021x
+spec:
+  # A wired 802.1X network with a password method, which is what most enterprises
+  # run. autoconnect is off because this profile is an example: it names a RADIUS
+  # server that does not exist here, and the workstation must not keep trying.
+  type: ethernet
+  eap: peap
+  serverName: radius.example.com
+  autoconnect: false

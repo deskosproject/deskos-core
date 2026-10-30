@@ -714,6 +714,47 @@ class PlanFontsTest(unittest.TestCase):
         self.assertEqual(len(sc.plan_font_families(PLAN)), 0)
 
 
+class PlanNetworkProfilesTest(unittest.TestCase):
+    def plan(self):
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["generatedFiles"] = [{
+            "path": "/etc/NetworkManager/system-connections/corp.nmconnection",
+            "mode": "0600", "content": "[connection]\nid=corp\n",
+        }]
+        return plan
+
+    def profile_check(self, values, name="corp", plan=None):
+        plan = plan or self.plan()
+        check = f"network profile {name} is loaded by NetworkManager"
+        return next(c for c in sc.evaluate(values, plan) if c["check"] == check)
+
+    def test_a_declared_profile_must_be_loaded_by_networkmanager(self):
+        # The file can be right and the daemon still refuse it, so the read is
+        # nmcli's list, not the keyfile's content.
+        values = dict(GOOD, nm_profiles="corp|Wired connection 1")
+        c = self.profile_check(values)
+        self.assertTrue(c["pass"])
+        self.assertIn("2 connections NetworkManager lists", c["detail"])
+
+    def test_a_profile_networkmanager_did_not_load_fails(self):
+        values = dict(GOOD, nm_profiles="Wired connection 1")
+        c = self.profile_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("not among the 1 connections", c["detail"])
+
+    def test_a_list_that_could_not_be_read_is_not_a_difference(self):
+        c = self.profile_check(GOOD)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertEqual(c["unread"], ["the connection list"])
+
+    def test_only_keyfiles_are_profiles(self):
+        plan = self.plan()
+        plan["artifact"]["generatedFiles"].append({
+            "path": "/etc/dconf/db/distro.d/60-deskos", "mode": "0644", "content": ""})
+        self.assertEqual(sc.plan_network_profiles(plan), ["corp"])
+
+
 class PlanDefaultsTest(unittest.TestCase):
     def test_the_plan_is_the_list_of_defaults(self):
         # What is asserted comes from the plan, not from a constant in the checker.
