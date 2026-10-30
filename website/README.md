@@ -27,20 +27,27 @@ artifact.
 
 ## Publish it
 
-The build is static files with `/docs/` as the base URL, so whatever serves
-`deskos.org` only has to serve `website/build` at that path. Two shapes:
+`docs.deskos.org` is a GitHub Pages site of this repository, deployed by
+`docs-site.yml` from `main`. It is not a directory of `deskos.org`: the
+marketing site (`deskosproject/deskos-site`) is deliberately buildless and says
+docs belong in the repository, and putting a generated site inside it would make
+that repo a build output.
 
-```bash
-# A host you already own
-rsync -a --delete website/build/ user@host:/srv/deskos.org/docs/
+Three things make it serve:
 
-# Or a bucket behind the CDN that serves the domain
-aws s3 sync website/build/ s3://<bucket>/docs/ --delete
-```
+1. **Pages, once.** Repository settings → Pages → Source: *GitHub Actions*, and
+   custom domain `docs.deskos.org`. The first deploy creates the
+   `github-pages` environment the workflow names.
+2. **The DNS record, once.** A DNS-only `CNAME docs → deskosproject.github.io`
+   in `deskosproject/deskos-infrastructure` (`web.tf`). Proxying it hides the
+   origin from the certificate authority and GitHub cannot issue the
+   certificate, the same reason the apex records are DNS-only.
+3. **The workflow.** A pull request builds the site; `main` deploys it with the
+   repository's own token, so there is no second credential.
 
-Nothing publishes by itself: the artifact is kept with the run and a person (or a
-deployment workflow with its own credentials) moves it. That is the same rule as
-the images: a build is evidence, publication is a decision.
+Nothing publishes from a branch, and a red build publishes nothing: the same
+rule as the images. A preview of a pull request is its uploaded artifact, not a
+staging site.
 
 ## Adding a page
 

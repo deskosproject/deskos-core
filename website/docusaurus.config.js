@@ -17,9 +17,11 @@ const config = {
   tagline: 'Workstations compiled from intent',
   favicon: 'img/logo.svg',
 
-  url: 'https://deskos.org',
-  // The site lives at deskos.org/docs; a build is a directory of static files.
-  baseUrl: '/docs/',
+  // docs.deskos.org is its own GitHub Pages site, built and deployed from this
+  // repository: the marketing site (deskos-site) is deliberately buildless and
+  // points at the repository rather than duplicating the docs (website/README.md).
+  url: 'https://docs.deskos.org',
+  baseUrl: '/',
   organizationName: 'deskosproject',
   projectName: 'deskos-core',
 
