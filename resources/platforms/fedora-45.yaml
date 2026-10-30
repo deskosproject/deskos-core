@@ -76,10 +76,12 @@ spec:
     loginScreen: true
     # GDM reads its own profile; the EL family and Fedora use the gdm database.
     loginScreenDatabase: gdm
-    # Default of org.gnome.shell enabled-extensions on this base, measured in
+    # What this base already enables, measured in
     # /usr/share/glib-2.0/schemas/org.gnome.shell.gschema.override:
     # background-logo@fedorahosted.org (installed as
-    # gnome-shell-extension-background-logo).
+    # gnome-shell-extension-background-logo). The composition appends the DeskOS
+    # extensions it delivers (the dock and the tray) to this list, so the rendered
+    # key is this list plus those UUIDs, as on EL10.
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - name: dash-to-dock
