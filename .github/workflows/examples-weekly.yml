@@ -43,7 +43,6 @@ jobs:
             root: examples/almalinux-10
             platform: platforms/almalinux-10.yaml
             rootfs: xfs
-            rootfs: btrfs
     env:
       EXAMPLE_ROOT: /mnt/deskos-work/example-root
       IMAGE: localhost/${{ matrix.workstation }}:ci
