@@ -39,7 +39,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Choose the fonts, surface by surface | `interface font-name`, `document-font-name`, `monospace-font-name`; `wm titlebar-font`; the terminal's `font-name` | **modelled** since 2026-10-30 (`appearance.fonts.interface`, `.document`, `.monospace`, `.titlebar`, `.terminal`) |
 | Zoom text without changing sizes | `interface text-scaling-factor` | **modelled** (`appearance.fonts.textScaling`, 0.5 to 3.0) |
 | Subpixel rendering and hinting | `interface font-rendering`, `font-antialiasing`, `font-hinting`, `font-rgba-order`, and fontconfig's own file | **modelled** (`appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter`): the file for every application, the keys for GNOME and X11 |
-| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35 |
+| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35, and `deskos-adwaita` adds Adwaita Sans and Mono (ADR 0026) |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |
 | Lock screen shield | `screensaver picture-uri` | **modelled** since 2026-10-29 (`appearance.lockShield`; the wallpaper is the default) |

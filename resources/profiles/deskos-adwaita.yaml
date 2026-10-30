@@ -1,0 +1,25 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-adwaita
+spec:
+  layer: foundation
+  description: GNOME's own text and monospace families, for a workstation that draws GNOME's look instead of its platform's.
+  resources:
+    - kind: GnomeProfile
+      name: deskos-adwaita
+    # The families themselves, pinned because EL10 does not package them.
+    - kind: BinaryArtifact
+      name: adwaita-sans
+    - kind: BinaryArtifact
+      name: adwaita-sans-italic
+    - kind: BinaryArtifact
+      name: adwaita-mono
+    - kind: BinaryArtifact
+      name: adwaita-mono-bold
+    - kind: BinaryArtifact
+      name: adwaita-mono-italic
+    - kind: BinaryArtifact
+      name: adwaita-mono-bold-italic
+    - kind: BinaryArtifact
+      name: adwaita-license

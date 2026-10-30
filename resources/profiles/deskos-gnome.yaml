@@ -26,10 +26,6 @@ spec:
       name: overpass-license
     - kind: GnomeProfile
       name: deskos-core
-    # The monospace family the terminal uses, named because GNOME's default is a
-    # font the platform does not package.
-    - kind: GnomeProfile
-      name: deskos-fonts
     # Tray icons, on every workstation: Fedora delivers Fedora's package, EL10 the
     # pinned upstream release, and each platform's catalog says which (ADR 0021).
     - kind: GnomeProfile

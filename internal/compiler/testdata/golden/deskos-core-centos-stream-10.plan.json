@@ -20,6 +20,11 @@
   },
   "profiles": [
     {
+      "name": "deskos-adwaita",
+      "layer": "foundation",
+      "source": "resources/profiles/deskos-adwaita.yaml:1"
+    },
+    {
       "name": "deskos-core",
       "layer": "foundation",
       "source": "resources/profiles/deskos-core.yaml:1"
@@ -352,17 +357,6 @@
         ]
       },
       {
-        "name": "ptyxis",
-        "provenance": [
-          {
-            "resource": "GnomeProfile/deskos-fonts",
-            "profile": "deskos-gnome",
-            "layer": "foundation",
-            "source": "resources/desktop/deskos-fonts.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "redhat-display-fonts",
         "provenance": [
           {
@@ -432,6 +426,125 @@
             "profile": "deskos-core",
             "layer": "foundation",
             "source": "resources/software/deskos.yaml:1"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-license",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/LICENSE",
+        "sha256": "459687971d21c53923c1d1c9c062ec273a7ea03226b36195b79ec6af7d98dc81",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/Adwaita-OFL.txt",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-license",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:83"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-mono-bold",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Bold.ttf",
+        "sha256": "9963c9a54805dd29cd803aa5f816c9f7c74c7bdae015467a485ae729868d2325",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaMono-Bold.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-mono-bold",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:44"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-mono-bold-italic",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-BoldItalic.ttf",
+        "sha256": "7108404fc597fa8586b822c6d03b676caad353be1bc4a89adfab77084663a04e",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-mono-bold-italic",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:70"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-mono-italic",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Italic.ttf",
+        "sha256": "20795e28c01f7df230002925d93e16cfe1bc1ab9e84426ac106344fb419cb57b",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaMono-Italic.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-mono-italic",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:57"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-mono",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Regular.ttf",
+        "sha256": "ffc549b7fc28057d624086111f1ba0b1f752d2d7ff7c5363dfa064e4dca17d47",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaMono-Regular.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-mono",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:31"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-sans-italic",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Italic.ttf",
+        "sha256": "a3dc55af75f746756596dca37f3ff7c0f0b015f2fd2e87f2cf0ef4a69d4f3015",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaSans-Italic.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-sans-italic",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:18"
+          }
+        ]
+      },
+      {
+        "artifact": "adwaita-sans",
+        "version": "51.0",
+        "url": "https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Regular.ttf",
+        "sha256": "8381c33b9a44f066f2b99dba3d416a2342891e28c956a35dfd8d16ee2987e6d4",
+        "archive": "none",
+        "destination": "/usr/local/share/fonts/AdwaitaSans-Regular.ttf",
+        "mode": "0644",
+        "provenance": [
+          {
+            "resource": "BinaryArtifact/adwaita-sans",
+            "profile": "deskos-adwaita",
+            "layer": "foundation",
+            "source": "resources/software/deskos-adwaita.yaml:5"
           }
         ]
       },
@@ -613,7 +726,7 @@
       {
         "path": "/usr/share/deskos/image-info.json",
         "mode": "0644",
-        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"deskos-core-centos-stream-10\",\n  \"image-title\": \"DeskOS Core (CentOS Stream 10)\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11\",\n  \"base-image-digest\": \"sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-look\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"deskos-core-centos-stream-10\",\n  \"image-title\": \"DeskOS Core (CentOS Stream 10)\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11\",\n  \"base-image-digest\": \"sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-adwaita\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-dock\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-look\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-reference-apps\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"firefox\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    }\n  ]\n}\n",
         "provenance": [
           {
             "resource": "Workstation/deskos-core-centos-stream-10",
@@ -631,34 +744,6 @@
       "name": "distro",
       "loginScreen": "gdm",
       "defaults": [
-        {
-          "key": "/org/gnome/Ptyxis/font-name",
-          "type": "s",
-          "value": "'DejaVu Sans Mono 11'",
-          "setting": "appearance.fonts.terminal",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-fonts",
-              "profile": "deskos-gnome",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-fonts.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/Ptyxis/use-system-font",
-          "type": "b",
-          "value": "false",
-          "setting": "appearance.fonts.terminal",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-fonts",
-              "profile": "deskos-gnome",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-fonts.yaml:1"
-            }
-          ]
-        },
         {
           "key": "/org/gnome/desktop/background/picture-uri",
           "type": "s",
@@ -688,16 +773,44 @@
           ]
         },
         {
+          "key": "/org/gnome/desktop/interface/document-font-name",
+          "type": "s",
+          "value": "'Adwaita Sans 12'",
+          "setting": "appearance.fonts.document",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-adwaita",
+              "profile": "deskos-adwaita",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-adwaita.yaml:1"
+            }
+          ]
+        },
+        {
+          "key": "/org/gnome/desktop/interface/font-name",
+          "type": "s",
+          "value": "'Adwaita Sans 11'",
+          "setting": "appearance.fonts.interface",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-adwaita",
+              "profile": "deskos-adwaita",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-adwaita.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/desktop/interface/monospace-font-name",
           "type": "s",
-          "value": "'DejaVu Sans Mono 11'",
+          "value": "'Adwaita Mono 11'",
           "setting": "appearance.fonts.monospace",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-fonts",
-              "profile": "deskos-gnome",
+              "resource": "GnomeProfile/deskos-adwaita",
+              "profile": "deskos-adwaita",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-fonts.yaml:1"
+              "source": "resources/desktop/deskos-adwaita.yaml:1"
             }
           ]
         },

@@ -100,12 +100,15 @@ X11 applications read. Declare only what you mean: an image that declares nothin
 keeps the distribution's choices. RGB and BGR depend on the panel, so Core picks
 neither.
 
-The families are separate from the rendering: `deskos-gnome` includes the
-`deskos-fonts` package set and the two pinned families EL10 does not package, so
-the interface, an office document, a terminal, color emoji and the symbol and math
-ranges all have a font without anyone installing one. It also names the monospace
-family the terminal uses, because GNOME's default is Source Code Pro, which EL10
-does not carry.
+The families are separate from the rendering, and they are the workstation's
+choice ([ADR 0026](../adr/0026-the-families-are-the-workstations-choice.md)).
+`deskos-gnome` installs the families every workstation needs: Liberation, Carlito,
+Caladea, DejaVu, Noto, the URW base 35, and Gelasio and Overpass as pinned
+artifacts because EL10 packages neither. `deskos-adwaita` adds GNOME's own:
+Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which is
+what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
+not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
+The terminal follows the monospace family unless a profile names one.
 
 ### Greeter
 

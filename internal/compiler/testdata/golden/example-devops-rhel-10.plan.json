@@ -564,17 +564,6 @@
         ]
       },
       {
-        "name": "ptyxis",
-        "provenance": [
-          {
-            "resource": "GnomeProfile/example-devops-desktop",
-            "profile": "example-devops",
-            "layer": "role",
-            "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
-          }
-        ]
-      },
-      {
         "name": "qemu-kvm",
         "provenance": [
           {
@@ -1000,34 +989,6 @@
       "loginScreen": "gdm",
       "defaults": [
         {
-          "key": "/org/gnome/Ptyxis/font-name",
-          "type": "s",
-          "value": "'Red Hat Mono 11'",
-          "setting": "appearance.fonts.terminal",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/example-devops-desktop",
-              "profile": "example-devops",
-              "layer": "role",
-              "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/Ptyxis/use-system-font",
-          "type": "b",
-          "value": "false",
-          "setting": "appearance.fonts.terminal",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/example-devops-desktop",
-              "profile": "example-devops",
-              "layer": "role",
-              "source": "organization-and-role/desktop/example-devops-desktop.yaml:1"
-            }
-          ]
-        },
-        {
           "key": "/org/gnome/desktop/background/picture-uri",
           "type": "s",
           "value": "'file:///usr/share/deskos/backgrounds/example.svg'",
@@ -1098,34 +1059,6 @@
           ]
         },
         {
-          "key": "/org/gnome/desktop/interface/document-font-name",
-          "type": "s",
-          "value": "'Noto Sans 11'",
-          "setting": "appearance.fonts.document",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/example-desktop",
-              "profile": "example-organization",
-              "layer": "organization",
-              "source": "organization-and-role/desktop/example-desktop.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/desktop/interface/font-name",
-          "type": "s",
-          "value": "'Noto Sans 11'",
-          "setting": "appearance.fonts.interface",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/example-desktop",
-              "profile": "example-organization",
-              "layer": "organization",
-              "source": "organization-and-role/desktop/example-desktop.yaml:1"
-            }
-          ]
-        },
-        {
           "key": "/org/gnome/desktop/interface/icon-theme",
           "type": "s",
           "value": "'Adwaita'",
@@ -1136,20 +1069,6 @@
               "profile": "example-organization",
               "layer": "organization",
               "source": "organization-and-role/desktop/example-theme.yaml:1"
-            }
-          ]
-        },
-        {
-          "key": "/org/gnome/desktop/interface/monospace-font-name",
-          "type": "s",
-          "value": "'Noto Sans Mono 10'",
-          "setting": "appearance.fonts.monospace",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/example-desktop",
-              "profile": "example-organization",
-              "layer": "organization",
-              "source": "organization-and-role/desktop/example-desktop.yaml:1"
             }
           ]
         },

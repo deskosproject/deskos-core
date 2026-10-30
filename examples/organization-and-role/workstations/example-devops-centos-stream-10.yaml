@@ -9,6 +9,7 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
+    - deskos-adwaita
     - rhel-family
     - deskos-look
     - example-organization

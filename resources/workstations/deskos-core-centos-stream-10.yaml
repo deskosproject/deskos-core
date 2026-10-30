@@ -8,6 +8,9 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
+    # CentOS Stream 10 is the platform DeskOS draws GNOME's look on, so it carries
+    # GNOME's own families; a workstation on a vendor desktop keeps the vendor's.
+    - deskos-adwaita
     - rhel-family
     - deskos-look
     - deskos-reference-apps

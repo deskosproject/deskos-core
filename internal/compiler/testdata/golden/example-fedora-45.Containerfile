@@ -38,7 +38,6 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
-        'ptyxis' \
         'redhat-display-fonts' \
         'redhat-text-fonts' \
         'urw-base35-fonts' \

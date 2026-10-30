@@ -1,0 +1,96 @@
+# GNOME's own families, which EL10 does not package. Adwaita Sans is a variation
+# of Inter and Adwaita Mono is Iosevka matched to it, both OFL, so a DeskOS image
+# can carry the family GNOME OS ships and GNOME designs its apps with. Pinned at
+# a commit of GNOME/adwaita-fonts; the release they belong to is 51.0.
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-sans
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Regular.ttf
+    sha256: 8381c33b9a44f066f2b99dba3d416a2342891e28c956a35dfd8d16ee2987e6d4
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaSans-Regular.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-sans-italic
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Italic.ttf
+    sha256: a3dc55af75f746756596dca37f3ff7c0f0b015f2fd2e87f2cf0ef4a69d4f3015
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaSans-Italic.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-mono
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Regular.ttf
+    sha256: ffc549b7fc28057d624086111f1ba0b1f752d2d7ff7c5363dfa064e4dca17d47
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaMono-Regular.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-mono-bold
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Bold.ttf
+    sha256: 9963c9a54805dd29cd803aa5f816c9f7c74c7bdae015467a485ae729868d2325
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaMono-Bold.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-mono-italic
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Italic.ttf
+    sha256: 20795e28c01f7df230002925d93e16cfe1bc1ab9e84426ac106344fb419cb57b
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaMono-Italic.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-mono-bold-italic
+spec:
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-BoldItalic.ttf
+    sha256: 7108404fc597fa8586b822c6d03b676caad353be1bc4a89adfab77084663a04e
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: BinaryArtifact
+metadata:
+  name: adwaita-license
+spec:
+  # Inter's, Iosevka's and the Adwaita adaptation's copyrights, which the OFL
+  # requires to travel with the files.
+  version: "51.0"
+  source:
+    url: https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/LICENSE
+    sha256: 459687971d21c53923c1d1c9c062ec273a7ea03226b36195b79ec6af7d98dc81
+  archive: none
+  files:
+    - destination: /usr/local/share/fonts/Adwaita-OFL.txt

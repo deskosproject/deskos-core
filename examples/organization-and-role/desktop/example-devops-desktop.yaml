@@ -8,13 +8,6 @@ spec:
   locks:
     - shell.favorites
   defaults:
-    appearance:
-      fonts:
-        # The role that lives in a terminal picks its monospace family: Red Hat
-        # Mono comes from its own package set, and the terminal is the platform's
-        # (ptyxis on the EL family), so the family has to be installed to mean
-        # anything.
-        terminal: {family: Red Hat Mono, size: 11}
     shell:
       favorites:
         - google-chrome.desktop
