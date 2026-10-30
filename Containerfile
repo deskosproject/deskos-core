@@ -26,7 +26,7 @@
 
 # Pinned by the tag's index digest so the toolchain is the one that was tested;
 # bump the tag and the digest together.
-FROM docker.io/library/golang:1.27@sha256:b76020929b709ddb6202afc05410a0faefae20ae05e27ad548b3870092688a69 AS build
+FROM docker.io/library/golang:1.27@sha256:2920bb124f1a2e12a1d39f0cab756ae0068441ee1da7655dec7f5e374944095b AS build
 
 ARG VERSION=dev
 ARG COMMIT=unknown
