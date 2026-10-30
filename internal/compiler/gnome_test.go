@@ -800,6 +800,36 @@ const (
 	backgroundLogoUUID   = "background-logo@fedorahosted.org"
 )
 
+// Every shipped workstation enables and installs the DeskOS extensions on its
+// platform: the dock and the tray are the project's decision, not the user's, so
+// two flavors must not ship different desktops. The platform's own list stays,
+// because it is what the vendor's base already enables (ADR 0017).
+func TestEveryShippedWorkstationEnablesTheDeskOSExtensions(t *testing.T) {
+	for _, ws := range []string{"deskos-core-centos-stream-10", "deskos-core-fedora-45"} {
+		t.Run(ws, func(t *testing.T) {
+			p := mustPlan(t, ws, resourcesRoot)
+			value, ok := dconf(p, enabledExtensionsKey)
+			if !ok {
+				t.Fatalf("%s writes no %s", ws, enabledExtensionsKey)
+			}
+			for _, uuid := range []string{backgroundLogoUUID, appIndicatorUUID, dashToDockUUID} {
+				if !strings.Contains(value, uuid) {
+					t.Errorf("%s: enabled-extensions = %s, want %s", ws, value, uuid)
+				}
+			}
+			delivered := map[string]bool{}
+			for _, e := range p.Artifact.Extensions {
+				delivered[e.UUID] = true
+			}
+			for _, uuid := range []string{appIndicatorUUID, dashToDockUUID} {
+				if !delivered[uuid] {
+					t.Errorf("%s enables %s but delivers no artifact for it", ws, uuid)
+				}
+			}
+		})
+	}
+}
+
 // platformWithAppIndicator adds a second extension to the test platform's catalog.
 func platformWithAppIndicator() string {
 	return strings.Replace(platformYAML,

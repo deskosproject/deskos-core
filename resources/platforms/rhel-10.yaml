@@ -43,6 +43,8 @@ spec:
     loginScreenDatabase: gdm
     # GDM's dconf profile (user, gdm, local, site, distro) reads it too.
     loginScreen: true
+    # What this platform's base already enables; the composition appends the
+    # DeskOS extensions it delivers (the dock and the tray) to this list.
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - name: dash-to-dock

@@ -45,7 +45,9 @@ spec:
     loginScreenDatabase: gdm
     # GDM's dconf profile (user, gdm, local, site, distro) reads it too.
     loginScreen: true
-    # Default of org.gnome.shell enabled-extensions on this platform.
+    # What this platform's base already enables. The composition appends the
+    # DeskOS extensions it delivers (the dock and the tray) to this list, so the
+    # rendered key is this list plus those UUIDs, on every flavor.
     enabledExtensions: [background-logo@fedorahosted.org]
     extensions:
       - name: dash-to-dock
