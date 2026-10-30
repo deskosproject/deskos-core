@@ -58,12 +58,44 @@ promotion record keeps the digest. For **recovery** it is the real question: "bu
 me this workstation as it was" is answered by the published image, not by the
 resources, and only for as long as the registry keeps it.
 
+## Satellite content views, and where the build has to meet them
+
+A **published content view version is a frozen snapshot**: publishing copies the
+selected repositories, and a later sync does not change that version. Satellite
+serves it at
+`https://satellite.example.com/pulp/content/<org>/<environment>/<view>/...`, and an
+archived version can be distributed without a lifecycle environment. That is exactly
+the pin the build needs: point dnf at a published version and the RPMs stop moving
+until someone publishes a new one.
+
+**On RHEL it already works.** The build registers with `subscription-manager`, so
+the repositories dnf sees come from `redhat.repo`, which is the activation key's
+content view. Assign the build to a published version and the packages are pinned;
+the file is removed after the transaction, so the image carries no subscription
+state.
+
+**On CentOS Stream it does not, yet.** There is no subscription, so the build uses
+the base image's own repositories, and a content view would be one more repository
+next to them. Measured: a later `/etc/yum.repos.d/` file that redefines `[baseos]`
+with `enabled=0` is ignored, and dnf keeps the base image's definition. So pointing
+at a content view is not enough while the public repositories stay enabled.
+
+Two ways to make the build meet the snapshot, and one of them is a decision:
+
+1. **An organization-owned base** whose `/etc/yum.repos.d/` already points at
+   Satellite, built from `centos-bootc` and pinned by digest. This works today, is
+   the ADR 0014 path, and needs an owner and a tier.
+2. **An isolated build**: a platform or package-set flag that runs the package
+   transaction with `--disablerepo='*' --enablerepo=<the declared repositories>`, so
+   only the content view answers. It changes what a `PackageSet` means, so it needs
+   an ADR before it is a field.
+
+Either way the **content view version is an input** and belongs in the record next
+to the base digest: a republished view is a new input, exactly as a new base digest
+is, and the image digest that comes out is a new record.
+
 ## What would close it, and what would not
 
-- **A snapshot or a pinned repository**: the platform declares the repositories, so
-  an organization can point them at a snapshot (Satellite content views do this) and
-  get the same packages a week later. That is a platform and infrastructure
-  decision, not a compiler one.
 - **A lockfile of resolved RPM versions**: worth it only if an organization needs to
   rebuild without a snapshot. It would record what the build resolved, which the
   SBOM already does for the image that exists; the lockfile would make it
