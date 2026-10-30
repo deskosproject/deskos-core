@@ -489,6 +489,85 @@ func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
 	}
 }
 
+func TestProxyLowersToTheSystemProxy(t *testing.T) {
+	// A corporate proxy is one decision with several keys. Declaring a server for
+	// a protocol other than http has to turn use-same-proxy off, because GNOME
+	// otherwise ignores that server entirely.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    network:\n      proxy:\n        mode: manual\n"+
+			"        ignoreHosts: [localhost, '*.example.org']\n"+
+			"        http: {host: proxy.example.org, port: 3128}\n"+
+			"        https: {host: proxy.example.org, port: 3129}\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/system/proxy/mode":           "'manual'",
+		"/org/gnome/system/proxy/ignore-hosts":   "['localhost', '*.example.org']",
+		"/org/gnome/system/proxy/http/host":      "'proxy.example.org'",
+		"/org/gnome/system/proxy/http/port":      "3128",
+		"/org/gnome/system/proxy/https/host":     "'proxy.example.org'",
+		"/org/gnome/system/proxy/https/port":     "3129",
+		"/org/gnome/system/proxy/use-same-proxy": "false",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+}
+
+func TestProxyIsChecked(t *testing.T) {
+	load := func(proxy string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+			"g.yaml":    gnome("core", "    network:\n      proxy:\n"+proxy),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	if err := load("        mode: none\n"); err != nil {
+		t.Fatalf("mode none is valid: %v", err)
+	}
+	if err := load("        mode: auto\n        autoconfigUrl: http://wpad.example.org/proxy.pac\n"); err != nil {
+		t.Fatalf("mode auto with a PAC file is valid: %v", err)
+	}
+	mustFail(t, load("        mode: auto\n"), "needs autoconfigUrl")
+	mustFail(t, load("        mode: none\n        autoconfigUrl: http://wpad/proxy.pac\n"), "only read when mode is auto")
+	mustFail(t, load("        mode: manual\n"), "at least one proxy server")
+	mustFail(t, load("        mode: none\n        http: {host: proxy, port: 3128}\n"), "only read when mode is manual")
+	// The schema rejects the shape first; the typed decoder repeats the rules so a
+	// schema regression cannot weaken them.
+	mustFail(t, load("        mode: manual\n        http: {host: proxy, port: 0}\n"), "minimum")
+	mustFail(t, load("        mode: manual\n        http: {host: 'http://proxy', port: 3128}\n"), "does not match pattern")
+	mustFail(t, load("        mode: manual\n        ignoreHosts: ['two words']\n        http: {host: proxy, port: 3128}\n"), "does not match pattern")
+}
+
+func TestPrivacyLowersToThePrivacySchema(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    privacy:\n      rememberRecentFiles: false\n"+
+			"      recentFilesMaxAge: 7\n      removeOldTempFiles: true\n"+
+			"      oldFilesAge: 14\n      reportTechnicalProblems: false\n"+
+			"      disableMicrophone: true\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/desktop/privacy/remember-recent-files":     "false",
+		"/org/gnome/desktop/privacy/recent-files-max-age":      "7",
+		"/org/gnome/desktop/privacy/remove-old-temp-files":     "true",
+		"/org/gnome/desktop/privacy/old-files-age":             "uint32 14",
+		"/org/gnome/desktop/privacy/report-technical-problems": "false",
+		"/org/gnome/desktop/privacy/disable-microphone":        "true",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+}
+
 func TestKeyboardLayoutsLowerToInputSources(t *testing.T) {
 	// GNOME stores one (type, id) pair per layout, in switch order, and the first
 	// is the one a session starts in. The variant is part of the id, not a
@@ -605,6 +684,8 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"appearance.fonts.terminal", "    appearance:\n      fonts:\n        terminal: {family: JetBrains Mono, size: 11}\n"},
 		{"appearance.fonts.textScaling", "    appearance:\n      fonts:\n        textScaling: 1.25\n"},
 		{"keyboard.layouts", "    keyboard:\n      layouts: [{layout: us}]\n"},
+		{"network.proxy.mode", "    network:\n      proxy:\n        mode: none\n"},
+		{"privacy.rememberRecentFiles", "    privacy:\n      rememberRecentFiles: false\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",

@@ -424,6 +424,67 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 	if v, ok := get(KeyXKBOptions); ok {
 		l.set(KeyXKBOptions, "/org/gnome/desktop/input-sources/xkb-options", "as", gvStrings(v.Value.([]string)), v.Provenance)
 	}
+	if v, ok := get(KeyProxyMode); ok {
+		l.set(KeyProxyMode, "/org/gnome/system/proxy/mode", "s", gvString(v.Value.(string)), v.Provenance)
+	}
+	if v, ok := get(KeyProxyAutoconfig); ok {
+		l.set(KeyProxyAutoconfig, "/org/gnome/system/proxy/autoconfig-url", "s",
+			gvString(v.Value.(string)), v.Provenance)
+	}
+	if v, ok := get(KeyProxyIgnore); ok {
+		l.set(KeyProxyIgnore, "/org/gnome/system/proxy/ignore-hosts", "as",
+			gvStrings(v.Value.([]string)), v.Provenance)
+	}
+	// GNOME uses the HTTP proxy for every protocol unless told otherwise, so a
+	// server for another protocol is meaningless while that stays on. Declaring
+	// one turns it off unless the profile decided the question itself.
+	_, hasHTTPS := get(KeyProxyHTTPS)
+	_, hasFTP := get(KeyProxyFTP)
+	_, hasSOCKS := get(KeyProxySOCKS)
+	if v, ok := get(KeyProxySame); ok {
+		l.set(KeyProxySame, "/org/gnome/system/proxy/use-same-proxy", "b",
+			strconv.FormatBool(v.Value.(bool)), v.Provenance)
+	} else if hasHTTPS || hasFTP || hasSOCKS {
+		for _, key := range []string{KeyProxyHTTPS, KeyProxyFTP, KeyProxySOCKS} {
+			if srv, ok := get(key); ok {
+				l.set(KeyProxySame, "/org/gnome/system/proxy/use-same-proxy", "b", "false", srv.Provenance)
+				break
+			}
+		}
+	}
+	for key, proto := range map[string]string{
+		KeyProxyHTTP: "http", KeyProxyHTTPS: "https", KeyProxyFTP: "ftp", KeyProxySOCKS: "socks",
+	} {
+		v, ok := get(key)
+		if !ok {
+			continue
+		}
+		srv := v.Value.(ProxyServer)
+		l.set(key, "/org/gnome/system/proxy/"+proto+"/host", "s", gvString(srv.Host), v.Provenance)
+		l.set(key, "/org/gnome/system/proxy/"+proto+"/port", "i", strconv.Itoa(srv.Port), v.Provenance)
+	}
+
+	for key, gkey := range map[string]string{
+		KeyPrivacyRememberRecent: "remember-recent-files", KeyPrivacyRememberApp: "remember-app-usage",
+		KeyPrivacyOldTempFiles: "remove-old-temp-files", KeyPrivacyOldTrashFiles: "remove-old-trash-files",
+		KeyPrivacyReportProblems: "report-technical-problems", KeyPrivacyUsageStats: "send-software-usage-stats",
+		KeyPrivacyCamera: "disable-camera", KeyPrivacyMicrophone: "disable-microphone",
+		KeyPrivacySoundOutput: "disable-sound-output", KeyPrivacyHideIdentity: "hide-identity",
+		KeyPrivacyScreen: "privacy-screen",
+	} {
+		if v, ok := get(key); ok {
+			l.set(key, "/org/gnome/desktop/privacy/"+gkey, "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
+		}
+	}
+	if v, ok := get(KeyPrivacyRecentMaxAge); ok {
+		l.set(KeyPrivacyRecentMaxAge, "/org/gnome/desktop/privacy/recent-files-max-age", "i",
+			strconv.Itoa(v.Value.(int)), v.Provenance)
+	}
+	if v, ok := get(KeyPrivacyOldFilesAge); ok {
+		l.set(KeyPrivacyOldFilesAge, "/org/gnome/desktop/privacy/old-files-age", "u",
+			"uint32 "+strconv.FormatUint(uint64(v.Value.(uint32)), 10), v.Provenance)
+	}
+
 	if v, ok := get(KeyWorkspaces); ok {
 		n := v.Value.(Workspaces).Count
 		l.set(KeyWorkspaces, "/org/gnome/mutter/dynamic-workspaces", "b", strconv.FormatBool(n == 0), v.Provenance)

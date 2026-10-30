@@ -80,10 +80,32 @@ const (
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
 	KeyKeyboardLayouts = "keyboard.layouts"
-	KeyPowerButton     = "power.buttonAction"
-	KeyDevTools        = "shell.developmentTools"
-	KeyShowUserList    = "login.showUserList"
-	KeyBanner          = "login.banner"
+	KeyProxyMode       = "network.proxy.mode"
+	KeyProxyAutoconfig = "network.proxy.autoconfigUrl"
+	KeyProxyIgnore     = "network.proxy.ignoreHosts"
+	KeyProxySame       = "network.proxy.useSameProxy"
+	KeyProxyHTTP       = "network.proxy.http"
+	KeyProxyHTTPS      = "network.proxy.https"
+	KeyProxyFTP        = "network.proxy.ftp"
+	KeyProxySOCKS      = "network.proxy.socks"
+
+	KeyPrivacyRememberRecent = "privacy.rememberRecentFiles"
+	KeyPrivacyRecentMaxAge   = "privacy.recentFilesMaxAge"
+	KeyPrivacyRememberApp    = "privacy.rememberAppUsage"
+	KeyPrivacyOldTempFiles   = "privacy.removeOldTempFiles"
+	KeyPrivacyOldTrashFiles  = "privacy.removeOldTrashFiles"
+	KeyPrivacyOldFilesAge    = "privacy.oldFilesAge"
+	KeyPrivacyReportProblems = "privacy.reportTechnicalProblems"
+	KeyPrivacyUsageStats     = "privacy.sendSoftwareUsageStats"
+	KeyPrivacyCamera         = "privacy.disableCamera"
+	KeyPrivacyMicrophone     = "privacy.disableMicrophone"
+	KeyPrivacySoundOutput    = "privacy.disableSoundOutput"
+	KeyPrivacyHideIdentity   = "privacy.hideIdentity"
+	KeyPrivacyScreen         = "privacy.privacyScreen"
+	KeyPowerButton           = "power.buttonAction"
+	KeyDevTools              = "shell.developmentTools"
+	KeyShowUserList          = "login.showUserList"
+	KeyBanner                = "login.banner"
 
 	// The GNOME lockdown keys. Setting one to true disables the capability;
 	// locking it makes the choice read-only. The names mirror the dconf keys so
@@ -138,7 +160,14 @@ var knownKeys = map[string]bool{
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
 	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true, KeyKeyboardLayouts: true,
-	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
+	KeyProxyMode: true, KeyProxyAutoconfig: true, KeyProxyIgnore: true, KeyProxySame: true,
+	KeyProxyHTTP: true, KeyProxyHTTPS: true, KeyProxyFTP: true, KeyProxySOCKS: true,
+	KeyPrivacyRememberRecent: true, KeyPrivacyRecentMaxAge: true, KeyPrivacyRememberApp: true,
+	KeyPrivacyOldTempFiles: true, KeyPrivacyOldTrashFiles: true, KeyPrivacyOldFilesAge: true,
+	KeyPrivacyReportProblems: true, KeyPrivacyUsageStats: true, KeyPrivacyCamera: true,
+	KeyPrivacyMicrophone: true, KeyPrivacySoundOutput: true, KeyPrivacyHideIdentity: true,
+	KeyPrivacyScreen: true,
+	KeyPowerButton:   true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
 	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
@@ -182,6 +211,54 @@ type Settings struct {
 	Power        *Power        `json:"power,omitempty"`
 	Lockdown     *Lockdown     `json:"lockdown,omitempty"`
 	Login        *Login        `json:"login,omitempty"`
+	Network      *Network      `json:"network,omitempty"`
+	Privacy      *Privacy      `json:"privacy,omitempty"`
+}
+
+// Network holds the settings of the machine's network, as far as an image owns
+// them. A connection profile is not here: it names a network and carries secrets,
+// which belong to provisioning and to the fleet (docs/architecture.md).
+type Network struct {
+	Proxy *Proxy `json:"proxy,omitempty"`
+}
+
+// Proxy is the system proxy. The mode decides what the rest means: none ignores
+// everything, auto reads a PAC file, and manual uses the servers. A password is
+// deliberately absent: it is a secret, and the image would publish it.
+type Proxy struct {
+	Mode          string       `json:"mode"`
+	AutoconfigURL string       `json:"autoconfigUrl,omitempty"`
+	IgnoreHosts   []string     `json:"ignoreHosts,omitempty"`
+	UseSameProxy  *bool        `json:"useSameProxy,omitempty"`
+	HTTP          *ProxyServer `json:"http,omitempty"`
+	HTTPS         *ProxyServer `json:"https,omitempty"`
+	FTP           *ProxyServer `json:"ftp,omitempty"`
+	SOCKS         *ProxyServer `json:"socks,omitempty"`
+}
+
+// ProxyServer is one proxy endpoint; port 0 is not a port.
+type ProxyServer struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
+// Privacy is what the desktop remembers and reports. GNOME's defaults are already
+// modest; an organization that answers a compliance questionnaire needs to say so
+// in the image instead of in a checklist.
+type Privacy struct {
+	RememberRecentFiles     *bool   `json:"rememberRecentFiles,omitempty"`
+	RecentFilesMaxAge       *int    `json:"recentFilesMaxAge,omitempty"`
+	RememberAppUsage        *bool   `json:"rememberAppUsage,omitempty"`
+	RemoveOldTempFiles      *bool   `json:"removeOldTempFiles,omitempty"`
+	RemoveOldTrashFiles     *bool   `json:"removeOldTrashFiles,omitempty"`
+	OldFilesAge             *uint32 `json:"oldFilesAge,omitempty"`
+	ReportTechnicalProblems *bool   `json:"reportTechnicalProblems,omitempty"`
+	SendSoftwareUsageStats  *bool   `json:"sendSoftwareUsageStats,omitempty"`
+	DisableCamera           *bool   `json:"disableCamera,omitempty"`
+	DisableMicrophone       *bool   `json:"disableMicrophone,omitempty"`
+	DisableSoundOutput      *bool   `json:"disableSoundOutput,omitempty"`
+	HideIdentity            *bool   `json:"hideIdentity,omitempty"`
+	PrivacyScreen           *bool   `json:"privacyScreen,omitempty"`
 }
 
 // Login is the greeter: the user list and the text banner. Both lower to the
@@ -402,6 +479,9 @@ var (
 	// intl or nodeadkeys. An unknown name fails here, not in a session.
 	xkbLayoutRE  = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
 	xkbVariantRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_]*$`)
+	// A proxy host is a name or an address, never a URL: the scheme is the key.
+	proxyHostRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$|^[0-9A-Fa-f:]+$`)
+	proxyURLRE  = regexp.MustCompile(`^https?://[^[:space:]]+$`)
 )
 
 // Providers returns the desktop.deskos.org providers.
@@ -588,6 +668,90 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: the banner cannot contain a NUL byte", KeyBanner)
 			} else {
 				set(KeyBanner, *lg.Banner, *lg.Banner)
+			}
+		}
+	}
+
+	if n := s.Network; n != nil && n.Proxy != nil {
+		px := n.Proxy
+		switch px.Mode {
+		case "none", "auto", "manual":
+		default:
+			bad("%s: expected none, auto or manual, got %q", KeyProxyMode, px.Mode)
+		}
+		switch {
+		case px.Mode == "auto" && px.AutoconfigURL == "":
+			bad("%s: mode auto needs autoconfigUrl (the PAC file)", KeyProxyAutoconfig)
+		case px.Mode != "auto" && px.AutoconfigURL != "":
+			bad("%s: autoconfigUrl is only read when mode is auto", KeyProxyAutoconfig)
+		case px.AutoconfigURL != "" && !proxyURLRE.MatchString(px.AutoconfigURL):
+			bad("%s: %q is not an http or https URL", KeyProxyAutoconfig, px.AutoconfigURL)
+		}
+		servers := map[string]*ProxyServer{
+			KeyProxyHTTP: px.HTTP, KeyProxyHTTPS: px.HTTPS, KeyProxyFTP: px.FTP, KeyProxySOCKS: px.SOCKS,
+		}
+		declared := 0
+		for key, srv := range servers {
+			if srv == nil {
+				continue
+			}
+			declared++
+			if !proxyHostRE.MatchString(srv.Host) {
+				bad("%s: %q is not a host name or address", key, srv.Host)
+			}
+			if srv.Port < 1 || srv.Port > 65535 {
+				bad("%s: port %d is not between 1 and 65535", key, srv.Port)
+			}
+			set(key, *srv, srv.Host+":"+strconv.Itoa(srv.Port))
+		}
+		if px.Mode == "manual" && declared == 0 {
+			bad("%s: mode manual needs at least one proxy server", KeyProxyMode)
+		}
+		if px.Mode != "manual" && declared > 0 {
+			bad("%s: proxy servers are only read when mode is manual", KeyProxyMode)
+		}
+		for i, h := range px.IgnoreHosts {
+			if strings.TrimSpace(h) == "" || strings.ContainsAny(h, " \t") {
+				bad("%s[%d]: a host pattern is one token, for example *.example.org", KeyProxyIgnore, i)
+			}
+		}
+		set(KeyProxyMode, px.Mode, px.Mode)
+		if px.AutoconfigURL != "" {
+			set(KeyProxyAutoconfig, px.AutoconfigURL, px.AutoconfigURL)
+		}
+		if px.IgnoreHosts != nil {
+			set(KeyProxyIgnore, px.IgnoreHosts, strings.Join(px.IgnoreHosts, ", "))
+		}
+		if px.UseSameProxy != nil {
+			set(KeyProxySame, *px.UseSameProxy, strconv.FormatBool(*px.UseSameProxy))
+		}
+	}
+
+	if p := s.Privacy; p != nil {
+		for key, v := range map[string]*bool{
+			KeyPrivacyRememberRecent: p.RememberRecentFiles, KeyPrivacyRememberApp: p.RememberAppUsage,
+			KeyPrivacyOldTempFiles: p.RemoveOldTempFiles, KeyPrivacyOldTrashFiles: p.RemoveOldTrashFiles,
+			KeyPrivacyReportProblems: p.ReportTechnicalProblems, KeyPrivacyUsageStats: p.SendSoftwareUsageStats,
+			KeyPrivacyCamera: p.DisableCamera, KeyPrivacyMicrophone: p.DisableMicrophone,
+			KeyPrivacySoundOutput: p.DisableSoundOutput, KeyPrivacyHideIdentity: p.HideIdentity,
+			KeyPrivacyScreen: p.PrivacyScreen,
+		} {
+			if v != nil {
+				set(key, *v, strconv.FormatBool(*v))
+			}
+		}
+		if p.RecentFilesMaxAge != nil {
+			if *p.RecentFilesMaxAge < -1 {
+				bad("%s: -1 keeps every recent file, 0 keeps none, a positive number is days", KeyPrivacyRecentMaxAge)
+			} else {
+				set(KeyPrivacyRecentMaxAge, *p.RecentFilesMaxAge, strconv.Itoa(*p.RecentFilesMaxAge))
+			}
+		}
+		if p.OldFilesAge != nil {
+			if *p.OldFilesAge < 1 || *p.OldFilesAge > 3650 {
+				bad("%s: a number of days between 1 and 3650", KeyPrivacyOldFilesAge)
+			} else {
+				set(KeyPrivacyOldFilesAge, *p.OldFilesAge, strconv.FormatUint(uint64(*p.OldFilesAge), 10))
 			}
 		}
 	}

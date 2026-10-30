@@ -12,6 +12,15 @@
     "spec": { "$ref": "#/$defs/spec" }
   },
   "$defs": {
+    "proxyServer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "port"],
+      "properties": {
+        "host": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$|^[0-9A-Fa-f:]+$" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
     "spec": {
       "type": "object",
       "additionalProperties": false,
@@ -41,6 +50,14 @@
             "shell.developmentTools",
             "clock.showWeekday", "clock.format",
             "keyboard.numLock", "keyboard.terminal", "keyboard.layouts", "keyboard.xkbOptions",
+            "network.proxy.mode", "network.proxy.autoconfigUrl", "network.proxy.ignoreHosts",
+            "network.proxy.useSameProxy", "network.proxy.http", "network.proxy.https",
+            "network.proxy.ftp", "network.proxy.socks",
+            "privacy.rememberRecentFiles", "privacy.recentFilesMaxAge", "privacy.rememberAppUsage",
+            "privacy.removeOldTempFiles", "privacy.removeOldTrashFiles", "privacy.oldFilesAge",
+            "privacy.reportTechnicalProblems", "privacy.sendSoftwareUsageStats", "privacy.disableCamera",
+            "privacy.disableMicrophone", "privacy.disableSoundOutput", "privacy.hideIdentity",
+            "privacy.privacyScreen",
             "power.buttonAction",
             "lockdown.disablePrinting", "lockdown.disablePrintSetup",
             "lockdown.disableSaveToDisk", "lockdown.disableLogOut",
@@ -170,6 +187,46 @@
           "additionalProperties": false,
           "properties": {
             "buttonAction": { "enum": ["nothing", "suspend", "hibernate", "interactive"] }
+          }
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "proxy": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["mode"],
+              "properties": {
+                "mode": { "enum": ["none", "auto", "manual"] },
+                "autoconfigUrl": { "type": "string", "pattern": "^https?://[^\\s]+$", "description": "The PAC file, read only when mode is auto." },
+                "ignoreHosts": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[^\\s]+$" } },
+                "useSameProxy": { "type": "boolean", "description": "GNOME uses the HTTP proxy for every protocol unless this is false; declaring https, ftp or socks turns it off when the field is absent." },
+                "http": { "$ref": "#/$defs/proxyServer" },
+                "https": { "$ref": "#/$defs/proxyServer" },
+                "ftp": { "$ref": "#/$defs/proxyServer" },
+                "socks": { "$ref": "#/$defs/proxyServer" }
+              }
+            }
+          }
+        },
+        "privacy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "rememberRecentFiles": { "type": "boolean" },
+            "recentFilesMaxAge": { "type": "integer", "minimum": -1, "description": "Days; -1 keeps every recent file, 0 keeps none." },
+            "rememberAppUsage": { "type": "boolean" },
+            "removeOldTempFiles": { "type": "boolean" },
+            "removeOldTrashFiles": { "type": "boolean" },
+            "oldFilesAge": { "type": "integer", "minimum": 1, "maximum": 3650, "description": "Days after which old temp and trash files are removed." },
+            "reportTechnicalProblems": { "type": "boolean" },
+            "sendSoftwareUsageStats": { "type": "boolean" },
+            "disableCamera": { "type": "boolean" },
+            "disableMicrophone": { "type": "boolean" },
+            "disableSoundOutput": { "type": "boolean" },
+            "hideIdentity": { "type": "boolean" },
+            "privacyScreen": { "type": "boolean" }
           }
         },
         "login": {

@@ -68,6 +68,12 @@ different setting, not covered by this lock.
   `session.lock.delay`, `dock.position`, `dock.behavior`, `dock.iconSize`,
   `dock.showTrash`.
 - **Software:** `software.updates`.
+- **Network, privacy:** `network.proxy.mode`, `.autoconfigUrl`, `.ignoreHosts`,
+  `.useSameProxy`, `.http`, `.https`, `.ftp`, `.socks`, `privacy.rememberRecentFiles`,
+  `privacy.recentFilesMaxAge`, `privacy.rememberAppUsage`, `privacy.removeOldTempFiles`,
+  `privacy.removeOldTrashFiles`, `privacy.oldFilesAge`, `privacy.reportTechnicalProblems`,
+  `privacy.sendSoftwareUsageStats`, `privacy.disableCamera`, `privacy.disableMicrophone`,
+  `privacy.disableSoundOutput`, `privacy.hideIdentity`, `privacy.privacyScreen`.
 - **Clock, keyboard, power:** `clock.showWeekday`, `clock.format`,
   `keyboard.numLock`, `keyboard.terminal`, `keyboard.xkbOptions`,
   `power.buttonAction`.
