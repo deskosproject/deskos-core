@@ -211,10 +211,25 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Installed SBOM (Syft)
-        run: syft "oci-archive:$WORK/image.tar" -o cyclonedx-json=installed.sbom.cdx.json
+        env:
+          # The scanner unpacks the archive's layers under TMPDIR, and the image
+          # is 8 GB uncompressed. The runner's root disk is 14 GB, so the default
+          # /tmp fills and the runner dies mid-scan: measured three times on the
+          # Fedora leg (2026-10-30), which was the only leg with an archive big
+          # enough to cross it. /mnt is the disk this job already uses for the
+          # image and the disk images.
+          TMPDIR: ${{ env.WORK }}/tmp
+        run: |
+          mkdir -p "$TMPDIR"
+          df -h / /mnt
+          syft "oci-archive:$WORK/image.tar" -o cyclonedx-json=installed.sbom.cdx.json
 
       - name: CVE scan (Grype)
+        env:
+          # Same reason as the SBOM: Grype reads the same archive.
+          TMPDIR: ${{ env.WORK }}/tmp
         run: |
+          mkdir -p "$TMPDIR"
           # Evidence passes: pinned to the raw configuration, so grype.txt and
           # cves.json stay unfiltered even when Grype finds another
           # configuration on the runner.
