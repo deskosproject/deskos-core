@@ -50,7 +50,7 @@ to compile against a tree you pass, and `deskosctl core export DIR` writes it ou
 | Core | `Workstation`, `Profile`, `Platform` | [core.md](resources/core.md) |
 | Software | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` | [software.md](resources/software.md) |
 | Desktop | `GnomeProfile`, `Theme` | [desktop.md](resources/desktop.md) |
-| System | `BootProfile`, `UpdatePolicy`, `TrustAnchor` | [system.md](resources/system.md) |
+| System | `BootProfile`, `UpdatePolicy`, `TrustAnchor`, `NetworkProfile` | [system.md](resources/system.md) |
 
 ## Composition
 

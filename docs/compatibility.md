@@ -7,7 +7,7 @@ The project is pre-1.0: this policy makes breaks deliberate and documented.
 
 | Surface | Promise |
 |---|---|
-| **Resource API** (`v1alpha1` YAML, fields and kinds) | public; unknown fields and kinds are rejected, never ignored; fourteen kinds, and a fifteenth needs a decision |
+| **Resource API** (`v1alpha1` YAML, fields and kinds) | public; unknown fields and kinds are rejected, never ignored; fifteen kinds, and a sixteenth needs a decision |
 | **Plan** (`plan.deskos.org/v1alpha1`) | contract between compiler, backends and companion; a companion reads the plans its own release renders, and mixing releases is unsupported |
 | **`deskosctl`** | command names, flags and exit codes stable; human text may change; `plan --format json` follows the Plan format and `sbom` follows CycloneDX |
 | **`deskos`** | command names and exit codes stable; `report` and `check` text may change; `window` keeps its exit-code contract for systemd |
@@ -37,7 +37,7 @@ The project is pre-1.0: this policy makes breaks deliberate and documented.
 | A higher layer overrides a scalar | compatible | `compose_test.go` (ADR 0003) |
 | One keyed definition at several layers deduplicates | compatible | `compose_test.go` |
 | An unknown field | rejected | `architecture_test.go` |
-| A fifteenth kind | rejected | `architecture_test.go` (exactly fourteen) |
+| A sixteenth kind | rejected | `architecture_test.go` (exactly fifteen) |
 | Two different keyed definitions | rejected | `compose_test.go` |
 | Two different scalars in one layer | rejected | `compose_test.go` |
 | A renamed or removed field | migratable by edit | the release note gives old and new; the compiler rejects the old form |

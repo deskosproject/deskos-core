@@ -4,7 +4,7 @@ Every decision behind DeskOS, oldest first. Each ADR is short (context, decision
 consequences), and where another page disagrees with one, the ADR wins.
 
 The number of public kinds grew over time, so some ADR *titles* say "the tenth
-kind" while the API now has **fourteen**; the count is in
+kind" while the API now has **fifteen**; the count is in
 [resources.md](../resources.md#resource-kinds).
 
 | ADR | Status |
@@ -35,4 +35,4 @@ kind" while the API now has **fourteen**; the count is in
 | [0024: What a desktop platform must expose](0024-what-a-desktop-platform-must-expose.md) | proposed |
 | [0025: The terminal font is the platform's fact](0025-the-terminal-font-is-the-platforms-fact.md) | accepted |
 | [0026: The families are the workstation's choice, not the platform's](0026-the-families-are-the-workstations-choice.md) | accepted |
-| [0027: A network profile is a typed resource, and its secrets are not](0027-a-network-profile-is-typed-and-its-secrets-are-not.md) | proposed |
+| [0027: A network profile is a typed resource, and its secrets are not](0027-a-network-profile-is-typed-and-its-secrets-are-not.md) | accepted |

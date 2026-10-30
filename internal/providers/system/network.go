@@ -1,0 +1,216 @@
+package system
+
+import (
+	"crypto/sha1"
+	"fmt"
+	"path"
+	"regexp"
+	"strings"
+
+	"github.com/deskosproject/deskos-core/internal/compose"
+	"github.com/deskosproject/deskos-core/internal/model"
+	"github.com/deskosproject/deskos-core/internal/plan"
+	"github.com/deskosproject/deskos-core/internal/providers/assets"
+)
+
+var NetworkProfileGVK = model.GVK{Group: "system.deskos.org", Version: model.V1Alpha1, Kind: "NetworkProfile"}
+
+// DomainNetworkProfiles holds the 802.1X profiles, one per connection name.
+var DomainNetworkProfiles = compose.Domain{ID: "network-profile", Label: "network profile"}
+
+// NetworkProfilesDir is where NetworkManager reads connection keyfiles. It is a
+// file the compiler generates, owned by root and mode 0600, with no secret in it
+// (docs/adr/0027).
+const NetworkProfilesDir = "/etc/NetworkManager/system-connections"
+
+// NetworkCertsDir is where a profile's CA certificate is placed. It is public
+// material; the private key and the password are never image content.
+const NetworkCertsDir = "/usr/share/deskos/certs"
+
+// NetworkProfileSpec is the public spec: a typed subset of an 802.1X connection.
+type NetworkProfileSpec struct {
+	Type        string `json:"type"`
+	SSID        string `json:"ssid,omitempty"`
+	EAP         string `json:"eap"`
+	CACert      string `json:"caCert,omitempty"`
+	ServerName  string `json:"serverName,omitempty"`
+	Autoconnect *bool  `json:"autoconnect,omitempty"`
+	Priority    *int   `json:"priority,omitempty"`
+}
+
+// NetworkProfileObject is the decoded profile with its certificate read.
+type NetworkProfileObject struct {
+	Spec   NetworkProfileSpec
+	CACert *assets.Asset
+}
+
+// NetworkProfile is one composed profile, keyed by connection name.
+type NetworkProfile struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	SSID        string `json:"ssid,omitempty"`
+	EAP         string `json:"eap"`
+	CACertPath  string `json:"caCertPath,omitempty"`
+	CACertSHA   string `json:"caCertSha256,omitempty"`
+	ServerName  string `json:"serverName,omitempty"`
+	Autoconnect bool   `json:"autoconnect"`
+	Priority    int    `json:"priority"`
+	UUID        string `json:"uuid"`
+	CACertFile  string `json:"-"`
+}
+
+var (
+	networkNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+	networkHostRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.-]*$`)
+	// The methods NetworkManager documents for 802-1x.eap.
+	networkEAP = []string{"leap", "md5", "tls", "peap", "ttls", "sim", "fast", "pwd"}
+)
+
+type networkProfile struct{}
+
+func (networkProfile) GVK() model.GVK { return NetworkProfileGVK }
+func (networkProfile) Schema() string {
+	return "system.deskos.org/v1alpha1/networkprofile.json"
+}
+
+func (networkProfile) Decode(res *model.Resource) error {
+	var s NetworkProfileSpec
+	if err := model.DecodeSpec(res, &s); err != nil {
+		return err
+	}
+	var errs model.ErrorList
+	switch s.Type {
+	case "ethernet", "wifi":
+	default:
+		errs.Add(model.Errorf(res, "type %q must be ethernet or wifi", s.Type))
+	}
+	switch {
+	case s.Type == "wifi" && s.SSID == "":
+		errs.Add(model.Errorf(res, "a wifi profile needs ssid"))
+	case s.Type == "ethernet" && s.SSID != "":
+		errs.Add(model.Errorf(res, "ssid is only read for a wifi profile"))
+	}
+	if !contains(networkEAP, s.EAP) {
+		errs.Add(model.Errorf(res, "eap %q must be one of %s", s.EAP, strings.Join(networkEAP, ", ")))
+	}
+	if s.ServerName != "" && !networkHostRE.MatchString(s.ServerName) {
+		errs.Add(model.Errorf(res, "serverName %q must be a host name", s.ServerName))
+	}
+	if s.Priority != nil && (*s.Priority < -999 || *s.Priority > 999) {
+		errs.Add(model.Errorf(res, "priority %d must be between -999 and 999", *s.Priority))
+	}
+	obj := &NetworkProfileObject{Spec: s}
+	if s.CACert != "" {
+		as, err := assets.Read(res, s.CACert)
+		if err != nil {
+			errs.Add(model.Errorf(res, "caCert: %v", err))
+		} else if _, err := certificateSubject(as.Data); err != nil {
+			errs.Add(model.Errorf(res, "caCert %s: %v", as.Path, err))
+		} else {
+			obj.CACert = as
+		}
+	}
+	res.Object = obj
+	return errs.Err()
+}
+
+func contains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (networkProfile) Contribute(res *model.Resource, s *compose.Scope) error {
+	obj := res.Object.(*NetworkProfileObject)
+	spec := obj.Spec
+	p := NetworkProfile{
+		Name: res.Metadata.Name, Type: spec.Type, SSID: spec.SSID, EAP: spec.EAP,
+		ServerName: spec.ServerName, UUID: connectionUUID(res.Metadata.Name),
+		Autoconnect: true,
+	}
+	if spec.Autoconnect != nil {
+		p.Autoconnect = *spec.Autoconnect
+	}
+	if spec.Priority != nil {
+		p.Priority = *spec.Priority
+	}
+	if obj.CACert != nil {
+		p.CACertPath = path.Join(NetworkCertsDir, p.Name+".crt")
+		p.CACertSHA = obj.CACert.SHA256
+		p.CACertFile = obj.CACert.File
+	}
+	s.AddKeyed(DomainNetworkProfiles, p.Name, p,
+		fmt.Sprintf("%s on %s (%s, uuid %s)", p.Name, p.Type, p.EAP, p.UUID))
+	return nil
+}
+
+// connectionUUID derives a stable UUID from the connection name, so two
+// compositions of the same resource produce the same keyfile. A random UUID
+// would make every build a change.
+func connectionUUID(name string) string {
+	// RFC 4122 version 5, namespace = the DeskOS DNS name.
+	sum := sha1.Sum([]byte("deskos.org/network-profile\x00" + name))
+	b := sum[:16]
+	b[6] = (b[6] & 0x0f) | 0x50
+	b[8] = (b[8] & 0x3f) | 0x80
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
+
+// lowerNetwork writes each profile as a keyfile NetworkManager reads, and places
+// the CA certificate beside it when the profile names one. It writes no secret:
+// the password is marked agent-owned and the identity is left to the fleet
+// (docs/adr/0027).
+func lowerNetwork(c *compose.Composition, p *plan.Plan) error {
+	profiles := c.Result.Keyed(DomainNetworkProfiles)
+	if len(profiles) == 0 {
+		return nil
+	}
+	for _, k := range profiles {
+		np := k.Value.(NetworkProfile)
+		if np.CACertPath != "" {
+			p.Artifact.Files = append(p.Artifact.Files, plan.FileInstall{
+				Path: np.CACertPath, Mode: "0644", SHA256: np.CACertSHA,
+				Asset: np.Name + ".crt", AssetFile: np.CACertFile, Provenance: k.Provenance,
+			})
+		}
+		p.Artifact.GeneratedFiles = append(p.Artifact.GeneratedFiles, plan.GeneratedFile{
+			Path: path.Join(NetworkProfilesDir, np.Name+".nmconnection"), Mode: "0600",
+			Content: networkKeyfile(np), Provenance: k.Provenance,
+		})
+	}
+	return nil
+}
+
+// networkKeyfile is the keyfile NetworkManager's plugin reads. Only what the
+// profile decides is written; the password flag makes NetworkManager ask an agent
+// for the secret instead of storing one.
+func networkKeyfile(np NetworkProfile) string {
+	var b strings.Builder
+	b.WriteString("# Generated by deskosctl. Do not edit; change the DeskOS resources instead.\n")
+	b.WriteString("[connection]\n")
+	fmt.Fprintf(&b, "id=%s\n", np.Name)
+	fmt.Fprintf(&b, "uuid=%s\n", np.UUID)
+	fmt.Fprintf(&b, "type=%s\n", np.Type)
+	fmt.Fprintf(&b, "autoconnect=%t\n", np.Autoconnect)
+	fmt.Fprintf(&b, "autoconnect-priority=%d\n", np.Priority)
+	if np.Type == "wifi" {
+		b.WriteString("\n[wifi]\n")
+		fmt.Fprintf(&b, "ssid=%s\n", np.SSID)
+	}
+	b.WriteString("\n[802-1x]\n")
+	fmt.Fprintf(&b, "eap=%s;\n", np.EAP)
+	b.WriteString("password-flags=1\n")
+	if np.CACertPath != "" {
+		fmt.Fprintf(&b, "ca-cert=%s\n", np.CACertPath)
+	} else {
+		b.WriteString("system-ca-certs=true\n")
+	}
+	if np.ServerName != "" {
+		fmt.Fprintf(&b, "domain-suffix-match=%s\n", np.ServerName)
+	}
+	b.WriteString("\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n")
+	return b.String()
+}

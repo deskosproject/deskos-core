@@ -1,0 +1,170 @@
+package compiler_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
+	"github.com/deskosproject/deskos-core/internal/plan"
+)
+
+func networkProfileYAML(name, body string) string {
+	return "apiVersion: system.deskos.org/v1alpha1\nkind: NetworkProfile\nmetadata:\n  name: " + name + "\nspec:\n" + body
+}
+
+func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
+	// A corporate 802.1X profile: the image carries the trust decision and the
+	// policy, and no secret at all (docs/adr/0027).
+	cert := testCertPEM(t, "Example Corp Root CA")
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
+		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"+
+			"  caCert: assets/corp-ca.pem\n  serverName: radius.example.com\n  priority: 10\n"),
+		"assets/corp-ca.pem": cert,
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+
+	var keyfile *plan.GeneratedFile
+	for i := range p.Artifact.GeneratedFiles {
+		if strings.HasSuffix(p.Artifact.GeneratedFiles[i].Path, "/corp.nmconnection") {
+			keyfile = &p.Artifact.GeneratedFiles[i]
+		}
+	}
+	if keyfile == nil {
+		t.Fatalf("no keyfile in the plan: %+v", p.Artifact.GeneratedFiles)
+	}
+	if keyfile.Mode != "0600" {
+		t.Errorf("keyfile mode %s, want 0600", keyfile.Mode)
+	}
+	if keyfile.Path != "/etc/NetworkManager/system-connections/corp.nmconnection" {
+		t.Errorf("keyfile path %s", keyfile.Path)
+	}
+	for _, want := range []string{
+		"id=corp\n", "type=wifi\n", "ssid=CorpWLAN\n", "eap=peap;\n",
+		"password-flags=1\n", "ca-cert=/usr/share/deskos/certs/corp.crt\n",
+		"domain-suffix-match=radius.example.com\n", "autoconnect-priority=10\n",
+	} {
+		if !strings.Contains(keyfile.Content, want) {
+			t.Errorf("keyfile lacks %q:\n%s", want, keyfile.Content)
+		}
+	}
+	// No secret is written, and no identity: it belongs to the fleet.
+	for _, forbidden := range []string{"password=", "identity=", "private-key="} {
+		if strings.Contains(keyfile.Content, forbidden) {
+			t.Errorf("keyfile carries %q:\n%s", forbidden, keyfile.Content)
+		}
+	}
+	// The CA certificate is placed as public material.
+	var placed bool
+	for _, f := range p.Artifact.Files {
+		if f.Path == "/usr/share/deskos/certs/corp.crt" {
+			placed = true
+			if f.Mode != "0644" {
+				t.Errorf("certificate mode %s, want 0644", f.Mode)
+			}
+		}
+	}
+	if !placed {
+		t.Error("the CA certificate is not in the plan")
+	}
+}
+
+func TestNetworkProfileWithoutACertUsesTheSystemStore(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml":    workstation("ws", "core"),
+		"core.yaml":  profile("core", "foundation", "NetworkProfile/wired"),
+		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: tls\n  autoconnect: false\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	var content string
+	for _, f := range p.Artifact.GeneratedFiles {
+		if strings.HasSuffix(f.Path, "/wired.nmconnection") {
+			content = f.Content
+		}
+	}
+	if !strings.Contains(content, "system-ca-certs=true\n") {
+		t.Errorf("no system trust store in the keyfile:\n%s", content)
+	}
+	if !strings.Contains(content, "autoconnect=false\n") {
+		t.Errorf("autoconnect is not what the profile declared:\n%s", content)
+	}
+	if strings.Contains(content, "[wifi]") {
+		t.Errorf("an ethernet profile has a wifi section:\n%s", content)
+	}
+}
+
+func TestNetworkProfileUUIDIsStable(t *testing.T) {
+	// Two compositions of the same resource produce the same keyfile: a random
+	// UUID would make every build a change.
+	build := func() string {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
+			"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"),
+		}).dir(t)
+		p := mustPlan(t, "ws", dir)
+		for _, f := range p.Artifact.GeneratedFiles {
+			if strings.HasSuffix(f.Path, "/corp.nmconnection") {
+				return f.Content
+			}
+		}
+		return ""
+	}
+	first, second := build(), build()
+	if first == "" || first != second {
+		t.Fatalf("the keyfile is not deterministic:\n%s\n---\n%s", first, second)
+	}
+	if !strings.Contains(first, "uuid=") {
+		t.Error("the keyfile has no uuid")
+	}
+}
+
+func TestNetworkProfileIsChecked(t *testing.T) {
+	load := func(body string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "NetworkProfile/p"),
+			"p.yaml":    networkProfileYAML("p", body),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"); err != nil {
+		t.Fatalf("a wifi profile is valid: %v", err)
+	}
+	// The schema rejects the shape first; the typed decoder repeats the rules so a
+	// schema regression cannot weaken them.
+	mustFail(t, load("  type: wifi\n  eap: peap\n"), "missing property 'ssid'")
+	mustFail(t, load("  type: ethernet\n  ssid: CorpWLAN\n  eap: peap\n"), "'not' failed")
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: kerberos\n"), "must be one of")
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  serverName: 'radius:1812'\n"), "does not match pattern")
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  priority: 1000\n"), "maximum")
+}
+
+func TestNetworkProfileRendersInTheContainerfile(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
+		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	files, err := containerfile.Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Generated files reach the image through the rootfs the build copies, not as
+	// a line in the Containerfile.
+	var installed bool
+	for _, f := range files {
+		if strings.HasSuffix(f.Path, "/etc/NetworkManager/system-connections/corp.nmconnection") {
+			installed = true
+			if !strings.Contains(string(f.Data), "password-flags=1") {
+				t.Errorf("the keyfile in the image is not the one the plan declares:\n%s", f.Data)
+			}
+		}
+	}
+	if !installed {
+		t.Errorf("the keyfile is not in the build's rootfs: %+v", files)
+	}
+}

@@ -1,6 +1,6 @@
 # ADR 0027: a network profile is a typed resource, and its secrets are not
 
-**Status:** proposed (2026-10-30)
+**Status:** accepted (2026-10-30)
 
 ## Context
 
