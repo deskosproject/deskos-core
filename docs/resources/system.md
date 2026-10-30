@@ -170,6 +170,12 @@ NetworkManager takes a PKCS#11 URI, but that needs `TPM2_PKCS11_STORE` for
 `wpa_supplicant`, an SELinux module for NetworkManager's TPM access, and a PIN
 decision. The profile models the file case; the TPM case is a later decision.
 
+A profile with `autoconnect: false` still takes the device it matches: an ethernet
+profile on a machine with one wired port leaves that port without the default
+connection unless another profile matches it. Measured on the example workstation:
+the profile made the guest boot with no default route, no Flatpaks and no browser.
+A Wi-Fi profile on a wired-only machine is inert, which is why the example is one.
+
 A machine whose network requires 802.1X before the fleet can reach it has three
 ways in, and the image cannot choose for it: EAP-TLS with a machine certificate, an
 onboarding VLAN or MAC-based admission where the fleet configures it, or a
