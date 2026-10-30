@@ -54,7 +54,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
 | Automatic logout when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **gap: fields**, and a policy that can lose unsaved work |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
-| Multiple keyboard layouts at the greeter | `localectl set-x11-keymap`, XKB layouts | **gap: field**: options are modelled, layouts are not |
+| Multiple keyboard layouts | `input-sources sources` | **modelled** since 2026-10-30 (`keyboard.layouts`, in switch order; the key lands in the distro database, which GDM's profile also reads) |
+| Multiple keyboard layouts at the console | `localectl set-x11-keymap`, `/etc/vconsole.conf` | **gap: field**: the session layouts are modelled, the console keymap is not |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
 | **Network and hardware** | | |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |

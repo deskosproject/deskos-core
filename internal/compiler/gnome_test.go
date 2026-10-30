@@ -489,6 +489,53 @@ func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
 	}
 }
 
+func TestKeyboardLayoutsLowerToInputSources(t *testing.T) {
+	// GNOME stores one (type, id) pair per layout, in switch order, and the first
+	// is the one a session starts in. The variant is part of the id, not a
+	// separate key, so `es` with `nodeadkeys` is one entry.
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    keyboard:\n      layouts:\n"+
+			"        - {layout: us}\n        - {layout: es, variant: nodeadkeys}\n"+
+			"      xkbOptions: [grp:alt_shift_toggle]\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	got, ok := dconf(p, "/org/gnome/desktop/input-sources/sources")
+	if !ok || got != "[('xkb', 'us'), ('xkb', 'es+nodeadkeys')]" {
+		t.Errorf("sources = %q (present %v), want the two layouts in order", got, ok)
+	}
+	for _, d := range p.Artifact.Dconf.Defaults {
+		if d.Key == "/org/gnome/desktop/input-sources/sources" && d.Type != "a(ss)" {
+			t.Errorf("sources has type %q, want a(ss)", d.Type)
+		}
+	}
+	if opts, _ := dconf(p, "/org/gnome/desktop/input-sources/xkb-options"); opts != "['grp:alt_shift_toggle']" {
+		t.Errorf("xkb-options = %q, want the option the profile declared", opts)
+	}
+}
+
+func TestKeyboardLayoutsAreChecked(t *testing.T) {
+	load := func(layouts string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+			"g.yaml":    gnome("core", "    keyboard:\n      layouts: "+layouts+"\n"),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	if err := load("[{layout: us}]"); err != nil {
+		t.Fatalf("a single layout is valid: %v", err)
+	}
+	// The schema rejects the shape first; the typed decoder repeats the rules so a
+	// schema regression cannot weaken them, and it is the one that sees a duplicate.
+	mustFail(t, load("[]"), "minItems")
+	mustFail(t, load("[{layout: US}]"), "does not match pattern")
+	mustFail(t, load("[{layout: us, variant: Nodeadkeys}]"), "does not match pattern")
+	mustFail(t, load("[{layout: us}, {layout: us}]"), "listed twice")
+}
+
 func TestEveryFontSurfaceGNOMEdraws(t *testing.T) {
 	// GNOME has one font key per surface, plus a multiplier over all of them, and
 	// the terminal keeps its own because it is the platform's packaged app. A
@@ -557,6 +604,7 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"appearance.fonts.titlebar", "    appearance:\n      fonts:\n        titlebar: {family: Noto Sans, size: 11}\n"},
 		{"appearance.fonts.terminal", "    appearance:\n      fonts:\n        terminal: {family: JetBrains Mono, size: 11}\n"},
 		{"appearance.fonts.textScaling", "    appearance:\n      fonts:\n        textScaling: 1.25\n"},
+		{"keyboard.layouts", "    keyboard:\n      layouts: [{layout: us}]\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
 			platform := strings.Replace(platformYAML, "    dconfDatabase: distro\n",

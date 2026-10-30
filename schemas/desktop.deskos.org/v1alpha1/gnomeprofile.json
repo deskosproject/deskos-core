@@ -40,7 +40,7 @@
             "shell.hotCorners", "shell.welcomeTour", "shell.workspaces", "shell.appFolders",
             "shell.developmentTools",
             "clock.showWeekday", "clock.format",
-            "keyboard.numLock", "keyboard.terminal", "keyboard.xkbOptions",
+            "keyboard.numLock", "keyboard.terminal", "keyboard.layouts", "keyboard.xkbOptions",
             "power.buttonAction",
             "lockdown.disablePrinting", "lockdown.disablePrintSetup",
             "lockdown.disableSaveToDisk", "lockdown.disableLogOut",
@@ -211,6 +211,19 @@
           "properties": {
             "numLock": { "type": "boolean" },
             "terminal": { "$ref": "#/$defs/desktopId" },
+            "layouts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["layout"],
+                "properties": {
+                  "layout": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "An xkb layout name, for example us, es or latam. The first layout is the one a session starts in." },
+                  "variant": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_]*$", "description": "An xkb variant of that layout, for example intl or nodeadkeys." }
+                }
+              }
+            },
             "xkbOptions": {
               "type": "array",
               "minItems": 1,

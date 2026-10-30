@@ -409,6 +409,18 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 	if v, ok := get(KeyClockFormat); ok {
 		l.set(KeyClockFormat, "/org/gnome/desktop/interface/clock-format", "s", gvString(v.Value.(string)), v.Provenance)
 	}
+	if v, ok := get(KeyKeyboardLayouts); ok {
+		pairs := make([]string, 0, len(v.Value.([]KeyboardLayout)))
+		for _, l := range v.Value.([]KeyboardLayout) {
+			id := l.Layout
+			if l.Variant != "" {
+				id += "+" + l.Variant
+			}
+			pairs = append(pairs, "('xkb', "+gvString(id)+")")
+		}
+		l.set(KeyKeyboardLayouts, "/org/gnome/desktop/input-sources/sources", "a(ss)",
+			"["+strings.Join(pairs, ", ")+"]", v.Provenance)
+	}
 	if v, ok := get(KeyXKBOptions); ok {
 		l.set(KeyXKBOptions, "/org/gnome/desktop/input-sources/xkb-options", "as", gvStrings(v.Value.([]string)), v.Provenance)
 	}

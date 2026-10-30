@@ -79,6 +79,7 @@ const (
 	KeyNumLock         = "keyboard.numLock"
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
+	KeyKeyboardLayouts = "keyboard.layouts"
 	KeyPowerButton     = "power.buttonAction"
 	KeyDevTools        = "shell.developmentTools"
 	KeyShowUserList    = "login.showUserList"
@@ -136,7 +137,7 @@ var knownKeys = map[string]bool{
 	KeyDimBrightness: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
-	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
+	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true, KeyKeyboardLayouts: true,
 	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
@@ -306,9 +307,19 @@ type Clock struct {
 }
 
 type Keyboard struct {
-	NumLock    *bool    `json:"numLock,omitempty"`
-	Terminal   string   `json:"terminal,omitempty"`
+	NumLock  *bool            `json:"numLock,omitempty"`
+	Terminal string           `json:"terminal,omitempty"`
+	Layouts  []KeyboardLayout `json:"layouts,omitempty"`
+	// XKBOptions are the xkb options, independent of the layouts: a layout says
+	// which keys a board has, an option changes what some of them do.
 	XKBOptions []string `json:"xkbOptions,omitempty"`
+}
+
+// KeyboardLayout is one xkb layout a session switches between. The first one is
+// the layout a session starts in; the order is the switch order.
+type KeyboardLayout struct {
+	Layout  string `json:"layout"`
+	Variant string `json:"variant,omitempty"`
 }
 
 // Workspaces is the composed workspace mode; Count is 0 for dynamic workspaces.
@@ -387,6 +398,10 @@ var (
 	categoryRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 	folderNameRE    = regexp.MustCompile(`^[^\x00-\x1f\x7f]+$`)
 	extensionUUIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	// xkb names are lower case: a layout is us, es or latam, and a variant is
+	// intl or nodeadkeys. An unknown name fails here, not in a session.
+	xkbLayoutRE  = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+	xkbVariantRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_]*$`)
 )
 
 // Providers returns the desktop.deskos.org providers.
@@ -699,6 +714,34 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %q is not a desktop file id (for example org.gnome.Ptyxis.desktop)", KeyTerminal, k.Terminal)
 			}
 			set(KeyTerminal, k.Terminal, k.Terminal+" (Ctrl+Alt+T)")
+		}
+		if k.Layouts != nil {
+			if len(k.Layouts) == 0 {
+				bad("%s: at least one layout is required", KeyKeyboardLayouts)
+			}
+			seen := map[string]bool{}
+			names := make([]string, 0, len(k.Layouts))
+			for _, l := range k.Layouts {
+				if !xkbLayoutRE.MatchString(l.Layout) {
+					bad("%s: %q is not an xkb layout name (for example us, es, latam)", KeyKeyboardLayouts, l.Layout)
+					continue
+				}
+				if l.Variant != "" && !xkbVariantRE.MatchString(l.Variant) {
+					bad("%s: %q is not an xkb variant name (for example intl, nodeadkeys)", KeyKeyboardLayouts, l.Variant)
+					continue
+				}
+				id := l.Layout
+				if l.Variant != "" {
+					id += "+" + l.Variant
+				}
+				if seen[id] {
+					bad("%s: %q is listed twice", KeyKeyboardLayouts, id)
+					continue
+				}
+				seen[id] = true
+				names = append(names, id)
+			}
+			set(KeyKeyboardLayouts, k.Layouts, strings.Join(names, ", "))
 		}
 		if k.XKBOptions != nil {
 			if len(k.XKBOptions) == 0 {
