@@ -163,7 +163,7 @@ func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 	}
 	golden(t, "deskos-flatpak-preinstall.service", unit)
 	u := string(unit)
-	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/usr/bin/flatpak preinstall ", "Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=0", "TimeoutStopSec=20", "flatpak update --appstream"} {
+	for _, want := range []string{"Type=exec", "WantedBy=multi-user.target", "After=network-online.target multi-user.target\n", "ExecStart=/bin/sh -c \"", "flatpak preinstall --system --assumeyes --noninteractive", "flatpak info --system", "Restart=on-failure", "RestartSec=60", "StartLimitIntervalSec=0", "TimeoutStopSec=20", "flatpak update --appstream"} {
 		if !strings.Contains(u, want) {
 			t.Errorf("unit lacks %q", want)
 		}

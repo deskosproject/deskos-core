@@ -193,7 +193,7 @@ func Render(p *plan.Plan) ([]File, error) {
 		r.addImage(path.Join("/usr/share/flatpak/preinstall.d", app.ID+".preinstall"), 0o644, preinstallFile(app))
 	}
 	if u := p.Provisioning.FlatpakPreinstallUnit; u != "" {
-		r.addImage(path.Join(systemdUnitDir, u), 0o644, preinstallUnit())
+		r.addImage(path.Join(systemdUnitDir, u), 0o644, preinstallUnit(p.Provisioning.FlatpakApplications))
 	}
 	if u := p.Provisioning.FlatpakAuthenticatorUnit; u != "" {
 		r.addImage(path.Join(systemdUnitDir, u), 0o644,
@@ -625,7 +625,16 @@ func preinstallFile(a plan.FlatpakPreinstall) []byte {
 // instead of waiting for the next boot. It stops within 20 s (TimeoutStopSec),
 // so a shutdown during the first-boot download does not hang on the stop job.
 // Nothing else waits for it.
-func preinstallUnit() []byte {
+func preinstallUnit(apps []plan.FlatpakPreinstall) []byte {
+	// `flatpak preinstall` exits 0 when a declared app is not in the remote's
+	// summary, which is exactly what a first boot sees before the appstream data is
+	// fresh. Verifying the apps afterwards is what makes the unit retry instead of
+	// reporting success with nothing installed (job 124060456613).
+	var check strings.Builder
+	check.WriteString("/usr/bin/flatpak preinstall --system --assumeyes --noninteractive")
+	for _, a := range apps {
+		fmt.Fprintf(&check, " && /usr/bin/flatpak info --system %s > /dev/null", shq(a.ID))
+	}
 	return []byte(generatedHeader + `[Unit]
 Description=Install operating system Flatpaks declared in preinstall.d
 Documentation=man:flatpak-preinstall(1)
@@ -637,7 +646,7 @@ StartLimitIntervalSec=0
 Type=exec
 ExecStartPre=-/usr/bin/flatpak repair --system
 ExecStartPre=-/usr/bin/flatpak update --appstream --system
-ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
+ExecStart=/bin/sh -c "` + check.String() + `"
 Restart=on-failure
 RestartSec=60
 # A shutdown during the first-boot download must not wait systemd's default
