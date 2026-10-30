@@ -8,5 +8,9 @@ spec:
   # server that does not exist here, and the workstation must not keep trying.
   type: ethernet
   eap: peap
+  # NetworkManager refuses a password profile without an identity, and this one is
+  # an example: a real deployment either shares an account knowingly or lets the
+  # fleet replace it (ADR 0027).
+  identity: deskos-example
   serverName: radius.example.com
   autoconnect: false

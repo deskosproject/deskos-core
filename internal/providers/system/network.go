@@ -37,6 +37,7 @@ type NetworkProfileSpec struct {
 	CACert      string `json:"caCert,omitempty"`
 	ClientCert  string `json:"clientCert,omitempty"`
 	PrivateKey  string `json:"privateKey,omitempty"`
+	Identity    string `json:"identity,omitempty"`
 	Secret      string `json:"secret,omitempty"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect *bool  `json:"autoconnect,omitempty"`
@@ -59,6 +60,7 @@ type NetworkProfile struct {
 	CACertSHA   string `json:"caCertSha256,omitempty"`
 	ClientCert  string `json:"clientCert,omitempty"`
 	PrivateKey  string `json:"privateKey,omitempty"`
+	Identity    string `json:"identity,omitempty"`
 	Secret      string `json:"secret"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect bool   `json:"autoconnect"`
@@ -116,6 +118,12 @@ func (networkProfile) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "eap tls takes secret none: a certificate needs no password"))
 		}
 	default:
+		// Measured on NetworkManager 1.52 (EL10): a password profile without a
+		// non-empty identity is refused at load time ("802-1x.identity: property
+		// is missing"), so a keyfile without one would never appear in nmcli.
+		if strings.TrimSpace(s.Identity) == "" {
+			errs.Add(model.Errorf(res, "eap %s needs identity: NetworkManager refuses a password profile without one; EAP-TLS does not need it", s.EAP))
+		}
 		if s.ClientCert != "" || s.PrivateKey != "" {
 			errs.Add(model.Errorf(res, "clientCert and privateKey are only read for eap tls"))
 		}
@@ -171,7 +179,7 @@ func (networkProfile) Contribute(res *model.Resource, s *compose.Scope) error {
 		Name: res.Metadata.Name, Type: spec.Type, SSID: spec.SSID, EAP: spec.EAP,
 		ServerName: spec.ServerName, UUID: connectionUUID(res.Metadata.Name),
 		Autoconnect: true, ClientCert: spec.ClientCert, PrivateKey: spec.PrivateKey,
-		Secret: secret,
+		Identity: spec.Identity, Secret: secret,
 	}
 	if spec.Autoconnect != nil {
 		p.Autoconnect = *spec.Autoconnect
@@ -244,6 +252,9 @@ func networkKeyfile(np NetworkProfile) string {
 	}
 	b.WriteString("\n[802-1x]\n")
 	fmt.Fprintf(&b, "eap=%s;\n", np.EAP)
+	if np.Identity != "" {
+		fmt.Fprintf(&b, "identity=%s\n", np.Identity)
+	}
 	switch np.Secret {
 	case "none":
 		// EAP-TLS: the certificate and key the fleet placed, and no secret.

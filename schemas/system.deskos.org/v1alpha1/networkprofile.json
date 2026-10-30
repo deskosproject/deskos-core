@@ -46,6 +46,13 @@
           "pattern": "^/etc/pki/tls/private/[A-Za-z0-9][A-Za-z0-9._-]*$",
           "description": "Where the fleet places this machine's private key, for EAP-TLS. The private tree carries cert_t, so the key is not left with the generic etc_t a new directory would get. Never image content."
         },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 253,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+          "description": "The account the network authenticates. NetworkManager refuses a password profile without one; a TLS profile does not need it. Not a secret, but every machine of the image shares it."
+        },
         "secret": {
           "enum": ["agent", "none"],
           "description": "agent: NetworkManager asks a session agent, so the profile works after a login, not at boot. none: EAP-TLS, which needs no secret and joins before login."
@@ -75,7 +82,7 @@
         {
           "if": { "properties": { "eap": { "const": "tls" } }, "required": ["eap"] },
           "then": { "required": ["clientCert", "privateKey"] },
-          "else": { "not": { "anyOf": [{ "required": ["clientCert"] }, { "required": ["privateKey"] }] } }
+          "else": { "required": ["identity"], "not": { "anyOf": [{ "required": ["clientCert"] }, { "required": ["privateKey"] }] } }
         }
       ]
     }

@@ -44,6 +44,7 @@ subset of an 802.1X profile and no secret in it.**
 | `eap` | one of NetworkManager's methods |
 | `caCert` | an asset in the resource root, pinned by digest, placed for NetworkManager to read |
 | `serverName` | `domain-suffix-match`: the certificate name the server must present |
+| `identity` | the account the network authenticates. Required for a password method, which NetworkManager refuses without one; a TLS profile does not need it |
 | `clientCert`, `privateKey` | where the fleet places this machine's certificate and key, for EAP-TLS: `/etc/pki/tls/certs/` and `/etc/pki/tls/private/` |
 | `secret` | `agent` (a session agent supplies it) or `none` (EAP-TLS needs no secret) |
 | `autoconnect`, `priority` | whether the machine joins it on its own, and how it ranks |
@@ -52,12 +53,19 @@ The compiler generates the keyfile at
 `/etc/NetworkManager/system-connections/<name>.nmconnection`, mode `0600`, and
 `deskos check` reads its digest like any other generated file.
 
-**No password, no private key, no identity.** The generated file sets
-`password-flags=1` (agent-owned) and never writes a secret, so the machine asks for
-one at connect time; the fleet supplies it through NetworkManager's agent or its
-own mechanism. Identity is deliberately absent for the same reason: it names a
-machine or a person, and a value shared by every image of a fleet is a value that
-should not be in the image (architecture.md, "What each layer owns").
+**No password, no private key.** The generated file sets `password-flags=1`
+(agent-owned) and never writes a secret, so the machine asks for one at connect
+time; the fleet supplies it through NetworkManager's agent or its own mechanism.
+
+**Identity is a field, and a measured one.** The first version of this decision
+left it out for the same reason as the password: it names a machine or a person.
+Measured on NetworkManager 1.52 on EL10, that does not work: a password profile
+without a non-empty identity is refused at load time (`802-1x.identity: property is
+missing`), so the keyfile would never appear in `nmcli` and the check would fail
+for the wrong reason. The field is therefore required for a password method and
+absent for EAP-TLS, which loads without it. It is not a secret, but a shared
+identity is shared by every machine of the image, so the text says so, and the
+fleet that needs per-machine identities rewrites the keyfile.
 
 That has a consequence worth stating plainly: a profile that pins the CA and the
 server name but carries no identity **cannot authenticate until the fleet supplies

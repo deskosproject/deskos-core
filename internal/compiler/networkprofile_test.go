@@ -19,7 +19,7 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 	dir := base.with(fixture{
 		"ws.yaml":   workstation("ws", "core"),
 		"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
-		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"+
+		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n"+
 			"  caCert: assets/corp-ca.pem\n  serverName: radius.example.com\n  priority: 10\n"),
 		"assets/corp-ca.pem": cert,
 	}).dir(t)
@@ -42,7 +42,7 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 	}
 	for _, want := range []string{
 		"id=corp\n", "type=wifi\n", "ssid=CorpWLAN\n", "eap=peap;\n",
-		"password-flags=1\n", "ca-cert=/etc/pki/tls/certs/deskos-corp.crt\n",
+		"password-flags=1\n", "identity=deskos@example.com\n", "ca-cert=/etc/pki/tls/certs/deskos-corp.crt\n",
 		"domain-suffix-match=radius.example.com\n", "autoconnect-priority=10\n",
 	} {
 		if !strings.Contains(keyfile.Content, want) {
@@ -50,7 +50,7 @@ func TestNetworkProfileWritesAKeyfileWithoutSecrets(t *testing.T) {
 		}
 	}
 	// No secret is written, and no identity: it belongs to the fleet.
-	for _, forbidden := range []string{"password=", "identity=", "private-key="} {
+	for _, forbidden := range []string{"password=", "private-key="} {
 		if strings.Contains(keyfile.Content, forbidden) {
 			t.Errorf("keyfile carries %q:\n%s", forbidden, keyfile.Content)
 		}
@@ -118,21 +118,22 @@ func TestNetworkProfileSecretRules(t *testing.T) {
 		return err
 	}
 	// A password method defaults to the session agent, which works after a login.
-	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"); err != nil {
+	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n"); err != nil {
 		t.Fatalf("a PEAP profile is valid: %v", err)
 	}
-	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  secret: none\n"), "only valid for eap tls")
-	mustFail(t, load("  type: ethernet\n  eap: peap\n  clientCert: /etc/pki/tls/certs/a.crt\n"), "'not' failed")
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n  secret: none\n"), "only valid for eap tls")
+	mustFail(t, load("  type: ethernet\n  eap: peap\n  identity: a\n  clientCert: /etc/pki/tls/certs/a.crt\n"), "'not' failed")
 	mustFail(t, load("  type: ethernet\n  eap: tls\n"), "missing properties")
 	mustFail(t, load("  type: ethernet\n  eap: tls\n  clientCert: /tmp/a.crt\n  privateKey: /tmp/a.key\n"), "does not match pattern")
 	mustFail(t, load("  type: ethernet\n  eap: tls\n  clientCert: /etc/pki/tls/certs/a.crt\n  privateKey: /etc/pki/tls/private/a.key\n  secret: agent\n"), "secret none")
+	mustFail(t, load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"), "missing property 'identity'")
 }
 
 func TestNetworkProfileWithoutACertUsesTheSystemStore(t *testing.T) {
 	dir := base.with(fixture{
 		"ws.yaml":    workstation("ws", "core"),
 		"core.yaml":  profile("core", "foundation", "NetworkProfile/wired"),
-		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: peap\n  autoconnect: false\n"),
+		"wired.yaml": networkProfileYAML("wired", "  type: ethernet\n  eap: peap\n  identity: deskos@example.com\n  autoconnect: false\n"),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	var content string
@@ -159,7 +160,7 @@ func TestNetworkProfileUUIDIsStable(t *testing.T) {
 		dir := base.with(fixture{
 			"ws.yaml":   workstation("ws", "core"),
 			"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
-			"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"),
+			"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n"),
 		}).dir(t)
 		p := mustPlan(t, "ws", dir)
 		for _, f := range p.Artifact.GeneratedFiles {
@@ -188,7 +189,7 @@ func TestNetworkProfileIsChecked(t *testing.T) {
 		_, err := planOf(t, "ws", dir)
 		return err
 	}
-	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"); err != nil {
+	if err := load("  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n"); err != nil {
 		t.Fatalf("a wifi profile is valid: %v", err)
 	}
 	// The schema rejects the shape first; the typed decoder repeats the rules so a
@@ -204,7 +205,7 @@ func TestNetworkProfileRendersInTheContainerfile(t *testing.T) {
 	dir := base.with(fixture{
 		"ws.yaml":   workstation("ws", "core"),
 		"core.yaml": profile("core", "foundation", "NetworkProfile/corp"),
-		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n"),
+		"corp.yaml": networkProfileYAML("corp", "  type: wifi\n  ssid: CorpWLAN\n  eap: peap\n  identity: deskos@example.com\n"),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	files, err := containerfile.Render(p)
