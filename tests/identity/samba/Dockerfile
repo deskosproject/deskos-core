@@ -5,7 +5,7 @@
 # distribution at build time, so their exact version moves with Debian's
 # repositories; the job records `samba --version` in the evidence, and this
 # image is built in the run, never published.
-FROM docker.io/library/debian:latest@sha256:8c4733a92aacd0bcff3779eadc35a4a5147f36cb20a5fcb56504cbc740212259
+FROM docker.io/library/debian:latest@sha256:2dc419c6d7fe3dad0a2f9fd469c34cc90b0f9ba642d8fde837fe3d7d34a0e7f1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
