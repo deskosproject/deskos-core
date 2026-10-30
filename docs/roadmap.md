@@ -171,14 +171,17 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 
 ### Secure Boot (proposed 2026-10-26)
 
-Every installation runs with Secure Boot **off** today. Enabling it means shim →
-GRUB → kernel all signed, or a unified kernel image. RHEL 10 ships the chain;
-**CentOS Stream 10 does not boot with Secure Boot on** (its shim is blocked on
-Microsoft review). An organization with its own key needs an owner, db or MOK
-enrolment, signed GRUB/kernel and Microsoft signing for the default trust. The
-installer, out-of-tree modules and two QEMU tests (a signed image boots, an unsigned
-kernel is refused) belong to the item. **Decision:** vendor chain only, or a DeskOS
-key with an owner and a rotation plan.
+Every installation runs with Secure Boot **off** today, and that is a choice of
+test coverage rather than a missing chain. Measured 2026-10-30 on CentOS Stream 10:
+`shim-x64` 16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and
+`grubx64.efi` and `vmlinuz` are signed by CentOS's Secure Boot keys, so the vendor
+chain exists on both EL10 platforms. What is missing is a boot with Secure Boot on:
+no DeskOS run has done it, on either platform, and `checks.md` records it as
+untested. An organization with its own key needs an owner, db or MOK enrolment,
+signed GRUB and kernel, and Microsoft signing for the default trust. The installer,
+out-of-tree modules and two QEMU tests (a signed image boots, an unsigned kernel is
+refused) belong to the item. **Decision:** vendor chain only, or a DeskOS key with an
+owner and a rotation plan.
 
 ### Test organization (proposed 2026-10-26)
 

@@ -18,10 +18,14 @@ untested combination into a measured one.
 
 ## What is true today
 
-- **Secure Boot is off in every installation.** DeskOS signs no boot component, so
-  the firmware verifies the vendor's chain or nothing. RHEL 10 ships a signed
-  chain; **CentOS Stream 10 does not boot with Secure Boot on**, because its shim is
-  still blocked in Microsoft's review ([roadmap](../roadmap.md#secure-boot-proposed-2026-10-26)).
+- **Secure Boot is off in every installation**, and the chain is not the reason.
+  Measured 2026-10-30 on CentOS Stream 10: `shim-x64` 16.1-1.el10 carries
+  Microsoft's 2011 and 2023 UEFI CA signatures, `grubx64.efi` is signed by CentOS
+  Secure Boot Signing 802 and `vmlinuz` by 801, so both EL10 platforms ship a
+  complete vendor chain. What is missing is a boot with Secure Boot on: no DeskOS
+  run has done it, on either platform, and [checks.md](../checks.md) records it as
+  untested. An earlier version of this page said CentOS Stream 10 could not boot
+  with Secure Boot on; the package says otherwise.
 - **No TPM is exercised.** The VM harness boots without one, so no test in CI
   covers a TPM path. The image carries `tpm2-tools` 5.7, `tpm2-tss` 4.1.3,
   `cryptsetup` 2.8.6, `systemd` 257, `systemd-cryptenroll`, `bootctl` and `mokutil`;
@@ -54,8 +58,8 @@ untested combination into a measured one.
 
 | Combination | State |
 |---|---|
-| Secure Boot on, CentOS Stream 10 base | does not boot; the shim is not signed by Microsoft yet |
-| Secure Boot on, RHEL 10 base | the vendor chain exists, and no DeskOS test has booted it with Secure Boot on |
+| Secure Boot on, CentOS Stream 10 base | the chain is signed; no DeskOS test has booted it |
+| Secure Boot on, RHEL 10 base | the chain is signed; no DeskOS test has booted it |
 | LUKS with a bootc upgrade or rollback | unmeasured; `bootc` owns the deployment and this repository has no record either way |
 | TPM-backed LUKS unlock | not shipped: no `tpm2-pkcs11`, no TPM in CI, no policy |
 | TPM-backed 802.1X key | not shipped, for the same reasons plus the SELinux module ADR 0027 describes |

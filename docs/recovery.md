@@ -11,7 +11,7 @@ expected, and what to collect before changing anything. Normal operation is in
 |---|---|---|
 | Anaconda exits at the progress screen and the machine reboots | The kickstart used `graphical --non-interactive`, which RHEL 10.2's Anaconda treats as an error (`User interaction required on standalone spoke ProgressSpoke`) | Use an ISO whose kickstart does not pass the flag; the published kickstarts here do not. The failure is visible in the installer console before the reboot |
 | The summary says the kickstart is insufficient and **Begin Installation** stays disabled | The published ISO leaves storage to you; that is not a failure | Choose the disk and, if wanted, LUKS, on **Installation Destination**, then begin |
-| The machine does not boot the ISO | Secure Boot is on, the medium is damaged, or the machine is not booting UEFI | Verify the published checksum, write the ISO again, boot UEFI with Secure Boot off |
+| The machine does not boot the ISO | the medium is damaged, the machine is not booting UEFI, or the firmware rejects the vendor chain | Verify the published checksum and write the ISO again; then check that the firmware trusts the Microsoft UEFI CA, and boot with Secure Boot off only to get the machine back |
 | An unattended test install stops on the summary | The test-only ISO was not used | Build and boot the ISO from [tests/installer](../tests/installer/README.md); do not add its answers to the published ISO |
 
 The installer asks for language, keyboard, timezone, network, the disk and LUKS.
