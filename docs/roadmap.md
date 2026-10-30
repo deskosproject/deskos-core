@@ -237,6 +237,14 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 | P2-07 compliance records | research: one real requirement mapped to OpenSCAP, CycloneDX, VEX and provenance |
 | P2-08 portable factory outputs | research: the minimum contract an independent verifier can check |
 
+### P3, what has a draft
+
+- **P3-02 watch upstream bases and GNOME**: drafted as
+  [design/upstream-watch.md](design/upstream-watch.md), with one row per source,
+  the check that would catch a change, and the threshold that turns it into work.
+  The other P3 items still need a sponsor, and most need a lab or a comparison
+  this repository cannot run.
+
 ## Later
 
 - **Retire the v1 repositories from the organization (proposed 2026-10-29).**
