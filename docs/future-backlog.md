@@ -131,6 +131,9 @@ rather than tag, and a page that says which layer owns what (architecture.md,
 "What each layer owns").
 **Done when:** the template and the page exist, and a machine provisioned that way
 boots into the same session the ISO does, with the digest recorded.
+**Deferred (2026-10-30):** there is no Satellite and no fleet to test it against,
+and a template nobody ran is a guess. Revisit when both exist; until then the
+recipe above is the record of what it takes.
 Red Hat's recipe: <https://developers.redhat.com/articles/2026/08/06/image-mode-for-rhel-with-anaconda-and-satellite>
 
 <a id="p1-01"></a>

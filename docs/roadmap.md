@@ -211,11 +211,31 @@ one PR per group, each with its check.
 
 ## Open work
 
+- **P1-00, installing image mode over the network** (deferred 2026-10-30). The
+  recipe is written down (Satellite or Foreman with a trimmed kickstart, `bootc`
+  or `ostreecontainer`, `inst.stage2`, registry credentials in `%pre`, image by
+  digest), but there is no Satellite and no fleet to test it against, and a
+  template nobody ran is a guess.
 - **P2-03, adoption beyond one organization.** The item asks for two external
   environments; one organization (private, the same maintainer) is not it.
 - **An outside reader on the walkthrough.** Unproven until one does it.
 - **Renovate outside Core.** `deskos-infrastructure` has no pins that move yet.
 - **Installed run of the published ISO** (#294), by a person, recorded.
+
+### P2, where each item stands
+
+The [review's](future-backlog.md) P2 items, with what exists and what is missing.
+
+| Item | State |
+|---|---|
+| P2-01 participation entry points | documents exist: `CONTRIBUTING.md`, `SECURITY.md` with a private reporting route, `COMMUNITY.md`, `support.md`. An outside person reproducing the checks is unverified |
+| P2-02 governance and continuity | [governance.md](governance.md) names the roles; the absence dry run has not been done, and today one person holds every role |
+| P2-03 adoption beyond one organization | external: needs two environments that are not this maintainer's |
+| P2-04 releases and findings followable | the release workflow writes five lines of notes from the commits, and [migrations.md](migrations.md) records the breaks; no outside reader has followed a release |
+| P2-05 conference proposal | not drafted; the call closes 2026-12-04 for the 2027-01-28/29 event, so it is the one item with a date |
+| P2-06 external enrolment and restricted networks | research, and it needs a pilot: the 802.1X profile is modelled, the enrolment lab is not |
+| P2-07 compliance records | research: one real requirement mapped to OpenSCAP, CycloneDX, VEX and provenance |
+| P2-08 portable factory outputs | research: the minimum contract an independent verifier can check |
 
 ## Later
 
@@ -226,17 +246,11 @@ one PR per group, each with its check.
   organization list and in search, and none should be deleted: that history is the
   record of how the project got here.
 
-  Plan: create `deskosproject-archive`, transfer every repository whose last push is
-  before 2019 (the `*-rpm` set, the packager, livemedia and the old website),
-  archive each one there so it is read-only, and set its description to point at
-  the current project. GitHub redirects the old URLs, so links in old issues and
-  posts keep working. Check before transferring anything that publishes a container
-  image or a Pages site: package names follow the repository, and a Pages URL does
-  not redirect.
-
-  Acceptance: `deskosproject` lists only current repositories; the archived ones
-  stay readable and clonable with their tags and releases; a sample of old links
-  resolves.
+  Done 2026-10-29: `deskosproject` lists the eight current repositories, and 107
+  were transferred to `deskosproject-archive` and archived there, read-only, with a
+  description that points at this project. Old URLs still resolve: the `a52dec-rpm`
+  redirect answers 301. Nothing was deleted, so the tags, releases and history of
+  the first attempt remain readable and clonable.
 
 - Lockfiles for binary artifacts and base digests, once release experience shows
   which inputs need them.
@@ -248,9 +262,9 @@ one PR per group, each with its check.
   that the machine, session and updates keep working; never vendor support, a
   licence or the deployment method. `docs/use-cases/` will split "what DeskOS
   does", "what it does not" and "how it is validated", each claim pointing at a run.
-- **Model a network proxy, or leave it to configuration management** (pending).
-  Only CA trust and desktop settings exist today; a proxy a machine needs to reach
-  its own repositories is baseline, so it needs a resource and an ADR.
+- **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
+  covers mode, PAC file, ignore hosts and per-protocol servers, with no password
+  field because a secret is not image content ([desktop.md](resources/desktop.md)).
 - **Example AlmaLinux and Fedora:** weekly builds, no publication, no support
   promise.
 - The **splash race**: one disk booted to text for a whole boot and drew the
