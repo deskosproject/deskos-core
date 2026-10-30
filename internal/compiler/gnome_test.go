@@ -497,17 +497,17 @@ func TestProxyLowersToTheSystemProxy(t *testing.T) {
 		"ws.yaml":   workstation("ws", "core"),
 		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
 		"g.yaml": gnome("core", "    network:\n      proxy:\n        mode: manual\n"+
-			"        ignoreHosts: [localhost, '*.example.org']\n"+
-			"        http: {host: proxy.example.org, port: 3128}\n"+
-			"        https: {host: proxy.example.org, port: 3129}\n"),
+			"        ignoreHosts: [localhost, '*.example.com']\n"+
+			"        http: {host: proxy.example.com, port: 3128}\n"+
+			"        https: {host: proxy.example.com, port: 3129}\n"),
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
 	for key, want := range map[string]string{
 		"/org/gnome/system/proxy/mode":           "'manual'",
-		"/org/gnome/system/proxy/ignore-hosts":   "['localhost', '*.example.org']",
-		"/org/gnome/system/proxy/http/host":      "'proxy.example.org'",
+		"/org/gnome/system/proxy/ignore-hosts":   "['localhost', '*.example.com']",
+		"/org/gnome/system/proxy/http/host":      "'proxy.example.com'",
 		"/org/gnome/system/proxy/http/port":      "3128",
-		"/org/gnome/system/proxy/https/host":     "'proxy.example.org'",
+		"/org/gnome/system/proxy/https/host":     "'proxy.example.com'",
 		"/org/gnome/system/proxy/https/port":     "3129",
 		"/org/gnome/system/proxy/use-same-proxy": "false",
 	} {
@@ -530,7 +530,7 @@ func TestProxyIsChecked(t *testing.T) {
 	if err := load("        mode: none\n"); err != nil {
 		t.Fatalf("mode none is valid: %v", err)
 	}
-	if err := load("        mode: auto\n        autoconfigUrl: http://wpad.example.org/proxy.pac\n"); err != nil {
+	if err := load("        mode: auto\n        autoconfigUrl: http://wpad.example.com/proxy.pac\n"); err != nil {
 		t.Fatalf("mode auto with a PAC file is valid: %v", err)
 	}
 	mustFail(t, load("        mode: auto\n"), "needs autoconfigUrl")
