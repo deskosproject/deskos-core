@@ -93,6 +93,20 @@ A graphical application can also declare a **`desktopEntry`** for the menu and d
 artifact's only file, so `desktopEntry` requires exactly one file. Two artifacts
 with the same `id` conflict unless their entries are identical.
 
+### Vendor applications
+
+Some applications only ship as a vendor package: Microsoft Edge, the Intune app,
+Teams. They are a `PackageSet` plus the vendor's `RpmRepository` with its GPG key,
+not a kind, because the image can own the package and the repository it trusts and
+nothing else. Everything after that belongs to the vendor: a tenant, a device
+enrolment, a compliance decision, a licence. A kind for one of them would freeze a
+vendor's state machine in the public API, and the next vendor would need another.
+
+The example organization already adds Microsoft's and Google's repositories for its
+tools; the same shape carries a browser and a compliance agent. The enrolment is
+identity, so it belongs to provisioning or the fleet, the same line the network
+draws between the profile and the credentials.
+
 ## `FlatpakRemote` and `FlatpakSet`
 
 A **system** Flatpak remote, and applications preinstalled from it:
