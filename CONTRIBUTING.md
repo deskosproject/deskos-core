@@ -19,7 +19,7 @@ person or an agent, under the same rules: review, tests, a human decision.
    test, or a pin bump with its checksum is a good start.
 2. **For a decision, an ADR.** A new kind, backend or public-model change needs
    an ADR under `docs/adr/` and a discussion before code. Adding a kind also needs
-   an explicit decision: fourteen is the ceiling in v1alpha1.
+   an explicit decision: fifteen is the ceiling in v1alpha1.
 
 ## Reproduce the checks
 

@@ -62,7 +62,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | **Network and hardware** | | |
 | System proxy | `org.gnome.system.proxy` mode, PAC, ignore hosts, per-protocol servers | **modelled** since 2026-10-30 (`network.proxy`); a password is refused as a secret |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |
-| Default VPN settings | NetworkManager `system-connections` | **gap: kind**: a connection profile, with secrets supplied at runtime |
+| 802.1X networks | NetworkManager `system-connections` | **modelled** since 2026-10-30 (`NetworkProfile`, [ADR 0027](adr/0027-a-network-profile-is-typed-and-its-secrets-are-not.md)): the trust decision in the image, the secret and the identity from the fleet |
+| Default VPN settings | NetworkManager `vpn` | **gap: kind**: a second slice, with the plugin's fields typed and no free-form `vpn.data` |
 | **Software** | | |
 | Which search providers answer | `search-providers disable-external`, `disabled` | **modelled** since 2026-10-30 (`search.external`, `.disabled`) |
 | Enable machine-wide extensions | `shell enabled-extensions` | **modelled** (`shell.extensions`, plus the platform's catalog) |
@@ -81,7 +82,7 @@ shipping:
 - **Three fields are cheap**: idle logout, XKB layouts and the NFS profile line.
   Each is a scalar (or two) in
   `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
-  the count stays at fourteen.
+  the count stays at fifteen.
 - **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
   polkit action file. The first is needed by real organizations and needs an ADR
   for secrets at runtime; the second is a security surface and may be refused.

@@ -55,5 +55,5 @@ either.
 
 ## Consequences
 
-- Enabling an extension is a **field on an existing kind**, so the public kind count stays at fourteen; the two lists
+- Enabling an extension is a **field on an existing kind**, so the public kind count does not change; the two lists
   a workstation adds are refusals and decisions, not new software, so the boundary of ADR 0005 holds.

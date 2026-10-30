@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deskos.org/schemas/system.deskos.org/v1alpha1/networkprofile.json",
+  "title": "system.deskos.org/v1alpha1 NetworkProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "system.deskos.org/v1alpha1" },
+    "kind": { "const": "NetworkProfile" },
+    "metadata": { "$ref": "../../common/metadata.json" },
+    "spec": { "$ref": "#/$defs/spec" }
+  },
+  "$defs": {
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "eap"],
+      "properties": {
+        "type": {
+          "enum": ["ethernet", "wifi"],
+          "description": "The device the profile applies to."
+        },
+        "ssid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+          "description": "The network name. Required for wifi and refused for ethernet."
+        },
+        "eap": {
+          "enum": ["leap", "md5", "tls", "peap", "ttls", "sim", "fast", "pwd"],
+          "description": "The EAP method NetworkManager negotiates."
+        },
+        "caCert": {
+          "$ref": "../../common/definitions.json#/$defs/relativePath",
+          "description": "A PEM certificate in the resource root, placed where NetworkManager reads it. Omitted, the system trust store is used."
+        },
+        "serverName": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*$",
+          "description": "The name the authentication server's certificate must present (domain-suffix-match)."
+        },
+        "autoconnect": {
+          "type": "boolean",
+          "description": "Whether the machine joins this network on its own. Default true."
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": -999,
+          "maximum": 999,
+          "description": "Ranking among profiles that autoconnect. Default 0."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "wifi" } }, "required": ["type"] },
+          "then": { "required": ["ssid"] },
+          "else": { "not": { "required": ["ssid"] } }
+        }
+      ]
+    }
+  }
+}

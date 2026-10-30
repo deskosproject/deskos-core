@@ -17,7 +17,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
   `workstation`) that selects resources.
 - **Baseline**: what DeskOS manages at all: machine-wide state an organization
   requires for any authorized user, before any `$HOME` exists (ADR 0005).
-- **Resource**: the declarative unit you write; one of fourteen kinds
+- **Resource**: the declarative unit you write; one of fifteen kinds
   ([Resources](resources.md) lists all with an example).
 - **Desktop**: the session, its defaults (`GnomeProfile`) and its look (`Theme`).
   It is also a platform fact: `gnome.keepsVendorDefaults` means DeskOS writes no
@@ -36,7 +36,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 | Templates | [CentOS Stream 10](https://github.com/deskosproject/deskos-template-cs10), [RHEL 10](https://github.com/deskosproject/deskos-template-rhel10): fork, build your image, make your ISO |
 | [Architecture](architecture.md) | pipeline and boundary, model, composition, plan, backend |
 | [Runtime](runtime.md) | baseline, Flatpaks, GNOME, boot, trust, updates, `/etc` |
-| [Resources](resources.md) | the fourteen kinds, with examples |
+| [Resources](resources.md) | the fifteen kinds, with examples |
 | [GNOME coverage](gnome-coverage.md) | each GNOME guide item, and whether a field carries it |
 | [Compatibility](compatibility.md) | what stays stable, the fixture matrix, 1.0 criteria |
 | [Operations](operations.md) | update, inspect, roll back, change the update source |
@@ -47,7 +47,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 | [Threat model](threat-model.md) | assets, boundaries, controls, the incident exercise |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |
 | [Installer ISO](installer-iso.md) | the kickstart, the build command, the storage warning |
-| [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E |
+| [Design](design/) | visual identity, what the image takes from the GNOME HIG, evidence retention, promotion, authenticity, session E2E |
 | [VM harness](../tests/vm/README.md) | the boot, session and first-boot checks |
 | [Roadmap](roadmap.md), [ADRs](adr/README.md) | what is done and planned, and the decisions |
 | [Research notes](research-notes.md) | a dated archive of what was measured |

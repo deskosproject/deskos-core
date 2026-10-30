@@ -26,7 +26,7 @@ the build fails if the base or a package already provides it.
 
 ## Consequences
 
-- The public API has **fourteen kinds** today (twelve when this decision was taken); a test enforces the count.
+- The public API has **fifteen kinds** today (twelve when this decision was taken); a test enforces the count.
 - A trust anchor applies to every user, before any session, and travels with the deployment across updates and
   rollbacks; an administrator may still add or remove anchors at runtime.
 
@@ -50,7 +50,7 @@ rootfs/`; the Plan carries `trustBlocklist` next to `trustAnchors`, and the SBOM
 `deskos:source=trust-blocklist`.
 
 The field is a **profile resource like any other**, so any layer may declare a distrusted certificate; Core ships
-`deskos-trust` with the eMudhra roots, and the kind count stays fourteen. It is not a lock: an administrator may still
+`deskos-trust` with the eMudhra roots, and the kind count does not change. It is not a lock: an administrator may still
 add the CA at runtime, and an entry stops mattering once the platform stops shipping that root.
 
 ### Consequences

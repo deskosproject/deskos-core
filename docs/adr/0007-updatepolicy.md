@@ -45,7 +45,7 @@ error, and below it a masked-setting warning.
 
 ## Consequences
 
-- The public API has **fourteen kinds** today (eleven when this decision was taken); a test enforces the count.
+- The public API has **fifteen kinds** today (eleven when this decision was taken); a test enforces the count.
 - DeskOS Core ships `UpdatePolicy/deskos-core`: image updates daily, only on AC power, so Core images no longer reboot
   on their own. Since 2026-10-17 the foundation sets no `flatpak` policy; system Flatpak updates are the EL family's
   `rhel-family` policy.

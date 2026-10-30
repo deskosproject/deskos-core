@@ -117,3 +117,35 @@ The rescue path for a compromised CA is a resource, not a script, and composes a
 any layer. Core ships `deskos-trust` with the October 2026 eMudhra roots
 (RHSB-2026-012); an organization adds its own through its profiles and drops an
 entry once the platform's `ca-certificates` no longer ships that root.
+
+## `NetworkProfile`
+
+An 802.1X connection: the trust decision and the policy, with no secret in it
+([ADR 0027](../adr/0027-a-network-profile-is-typed-and-its-secrets-are-not.md)).
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `type` | `ethernet` or `wifi` | yes | the device the profile applies to |
+| `ssid` | one line, 1 to 32 characters | wifi only | refused on ethernet |
+| `eap` | `leap`, `md5`, `tls`, `peap`, `ttls`, `sim`, `fast`, `pwd` | yes | NetworkManager's methods |
+| `caCert` | PEM certificate inside the resource root | no | omitted, the system trust store is used |
+| `serverName` | host name | no | the name the server's certificate must present |
+| `autoconnect`, `priority` | boolean; -999 to 999 | no | default `true` and `0` |
+
+```yaml
+spec:
+  type: wifi
+  ssid: CorpWLAN
+  eap: peap
+  caCert: ../assets/corp-root-ca.pem
+  serverName: radius.example.com
+```
+
+The compiler writes `/etc/NetworkManager/system-connections/<name>.nmconnection`,
+mode `0600`, with `password-flags=1`: NetworkManager asks a session agent for the
+secret instead of storing one. **There is no password, no private key and no
+identity field**, because a secret in a resource is a secret published, and an
+identity names a machine or a person that the image would share across the fleet.
+The profile is therefore inert until the fleet supplies an identity; what the
+image guarantees is the part that must be identical everywhere, which is the CA,
+the server name and the method.

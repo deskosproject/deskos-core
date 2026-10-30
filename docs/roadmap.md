@@ -202,10 +202,10 @@ got stuck.
 Administration Guide](https://help.gnome.org/system-admin-guide/) a verdict:
 modelled, partial, artifact, a missing field, a candidate kind, or refused with the
 invariant that refuses it. The vocabulary is **closed** (no raw dconf field), so
-the audit found fourteen modelled exactly and four partially; the greeter's two
-fields, the power pair, Looking Glass and the shield have shipped since, so the
-table now reads nineteen and one. Three fields need no kind; a NetworkManager connection needs an ADR (secrets at runtime); a polkit
-action file is a security surface; autostart, custom sessions and
+the audit found fourteen modelled exactly and four partially, and the fields
+shipped since are in the table rather than in this paragraph, which is how a count
+stops being a claim. A NetworkManager connection has an ADR (0027) and a kind; a
+polkit action file is a security surface; autostart, custom sessions and
 single-application mode are refused under invariant 5. Next: one issue per field,
 one PR per group, each with its check.
 

@@ -66,7 +66,7 @@ var pngNameRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*\.png$`)
 
 // Providers returns the system.deskos.org providers.
 func Providers() []registry.Provider {
-	return []registry.Provider{bootProfile{}, updatePolicy{}, trustAnchor{}}
+	return []registry.Provider{bootProfile{}, updatePolicy{}, trustAnchor{}, networkProfile{}}
 }
 
 type bootProfile struct{}
@@ -134,6 +134,7 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	var errs model.ErrorList
 	errs.Add(lowerBoot(c, p))
 	errs.Add(lowerTrust(c, p))
+	errs.Add(lowerNetwork(c, p))
 	errs.Add(lowerUpdates(c, p))
 	return errs.Err()
 }

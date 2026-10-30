@@ -15,11 +15,11 @@ and this file is wrong.
    union, keyed definitions must match, scalars take the highest layer and
    conflict within one layer. File, root and profile order never change output
    (ADR 0003).
-4. **Exactly fourteen public kinds** in v1alpha1: Platform, Profile, Workstation,
+4. **Exactly fifteen public kinds** in v1alpha1: Platform, Profile, Workstation,
    PackageSet, RpmRepository, AptRepository (ADR 0015), BinaryArtifact,
    FlatpakRemote, FlatpakSet, GnomeProfile, BootProfile (ADR 0006), UpdatePolicy
-   (ADR 0007), TrustAnchor (ADR 0009), Theme (ADR 0013). A test enforces the count;
-   adding a kind needs an explicit decision.
+   (ADR 0007), TrustAnchor (ADR 0009), Theme (ADR 0013), NetworkProfile (ADR 0027).
+   A test enforces the count; adding a kind needs an explicit decision.
 5. **No escape hatches.** No `script`, `command`, `postInstall` or other shell
    fields, no raw kernel arguments or Plymouth script themes, no templating, and
    nothing that manages a user's `$HOME` or personal tooling (ADR 0005).

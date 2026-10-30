@@ -44,7 +44,7 @@ data: no anchors, aliases, merge keys, custom tags, shell, templates or hooks.
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
-| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor`, `NetworkProfile` |
 
 Schemas live in `schemas/` and are embedded in `deskosctl`. Every kind is checked
 twice: against its JSON Schema, and by strict typed decoding with semantic

@@ -99,10 +99,11 @@ proved by a real case over several half-implemented kinds.
 
 ## Kinds
 
-Fourteen public kinds: `Platform`, `Profile`, `Workstation`, `PackageSet`,
+Fifteen public kinds: `Platform`, `Profile`, `Workstation`, `PackageSet`,
 `RpmRepository`, `AptRepository` (ADR 0015), `BinaryArtifact`, `FlatpakRemote`,
 `FlatpakSet`, `GnomeProfile`, `BootProfile` (ADR 0006), `UpdatePolicy` (ADR 0007),
-`TrustAnchor` (ADR 0009), `Theme` (ADR 0013). Do not expand the list casually.
+`TrustAnchor` (ADR 0009), `Theme` (ADR 0013), `NetworkProfile` (ADR 0027). Do not
+expand the list casually.
 
 ## Out of scope for the compiler
 
