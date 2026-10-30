@@ -70,6 +70,8 @@ different setting, not covered by this lock.
   `session.lock.delay`, `dock.position`, `dock.behavior`, `dock.iconSize`,
   `dock.showTrash`.
 - **Software:** `software.updates`.
+- **Search, notifications:** `search.external`, `search.disabled`,
+  `notifications.banners`, `notifications.onLockScreen`.
 - **Network, privacy:** `network.proxy.mode`, `.autoconfigUrl`, `.ignoreHosts`,
   `.useSameProxy`, `.http`, `.https`, `.ftp`, `.socks`, `privacy.rememberRecentFiles`,
   `privacy.recentFilesMaxAge`, `privacy.rememberAppUsage`, `privacy.removeOldTempFiles`,

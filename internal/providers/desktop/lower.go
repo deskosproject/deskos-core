@@ -481,6 +481,23 @@ func (l *lowering) lowerShell(get func(string) (compose.Scalar, bool)) {
 		l.set(key, "/org/gnome/system/proxy/"+proto+"/port", "i", strconv.Itoa(srv.Port), v.Provenance)
 	}
 
+	if v, ok := get(KeySearchExternal); ok {
+		l.set(KeySearchExternal, "/org/gnome/desktop/search-providers/disable-external", "b",
+			strconv.FormatBool(v.Value.(bool)), v.Provenance)
+	}
+	if v, ok := get(KeySearchDisabled); ok {
+		l.set(KeySearchDisabled, "/org/gnome/desktop/search-providers/disabled", "as",
+			gvStrings(v.Value.([]string)), v.Provenance)
+	}
+	for key, gkey := range map[string]string{
+		KeyNotifBanners:    "/org/gnome/desktop/notifications/show-banners",
+		KeyNotifLockScreen: "/org/gnome/desktop/notifications/show-in-lock-screen",
+	} {
+		if v, ok := get(key); ok {
+			l.set(key, gkey, "b", strconv.FormatBool(v.Value.(bool)), v.Provenance)
+		}
+	}
+
 	for key, gkey := range map[string]string{
 		KeyPrivacyRememberRecent: "remember-recent-files", KeyPrivacyRememberApp: "remember-app-usage",
 		KeyPrivacyOldTempFiles: "remove-old-temp-files", KeyPrivacyOldTrashFiles: "remove-old-trash-files",

@@ -24,6 +24,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Store settings over NFS | `service-db:keyfile/user` first line of the profile | **gap: field**: the platform owns the profile, and no field asks for it |
 | Why not GSettings overrides | vendor overrides | **modelled** for the first-boot wallpaper only; no general field |
 | **User settings** | | |
+| Notifications on a locked screen | `notifications show-banners`, `show-in-lock-screen` | **modelled** since 2026-10-30 (`notifications.banners`, `.onLockScreen`) |
 | Privacy defaults | `org.gnome.desktop.privacy` recent files, temp/trash removal, telemetry, camera, microphone | **modelled** since 2026-10-30 (`privacy.*`) |
 | Dim screen when idle | `plugins.power idle-dim`, `idle-brightness`, `session idle-delay` | **modelled** since 2026-10-29 (`session.idle.blankAfter`, `.dim`, `.dimBrightness`) |
 | Enable the compose key | `input-sources xkb-options` | **modelled** (`keyboard.xkbOptions`: `compose:caps`, `compose:menu`, `compose:ralt`, `compose:rctrl`) |
@@ -56,7 +57,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Automatic logout, suspend or shutdown when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **modelled** since 2026-10-30 (`session.idle.action`, `.after`, `.batteryAction`, `.batteryAfter`); a policy that can lose unsaved work, so the pair is explicit |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
 | Multiple keyboard layouts | `input-sources sources` | **modelled** since 2026-10-30 (`keyboard.layouts`, in switch order; the key lands in the distro database, which GDM's profile also reads) |
-| Multiple keyboard layouts at the console | `localectl set-x11-keymap`, `/etc/vconsole.conf` | **gap: field**: the session layouts are modelled, the console keymap is not |
+| Console keymap | `localectl`, `/etc/vconsole.conf` | **outside**: the graphical session is Wayland and reads `input-sources`, and the TTY keymap is set by the installer, which is provisioning (architecture.md, "What each layer owns") |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
 | **Network and hardware** | | |
 | System proxy | `org.gnome.system.proxy` mode, PAC, ignore hosts, per-protocol servers | **modelled** since 2026-10-30 (`network.proxy`); a password is refused as a secret |
@@ -64,6 +65,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | 802.1X networks | NetworkManager `system-connections` | **modelled** since 2026-10-30 (`NetworkProfile`, [ADR 0027](adr/0027-a-network-profile-is-typed-and-its-secrets-are-not.md)): the trust decision in the image, the secret and the identity from the fleet |
 | Default VPN settings | NetworkManager `vpn` | **gap: kind**: a second slice, with the plugin's fields typed and no free-form `vpn.data` |
 | **Software** | | |
+| Which search providers answer | `search-providers disable-external`, `disabled` | **modelled** since 2026-10-30 (`search.external`, `.disabled`) |
 | Enable machine-wide extensions | `shell enabled-extensions` | **modelled** (`shell.extensions`, plus the platform's catalog) |
 | Custom MIME type | XML under `/usr/share/mime` plus `update-mime-database` | **artifact**: a package or a placed file, not a field |
 | Override the default application | `/etc/xdg/mimeapps.list` | **modelled** (`applications.*`); a user's file still wins |

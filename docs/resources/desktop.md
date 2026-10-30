@@ -17,6 +17,7 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `appearance.fonts.textScaling` | number, 0.5 to 3.0 | |
 | `appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter` | `none`, `grayscale`, `rgba`; `none`, `slight`, `medium`, `full`; `rgb`, `bgr`, `vrgb`, `vbgr`; `none`, `default`, `light`, `legacy` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]`, `.developmentTools` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}`; boolean (`false` hides Looking Glass) | |
+| `search.external`, `.disabled`, `notifications.banners`, `.onLockScreen` | boolean; desktop ids; boolean | |
 | `network.proxy.mode`, `.autoconfigUrl`, `.ignoreHosts`, `.useSameProxy`, `.http`, `.https`, `.ftp`, `.socks` | `none`, `auto`, `manual`; http or https URL; host patterns; boolean; `{host, port}` | `mode` yes; a password is never authored |
 | `privacy.*` | booleans, plus `recentFilesMaxAge` (days, -1 keeps every recent file) and `oldFilesAge` (1 to 3650 days) | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
@@ -111,6 +112,13 @@ Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which 
 what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
 not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
 The terminal follows the monospace family unless a profile names one.
+
+**Search and notifications.** `search.external: false` stops third-party search
+providers from answering, and `search.disabled` names the providers that do not
+answer, by desktop id, which is the list GNOME's own Search panel shows.
+`notifications.banners` is whether notices appear at all and
+`notifications.onLockScreen` whether they appear while the session is locked: a
+subject line on a locked screen is visible to anyone walking past.
 
 **Idle action.** `session.idle.action` is what an idle machine does and
 `.after` is when: `blank`, `suspend`, `shutdown`, `hibernate`, `interactive`,
