@@ -38,13 +38,13 @@
         },
         "clientCert": {
           "type": "string",
-          "pattern": "^/etc/deskos/network/[A-Za-z0-9][A-Za-z0-9._-]*$",
-          "description": "Where the fleet places this machine's client certificate, for EAP-TLS. A path, never an asset: the certificate names the machine."
+          "pattern": "^/etc/pki/tls/certs/[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "Where the fleet places this machine's client certificate, for EAP-TLS. /etc/pki/tls is the platform's PKI tree and its files carry cert_t, which NetworkManager is allowed to read. A path, never an asset: the certificate names the machine."
         },
         "privateKey": {
           "type": "string",
-          "pattern": "^/etc/deskos/network/[A-Za-z0-9][A-Za-z0-9._-]*$",
-          "description": "Where the fleet places this machine's private key, for EAP-TLS. Never image content."
+          "pattern": "^/etc/pki/tls/private/[A-Za-z0-9][A-Za-z0-9._-]*$",
+          "description": "Where the fleet places this machine's private key, for EAP-TLS. The private tree carries cert_t, so the key is not left with the generic etc_t a new directory would get. Never image content."
         },
         "secret": {
           "enum": ["agent", "none"],

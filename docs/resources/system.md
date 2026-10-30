@@ -153,9 +153,16 @@ after a login. It does not connect at boot or at the greeter, because before a
 login there is no agent.
 
 **EAP-TLS is `secret: none`**: the CA travels in the image, and the machine's
-certificate and key are paths the fleet fills (`/etc/deskos/network/...`), so the
-machine joins before anyone logs in. The image says where they live; it never
-carries them.
+certificate and key are paths the fleet fills under `/etc/pki/tls/certs/` and
+`/etc/pki/tls/private/`, so the machine joins before anyone logs in. The image says
+where they live; it never carries them. Those directories are the platform's PKI
+tree and their files carry `cert_t`, which NetworkManager may read; a directory of
+our own would be `etc_t`.
+
+The key can live in the TPM rather than a file: `tpm2-pkcs11` holds it and
+NetworkManager takes a PKCS#11 URI, but that needs `TPM2_PKCS11_STORE` for
+`wpa_supplicant`, an SELinux module for NetworkManager's TPM access, and a PIN
+decision. The profile models the file case; the TPM case is a later decision.
 
 A machine whose network requires 802.1X before the fleet can reach it has three
 ways in, and the image cannot choose for it: EAP-TLS with a machine certificate, an
