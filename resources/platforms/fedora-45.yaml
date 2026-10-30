@@ -3,52 +3,41 @@ kind: Platform
 metadata:
   name: fedora-45
 spec:
-  displayName: Fedora 45 (Silverblue, example only)
-  # EXAMPLE ONLY. Fedora 45 is not a shipped DeskOS platform and is not in the
-  # published platform matrix. This Platform lives in examples/fedora-45 so the
-  # composition and rendering stay exercised. To re-promote it, mirror the exact
-  # base digest in DeskOS Quay first; see docs/fedora.md for the checklist.
-  # The Fedora Project publishes this base itself (quay.io/fedora), so the platform
-  # follows ADR 0004's official-base rule and declares no organization owner or
-  # tier — like centos-stream-10 and almalinux-10.
+  displayName: Fedora 45 (Silverblue)
+  # A shipped platform. The base is Fedora's own Silverblue bootc image, mirrored
+  # into DeskOS's namespace because the vendor's `:45` tag moves daily and drops an
+  # old digest within days (docs/fedora.md).
   #
-  # The base is Fedora's own desktop bootc image, Silverblue, and not the minimal
-  # quay.io/fedora/fedora-bootc. Measured on that minimal base (:44 and :45,
-  # 2026-10-17): no gnome-shell, no gdm, no gnome-initial-setup, no Flatpak, no
-  # Plymouth, no fedora-logos and no gtk-update-icon-cache — a DeskOS workstation on
-  # it would be a desktop DeskOS invented, not the one Fedora validates as its
-  # workstation. Silverblue carries all of them as distribution packages, and its
-  # GNOME base applications stay RPMs (measured in the image: gnome-shell 51.0, gdm
-  # 51.0, gnome-initial-setup 51.0, nautilus 51.0.1, gnome-software 51.0, firefox
-  # 157.0). That is the DeskOS rule: the GNOME base stays distribution packages, and
-  # only an organization's extra applications go to Flatpak (ADR 0005).
+  # The base is Silverblue, not the minimal quay.io/fedora/fedora-bootc: measured on
+  # the minimal base (:44 and :45, 2026-10-17), it has no gnome-shell, no gdm, no
+  # gnome-initial-setup, no Flatpak, no Plymouth, no fedora-logos and no
+  # gtk-update-icon-cache. A DeskOS workstation on it would be a desktop DeskOS
+  # invented, not the one Fedora validates as its workstation. Silverblue carries
+  # all of them as distribution packages, and its GNOME base applications stay
+  # RPMs (measured: gnome-shell 51.0, gdm 51.0, gnome-initial-setup 51.0, nautilus
+  # 51.0.1, gnome-software 51.0, firefox 158.0.1). The GNOME base stays
+  # distribution packages; only an organization's extra applications go to Flatpak
+  # (ADR 0005).
   #
-  # This example is pinned to the released compose: os-release reads
-  # "45.20261022.n.0 (Silverblue)", and the base enables
-  # `fedora`, `updates`, `updates-archive` and Fedora's openh264 repository — the
-  # repositories are read from /usr/share/dnf5/repos.d, not /etc/yum.repos.d, and
-  # `dnf5 repolist --enabled` lists exactly those. It does not enable
-  # `updates-testing`. Measured on 2026-10-22. The resource is what decides which
-  # compose a build gets; docs/fedora.md explains why this is example-only and
-  # what must be done before promoting it back.
-  #
-  # The example carries one Fedora release for clarity; the previous compose is not
-  # kept alongside it. Fedora is kept as an example because its daily base
-  # digest is garbage-collected upstream; docs/fedora.md records how to resume it.
+  # Pinned to the mirrored compose; the base enables `fedora`, `updates`,
+  # `updates-archive` and Fedora's openh264 repository, read from
+  # /usr/share/dnf5/repos.d rather than /etc/yum.repos.d, and it does not enable
+  # `updates-testing` (measured 2026-10-30). The resource decides which compose a
+  # build gets.
   family: fedora
   release: "45"
   architectures: [x86_64]
   packageManager: rpm
   bootc:
-    # DeskOS's own mirror of the vendor image, copied on 2026-10-23 by
+    # DeskOS's own mirror of the vendor image, copied on 2026-10-30 by
     # .github/workflows/mirror-fedora.yml with --all --preserve-digests, so this
     # is the vendor's index digest and every manifest in it. Fedora only
     # publishes moving tags and drops an old digest within days; the mirror is
     # the same bytes at a location the vendor does not rotate away. Refresh it
     # with a workflow dispatch, then bump this pin in a pull request.
     image: quay.io/deskos/fedora-silverblue:45
-    # Vendor build 45.20261023.n.0 (the mirror also carries that immutable tag).
-    digest: sha256:9861aff934d83fd6ca847582ec8fa49ca3e501156f3f551afc31a27484eda457
+    # Vendor build 45.20261030.n.0 (the mirror also carries that immutable tag).
+    digest: sha256:d81de11d75fed47e420e08c04be879f65544bce7a83178a8ef8422f29df3d613
   distribution:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true

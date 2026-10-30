@@ -1,20 +1,19 @@
 # Examples
 
-Five resource roots, each a thing DeskOS can compile, each showing **one axis**.
-The AlmaLinux and Fedora roots carry their own example Platform resources.
+Four resource roots, each a thing DeskOS can compile, each showing **one axis**.
+The AlmaLinux root carries its own example Platform resource.
 
 | Example | Shows |
 |---|---|
 | [`centos-stream-10/`](centos-stream-10/) | the minimal Core composition on the public, redistributable platform |
 | [`rhel-10/`](rhel-10/) | the same on RHEL 10, which is **never** published (`redistributable: false`, ADR 0004) |
 | [`almalinux-10/`](almalinux-10/) | an example platform on AlmaLinux 10, whose vendor base is the vendor's own *experimental* one |
-| [`fedora-45/`](fedora-45/) | an example platform on Fedora 45 (Silverblue), a base that carries no RHEL packages |
 | [`organization-and-role/`](organization-and-role/) | the **composition axis**: an organization baseline and a role, on two platforms (`example-devops-rhel-10`, `example-devops-centos-stream-10`) |
 
 ## How the names work
 
 - **A directory is named after its platform**, spelled as its Platform resource
-  spells it: `centos-stream-10`, `rhel-10`, `almalinux-10`, `fedora-45`.
+  spells it: `centos-stream-10`, `rhel-10`, `almalinux-10`.
 - **The workstation inside is `example-<platform>`**; shipped ones are
   `deskos-core-<platform>` ([resources/workstations/](../resources/workstations/)).
 - **`organization-and-role/` is the exception**: its name is about composition.

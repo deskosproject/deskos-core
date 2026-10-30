@@ -1,7 +1,7 @@
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: example-fedora-45
+  name: deskos-core-fedora-45
 spec:
   displayName: DeskOS Core (Fedora 45)
   platformRef: fedora-45
@@ -9,7 +9,7 @@ spec:
     - deskos-core
     - deskos-gnome
     - fedora
-    # Fedora's own wallpaper and splash stay, only the text goes.
+    # Fedora's own wallpaper stays; DeskOS owns the text and the splash arguments.
     - deskos-boot
     - firefox
     - deskos-dock

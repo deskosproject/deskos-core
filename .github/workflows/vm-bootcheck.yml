@@ -121,6 +121,13 @@ jobs:
             root: examples/organization-and-role
             artifact: vm-evidence-example-devops-centos-stream-10
             image: localhost/example-devops-centos-stream-10:ci
+          # Fedora's base already carries the desktop, so this is the leg that
+          # proves a shipped platform whose GNOME comes from the vendor image
+          # rather than from a package group.
+          - workstation: deskos-core-fedora-45
+            root: ""
+            artifact: vm-evidence-core-fedora-45
+            image: localhost/deskos-core-fedora-45:ci
     env:
       WS: ${{ matrix.workstation }}
       ROOT: ${{ matrix.root }}
