@@ -37,6 +37,8 @@ type NetworkProfileSpec struct {
 	CACert      string `json:"caCert,omitempty"`
 	ClientCert  string `json:"clientCert,omitempty"`
 	PrivateKey  string `json:"privateKey,omitempty"`
+	Phase2      string `json:"phase2,omitempty"`
+	Identity    string `json:"identity,omitempty"`
 	Secret      string `json:"secret,omitempty"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect *bool  `json:"autoconnect,omitempty"`
@@ -59,6 +61,8 @@ type NetworkProfile struct {
 	CACertSHA   string `json:"caCertSha256,omitempty"`
 	ClientCert  string `json:"clientCert,omitempty"`
 	PrivateKey  string `json:"privateKey,omitempty"`
+	Phase2      string `json:"phase2,omitempty"`
+	Identity    string `json:"identity,omitempty"`
 	Secret      string `json:"secret"`
 	ServerName  string `json:"serverName,omitempty"`
 	Autoconnect bool   `json:"autoconnect"`
@@ -78,6 +82,8 @@ var (
 	networkKeyRE  = regexp.MustCompile(`^/etc/pki/tls/private/[A-Za-z0-9][A-Za-z0-9._-]*$`)
 	// The methods NetworkManager documents for 802-1x.eap.
 	networkEAP = []string{"leap", "md5", "tls", "peap", "ttls", "sim", "fast", "pwd"}
+	// The inner methods for a tunnelled EAP, written as 802-1x.phase2-auth.
+	networkPhase2 = []string{"mschapv2", "pap", "chap", "md5", "gtc", "tls"}
 )
 
 type networkProfile struct{}
@@ -116,6 +122,12 @@ func (networkProfile) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "eap tls takes secret none: a certificate needs no password"))
 		}
 	default:
+		// Measured on NetworkManager 1.52 (EL10): a password profile without a
+		// non-empty identity is refused at load time ("802-1x.identity: property
+		// is missing"), so a keyfile without one would never appear in nmcli.
+		if strings.TrimSpace(s.Identity) == "" {
+			errs.Add(model.Errorf(res, "eap %s needs identity: NetworkManager refuses a password profile without one; EAP-TLS does not need it", s.EAP))
+		}
 		if s.ClientCert != "" || s.PrivateKey != "" {
 			errs.Add(model.Errorf(res, "clientCert and privateKey are only read for eap tls"))
 		}
@@ -124,6 +136,18 @@ func (networkProfile) Decode(res *model.Resource) error {
 		}
 		if s.Secret != "" && s.Secret != "agent" {
 			errs.Add(model.Errorf(res, "secret %q must be agent or none", s.Secret))
+		}
+	}
+	switch s.EAP {
+	case "peap", "ttls", "fast":
+		// Measured: NetworkManager refuses a tunnelled method without an inner
+		// authentication ("phase2-auth, phase2-autheap: exactly one must be set").
+		if !contains(networkPhase2, s.Phase2) {
+			errs.Add(model.Errorf(res, "eap %s needs phase2, one of %s", s.EAP, strings.Join(networkPhase2, ", ")))
+		}
+	default:
+		if s.Phase2 != "" {
+			errs.Add(model.Errorf(res, "phase2 is only read for peap, ttls and fast"))
 		}
 	}
 	if s.ServerName != "" && !networkHostRE.MatchString(s.ServerName) {
@@ -171,7 +195,7 @@ func (networkProfile) Contribute(res *model.Resource, s *compose.Scope) error {
 		Name: res.Metadata.Name, Type: spec.Type, SSID: spec.SSID, EAP: spec.EAP,
 		ServerName: spec.ServerName, UUID: connectionUUID(res.Metadata.Name),
 		Autoconnect: true, ClientCert: spec.ClientCert, PrivateKey: spec.PrivateKey,
-		Secret: secret,
+		Phase2: spec.Phase2, Identity: spec.Identity, Secret: secret,
 	}
 	if spec.Autoconnect != nil {
 		p.Autoconnect = *spec.Autoconnect
@@ -244,6 +268,12 @@ func networkKeyfile(np NetworkProfile) string {
 	}
 	b.WriteString("\n[802-1x]\n")
 	fmt.Fprintf(&b, "eap=%s;\n", np.EAP)
+	if np.Identity != "" {
+		fmt.Fprintf(&b, "identity=%s\n", np.Identity)
+	}
+	if np.Phase2 != "" {
+		fmt.Fprintf(&b, "phase2-auth=%s\n", np.Phase2)
+	}
 	switch np.Secret {
 	case "none":
 		// EAP-TLS: the certificate and key the fleet placed, and no secret.

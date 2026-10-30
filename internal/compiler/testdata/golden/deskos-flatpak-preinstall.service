@@ -10,7 +10,7 @@ StartLimitIntervalSec=0
 Type=exec
 ExecStartPre=-/usr/bin/flatpak repair --system
 ExecStartPre=-/usr/bin/flatpak update --appstream --system
-ExecStart=/usr/bin/flatpak preinstall --system --assumeyes --noninteractive
+ExecStart=/bin/sh -c "/usr/bin/flatpak preinstall --system --assumeyes --noninteractive && /usr/bin/flatpak info --system 'io.github.kolunmi.Bazaar' > /dev/null && /usr/bin/flatpak info --system 'org.mozilla.firefox' > /dev/null"
 Restart=on-failure
 RestartSec=60
 # A shutdown during the first-boot download must not wait systemd's default

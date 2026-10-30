@@ -170,15 +170,19 @@ class TmpfilesTest(unittest.TestCase):
                          "".join(s + "\t" + k + "\n" for s, k in vendor))
         profile = next(l for l in lines if l.startswith(f"f {sc.DCONF_PROFILE_PATH} "))
         self.assertTrue(profile.endswith("system-db:distro\\n"))
-        # The script reads the keys from the files, and so carries none of them.
+        # The reads live in their own file, sourced by the script, and neither
+        # carries a key literal.
         script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
+        reads = next(l for l in lines if l.startswith(f"f {sc.QA_READS_PATH} ")).replace("\\n", "\n")
         for k in keys:
             self.assertNotIn(k, script)
+            self.assertNotIn(k, reads)
         # A vendor key a named check does not read is in no script literal either.
-        self.assertNotIn("picture-uri-dark", script)
-        self.assertIn(f"mapfile -t dconf_keys < {sc.DCONF_KEYS_PATH}", script)
-        self.assertIn(f"mapfile -t vendor_keys < {sc.VENDOR_KEYS_PATH}", script)
-        self.assertIn("GSETTINGS_BACKEND=memory gsettings get", script)
+        self.assertNotIn("picture-uri-dark", reads)
+        self.assertIn(f". {sc.QA_READS_PATH}", script)
+        self.assertIn(f"mapfile -t dconf_keys < {sc.DCONF_KEYS_PATH}", reads)
+        self.assertIn(f"mapfile -t vendor_keys < {sc.VENDOR_KEYS_PATH}", reads)
+        self.assertIn("GSETTINGS_BACKEND=memory gsettings get", reads)
 
     def test_journal_credentials_ignore_the_plan_defaults(self):
         c = sc.credentials("journal", dconf_keys=[d["key"] for d in sc.plan_defaults(PLAN)], dconf_db="distro",
@@ -215,9 +219,9 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.ENABLED_EXTENSIONS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "a@b\nc@d\n")
-        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
-        self.assertIn(f"mapfile -t enabled_extensions < {sc.ENABLED_EXTENSIONS_PATH}", script)
-        self.assertIn('gnome-extensions info "$u"', script)
+        reads = next(l for l in lines if l.startswith(f"f {sc.QA_READS_PATH} ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t enabled_extensions < {sc.ENABLED_EXTENSIONS_PATH}", reads)
+        self.assertIn('gnome-extensions info "$u"', reads)
 
     def test_journal_credentials_ignore_the_enabled_extensions(self):
         c = sc.credentials("journal", enabled_extensions=["a@b"])
@@ -230,9 +234,9 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/bin/deskos\n")
-        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
-        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
-        self.assertIn("sha256sum", script)
+        reads = next(l for l in lines if l.startswith(f"f {sc.QA_READS_PATH} ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", reads)
+        self.assertIn("sha256sum", reads)
 
     def test_journal_credentials_ignore_the_binaries(self):
         c = sc.credentials("journal", binaries=["/usr/bin/deskos"])
@@ -712,6 +716,69 @@ class PlanFontsTest(unittest.TestCase):
                          ["Noto Sans", "DejaVu Sans Mono"])
         # Only the font settings are read: the wallpaper is a string too.
         self.assertEqual(len(sc.plan_font_families(PLAN)), 0)
+
+
+class SessionScriptSizeTest(unittest.TestCase):
+    def test_the_script_fits_in_one_tmpfiles_argument(self):
+        # systemd refuses a tmpfiles argument over 4095 bytes, and the guest script is
+        # one. The network read pushed it over on a real run (job 123867637679), so
+        # the comments are stripped before it travels and the size is asserted here
+        # rather than discovered by a failed boot.
+        script = sc.session_script(
+            True, "firefox", ("a", "b"), ["/org/gnome/desktop/interface/font-name"], "distro",
+            [("org.gnome.desktop.background", "picture-uri")], ["dash-to-dock@micxgx.gmail.com"],
+            ["/usr/local/bin/x", "/usr/local/share/fonts/A.ttf"], ["/org/gnome/shell/favorite-apps"],
+            None, ["Adwaita Sans", "Adwaita Mono"], ["corp"], reads=True)
+        reads = sc.session_reads(
+            ["/org/gnome/desktop/interface/font-name"], "distro",
+            [("org.gnome.desktop.background", "picture-uri")], ["dash-to-dock@micxgx.gmail.com"])
+        self.assertLess(len(script.encode("utf-8")), sc.TMPFILES_ARG_MAX)
+        self.assertLess(len(reads.encode("utf-8")), sc.TMPFILES_ARG_MAX)
+        self.assertLess(len(sc.session_probe().encode("utf-8")), sc.TMPFILES_ARG_MAX)
+        self.assertTrue(script.startswith("#!/bin/bash"))
+        self.assertIn(f". {sc.QA_READS_PATH}", script)
+        self.assertNotIn("# Every connection NetworkManager accepted", script)
+
+
+class PlanNetworkProfilesTest(unittest.TestCase):
+    def plan(self):
+        plan = json.loads(json.dumps(PLAN))
+        plan["artifact"]["generatedFiles"] = [{
+            "path": "/etc/NetworkManager/system-connections/corp.nmconnection",
+            "mode": "0600", "content": "[connection]\nid=corp\n",
+        }]
+        return plan
+
+    def profile_check(self, values, name="corp", plan=None):
+        plan = plan or self.plan()
+        check = f"network profile {name} is loaded by NetworkManager"
+        return next(c for c in sc.evaluate(values, plan) if c["check"] == check)
+
+    def test_a_declared_profile_must_be_loaded_by_networkmanager(self):
+        # The file can be right and the daemon still refuse it, so the read is
+        # nmcli's list, not the keyfile's content.
+        values = dict(GOOD, nm_profiles="corp|Wired connection 1")
+        c = self.profile_check(values)
+        self.assertTrue(c["pass"])
+        self.assertIn("2 connections NetworkManager lists", c["detail"])
+
+    def test_a_profile_networkmanager_did_not_load_fails(self):
+        values = dict(GOOD, nm_profiles="Wired connection 1")
+        c = self.profile_check(values)
+        self.assertFalse(c["pass"])
+        self.assertIn("not among the 1 connections", c["detail"])
+
+    def test_a_list_that_could_not_be_read_is_not_a_difference(self):
+        c = self.profile_check(GOOD)
+        self.assertTrue(c["pass"])
+        self.assertTrue(c["skipped"])
+        self.assertEqual(c["unread"], ["the connection list"])
+
+    def test_only_keyfiles_are_profiles(self):
+        plan = self.plan()
+        plan["artifact"]["generatedFiles"].append({
+            "path": "/etc/dconf/db/distro.d/60-deskos", "mode": "0644", "content": ""})
+        self.assertEqual(sc.plan_network_profiles(plan), ["corp"])
 
 
 class PlanDefaultsTest(unittest.TestCase):

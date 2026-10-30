@@ -12,6 +12,10 @@ spec:
       name: example-root-ca
     - kind: GnomeProfile
       name: example-desktop
+    # The corporate network the image is built for: the trust decision travels,
+    # and the identity and the secret come from the fleet (ADR 0027).
+    - kind: NetworkProfile
+      name: example-corp-8021x
     # The palette, as a Theme: the one kind this repository defined without a resource
     # using it until now.
     - kind: Theme

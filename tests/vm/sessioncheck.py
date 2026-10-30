@@ -84,6 +84,9 @@ JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
 # exist until first login, so nothing can be seeded there in advance. A
 # system-wide autostart runs them in whichever account GDM logs in.
 QA_SCRIPT_PATH = "/var/lib/deskos-qa/deskos-qa-check.sh"
+# The reads that need more than a line live in their own file, because one tmpfiles
+# argument is capped at 4095 bytes and the main script ran into it (job 123867637679).
+QA_READS_PATH = "/var/lib/deskos-qa/deskos-qa-reads.sh"
 E2E_PROBE_PATH = "/var/lib/deskos-qa/e2e-apps.py"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
@@ -200,6 +203,22 @@ def tray_probe():
         '  echo "tray_watcher=absent"\n'
         '  echo "tray_register=skipped"\n'
         "fi\n"
+    )
+
+
+def network_reads():
+    """The script fragment that lists the connections NetworkManager accepted.
+
+    `nmcli connection show` is what the daemon parsed, not what the file says, so
+    a keyfile the build wrote and NetworkManager refused is a failure rather than
+    an assumption. It does not activate anything: a lab with a RADIUS server is
+    what proves authentication.
+    """
+    return (
+        "# Every connection NetworkManager accepted, so a declared profile can be found.\n"
+        "printf 'nm_profiles='; "
+        "nmcli -t -f NAME connection show 2>/dev/null | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | "
+        "grep -v '^$' | sort -u | paste -sd'|' -; echo\n"
     )
 
 
@@ -621,11 +640,13 @@ sleep 3
 echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
   --object-path /org/gnome/ScreenSaver \
   --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
-# The preinstall unit is Type=exec and starts after multi-user, so it can still
-# be downloading when the session appears. Wait for it to stop, bounded.
-for i in $(seq 1 60); do
-  [ "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" != active ] && break
-  sleep 2
+# Wait for the preinstall unit to settle: it retries every minute, and a unit
+# still retrying is a read that did not happen, not a missing app.
+for i in $(seq 1 90); do
+  case "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" in
+    active|activating) sleep 2 ;;
+    *) break ;;
+  esac
 done
 echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
 # The runtime tool the field checklist uses must read the plan this image
@@ -660,8 +681,27 @@ echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 """
 
 
+def session_reads(dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(), binaries=()):
+    """The reads that live in their own file, sourced by the session script.
+
+    The main script is one tmpfiles argument and systemd refuses anything over 4095
+    bytes; these two fragments are the largest, so they travel separately and each
+    file has its own budget.
+    """
+    text = ""
+    if enabled_extensions:
+        text += extension_reads()
+    if binaries:
+        text += binary_reads()
+    if dconf_keys or vendor_keys:
+        text += default_reads(dconf_db, bool(vendor_keys))
+    return "\n".join(
+        l for l in text.splitlines() if not l.lstrip().startswith("#")
+    ) + "\n"
+
+
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
-                   binaries=(), dconf_locks=(), join=None, font_families=()):
+                   binaries=(), dconf_locks=(), join=None, font_families=(), network_profiles=(), reads=False):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -712,11 +752,11 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
             f'  cat {JOIN_STATUS_PATH}\n'
             'fi\n'
         )
-    extensions = extension_reads() if enabled_extensions else ""
+    reads_source = f". {QA_READS_PATH}\n" if reads else ""
     tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
-    binary_reads_fragment = binary_reads() if binaries else ""
     font_reads_fragment = font_reads() if font_families else ""
-    return f"""#!/bin/bash
+    network_reads_fragment = network_reads() if network_profiles else ""
+    script = f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
 out={RESULTS}
@@ -732,7 +772,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{extensions}{tray}{binary_reads_fragment}{font_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{reads_source}{tray}{font_reads_fragment}{network_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
 echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
@@ -742,6 +782,13 @@ test -s /var/tmp/deskos-qa/firefox.png && echo "firefox_screenshot=yes" || echo 
 }} > "$out.tmp"
 mv "$out.tmp" "$out"
 """
+    # The script travels as one tmpfiles argument, and systemd refuses anything over
+    # 4095 bytes; the network read pushed it over on a real run (job 123867637679).
+    # The comments belong to this file, where a maintainer reads them, and the guest
+    # runs the code, so they are dropped before it travels.
+    return "\n".join(
+        l for l in script.splitlines() if l.startswith("#!") or not l.lstrip().startswith("#")
+    ) + "\n"
 
 def e2e_probe():
     """The first E2E step: what the session exposes, and an application it opens.
@@ -997,7 +1044,7 @@ def tmpfiles_arg(text):
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
                 enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None, gdm_user=None,
-                font_families=()):
+                font_families=(), network_profiles=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -1006,8 +1053,11 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     ]
     creds = {}
     if mode == "session":
+        reads = session_reads(dconf_keys, dconf_db, vendor_keys, enabled_extensions, binaries)
+        if reads:
+            tmpfiles.append(f"f {QA_READS_PATH} 0644 root root - {tmpfiles_arg(reads)}")
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
-                                binaries, locks, join, font_families)
+                                binaries, locks, join, font_families, network_profiles, reads=bool(reads))
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -1313,6 +1363,24 @@ def plan_font_families(plan):
         m = FONT_SIZE.match(value)
         if m:
             out.append({"setting": setting, "family": m.group("family").strip()})
+    return out
+
+
+NETWORK_KEYFILE_DIR = "/etc/NetworkManager/system-connections/"
+
+
+def plan_network_profiles(plan):
+    """The NetworkManager connections the plan generates, by name.
+
+    A keyfile in the plan is a profile the image declares; this reads the names so
+    the session can ask NetworkManager whether it accepted them. It says nothing
+    about whether the network authenticates, which needs a RADIUS server.
+    """
+    out = []
+    for f in plan.get("artifact", {}).get("generatedFiles") or []:
+        p = f.get("path") or ""
+        if p.startswith(NETWORK_KEYFILE_DIR) and p.endswith(".nmconnection"):
+            out.append(p[len(NETWORK_KEYFILE_DIR):-len(".nmconnection")])
     return out
 
 
@@ -1686,6 +1754,22 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
                 check(name, False,
                       f"{f['family']} is not among the {len(carried)} families fontconfig carries; "
                       f"declared by {f['setting']}")
+    # A network profile the image declares has to be one NetworkManager accepted:
+    # the file can be right and the daemon still refuse it. It says nothing about
+    # authenticating, which needs a RADIUS server and is not part of CI.
+    for name in plan_network_profiles(plan):
+        raw = values.get("nm_profiles")
+        listed = {p.strip() for p in (raw or "").split("|") if p.strip()}
+        check_name = f"network profile {name} is loaded by NetworkManager"
+        if raw is None:
+            check(check_name, True, "the connections NetworkManager lists could not be read here",
+                  skipped=True, unread=["the connection list"])
+        elif name in listed:
+            check(check_name, True,
+                  f"{name} is one of the {len(listed)} connections NetworkManager lists")
+        else:
+            check(check_name, False,
+                  f"{name} is not among the {len(listed)} connections NetworkManager lists")
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -1766,8 +1850,14 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
     if declared_flatpaks:
         installed = {a for a in (values.get("flatpak_apps") or "").split(",") if a}
         missing = sorted(declared_flatpaks - installed)
-        check("declared system Flatpaks are installed", not missing,
-              f"missing={','.join(missing) or 'none'}")
+        # The unit retries until it succeeds; still retrying is not a missing app,
+        # it is a download this run did not wait out.
+        still_running = any(s in (values.get("flatpak_preinstall") or "")
+                            for s in ("active", "activating"))
+        check("declared system Flatpaks are installed", not missing or still_running,
+              f"missing={','.join(missing) or 'none'}; preinstall={values.get('flatpak_preinstall')}",
+              skipped=bool(missing) and still_running,
+              unread=["the Flatpak list"] if missing and still_running else None)
     # The plan has no rpmPackages key, so presence is asked of the guest: an
     # image that ships Firefox gets the checks, one that does not says so, and a
     # guest that answers neither fails instead of skipping in silence.
@@ -1943,7 +2033,8 @@ def main():
                                            [b["destination"] for b in plan_binaries(plan)],
                                            browser_url, locks=[l["key"] for l in locks], join=join,
                                            gdm_user=gdm_user,
-                                           font_families=[f["family"] for f in plan_font_families(plan)])),
+                                           font_families=[f["family"] for f in plan_font_families(plan)],
+                                           network_profiles=plan_network_profiles(plan))),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:
