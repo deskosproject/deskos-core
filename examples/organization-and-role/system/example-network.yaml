@@ -12,5 +12,6 @@ spec:
   # an example: a real deployment either shares an account knowingly or lets the
   # fleet replace it (ADR 0027).
   identity: deskos-example
+  phase2: mschapv2
   serverName: radius.example.com
   autoconnect: false

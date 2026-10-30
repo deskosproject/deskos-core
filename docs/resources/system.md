@@ -129,6 +129,7 @@ An 802.1X connection: the trust decision and the policy, with no secret in it
 | `ssid` | one line, 1 to 32 characters | wifi only | refused on ethernet |
 | `eap` | `leap`, `md5`, `tls`, `peap`, `ttls`, `sim`, `fast`, `pwd` | yes | NetworkManager's methods |
 | `caCert` | PEM certificate inside the resource root | no | omitted, the system trust store is used |
+| `phase2` | `mschapv2`, `pap`, `chap`, `md5`, `gtc` or `tls` | peap, ttls, fast | the inner method, written as `phase2-auth`; NetworkManager refuses a tunnelled method without one |
 | `identity` | one line, not empty | password methods | the account the network authenticates; NetworkManager refuses a password profile without one, and a TLS profile does not need it |
 | `clientCert`, `privateKey` | paths under `/etc/pki/tls/certs/` and `/etc/pki/tls/private/` | EAP-TLS | where the fleet places this machine's certificate and key |
 | `secret` | `agent` or `none` | no | `agent` asks a session agent after login; `none` is EAP-TLS, which needs nothing |
@@ -152,9 +153,10 @@ across the fleet.
 **A password method is `secret: agent` and needs `identity`**, so NetworkManager
 asks a session agent for the secret after a login. It does not connect at boot or
 at the greeter, because before a login there is no agent, and NetworkManager
-refuses to load the profile at all without an identity (measured on 1.52: `802-1x.identity:
-property is missing`). The identity is not a secret, and every machine of the image
-shares it.
+refuses to load the profile at all without an identity (measured: `802-1x.identity:
+property is missing`). A tunnelled method needs `phase2` for the same reason
+(`phase2-auth, phase2-autheap: exactly one property must be set`). The identity is
+not a secret, and every machine of the image shares it.
 
 **EAP-TLS is `secret: none`**: the CA travels in the image, and the machine's
 certificate and key are paths the fleet fills under `/etc/pki/tls/certs/` and

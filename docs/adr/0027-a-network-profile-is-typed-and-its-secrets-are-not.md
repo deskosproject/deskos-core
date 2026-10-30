@@ -44,6 +44,7 @@ subset of an 802.1X profile and no secret in it.**
 | `eap` | one of NetworkManager's methods |
 | `caCert` | an asset in the resource root, pinned by digest, placed for NetworkManager to read |
 | `serverName` | `domain-suffix-match`: the certificate name the server must present |
+| `phase2` | the inner method for `peap`, `ttls` and `fast`, written as `phase2-auth`. NetworkManager requires exactly one of `phase2-auth` or `phase2-autheap` for those, so a tunnelled profile without it does not load |
 | `identity` | the account the network authenticates. Required for a password method, which NetworkManager refuses without one; a TLS profile does not need it |
 | `clientCert`, `privateKey` | where the fleet places this machine's certificate and key, for EAP-TLS: `/etc/pki/tls/certs/` and `/etc/pki/tls/private/` |
 | `secret` | `agent` (a session agent supplies it) or `none` (EAP-TLS needs no secret) |
@@ -66,6 +67,10 @@ for the wrong reason. The field is therefore required for a password method and
 absent for EAP-TLS, which loads without it. It is not a secret, but a shared
 identity is shared by every machine of the image, so the text says so, and the
 fleet that needs per-machine identities rewrites the keyfile.
+
+The same measurement found a second required field: a tunnelled method (`peap`,
+`ttls`, `fast`) is refused with "phase2-auth, phase2-autheap: exactly one property
+must be set", so `phase2` is required for those and refused elsewhere.
 
 That has a consequence worth stating plainly: a profile that pins the CA and the
 server name but carries no identity **cannot authenticate until the fleet supplies

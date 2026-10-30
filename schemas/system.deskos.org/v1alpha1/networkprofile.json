@@ -46,6 +46,10 @@
           "pattern": "^/etc/pki/tls/private/[A-Za-z0-9][A-Za-z0-9._-]*$",
           "description": "Where the fleet places this machine's private key, for EAP-TLS. The private tree carries cert_t, so the key is not left with the generic etc_t a new directory would get. Never image content."
         },
+        "phase2": {
+          "enum": ["mschapv2", "pap", "chap", "md5", "gtc", "tls"],
+          "description": "The inner authentication for peap, ttls and fast. NetworkManager requires exactly one of phase2-auth or phase2-autheap, so a tunnelled method without it does not load."
+        },
         "identity": {
           "type": "string",
           "minLength": 1,
@@ -78,6 +82,11 @@
           "if": { "properties": { "type": { "const": "wifi" } }, "required": ["type"] },
           "then": { "required": ["ssid"] },
           "else": { "not": { "required": ["ssid"] } }
+        },
+        {
+          "if": { "properties": { "eap": { "enum": ["peap", "ttls", "fast"] } }, "required": ["eap"] },
+          "then": { "required": ["phase2"] },
+          "else": { "not": { "required": ["phase2"] } }
         },
         {
           "if": { "properties": { "eap": { "const": "tls" } }, "required": ["eap"] },
