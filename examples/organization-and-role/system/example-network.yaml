@@ -3,10 +3,13 @@ kind: NetworkProfile
 metadata:
   name: example-corp-8021x
 spec:
-  # A wired 802.1X network with a password method, which is what most enterprises
-  # run. autoconnect is off because this profile is an example: it names a RADIUS
-  # server that does not exist here, and the workstation must not keep trying.
-  type: ethernet
+  # A corporate Wi-Fi with 802.1X and a password method, which is what most
+  # enterprises run. It is a Wi-Fi profile on purpose: an ethernet profile with
+  # autoconnect off still takes the wired device away from the default connection,
+  # and the example workstation then boots with no network at all (measured: no
+  # default route, no Flatpaks, no browser).
+  type: wifi
+  ssid: ExampleCorp
   eap: peap
   # NetworkManager refuses a password profile without an identity, and this one is
   # an example: a real deployment either shares an account knowingly or lets the
