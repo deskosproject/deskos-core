@@ -3,11 +3,14 @@
 package core
 
 import (
+	"fmt"
 	"regexp"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/deskosproject/deskos-core/internal/model"
+	"github.com/deskosproject/deskos-core/internal/providers/assets"
 	"github.com/deskosproject/deskos-core/internal/registry"
 )
 
@@ -35,6 +38,13 @@ type PlatformSpec struct {
 	Bootc         BootcBase      `json:"bootc"`
 	Distribution  Distribution   `json:"distribution"`
 	PackageGroups []PackageGroup `json:"packageGroups,omitempty"`
+	// PackageManifestFile names a file, relative to this resource, with one
+	// installed package name per line: the set the platform's groups resolve to.
+	// The build fails when the installed set differs, so a comps change is a
+	// review rather than a surprise (docs/adr/0028).
+	PackageManifestFile string `json:"packageManifest,omitempty"`
+	// PackageManifest is the parsed file, sorted and unique. Never serialized.
+	PackageManifest []string `json:"-"`
 	// RemovePackages are RPM packages the platform image must not carry. The
 	// build removes them after the package transactions and fails if one remains
 	// (docs/adr/0022). They are not group exclusions: a group exclusion only
@@ -329,6 +339,32 @@ var (
 	dconfKeyRE    = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 )
 
+// parsePackageManifest reads one package name per line, ignoring blank lines and
+// comments, and refuses a name that is not a package or a duplicate.
+func parsePackageManifest(data []byte) ([]string, error) {
+	seen := map[string]bool{}
+	var out []string
+	for i, line := range strings.Split(string(data), "\n") {
+		name := strings.TrimSpace(line)
+		if name == "" || strings.HasPrefix(name, "#") {
+			continue
+		}
+		if !pkgRE.MatchString(name) {
+			return nil, fmt.Errorf("line %d: %q is not a package name", i+1, name)
+		}
+		if seen[name] {
+			return nil, fmt.Errorf("line %d: %q is listed twice", i+1, name)
+		}
+		seen[name] = true
+		out = append(out, name)
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("the manifest is empty")
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
 type platformProvider struct{}
 type profileProvider struct{}
 type workstationProvider struct{}
@@ -472,6 +508,16 @@ func (platformProvider) Decode(res *model.Resource) error {
 			default:
 				errs.Add(model.Errorf(res, "gnome extension %q: neither a package nor a source is named", e.Name))
 			}
+		}
+	}
+	if s.PackageManifestFile != "" {
+		as, err := assets.Read(res, s.PackageManifestFile)
+		if err != nil {
+			errs.Add(model.Errorf(res, "packageManifest: %v", err))
+		} else if list, err := parsePackageManifest(as.Data); err != nil {
+			errs.Add(model.Errorf(res, "packageManifest %s: %v", as.Path, err))
+		} else {
+			s.PackageManifest = list
 		}
 	}
 	if b := s.Boot; b != nil {
