@@ -489,6 +489,46 @@ func TestFontRenderingWritesOnlyWhatIsDeclared(t *testing.T) {
 	}
 }
 
+func TestSearchAndNotificationsLower(t *testing.T) {
+	dir := base.with(fixture{
+		"ws.yaml":   workstation("ws", "core"),
+		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+		"g.yaml": gnome("core", "    search:\n      external: false\n"+
+			"      disabled: [org.gnome.Nautilus.desktop, org.gnome.clocks.desktop]\n"+
+			"    notifications:\n      banners: true\n      onLockScreen: false\n"),
+	}).dir(t)
+	p := mustPlan(t, "ws", dir)
+	for key, want := range map[string]string{
+		"/org/gnome/desktop/search-providers/disable-external": "false",
+		"/org/gnome/desktop/search-providers/disabled":         "['org.gnome.Nautilus.desktop', 'org.gnome.clocks.desktop']",
+		"/org/gnome/desktop/notifications/show-banners":        "true",
+		"/org/gnome/desktop/notifications/show-in-lock-screen": "false",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
+		}
+	}
+}
+
+func TestSearchProviderIdsAreChecked(t *testing.T) {
+	load := func(disabled string) error {
+		dir := base.with(fixture{
+			"ws.yaml":   workstation("ws", "core"),
+			"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
+			"g.yaml":    gnome("core", "    search:\n      disabled: "+disabled+"\n"),
+		}).dir(t)
+		_, err := planOf(t, "ws", dir)
+		return err
+	}
+	if err := load("[org.gnome.Nautilus.desktop]"); err != nil {
+		t.Fatalf("a provider id is valid: %v", err)
+	}
+	// The schema rejects the shape first; the typed decoder repeats the rules so a
+	// schema regression cannot weaken them.
+	mustFail(t, load("[Nautilus]"), "does not match pattern")
+	mustFail(t, load("[org.gnome.Nautilus.desktop, org.gnome.Nautilus.desktop]"), "are equal")
+}
+
 func TestIdleActionLowersToThePowerPlugin(t *testing.T) {
 	// A timeout and its action are one policy; GNOME keeps them in two keys, the
 	// type as a string and the timeout as plain integer seconds.
@@ -730,6 +770,8 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"keyboard.layouts", "    keyboard:\n      layouts: [{layout: us}]\n"},
 		{"network.proxy.mode", "    network:\n      proxy:\n        mode: none\n"},
 		{"session.idle.action", "    session:\n      idle:\n        action: suspend\n        after: 30m\n"},
+		{"search.external", "    search:\n      external: false\n"},
+		{"notifications.onLockScreen", "    notifications:\n      onLockScreen: false\n"},
 		{"privacy.rememberRecentFiles", "    privacy:\n      rememberRecentFiles: false\n"},
 	} {
 		t.Run(tc.setting, func(t *testing.T) {
