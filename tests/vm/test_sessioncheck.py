@@ -234,9 +234,9 @@ class TmpfilesTest(unittest.TestCase):
         lines = c["tmpfiles.extra"].splitlines()
         keyfile = next(l for l in lines if l.startswith(f"f {sc.BINARY_PATHS_PATH} "))
         self.assertEqual(keyfile.split(" - ", 1)[1].replace("\\n", "\n"), "/usr/bin/deskos\n")
-        script = next(l for l in lines if l.startswith(f"f {sc.QA_SCRIPT_PATH} ")).replace("\\n", "\n")
-        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", script)
-        self.assertIn("sha256sum", script)
+        reads = next(l for l in lines if l.startswith(f"f {sc.QA_READS_PATH} ")).replace("\\n", "\n")
+        self.assertIn(f"mapfile -t plan_binaries < {sc.BINARY_PATHS_PATH}", reads)
+        self.assertIn("sha256sum", reads)
 
     def test_journal_credentials_ignore_the_binaries(self):
         c = sc.credentials("journal", binaries=["/usr/bin/deskos"])
@@ -734,6 +734,7 @@ class SessionScriptSizeTest(unittest.TestCase):
             [("org.gnome.desktop.background", "picture-uri")], ["dash-to-dock@micxgx.gmail.com"])
         self.assertLess(len(script.encode("utf-8")), sc.TMPFILES_ARG_MAX)
         self.assertLess(len(reads.encode("utf-8")), sc.TMPFILES_ARG_MAX)
+        self.assertLess(len(sc.session_probe().encode("utf-8")), sc.TMPFILES_ARG_MAX)
         self.assertTrue(script.startswith("#!/bin/bash"))
         self.assertIn(f". {sc.QA_READS_PATH}", script)
         self.assertNotIn("# Every connection NetworkManager accepted", script)

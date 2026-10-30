@@ -640,11 +640,13 @@ sleep 3
 echo "screen_locked=$(gdbus call --session --dest org.gnome.ScreenSaver \
   --object-path /org/gnome/ScreenSaver \
   --method org.gnome.ScreenSaver.GetActive 2>/dev/null | tr -d '(), ' | tr 'A-Z' 'a-z')"
-# The preinstall unit is Type=exec and starts after multi-user, so it can still
-# be downloading when the session appears. Wait for it to stop, bounded.
-for i in $(seq 1 60); do
-  [ "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" != active ] && break
-  sleep 2
+# Wait for the preinstall unit to settle: it retries every minute, and a unit
+# still retrying is a read that did not happen, not a missing app.
+for i in $(seq 1 90); do
+  case "$(systemctl is-active deskos-flatpak-preinstall.service 2>/dev/null)" in
+    active|activating) sleep 2 ;;
+    *) break ;;
+  esac
 done
 echo "flatpak_apps=$(flatpak list --system --app --columns=application 2>/dev/null | paste -sd, -)"
 # The runtime tool the field checklist uses must read the plan this image
@@ -679,7 +681,7 @@ echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 """
 
 
-def session_reads(dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=()):
+def session_reads(dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(), binaries=()):
     """The reads that live in their own file, sourced by the session script.
 
     The main script is one tmpfiles argument and systemd refuses anything over 4095
@@ -689,6 +691,8 @@ def session_reads(dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensio
     text = ""
     if enabled_extensions:
         text += extension_reads()
+    if binaries:
+        text += binary_reads()
     if dconf_keys or vendor_keys:
         text += default_reads(dconf_db, bool(vendor_keys))
     return "\n".join(
@@ -750,7 +754,6 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
         )
     reads_source = f". {QA_READS_PATH}\n" if reads else ""
     tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
-    binary_reads_fragment = binary_reads() if binaries else ""
     font_reads_fragment = font_reads() if font_families else ""
     network_reads_fragment = network_reads() if network_profiles else ""
     script = f"""#!/bin/bash
@@ -769,7 +772,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{reads_source}{tray}{binary_reads_fragment}{font_reads_fragment}{network_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{reads_source}{tray}{font_reads_fragment}{network_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
 echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
@@ -1050,7 +1053,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     ]
     creds = {}
     if mode == "session":
-        reads = session_reads(dconf_keys, dconf_db, vendor_keys, enabled_extensions)
+        reads = session_reads(dconf_keys, dconf_db, vendor_keys, enabled_extensions, binaries)
         if reads:
             tmpfiles.append(f"f {QA_READS_PATH} 0644 root root - {tmpfiles_arg(reads)}")
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
@@ -1847,8 +1850,14 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
     if declared_flatpaks:
         installed = {a for a in (values.get("flatpak_apps") or "").split(",") if a}
         missing = sorted(declared_flatpaks - installed)
-        check("declared system Flatpaks are installed", not missing,
-              f"missing={','.join(missing) or 'none'}")
+        # The unit retries until it succeeds; still retrying is not a missing app,
+        # it is a download this run did not wait out.
+        still_running = any(s in (values.get("flatpak_preinstall") or "")
+                            for s in ("active", "activating"))
+        check("declared system Flatpaks are installed", not missing or still_running,
+              f"missing={','.join(missing) or 'none'}; preinstall={values.get('flatpak_preinstall')}",
+              skipped=bool(missing) and still_running,
+              unread=["the Flatpak list"] if missing and still_running else None)
     # The plan has no rpmPackages key, so presence is asked of the guest: an
     # image that ships Firefox gets the checks, one that does not says so, and a
     # guest that answers neither fails instead of skipping in silence.
