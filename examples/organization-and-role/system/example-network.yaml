@@ -1,0 +1,20 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: NetworkProfile
+metadata:
+  name: example-corp-8021x
+spec:
+  # A corporate Wi-Fi with 802.1X and a password method, which is what most
+  # enterprises run. It is a Wi-Fi profile on purpose: an ethernet profile with
+  # autoconnect off still takes the wired device away from the default connection,
+  # and the example workstation then boots with no network at all (measured: no
+  # default route, no Flatpaks, no browser).
+  type: wifi
+  ssid: ExampleCorp
+  eap: peap
+  # NetworkManager refuses a password profile without an identity, and this one is
+  # an example: a real deployment either shares an account knowingly or lets the
+  # fleet replace it (ADR 0027).
+  identity: deskos-example
+  phase2: mschapv2
+  serverName: radius.example.com
+  autoconnect: false

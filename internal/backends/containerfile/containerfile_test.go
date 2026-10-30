@@ -494,3 +494,38 @@ func keys(m map[string]string) []string {
 	}
 	return out
 }
+
+// A first boot sees a stale appstream summary, and `flatpak preinstall` exits 0
+// when a declared app is not in it. The unit has to verify the apps it declared,
+// or it reports success with nothing installed (job 124060456613).
+func TestFlatpakPreinstallUnitVerifiesTheApps(t *testing.T) {
+	p := &plan.Plan{Platform: plan.Platform{Name: "test", PackageManager: model.PackageManagerRpm}}
+	p.Provisioning.FlatpakPreinstallUnit = "deskos-flatpak-preinstall.service"
+	p.Provisioning.FlatpakApplications = []plan.FlatpakPreinstall{
+		{ID: "org.mozilla.firefox", Branch: "stable", CollectionID: "org.flathub.Stable"},
+		{ID: "io.github.kolunmi.Bazaar", Branch: "stable", CollectionID: "org.flathub.Stable"},
+	}
+	files, err := Render(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var unit string
+	for _, f := range files {
+		if strings.HasSuffix(f.Path, "/deskos-flatpak-preinstall.service") {
+			unit = string(f.Data)
+		}
+	}
+	if unit == "" {
+		t.Fatal("the preinstall unit is not in the render")
+	}
+	for _, want := range []string{
+		"flatpak preinstall --system --assumeyes --noninteractive",
+		"flatpak info --system 'org.mozilla.firefox'",
+		"flatpak info --system 'io.github.kolunmi.Bazaar'",
+		"Restart=on-failure",
+	} {
+		if !strings.Contains(unit, want) {
+			t.Errorf("the unit lacks %q:\n%s", want, unit)
+		}
+	}
+}
