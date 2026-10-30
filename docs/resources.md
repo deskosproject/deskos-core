@@ -27,7 +27,7 @@ spec:
 | `core.deskos.org` | `Platform`, `Profile`, `Workstation` |
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
-| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor` |
+| `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor`, `NetworkProfile` |
 
 All kinds are `v1alpha1`, with JSON Schemas in [`schemas/`](../schemas/).
 

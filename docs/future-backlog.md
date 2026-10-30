@@ -23,7 +23,7 @@ impact; human agreement. Never a whole tier. Research may end with no action.
 
 | State | Boundary |
 |---|---|
-| Deterministic compiler, fourteen kinds | architecture, composition and golden tests; does not establish image reproducibility or API stability |
+| Deterministic compiler, fourteen kinds at the review | architecture, composition and golden tests; does not establish image reproducibility or API stability |
 | Organization example | separate root, CentOS and private RHEL targets; `virt-manager` explicitly unmet (P1-03) |
 | Supply-chain pipeline | builds, scans, boots, signs, verifies, moves `latest` by digest; promotion and consumer enforcement were absent at review |
 | Declared vs installed SBOM | comparison checks declared RPM names, not every component; the signed statement referenced bytes that expired in 14 days |

@@ -62,7 +62,7 @@ break in that window, and the support and security entry points named.
 
 **1.0** needs beta for at least one minor with that external use, no resource or
 Plan break for two minors, fixtures for the previous two passing in CI, and a
-maintainer decision. Fourteen kinds is the ceiling unless a separate decision
+maintainer decision. Fifteen kinds is the ceiling unless a separate decision
 changes it.
 
 ## What is not promised

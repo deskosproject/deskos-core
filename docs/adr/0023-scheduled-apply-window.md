@@ -48,7 +48,7 @@ added. Rules:
   which stays a foundation default of stage-only.
 - The service does not silently kill an active session: `skipIfActiveSession` is deliberately not part of this
   decision, and the window is the contract. Notification is a separate decision, and this adds no public kind; the
-  count remains fourteen.
+  count does not change.
 
 ## Endpoint interface
 

@@ -53,7 +53,7 @@ are not applied.
 
 ## Consequences
 
-- The public API has **fourteen kinds** today (thirteen when this decision was taken); a test enforces the count, and
+- The public API has **fifteen kinds** today (thirteen when this decision was taken); a test enforces the count, and
   the remaining work is the **manual, visual** check of GTK4 and Ptyxis in a session.
 - Visual parity with another desktop is not promised: GNOME has deliberate limits, and apps read the accent by API,
   not CSS. A `colors.toml` palette is the reference shape.

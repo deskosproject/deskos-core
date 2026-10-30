@@ -37,7 +37,8 @@ Stream 10 image has no `/var/lib/rpm`, its database is at `/usr/lib/sysimage/rpm
 ## Consequences
 
 - A second package manager is expressible without weakening the first: RPM platforms keep their kind, groups and
-  rendering. The count test in `internal/compiler/architecture_test.go` must say fourteen.
+  rendering. The count test in `internal/compiler/architecture_test.go` must say the
+  new number.
 - `deskos-ubuntu-base` keeps dpkg's administration directory in `/usr/lib/sysimage/dpkg` (**met** 2026-10-16: `dpkg
   -l` reports 1509 packages, and a derived `FROM` installing a package reports "already the newest version"), so an
   Ubuntu derived image is buildable and no longer blind.

@@ -27,6 +27,6 @@ machines. It exposes no arbitrary kernel arguments, scripts or theme files.
 
 ## Consequences
 
-The public API has **fourteen kinds** today (ten when this decision was taken); a test enforces the
+The public API has **fifteen kinds** today (ten when this decision was taken); a test enforces the
 count. Splash artwork is a typed asset; there are no script themes and no package-owned theme files are
 replaced.
