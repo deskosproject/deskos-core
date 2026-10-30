@@ -256,6 +256,11 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
   [design/aarch64.md](design/aarch64.md). The bases and the builder are already
   multi-arch; the blockers are a per-architecture runtime pin, which is a model
   decision, and an arm64 runner with aarch64 firmware, which is a test platform.
+- **P3-05 reproducibility gaps**: measured in
+  [design/reproducibility-gaps.md](design/reproducibility-gaps.md). Two builds of
+  one context, 45 minutes apart: the plan, the 1473 RPMs and the pinned files are
+  identical; the image digest is not, because layers carry mtimes. The gap that
+  matters is the repository state, which nothing pins.
 
 ## Later
 
