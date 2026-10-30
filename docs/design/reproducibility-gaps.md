@@ -68,17 +68,27 @@ archived version can be distributed without a lifecycle environment. That is exa
 the pin the build needs: point dnf at a published version and the RPMs stop moving
 until someone publishes a new one.
 
-**On RHEL it already works.** The build registers with `subscription-manager`, so
-the repositories dnf sees come from `redhat.repo`, which is the activation key's
-content view. Assign the build to a published version and the packages are pinned;
-the file is removed after the transaction, so the image carries no subscription
-state.
+**Registration is the transport, not the freeze.** `subscription-manager` only
+writes `redhat.repo` with whatever the server it registers to publishes. Registered
+against the Red Hat CDN, those repositories move, and the packages are as unpinned
+as CentOS Stream's. Registered against Satellite or Foreman with Katello, with an
+activation key bound to a published content view, they are frozen. The mechanism is
+the same; the server decides.
 
-**On CentOS Stream it does not, yet.** There is no subscription, so the build uses
-the base image's own repositories, and a content view would be one more repository
+**Katello does this without a Red Hat subscription.** Satellite is the supported
+product; Foreman with Katello is the same content engine and mirrors CentOS Stream
+as a custom product, publishes a content view, and registers the host with
+`subscription-manager --org ... --environment <environment>/<view>` or an
+activation key. The registration needs the server's CA
+(`katello-ca-consumer-latest.noarch.rpm`), and nothing else. That is how the first
+DeskOS deployments consumed CentOS content, and it is why this page names Katello
+and not only Satellite.
+
+**On CentOS Stream the build does not register at all today**, so it resolves from
+the base image's own repositories and a content view would be one more repository
 next to them. Measured: a later `/etc/yum.repos.d/` file that redefines `[baseos]`
-with `enabled=0` is ignored, and dnf keeps the base image's definition. So pointing
-at a content view is not enough while the public repositories stay enabled.
+with `enabled=0` is ignored, and dnf keeps the base image's definition. Pointing at
+a content view is not enough while the public repositories stay enabled.
 
 Two ways to make the build meet the snapshot, and one of them is a decision:
 
