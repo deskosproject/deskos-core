@@ -65,6 +65,10 @@ type Artifact struct {
 	AptRepositories []AptRepository       `json:"aptRepositories"`
 	PackageGroups   []PackageGroupInstall `json:"packageGroups"`
 	Packages        []PackageInstall      `json:"packages"`
+	// PackageManifest is the set the platform's groups must resolve to, sorted.
+	// The build compares the installed set with it and fails on a difference, so
+	// a comps change is reviewed (docs/adr/0028).
+	PackageManifest []string `json:"packageManifest,omitempty"`
 	// RemovePackages are negative package operations: the build removes them
 	// after installing groups and packages, then proves they are absent
 	// (docs/adr/0022).

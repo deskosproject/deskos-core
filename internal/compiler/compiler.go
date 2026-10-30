@@ -115,7 +115,8 @@ func (c *Compiler) Plan(cat *compose.Catalog, workstation string) (*plan.Plan, e
 			Source:               pl.Source.String(),
 		},
 		Artifact: plan.Artifact{
-			BaseImage: plan.BaseImage{Image: plSpec.Bootc.Image, Digest: plSpec.Bootc.Digest, Ref: plSpec.BaseImageRef()},
+			BaseImage:       plan.BaseImage{Image: plSpec.Bootc.Image, Digest: plSpec.Bootc.Digest, Ref: plSpec.BaseImageRef()},
+			PackageManifest: plSpec.PackageManifest,
 			Labels: []plan.Label{
 				{Name: "org.opencontainers.image.title", Value: title},
 				{Name: "org.deskos.workstation", Value: ws.Metadata.Name},
