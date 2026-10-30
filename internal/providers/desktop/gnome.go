@@ -47,6 +47,9 @@ const (
 	KeyFontInterface   = "appearance.fonts.interface"
 	KeyFontDocument    = "appearance.fonts.document"
 	KeyFontMonospace   = "appearance.fonts.monospace"
+	KeyFontTitlebar    = "appearance.fonts.titlebar"
+	KeyFontTerminal    = "appearance.fonts.terminal"
+	KeyTextScaling     = "appearance.fonts.textScaling"
 	KeyFontAA          = "appearance.fonts.antialiasing"
 	KeyFontHinting     = "appearance.fonts.hinting"
 	KeyFontRGBA        = "appearance.fonts.rgbaOrder"
@@ -76,6 +79,7 @@ const (
 	KeyNumLock         = "keyboard.numLock"
 	KeyTerminal        = "keyboard.terminal"
 	KeyXKBOptions      = "keyboard.xkbOptions"
+	KeyKeyboardLayouts = "keyboard.layouts"
 	KeyPowerButton     = "power.buttonAction"
 	KeyDevTools        = "shell.developmentTools"
 	KeyShowUserList    = "login.showUserList"
@@ -127,12 +131,13 @@ var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
 	KeyLockShield:    true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true,
+	KeyFontTitlebar: true, KeyFontTerminal: true, KeyTextScaling: true,
 	KeyFontAA: true, KeyFontHinting: true, KeyFontRGBA: true, KeyFontLCD: true, KeyIconTheme: true,
 	KeyCursorTheme: true, KeyFavorites: true, KeyBlankAfter: true, KeyIdleDim: true,
 	KeyDimBrightness: true, KeyLockEnabled: true,
 	KeyLockDelay: true, KeyDockPosition: true, KeyDockBehavior: true,
 	KeyDockIconSize: true, KeyDockShowTrash: true, KeyColorScheme: true, KeyAccentColor: true,
-	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true,
+	KeySoftwareUpdates: true, KeyHotCorners: true, KeyWelcomeTour: true, KeyWorkspaces: true, KeyAppFolders: true, KeyClockWeekday: true, KeyClockFormat: true, KeyNumLock: true, KeyTerminal: true, KeyXKBOptions: true, KeyKeyboardLayouts: true,
 	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
@@ -248,8 +253,17 @@ type Fonts struct {
 	Interface *Font `json:"interface,omitempty"`
 	Document  *Font `json:"document,omitempty"`
 	Monospace *Font `json:"monospace,omitempty"`
-	// Rendering, applied by fontconfig to every application and mirrored in the
-	// Xsettings keys X11 applications read.
+	// Titlebar is the window title font. Omitting it keeps GNOME's default, which
+	// is to use the interface font.
+	Titlebar *Font `json:"titlebar,omitempty"`
+	// Terminal is the font of the terminal the platform ships. A platform that
+	// declares no terminal cannot carry it, and composition says so.
+	Terminal *Font `json:"terminal,omitempty"`
+	// TextScaling is GNOME's text-scaling-factor: a multiplier over every size,
+	// not a size. 1.0 is the default, and the range is GNOME's.
+	TextScaling *float64 `json:"textScaling,omitempty"`
+	// Rendering, applied by fontconfig to every application, mirrored in the
+	// interface keys GNOME 47 reads and in the Xsettings keys X11 applications use.
 	Antialiasing string `json:"antialiasing,omitempty"`
 	Hinting      string `json:"hinting,omitempty"`
 	RGBAOrder    string `json:"rgbaOrder,omitempty"`
@@ -293,9 +307,19 @@ type Clock struct {
 }
 
 type Keyboard struct {
-	NumLock    *bool    `json:"numLock,omitempty"`
-	Terminal   string   `json:"terminal,omitempty"`
+	NumLock  *bool            `json:"numLock,omitempty"`
+	Terminal string           `json:"terminal,omitempty"`
+	Layouts  []KeyboardLayout `json:"layouts,omitempty"`
+	// XKBOptions are the xkb options, independent of the layouts: a layout says
+	// which keys a board has, an option changes what some of them do.
 	XKBOptions []string `json:"xkbOptions,omitempty"`
+}
+
+// KeyboardLayout is one xkb layout a session switches between. The first one is
+// the layout a session starts in; the order is the switch order.
+type KeyboardLayout struct {
+	Layout  string `json:"layout"`
+	Variant string `json:"variant,omitempty"`
 }
 
 // Workspaces is the composed workspace mode; Count is 0 for dynamic workspaces.
@@ -374,6 +398,10 @@ var (
 	categoryRE      = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 	folderNameRE    = regexp.MustCompile(`^[^\x00-\x1f\x7f]+$`)
 	extensionUUIDRE = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za-z0-9._-]*$`)
+	// xkb names are lower case: a layout is us, es or latam, and a variant is
+	// intl or nodeadkeys. An unknown name fails here, not in a session.
+	xkbLayoutRE  = regexp.MustCompile(`^[a-z][a-z0-9_]*$`)
+	xkbVariantRE = regexp.MustCompile(`^[a-z0-9][a-z0-9_]*$`)
 )
 
 // Providers returns the desktop.deskos.org providers.
@@ -506,7 +534,10 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				}
 				set(key, v, v)
 			}
-			for key, font := range map[string]*Font{KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace} {
+			for key, font := range map[string]*Font{
+				KeyFontInterface: f.Interface, KeyFontDocument: f.Document, KeyFontMonospace: f.Monospace,
+				KeyFontTitlebar: f.Titlebar, KeyFontTerminal: f.Terminal,
+			} {
 				if font == nil {
 					continue
 				}
@@ -515,6 +546,13 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 					continue
 				}
 				set(key, *font, fontName(*font))
+			}
+			if f.TextScaling != nil {
+				if *f.TextScaling < 0.5 || *f.TextScaling > 3 {
+					bad("%s: text scaling must be between 0.5 and 3.0", KeyTextScaling)
+				} else {
+					set(KeyTextScaling, *f.TextScaling, strconv.FormatFloat(*f.TextScaling, 'g', -1, 64))
+				}
 			}
 		}
 		for key, v := range map[string]string{KeyIconTheme: a.IconTheme, KeyCursorTheme: a.CursorTheme} {
@@ -676,6 +714,34 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %q is not a desktop file id (for example org.gnome.Ptyxis.desktop)", KeyTerminal, k.Terminal)
 			}
 			set(KeyTerminal, k.Terminal, k.Terminal+" (Ctrl+Alt+T)")
+		}
+		if k.Layouts != nil {
+			if len(k.Layouts) == 0 {
+				bad("%s: at least one layout is required", KeyKeyboardLayouts)
+			}
+			seen := map[string]bool{}
+			names := make([]string, 0, len(k.Layouts))
+			for _, l := range k.Layouts {
+				if !xkbLayoutRE.MatchString(l.Layout) {
+					bad("%s: %q is not an xkb layout name (for example us, es, latam)", KeyKeyboardLayouts, l.Layout)
+					continue
+				}
+				if l.Variant != "" && !xkbVariantRE.MatchString(l.Variant) {
+					bad("%s: %q is not an xkb variant name (for example intl, nodeadkeys)", KeyKeyboardLayouts, l.Variant)
+					continue
+				}
+				id := l.Layout
+				if l.Variant != "" {
+					id += "+" + l.Variant
+				}
+				if seen[id] {
+					bad("%s: %q is listed twice", KeyKeyboardLayouts, id)
+					continue
+				}
+				seen[id] = true
+				names = append(names, id)
+			}
+			set(KeyKeyboardLayouts, k.Layouts, strings.Join(names, ", "))
 		}
 		if k.XKBOptions != nil {
 			if len(k.XKBOptions) == 0 {

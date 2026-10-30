@@ -203,6 +203,21 @@ def tray_probe():
     )
 
 
+def font_reads():
+    """The script fragment that lists the font families the image carries.
+
+    `fc-list` asks fontconfig, which is what an application asks, so the answer is
+    the one a session gets. One read for every declared family: the list is the
+    image's, and comparing it with the plan is this checker's job.
+    """
+    return (
+        "# Every font family fontconfig can see, so a declared family can be found.\n"
+        "printf 'font_families='; "
+        "fc-list -f '%{family}\\n' 2>/dev/null | tr ',' '\\n' | "
+        "sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep -v '^$' | sort -u | paste -sd'|' -; echo\n"
+    )
+
+
 def binary_reads():
     """The script fragment that hashes every file the plan's artifacts place.
 
@@ -646,7 +661,7 @@ echo "default_routes=$(ip route show default 2>/dev/null | wc -l)"
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
-                   binaries=(), dconf_locks=(), join=None):
+                   binaries=(), dconf_locks=(), join=None, font_families=()):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -700,6 +715,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
     extensions = extension_reads() if enabled_extensions else ""
     tray = f". {TRAY_SCRIPT_PATH}\n" if "appindicatorsupport@rgcjonas.gmail.com" in enabled_extensions else ""
     binary_reads_fragment = binary_reads() if binaries else ""
+    font_reads_fragment = font_reads() if font_families else ""
     return f"""#!/bin/bash
 # Runs inside the autologin GNOME session; records what the session sees.
 {seed}{launch}sleep 20
@@ -716,7 +732,7 @@ echo "disable_user_extensions=$(gsettings get org.gnome.shell disable-user-exten
 echo "enabled_extensions=$(gsettings get org.gnome.shell enabled-extensions)"
 echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
-{extensions}{tray}{binary_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
+{extensions}{tray}{binary_reads_fragment}{font_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
 echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
@@ -980,7 +996,8 @@ def tmpfiles_arg(text):
 
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
-                enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None, gdm_user=None):
+                enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None, gdm_user=None,
+                font_families=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -990,7 +1007,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     creds = {}
     if mode == "session":
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
-                                binaries, locks, join)
+                                binaries, locks, join, font_families)
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -1273,6 +1290,30 @@ def dconf_value(plan, key):
         if d["key"] == key:
             return d["value"]
     return None
+
+
+FONT_SIZE = re.compile(r"^(?P<family>.+?)\s+(?P<size>[0-9]+(?:\.[0-9]+)?)$")
+
+
+def plan_font_families(plan):
+    """The families the plan's font settings name, and the setting that names them.
+
+    A font setting lowers to a Pango description, `"<family> <size>"`, so the
+    family is what remains when the trailing size is removed. The claim this
+    supports is narrow on purpose: the image carries a family by that name. It says
+    nothing about substitution — a document that asks for Georgia gets its metric
+    substitute, and that is fontconfig's decision, not a declaration here.
+    """
+    out = []
+    for d in plan_defaults(plan):
+        setting = d.get("setting") or ""
+        if not setting.startswith("appearance.fonts.") or d.get("type") != "s":
+            continue
+        value = (d.get("value") or "").strip().strip("'")
+        m = FONT_SIZE.match(value)
+        if m:
+            out.append({"setting": setting, "family": m.group("family").strip()})
+    return out
 
 
 def plan_binaries(plan):
@@ -1624,6 +1665,27 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         else:
             check(name, True, f"sha256 {got}, {mode_text}",
                   skipped=bool(unread), unread=unread, coverage=coverage)
+    # A font setting names a family, and the image has to carry one by that name:
+    # composition cannot know what a package installs, so this is the read that
+    # turns a typo or a missing family into a failure instead of a silent fallback.
+    # It claims nothing about substitution.
+    families = plan_font_families(plan)
+    if families:
+        raw = values.get("font_families")
+        carried = {f.strip().lower() for f in (raw or "").split("|") if f.strip()}
+        for f in families:
+            name = f"font family {f['family']} is installed"
+            if raw is None:
+                check(name, True, "the families the image carries could not be read here",
+                      skipped=True, unread=["the family list"])
+            elif f["family"].lower() in carried:
+                check(name, True,
+                      f"{f['family']} is one of the {len(carried)} families fontconfig carries; "
+                      f"declared by {f['setting']}")
+            else:
+                check(name, False,
+                      f"{f['family']} is not among the {len(carried)} families fontconfig carries; "
+                      f"declared by {f['setting']}")
     # Every extension the composition turned on must really load. Membership in
     # enabled-extensions is the declared default; this is the session fact.
     for i, uuid in enumerate(plan.get("artifact", {}).get("enabledExtensions") or []):
@@ -1880,7 +1942,8 @@ def main():
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
                                            browser_url, locks=[l["key"] for l in locks], join=join,
-                                           gdm_user=gdm_user)),
+                                           gdm_user=gdm_user,
+                                           font_families=[f["family"] for f in plan_font_families(plan)])),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
     )
     try:

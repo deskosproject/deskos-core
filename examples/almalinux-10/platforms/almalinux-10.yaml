@@ -82,6 +82,12 @@ spec:
     appLauncher:
       package: gtk3
       command: /usr/bin/gtk-launch
+    # AlmaLinux 10 desktop ships Ptyxis, like the rest of the EL10 family.
+    terminal:
+      package: ptyxis
+      dconfPath: /org/gnome/Ptyxis/
+      fontKey: font-name
+      useSystemFontKey: use-system-font
   boot:
     splashKernelArgument: rhgb
     quietKernelArgument: quiet

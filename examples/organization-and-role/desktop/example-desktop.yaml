@@ -10,10 +10,9 @@ spec:
       wallpaper:
         light: ../assets/example.svg
       loginLogo: ../assets/example-login-logo.svg
-      fonts:
-        interface: { family: Noto Sans, size: 11 }
-        document: { family: Noto Sans, size: 11 }
-        monospace: { family: Noto Sans Mono, size: 10 }
+      # The organization names no font: a workstation on the vendor's desktop
+      # keeps the vendor's families (Red Hat Text and Red Hat Mono on EL10), and
+      # one that draws GNOME's look gets them from the deskos-adwaita profile.
     session:
       idle:
         blankAfter: 5m

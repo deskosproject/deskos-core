@@ -2,7 +2,7 @@
 
 What of the [GNOME System Administration
 Guide](https://help.gnome.org/system-admin-guide/) a DeskOS image can carry, page
-by page. Audited 2026-10-29 against `GnomeProfile` and the providers, not against
+by page. Audited 2026-10-30 against `GnomeProfile` and the providers, not against
 the guide's own assumption that any dconf key is a setting.
 
 This page is also the evidence for [ADR 0024](adr/0024-what-a-desktop-platform-must-expose.md):
@@ -36,7 +36,10 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Disallow fingerprint login | PAM, fprintd and a reader | **outside**: hardware and PAM, not image intent |
 | Lock down extensions | `shell enabled-extensions`, `development-tools` | **modelled** since 2026-10-29 (`shell.extensions`, `shell.developmentTools`) |
 | **Appearance** | | |
-| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35 |
+| Choose the fonts, surface by surface | `interface font-name`, `document-font-name`, `monospace-font-name`; `wm titlebar-font`; the terminal's `font-name` | **modelled** since 2026-10-30 (`appearance.fonts.interface`, `.document`, `.monospace`, `.titlebar`, `.terminal`) |
+| Zoom text without changing sizes | `interface text-scaling-factor` | **modelled** (`appearance.fonts.textScaling`, 0.5 to 3.0) |
+| Subpixel rendering and hinting | `interface font-rendering`, `font-antialiasing`, `font-hinting`, `font-rgba-order`, and fontconfig's own file | **modelled** (`appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter`): the file for every application, the keys for GNOME and X11 |
+| Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35, and `deskos-adwaita` adds Adwaita Sans and Mono (ADR 0026) |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |
 | Lock screen shield | `screensaver picture-uri` | **modelled** since 2026-10-29 (`appearance.lockShield`; the wallpaper is the default) |
@@ -51,7 +54,8 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
 | Automatic logout when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **gap: fields**, and a policy that can lose unsaved work |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
-| Multiple keyboard layouts at the greeter | `localectl set-x11-keymap`, XKB layouts | **gap: field**: options are modelled, layouts are not |
+| Multiple keyboard layouts | `input-sources sources` | **modelled** since 2026-10-30 (`keyboard.layouts`, in switch order; the key lands in the distro database, which GDM's profile also reads) |
+| Multiple keyboard layouts at the console | `localectl set-x11-keymap`, `/etc/vconsole.conf` | **gap: field**: the session layouts are modelled, the console keymap is not |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
 | **Network and hardware** | | |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |

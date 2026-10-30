@@ -56,6 +56,90 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
+# Binary artifact adwaita-license 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/LICENSE'; \
+    echo '459687971d21c53923c1d1c9c062ec273a7ea03226b36195b79ec6af7d98dc81  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Adwaita-OFL.txt')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Adwaita-OFL.txt'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Regular.ttf'; \
+    echo 'ffc549b7fc28057d624086111f1ba0b1f752d2d7ff7c5363dfa064e4dca17d47  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Regular.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Regular.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-bold 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Bold.ttf'; \
+    echo '9963c9a54805dd29cd803aa5f816c9f7c74c7bdae015467a485ae729868d2325  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Bold.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Bold.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-bold-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-BoldItalic.ttf'; \
+    echo '7108404fc597fa8586b822c6d03b676caad353be1bc4a89adfab77084663a04e  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Italic.ttf'; \
+    echo '20795e28c01f7df230002925d93e16cfe1bc1ab9e84426ac106344fb419cb57b  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Italic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-sans 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Regular.ttf'; \
+    echo '8381c33b9a44f066f2b99dba3d416a2342891e28c956a35dfd8d16ee2987e6d4  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaSans-Regular.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaSans-Regular.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-sans-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Italic.ttf'; \
+    echo 'a3dc55af75f746756596dca37f3ff7c0f0b015f2fd2e87f2cf0ef4a69d4f3015  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaSans-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaSans-Italic.ttf'; \
+    rm -rf "$tmp"
+
 # Binary artifact deskos 0.18.0 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \

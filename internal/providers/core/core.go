@@ -141,6 +141,20 @@ type GnomePlatform struct {
 	AppLauncher         *AppLauncher     `json:"appLauncher,omitempty"`
 	// AppFolders reports that GNOME Shell keeps app folders from the dconf defaults.
 	AppFolders bool `json:"appFolders,omitempty"`
+	// Terminal names the terminal the platform ships and the two keys that decide
+	// its font. A profile can then set that font, and a platform without a
+	// terminal cannot pretend it did (docs/adr/0025).
+	Terminal *TerminalPlatform `json:"terminal,omitempty"`
+}
+
+// TerminalPlatform is where the platform's terminal keeps its font. The schema
+// path is the platform's fact and not Core's: Ptyxis keeps the default profile's
+// font on its own schema, and a terminal that keeps it somewhere else says so.
+type TerminalPlatform struct {
+	Package          string `json:"package"`
+	DconfPath        string `json:"dconfPath"`
+	FontKey          string `json:"fontKey"`
+	UseSystemFontKey string `json:"useSystemFontKey"`
 }
 
 // AppLauncher is the command that starts an application by desktop file id.
@@ -311,6 +325,8 @@ var (
 	plymouthDirRE = regexp.MustCompile(`^/usr/share/plymouth/themes/[a-z0-9][a-z0-9_.-]*$`)
 	trustDirRE    = regexp.MustCompile(`^/etc(/[A-Za-z0-9._-]*[A-Za-z0-9_-])+$`)
 	trustCmdRE    = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._+-]*$`)
+	dconfPathRE   = regexp.MustCompile(`^(/[A-Za-z0-9_-]+)+/$`)
+	dconfKeyRE    = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 )
 
 type platformProvider struct{}
@@ -420,6 +436,16 @@ func (platformProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "gnome.loginScreen needs gnome.loginScreenDatabase (the database GDM reads, for example \"gdm\")"))
 		case !g.LoginScreen && g.LoginScreenDatabase != "":
 			errs.Add(model.Errorf(res, "gnome.loginScreenDatabase %q is declared although the platform declares no login screen", g.LoginScreenDatabase))
+		}
+		if t := g.Terminal; t != nil {
+			switch {
+			case !pkgRE.MatchString(t.Package):
+				errs.Add(model.Errorf(res, "gnome.terminal.package %q is not a package name", t.Package))
+			case !dconfPathRE.MatchString(t.DconfPath):
+				errs.Add(model.Errorf(res, "gnome.terminal.dconfPath %q must be a dconf path such as /org/gnome/Ptyxis/", t.DconfPath))
+			case !dconfKeyRE.MatchString(t.FontKey) || !dconfKeyRE.MatchString(t.UseSystemFontKey):
+				errs.Add(model.Errorf(res, "gnome.terminal needs fontKey and useSystemFontKey, the names of two GSettings keys"))
+			}
 		}
 		seenExtension := map[string]bool{}
 		for _, e := range g.Extensions {

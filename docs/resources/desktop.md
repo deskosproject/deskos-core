@@ -13,10 +13,11 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `windows.buttons`, `windows.buttonPlacement` | `minimize`, `maximize`, `close`, at least one; `left` or `right` | |
 | `applications.browser`, `.fileManager`, `.textEditor`, `.imageViewer`, `.videoPlayer`, `.pdfViewer` | a `*.desktop` id | |
 | `appearance.wallpaper.light` (required), `.dark`, `appearance.loginLogo`, `.lockShield`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; theme names | |
-| `appearance.fonts.interface`, `.document`, `.monospace`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
+| `appearance.fonts.interface`, `.document`, `.monospace`, `.titlebar`, `.terminal`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
+| `appearance.fonts.textScaling` | number, 0.5 to 3.0 | |
 | `appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter` | `none`, `grayscale`, `rgba`; `none`, `slight`, `medium`, `full`; `rgb`, `bgr`, `vrgb`, `vbgr`; `none`, `default`, `light`, `legacy` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]`, `.developmentTools` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}`; boolean (`false` hides Looking Glass) | |
-| `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
+| `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
 | `session.idle.blankAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
 
@@ -80,16 +81,34 @@ Each capability a managed profile can turn off is a boolean under
 Set the boolean, then list `lockdown.<field>` under `locks`. `disableLockScreen`
 weakens security: use it only when another mechanism locks the session.
 
+**Fonts, surface by surface.** GNOME has one font key per surface, and the
+profile names each one:
+
+| Field | GNOME key | Notes |
+|---|---|---|
+| `interface`, `document`, `monospace` | `org.gnome.desktop.interface` `font-name`, `document-font-name`, `monospace-font-name` | |
+| `titlebar` | `org.gnome.desktop.wm.preferences` `titlebar-font` | also turns `titlebar-uses-system-font` off; omitting it keeps GNOME's default, which is the interface font |
+| `terminal` | the platform's terminal: `gnome.terminal` names the schema path and the two keys | requires a platform that declares a terminal, or composition fails with that reason |
+| `textScaling` | `text-scaling-factor` | a multiplier over every size, not a size |
+
 **Font rendering.** The four rendering settings write
 `/etc/fonts/conf.d/60-deskos-fonts.conf`, which fontconfig applies to every
-application, and mirror the same choice into the Xsettings keys X11 applications
-read. Declare only what you mean: an image that declares nothing keeps the
-distribution's choices. RGB and BGR depend on the panel, so Core picks neither.
+application; mirror the same choice into the interface keys GNOME 47 reads
+(`font-antialiasing`, `font-hinting`, `font-rgba-order`, and `font-rendering:
+manual`, without which GNOME ignores the other three); and into the Xsettings keys
+X11 applications read. Declare only what you mean: an image that declares nothing
+keeps the distribution's choices. RGB and BGR depend on the panel, so Core picks
+neither.
 
-The families are separate from the rendering: `deskos-gnome` includes the
-`deskos-fonts` package set, so the interface, an office document, a terminal,
-color emoji and the symbol and math ranges all have a font without anyone
-installing one.
+The families are separate from the rendering, and they are the workstation's
+choice ([ADR 0026](../adr/0026-the-families-are-the-workstations-choice.md)).
+`deskos-gnome` installs the families every workstation needs: Liberation, Carlito,
+Caladea, DejaVu, Noto, the URW base 35, and Gelasio and Overpass as pinned
+artifacts because EL10 packages neither. `deskos-adwaita` adds GNOME's own:
+Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which is
+what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
+not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
+The terminal follows the monospace family unless a profile names one.
 
 ### Greeter
 

@@ -1,0 +1,19 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-adwaita
+spec:
+  defaults:
+    appearance:
+      fonts:
+        # GNOME's own families, which is what GNOME OS ships and what the desktop
+        # is designed with: Adwaita Sans is a variation of Inter, Adwaita Mono is
+        # Iosevka matched to it. A workstation on a platform whose desktop is the
+        # vendor's own keeps the vendor's fonts instead; this profile is the one
+        # that says otherwise, and it is added per workstation (ADR 0026).
+        interface: {family: Adwaita Sans, size: 11}
+        document: {family: Adwaita Sans, size: 12}
+        monospace: {family: Adwaita Mono, size: 11}
+        # The terminal is not named: Ptyxis uses the system monospace font by
+        # default, so it follows the family above. A role that wants another
+        # family in the terminal sets appearance.fonts.terminal.
