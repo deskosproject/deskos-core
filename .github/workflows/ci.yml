@@ -46,7 +46,7 @@ jobs:
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples
         run: |
-          for ex in organization-and-role centos-stream-10 almalinux-10 rhel-10 fedora-45; do
+          for ex in organization-and-role centos-stream-10 almalinux-10 rhel-10; do
             ./bin/deskosctl validate "./examples/$ex"
           done
       - name: plan CentOS reference workstation
@@ -56,7 +56,6 @@ jobs:
           ./bin/deskosctl plan ./examples/centos-stream-10 --workstation example-centos-stream-10
           ./bin/deskosctl plan ./examples/almalinux-10 --workstation example-almalinux-10
           ./bin/deskosctl plan ./examples/rhel-10 --workstation example-rhel-10
-          ./bin/deskosctl plan ./examples/fedora-45 --workstation example-fedora-45
       - name: plan example RHEL workstation
         run: ./bin/deskosctl plan ./examples/organization-and-role --workstation example-devops-rhel-10
       - name: Which platform pins changed
@@ -137,6 +136,5 @@ jobs:
           done
           # The example platforms still render from their self-contained roots.
           ./bin/deskosctl render ./examples/almalinux-10 --workstation example-almalinux-10 --output dist/alma
-          ./bin/deskosctl render ./examples/fedora-45 --workstation example-fedora-45 --output dist/fedora-45
           diff -r dist/a dist/b
           diff -r dist/a dist/c

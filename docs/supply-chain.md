@@ -113,10 +113,16 @@ mirror then do nothing, and `:stable` keeps serving the last good digest
 ### The installer
 
 `.github/workflows/iso.yml` is a workflow of its own: the weekly build calls it
-with the digest it just published, and a dispatch can do the same. It is separate
+once per published image, and a dispatch can do the same. It is separate
 so that an image which passed its checks is published and promoted whether or not
 its installer built, and a retry costs one ISO build. The promotion reads the
 `publish` job's conclusion, not the run's.
+
+The publish job is a matrix, so one job output would be whichever leg finished
+last: the installer is called with the image and the commit, resolves
+`$IMAGE:$COMMIT`, and verifies the gate's signature over the digest it resolved.
+It also builds with the image's own root filesystem (`xfs` on EL10, `btrfs` on
+Fedora), because bootc cannot always infer it.
 
 It verifies the image's keyless signature before building, then signs the installer
 with its own workflow identity:
@@ -164,8 +170,10 @@ The policy the check applies is
 - **vendor-controlled components** (the kernel, distribution packages) follow the
   distribution's security response, and a Critical in them still blocks;
 - **every exception is explicit**: an OpenVEX statement
-  (`tests/supply-chain/vex.openvex.json`) or an entry in the reviewed record
-  `tests/supply-chain/exceptions.json`. Nothing is silently ignored.
+  (`tests/supply-chain/vex.openvex.json`) or an entry in the platform's reviewed
+  record: `tests/supply-chain/exceptions.json` for CentOS Stream 10 and
+  `tests/supply-chain/exceptions-fedora-45.json` for Fedora 45. Nothing is
+  silently ignored.
 
 The record names the owner, the review date, the base image digest it was reviewed
 against and, per exception, the matches it covers (package, type, version,
@@ -229,6 +237,7 @@ keeps key-based signing ([authenticity](design/authenticity.md)).
 ```bash
 # One repository per platform and release:
 # quay.io/deskos/deskos-core-centos-stream-10
+# quay.io/deskos/deskos-core-fedora-45
 ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
 identity='https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'

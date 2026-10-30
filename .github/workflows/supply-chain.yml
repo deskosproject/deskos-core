@@ -70,8 +70,8 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux and Fedora are examples
-        # and have no publication leg.
+        # release. RHEL is never published. AlmaLinux is an example and has no
+        # publication leg.
         #
         # Adding a leg with `disk: bib` here needs a matching `iso:` call at the
         # bottom of this file, which is where its installer is built.
@@ -89,6 +89,21 @@ jobs:
             exceptions: tests/supply-chain/exceptions.json
             disk: bib
             diskfile: output/qcow2/disk.qcow2
+            rootfs: xfs
+            config: tests/vm/config.toml
+            splash: true
+          # Fedora's disk is btrfs, the filesystem its base is built for: bootc
+          # cannot infer a default for Silverblue and bib stops with "missing
+          # required info: DefaultRootFs" without --rootfs. The exceptions record
+          # is per platform because it names the base the risk was reviewed
+          # against (docs/supply-chain.md, ADR 0012).
+          - token: fedora-45
+            workstation: deskos-core-fedora-45
+            exceptions: tests/supply-chain/exceptions-fedora-45.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            rootfs: btrfs
+            config: tests/vm/config-btrfs.toml
             splash: true
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
@@ -239,9 +254,10 @@ jobs:
           mkdir -p "$WORK/output"
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
-            -v "$WORK/output:/output" -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
+            -v "$WORK/output:/output" -v "$PWD/${{ matrix.config }}:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --config /config.toml --no-default-kernel-args \
+            "$BIB" build --type qcow2 --rootfs "${{ matrix.rootfs }}" \
+            --config /config.toml --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
@@ -669,9 +685,24 @@ jobs:
   iso:
     needs: publish
     if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
+    strategy:
+      # One installer per published image, and one failing installer must not
+      # hide the other.
+      fail-fast: false
+      matrix:
+        include:
+          - image: quay.io/deskos/deskos-core-centos-stream-10
+            rootfs: xfs
+          - image: quay.io/deskos/deskos-core-fedora-45
+            rootfs: btrfs
     uses: ./.github/workflows/iso.yml
     with:
-      image: quay.io/deskos/deskos-core-centos-stream-10
-      digest: ${{ needs.publish.outputs.digest }}
+      image: ${{ matrix.image }}
+      # Empty on purpose: the publish job above is a matrix, so a single
+      # `needs.publish.outputs.digest` is whichever leg finished last, not the
+      # digest of this image. The installer resolves $IMAGE:$COMMIT and verifies
+      # the gate's signature over the digest it resolved.
+      digest: ""
       commit: ${{ github.sha }}
+      rootfs: ${{ matrix.rootfs }}
     secrets: inherit

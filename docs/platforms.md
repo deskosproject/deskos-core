@@ -15,6 +15,7 @@ in [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubunt
 |---|---|---|---|---|---|---|---|
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
+| Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | not yet | Flatpak preinstall |
 
 `(vendor)` means the platform's own supplier: Red Hat for RHEL, the CentOS
 project for CentOS Stream. A session starts with the vendor's desktop where
@@ -27,10 +28,11 @@ Ubuntu 26.04 is not a row here: no vendor publishes a bootc base for it, so the
 project owns one, and its build, boot and publication live in
 [`deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu) (ADR 0020).
 
-AlmaLinux 10 and Fedora 45 are **example platforms**: not in
-`resources/platforms/`, not published, not blocking a pull request. CI composes
-and renders them and a weekly workflow builds and boots them; see
-[Example platforms](example-platforms.md).
+AlmaLinux 10 is an **example platform**: not in `resources/platforms/`, not
+published, not blocking a pull request. CI composes and renders it and a weekly
+workflow builds and boots it; see [Example platforms](example-platforms.md).
+Fedora 45 moved into the matrix in 2026-10-30; its base, mirror and pin are in
+[Fedora 45](fedora.md).
 
 ## How to get a machine today
 

@@ -22,8 +22,7 @@ const (
 	exampleRoot   = "../../examples/organization-and-role"
 	// Fedora and AlmaLinux are example-only. Their Platforms live in these roots,
 	// so the examples stay self-contained and can be promoted later.
-	fedoraExampleRoot = "../../examples/fedora-45"
-	almaExampleRoot   = "../../examples/almalinux-10"
+	almaExampleRoot = "../../examples/almalinux-10"
 )
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
@@ -127,9 +126,9 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		// The example-only platforms keep their rendered build contexts pinned too.
+		// The example-only platform keeps its rendered build context pinned too.
 		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
-		{"example-fedora-45", []string{resourcesRoot, fedoraExampleRoot}},
+		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
 		if err != nil {
@@ -285,7 +284,7 @@ func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 		{"example-devops-centos-stream-10", []string{resourcesRoot, exampleRoot}},
 		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
 		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
-		{"example-fedora-45", []string{resourcesRoot, fedoraExampleRoot}},
+		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		files, err := containerfile.Render(p)

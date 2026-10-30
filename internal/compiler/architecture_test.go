@@ -246,7 +246,7 @@ func TestFedoraDeclaresASystemFlatpakChannel(t *testing.T) {
 		"p.yaml":  profile("apps", "foundation", "FlatpakSet/deskos-reference-apps"),
 		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: fedora-ws\nspec:\n  platformRef: fedora-45\n  profiles: [apps]\n",
 	}.dir(t)
-	p := mustPlan(t, "fedora-ws", resourcesRoot, fedoraExampleRoot, dir)
+	p := mustPlan(t, "fedora-ws", resourcesRoot, dir)
 	if got := packages(p); !slices.Contains(got, "flatpak") {
 		t.Errorf("packages = %v, want Flatpak: the Fedora platform declares the channel", got)
 	}

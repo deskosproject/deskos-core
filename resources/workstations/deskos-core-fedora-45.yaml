@@ -1,0 +1,20 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-core-fedora-45
+spec:
+  displayName: DeskOS Core (Fedora 45)
+  platformRef: fedora-45
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    # Fedora carries its own font families and icon theme, like EL10 does; the
+    # Core desktop keeps them rather than importing another platform's.
+    - fedora
+    # The DeskOS look and boot behaviour: the splash is DeskOS's own theme built
+    # from the platform's spinner frames, and the boot check asserts it. A
+    # workstation with only `deskos-boot` would boot with Fedora's default theme.
+    - deskos-look
+    - firefox
+    - deskos-dock
+    - deskos-reference-apps
