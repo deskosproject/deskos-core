@@ -76,6 +76,43 @@ repository prefers them:
    the only option when nobody is going to provision anything, but the machine is
    offline at the greeter and before the first login.
 
+## A remote workstation: the tunnel before the greeter
+
+A machine that logs in against FreeIPA or AD over the internet needs the tunnel
+**before** anyone logs in, and NetworkManager has two shapes for that:
+
+- **WireGuard is a connection type**, so it autoconnects like any other profile:
+  the tunnel comes up at boot from a stored private key or one the fleet placed.
+- **A VPN plugin profile (OpenVPN, IPsec) does not autoconnect.** The manual is
+  explicit: autoconnect is not implemented for VPN profiles, and the alternative is
+  a **secondary**. The base connection (ethernet or Wi-Fi) names the VPN in
+  `connection.secondaries`, so the tunnel activates when the link does.
+
+The order at boot is then: NetworkManager brings up the link and its secondary
+tunnel, SSSD starts and keeps retrying until the IPA or AD server answers, GDM
+draws the greeter, and the domain users appear once SSSD is online. The greeter
+does not wait for SSSD, and it does not need to: what waits is the login. A user who
+has logged in before can also log in from SSSD's cache while the tunnel is down.
+
+Three things decide whether this works at all:
+
+1. **The credential has to be there before a login.** A key or certificate works; a
+   password the agent asks for does not, because the agent lives in the session that
+   has not started. Stored per machine (`0600`, or in the TPM) or certificate-based,
+   never typed.
+2. **Split DNS.** The IPA or AD domain has to resolve through the tunnel: the VPN
+   profile carries the search domain and a lower `dns-priority` than the local link,
+   or the greeter asks the wrong resolver and the login fails with a name that
+   exists.
+3. **A VPN that needs a person to authenticate is a dead end at the greeter.** SSO
+   or an MFA prompt before the tunnel is the same chicken-and-egg as 802.1X: solve
+   it with a machine certificate or a WireGuard key, or accept a local account for
+   the first login and bring the tunnel up afterwards.
+
+The image can carry the profile: server, CA, method, split DNS, and the secondary
+relationship. The key, the certificate and the enrolment are the fleet's, for the
+same reason as everywhere else on this page.
+
 ## What DeskOS does not do
 
 - It does not join a domain or a realm: enrolment is per-machine identity, and the
