@@ -176,6 +176,9 @@ connection unless another profile matches it. Measured on the example workstatio
 the profile made the guest boot with no default route, no Flatpaks and no browser.
 A Wi-Fi profile on a wired-only machine is inert, which is why the example is one.
 
+How these credentials relate to Active Directory, FreeIPA and a domain join is in
+[design/network-authentication.md](../design/network-authentication.md).
+
 A machine whose network requires 802.1X before the fleet can reach it has three
 ways in, and the image cannot choose for it: EAP-TLS with a machine certificate, an
 onboarding VLAN or MAC-based admission where the fleet configures it, or a
