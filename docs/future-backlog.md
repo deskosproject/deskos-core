@@ -119,6 +119,21 @@ records and each input is mapped to owner, trigger and check.
 ## P1: product stability and usability
 
 <a id="p1-01"></a>
+### P1-00: Install image mode at scale over the network
+**Proposed · M.** The first DeskOS shipped by booting from the network: DHCP and
+PXE handed the machine to Anaconda, and the desktop installed itself. Image mode
+keeps that path: Satellite or Foreman and Katello provision a bootc machine from a
+trimmed kickstart whose `ostreecontainer` (or the newer `bootc`) command names the
+image, with `inst.stage2` in the kernel options and registry credentials in `%pre`
+(`/etc/ostree/auth.json`). Nothing in Satellite needs to change; what is missing is
+ours: a kickstart template a maintainer can drop in, the image named by **digest**
+rather than tag, and a page that says which layer owns what (architecture.md,
+"What each layer owns").
+**Done when:** the template and the page exist, and a machine provisioned that way
+boots into the same session the ISO does, with the digest recorded.
+Red Hat's recipe: <https://developers.redhat.com/articles/2026/08/06/image-mode-for-rhel-with-anaconda-and-satellite>
+
+<a id="p1-01"></a>
 ### P1-01: Define the compatibility contract
 **Proposed · M.** `v1alpha1` has had deliberate breaks, and schemas and goldens pin
 behaviour, not a policy. Define compatibility for resources, Plan, CLI output and

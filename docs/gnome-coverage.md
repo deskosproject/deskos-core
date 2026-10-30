@@ -24,6 +24,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Store settings over NFS | `service-db:keyfile/user` first line of the profile | **gap: field**: the platform owns the profile, and no field asks for it |
 | Why not GSettings overrides | vendor overrides | **modelled** for the first-boot wallpaper only; no general field |
 | **User settings** | | |
+| Privacy defaults | `org.gnome.desktop.privacy` recent files, temp/trash removal, telemetry, camera, microphone | **modelled** since 2026-10-30 (`privacy.*`) |
 | Dim screen when idle | `plugins.power idle-dim`, `idle-brightness`, `session idle-delay` | **modelled** since 2026-10-29 (`session.idle.blankAfter`, `.dim`, `.dimBrightness`) |
 | Enable the compose key | `input-sources xkb-options` | **modelled** (`keyboard.xkbOptions`: `compose:caps`, `compose:menu`, `compose:ralt`, `compose:rctrl`) |
 | Disallow online accounts | `online-accounts whitelisted-providers` | **gap: field**, or declined: an account is a person's, not the image's |
@@ -58,6 +59,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Multiple keyboard layouts at the console | `localectl set-x11-keymap`, `/etc/vconsole.conf` | **gap: field**: the session layouts are modelled, the console keymap is not |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
 | **Network and hardware** | | |
+| System proxy | `org.gnome.system.proxy` mode, PAC, ignore hosts, per-protocol servers | **modelled** since 2026-10-30 (`network.proxy`); a password is refused as a secret |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |
 | Default VPN settings | NetworkManager `system-connections` | **gap: kind**: a connection profile, with secrets supplied at runtime |
 | **Software** | | |

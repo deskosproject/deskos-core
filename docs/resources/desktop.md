@@ -17,6 +17,8 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `appearance.fonts.textScaling` | number, 0.5 to 3.0 | |
 | `appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter` | `none`, `grayscale`, `rgba`; `none`, `slight`, `medium`, `full`; `rgb`, `bgr`, `vrgb`, `vbgr`; `none`, `default`, `light`, `legacy` | |
 | `shell.favorites`, `.hotCorners`, `.welcomeTour`, `.workspaces`, `.appFolders[]`, `.extensions[]`, `.developmentTools` | ordered `*.desktop` ids; boolean; boolean (absent keeps the tour, `false` suppresses it); `dynamic` or 1 to 36; `{id, name, apps}` or `{id, name, categories}`; `{uuid, enabled}`; boolean (`false` hides Looking Glass) | |
+| `network.proxy.mode`, `.autoconfigUrl`, `.ignoreHosts`, `.useSameProxy`, `.http`, `.https`, `.ftp`, `.socks` | `none`, `auto`, `manual`; http or https URL; host patterns; boolean; `{host, port}` | `mode` yes; a password is never authored |
+| `privacy.*` | booleans, plus `recentFilesMaxAge` (days, -1 keeps every recent file) and `oldFilesAge` (1 to 3650 days) | |
 | `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
 | `session.idle.blankAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
@@ -109,6 +111,20 @@ Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which 
 what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
 not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
 The terminal follows the monospace family unless a profile names one.
+
+**Proxy.** `network.proxy` is the system proxy GNOME and the apps that read it
+use: `none` ignores everything, `auto` reads the PAC file in `autoconfigUrl`, and
+`manual` uses the servers. A password is not a field, because the image would
+publish it; a proxy that needs authentication gets its credentials from the fleet.
+GNOME uses the HTTP proxy for every protocol unless `useSameProxy` is false, so
+declaring `https`, `ftp` or `socks` turns it off when the profile does not say.
+
+**Privacy.** The `privacy` block is what the desktop remembers and reports:
+recent files and app usage, when temp and trash files are removed, whether GNOME
+reports technical problems or usage statistics, and whether the camera, the
+microphone, the sound output, the user's name or a privacy screen are restricted.
+GNOME's own defaults are already modest; an organization that answers a compliance
+questionnaire can now say so in the image.
 
 ### Greeter
 
