@@ -61,7 +61,7 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | **Network and hardware** | | |
 | System proxy | `org.gnome.system.proxy` mode, PAC, ignore hosts, per-protocol servers | **modelled** since 2026-10-30 (`network.proxy`); a password is refused as a secret |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |
-| Default VPN settings | NetworkManager `system-connections` | **gap: kind**: a connection profile, with secrets supplied at runtime |
+| Default VPN settings, 802.1X | NetworkManager `system-connections` | **gap: kind**, and [ADR 0027](adr/0027-a-network-profile-is-typed-and-its-secrets-are-not.md) proposes it: a typed profile with no secret in it |
 | **Software** | | |
 | Enable machine-wide extensions | `shell enabled-extensions` | **modelled** (`shell.extensions`, plus the platform's catalog) |
 | Custom MIME type | XML under `/usr/share/mime` plus `update-mime-database` | **artifact**: a package or a placed file, not a field |

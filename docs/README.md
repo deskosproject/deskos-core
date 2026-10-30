@@ -47,7 +47,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 | [Threat model](threat-model.md) | assets, boundaries, controls, the incident exercise |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |
 | [Installer ISO](installer-iso.md) | the kickstart, the build command, the storage warning |
-| [Design](design/) | visual identity, evidence retention, promotion, authenticity, session E2E |
+| [Design](design/) | visual identity, what the image takes from the GNOME HIG, evidence retention, promotion, authenticity, session E2E |
 | [VM harness](../tests/vm/README.md) | the boot, session and first-boot checks |
 | [Roadmap](roadmap.md), [ADRs](adr/README.md) | what is done and planned, and the decisions |
 | [Research notes](research-notes.md) | a dated archive of what was measured |
