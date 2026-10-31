@@ -363,7 +363,7 @@ fi
 
 # The client itself is its own file, so neither branch competes with the driver
 # for the 4095 B a tmpfiles argument can carry.
-if timeout 300 /bin/bash /var/lib/deskos-qa/join-client.sh >>"$join_log" 2>&1; then
+if timeout 480 /bin/bash /var/lib/deskos-qa/join-client.sh >>"$join_log" 2>&1; then
   ok=yes
 fi
 """
@@ -432,7 +432,27 @@ realm discover "$REALM_DOMAIN"
 echo "dc address: $(getent hosts "$REALM_SERVER" | awk '{print $1}' | paste -sd, -)"
 echo "srv: $(dig +short SRV "_ldap._tcp.$REALM_DOMAIN" | paste -sd, -)"
 echo "a: $(dig +short A "$REALM_SERVER" | paste -sd, -)"
-printf '%s\n' "$JOIN_PASSWORD" | realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN" || exit 1
+# The DC answers DNS and SRV while it can still refuse authentication, and a join
+# that fails there asks for the password a second time with stdin already drained:
+# the unit waits on a prompt instead of failing (issue #312). Wait for an
+# authenticated exchange first, then join once, with a deadline on both.
+dc_ready=no
+for _ in $(seq 1 20); do
+  if printf '%s\\n' "$JOIN_PASSWORD" | timeout 10 kinit "$JOIN_PRINCIPAL@$REALM_NAME" > /tmp/kinit.log 2>&1; then
+    dc_ready=yes
+    kdestroy 2>/dev/null || true
+    break
+  fi
+  sleep 3
+done
+if [ "$dc_ready" != yes ]; then
+  echo "the DC did not accept authentication for $JOIN_PRINCIPAL: $(tr '\\n' ' ' < /tmp/kinit.log | cut -c1-300)"
+  exit 1
+fi
+if ! printf '%s\\n' "$JOIN_PASSWORD" | timeout 120 realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN"; then
+  echo "realm join failed against $REALM_SERVER; the unit does not wait on a prompt"
+  exit 1
+fi
 # realmd leaves sssd with access_provider = ad and no rule, which denies every
 # account: the join succeeds, the user resolves, and pam_acct_mgmt says no.
 # `realm permit --all` is the documented way, and here it exits zero without

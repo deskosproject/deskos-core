@@ -642,3 +642,64 @@ base=https://mirror.stream.centos.org/10-stream/BaseOS/x86_64/os
 prim=$(curl -fsS "$base/repodata/repomd.xml" | sed -n 's/.*href="\([^"]*primary[^"]*\)".*/\1/p' | head -1)
 curl -fsS "$base/$prim" | zstd -dc | grep -o 'rpm-4\.19\.1\.1-[0-9]*\.el10\.x86_64\.rpm' | sort -u | tail
 ```
+
+## RHEL Flatpaks on a fleet with no entitlement
+
+A note, not a roadmap commitment: what to do when an organization's RHEL
+fleet is built on an entitled host and never registers the installed
+machines, which is a deliberate choice and not an oversight.
+
+**What Red Hat does.** From RHEL 10.2, Firefox and Thunderbird are Flatpaks by
+default on GNOME installs, served from `flatpaks.redhat.io`. Red Hat's blog
+(2026-07-30) says an active subscription on the installed system handles
+registry access, and that the RPMs stay in AppStream for constrained
+deployments (air-gapped, custom builds, policy). They also say Firefox and
+Thunderbird are the first two and that Flatpak delivery becomes the standard for
+RHEL desktop applications.
+
+**What that means here.** A machine that is never registered has no entitlement,
+so it cannot fetch from `flatpaks.redhat.io` at runtime; and a Flatpak baked into
+`/var/lib/flatpak` is unpacked only from the initial image, so image updates do
+not move it (`bootc-filesystem(7)`: content in `/var` acts like a Docker
+`VOLUME`). Neither path gives an unregistered fleet a Red Hat Flatpak that
+stays current.
+
+**The three paths, in the order this repository would take them.**
+
+1. **RPM from AppStream** while it exists: built with the build's subscription,
+   no runtime credential, updates ride the image. Measured 2026-10-31:
+   `firefox 140.17.0-1.el10` and `thunderbird 140.17.0-1.el10` are in
+   `appstream` on the EL10 compose. This is why the RHEL 10 Platform's
+   `unavailablePackages: firefox` entry, which says RHEL publishes it only as a
+   Flatpak, is wrong and blocks the simplest path.
+2. **Mirror the Red Hat Flatpak OCI content into the organization's own
+   registry** with a registry service account, and point a system Flatpak remote
+   at the mirror. The fleet then uses the read-only pull credential it already
+   carries for images, and holds no Red Hat credential. Open questions: whether
+   the Flatpak OCI authenticator accepts a service-account token for a direct
+   read, and whether the content (applications, runtimes, extensions) mirrors
+   cleanly with its signatures.
+3. **Register the host at first boot** with an activation key (Satellite global
+   registration, or a `subscription-manager register` unit). This is Red Hat's
+   documented model and gives Satellite inventory, Insights and runtime
+   entitlement, but it creates machine identity, which this fleet deliberately
+   does not have.
+
+**Decision for now:** RPM first. Revisit path 2 before RHEL 10.3, or as soon as
+an application the organization needs is Flatpak-only. Path 3 only if compliance
+requires machine identity, and with the key delivered by provisioning rather than
+baked into the image.
+
+**Not settled:** whether the subscription agreement permits the installed
+machines to stay unregistered; that is a question for Red Hat, not for the docs.
+
+## Microsoft Teams on Linux
+
+- **No vendor RPM (measured 2026-10-31).** `packages.microsoft.com/yumrepos/ms-teams`
+  exists but its metadata reports `packages="0"`. The RHEL 10 `prod` repository
+  lists 299 packages, including `intune-portal` and `mdatp`, and no `teams`.
+  Microsoft Edge has its own repository (`yumrepos/edge`, `microsoft-edge-stable`).
+- Microsoft retired the classic native client. Teams on Linux is the web app; the
+  only installable native client is the unofficial `teams-for-linux`, which is not
+  a vendor package and carries the support gap of any community package.
+- Consequence: `resources/software.md` no longer lists Teams as a vendor package.

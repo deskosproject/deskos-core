@@ -81,6 +81,7 @@ ships `centos-stream-10` and `rhel-10` in
 | `packageGroups[].name`, `.rpmGroups` / `.members` | group name; string list | yes; one of the two |
 | `packageGroups[].excludePackages`, `.graphical` | package names; boolean | no |
 | `displayManager`, `removePackages`, `unavailablePackages[]` | `*.service`; package names; `{name, reason}` | no |
+| `repoConfigDirs[]` | absolute paths of directories whose `.repo` files the image also exposes in `/etc/yum.repos.d` | no |
 | `gnome.dconfDatabase` / `gnome.keepsVendorDefaults` | name; boolean | one of the two |
 | `gnome.loginScreen`, `gnome.loginScreenDatabase`, `gnome.appFolders`, `gnome.enabledExtensions`, `gnome.extensions[]`, `gnome.appLauncher`, `gnome.terminal` | boolean; name; boolean; string list; `{name, uuid, package}` or `{name, uuid, source{version, url, sha256}}`; `{package, command}`; `{package, dconfPath, fontKey, useSystemFontKey}` | `appLauncher`, `terminal` yes |
 | `boot.splashKernelArgument`, `.quietKernelArgument`, `.plymouthPackages`, `.plymouthDracutModule`, `.spinnerFrames`, `updates.imageUpdateUnits`, `flatpak.package`, `flatpak.preinstall` | kernel arguments; package names; module; `{package, imageDir}`; `*.service`, `*.timer`; package name; boolean | arguments, plymouth, `updates`, `preinstall` yes |

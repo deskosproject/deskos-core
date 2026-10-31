@@ -37,6 +37,14 @@ repository, read from `/usr/share/dnf5/repos.d` rather than `/etc/yum.repos.d`, 
 it does not enable `updates-testing`. The resource decides which compose a build
 gets; the repositories follow the pinned image.
 
+Fedora 45 moved those definitions with
+[Changes/RelocateRpmRepoConfigsToUsr](https://fedoraproject.org/wiki/Changes/RelocateRpmRepoConfigsToUsr).
+`bootc-image-builder` still reads `/etc/yum.repos.d` when it builds the installer,
+and stopped with `NoReposError: There are no enabled repositories` (run
+`41140733589`). The platform declares `repoConfigDirs: [/usr/share/dnf5/repos.d]`,
+so the image carries the same files in both places and dnf5 keeps reading the new
+one.
+
 ## What DeskOS adds
 
 The GNOME base stays distribution packages; only an organization's extra
