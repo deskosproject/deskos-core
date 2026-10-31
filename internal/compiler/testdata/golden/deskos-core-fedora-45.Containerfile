@@ -187,6 +187,11 @@ RUN set -eu; \
 # Image files
 COPY rootfs/ /
 
+# Repository definitions where tools that predate the move still read them
+RUN set -eu; mkdir -p /etc/yum.repos.d; \
+    for f in '/usr/share/dnf5/repos.d'/*.repo; do [ -e "$f" ] || continue; ln -sf "$f" /etc/yum.repos.d/; done; \
+    true
+
 # System configuration
 RUN tmp="$(mktemp -d)" \
     && cp /usr/share/glib-2.0/schemas/*.xml /usr/share/glib-2.0/schemas/50_deskos.gschema.override "$tmp"/ \

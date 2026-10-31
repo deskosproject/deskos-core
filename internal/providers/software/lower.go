@@ -62,6 +62,9 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	// Platform resource rather than a profile. The backend removes these after
 	// the installs and proves they are absent (docs/adr/0022).
 	platformProv := []model.Provenance{{Resource: c.Platform.ID(), Source: c.Platform.Source.String()}}
+	for _, dir := range pl.RepoConfigDirs {
+		p.Artifact.RepoConfigDirs = append(p.Artifact.RepoConfigDirs, dir)
+	}
 	for _, name := range pl.RemovePackages {
 		p.Artifact.RemovePackages = append(p.Artifact.RemovePackages, plan.PackageRemove{
 			Name: name, Provenance: platformProv,

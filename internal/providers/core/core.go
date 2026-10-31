@@ -45,6 +45,10 @@ type PlatformSpec struct {
 	PackageManifestFile string `json:"packageManifest,omitempty"`
 	// PackageManifest is the parsed file, sorted and unique. Never serialized.
 	PackageManifest []string `json:"-"`
+	// RepoConfigDirs are directories whose .repo files the image also exposes in
+	// /etc/yum.repos.d. A distribution that moved them (Fedora 45) leaves tools
+	// that read the old path with no repositories, which is a platform fact.
+	RepoConfigDirs []string `json:"repoConfigDirs,omitempty"`
 	// RemovePackages are RPM packages the platform image must not carry. The
 	// build removes them after the package transactions and fails if one remains
 	// (docs/adr/0022). They are not group exclusions: a group exclusion only
