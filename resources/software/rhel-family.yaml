@@ -9,8 +9,9 @@ spec:
   # They used to sit in the deskos-core PackageSet, where no organization could
   # take them back: composition unions sets and offers no removal (ADR 0003), so a
   # foundation that names them forces them on every platform. An Ubuntu
-  # workstation does not want firewalld. Firefox is a Flatpak on every flavor
-  # (Profile/firefox), so no family set carries its RPM.
+  # workstation does not want firewalld. The reference workstations take Firefox
+  # from Flathub (Profile/firefox), and an organization that keeps the RHEL RPM
+  # adds it in its own PackageSet, so no family set carries it.
   # ADR 0014 asks for these to leave the common foundation.
   #
   # firewalld is not named here: the workstation-product-environment group installs
