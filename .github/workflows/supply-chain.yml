@@ -720,7 +720,10 @@ jobs:
   # repository fails at the pull instead of shipping the wrong ISO.
   iso:
     needs: publish
-    if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
+    # Each leg resolves its own image: a platform whose publish leg failed has no
+    # image, so its installer skips, and the platforms that did publish still get
+    # theirs. Without `always()` one failed leg cancels both installers.
+    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
     strategy:
       # One installer per published image, and one failing installer must not
       # hide the other.

@@ -124,6 +124,11 @@ last: the installer is called with the image and the commit, resolves
 It also builds with the image's own root filesystem (`xfs` on EL10, `btrfs` on
 Fedora), because bootc cannot always infer it.
 
+The installer runs even when another platform's publish leg failed, and decides
+per image: it looks for its own `:<commit>` tag, builds when it finds it, and
+reports a notice when it does not. One red leg costs its own installer, not
+everybody's.
+
 It verifies the image's keyless signature before building, then signs the installer
 with its own workflow identity:
 `…/deskos-core/.github/workflows/iso.yml@refs/heads/main`. The OIDC token names the
