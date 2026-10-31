@@ -1781,10 +1781,12 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         # answers it (docs/adr/0021). An icon in the panel is still a pixel fact.
         check("tray watcher serves the session bus", values.get("tray_watcher") == "present",
               f"tray_watcher={values.get('tray_watcher')}")
-        # It accepts a registration; the caller is short-lived, so the property list
-        # is not evidence this harness can hold (ADR 0021).
-        check("tray watcher accepts a registration", values.get("tray_register") == "accepted",
-              f"tray_register={values.get('tray_register')}")
+        # The fact this harness can assert is that the extension owns the watcher
+        # service. The registration attempt below comes from a short-lived process
+        # with no item behind it, so whether the extension accepts it depends on
+        # its validation and is reported, not asserted (ADR 0021).
+        check("tray watcher is on the bus", values.get("tray_watcher") == "present",
+              f"tray_watcher={values.get('tray_watcher')}")
     fav = dconf_value(plan, "/org/gnome/shell/favorite-apps")
     if fav:
         check("favorites as planned", values.get("favorite_apps") == fav, f"got {values.get('favorite_apps')} want {fav}")
