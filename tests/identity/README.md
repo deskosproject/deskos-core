@@ -100,13 +100,19 @@ The domain uses `--use-rfc2307`, so `uidNumber`, `gidNumber`,
 the daily check joins the VM, GDM logs in as `qa@ad.lab.test`, and `oddjobd` is
 active.
 
-Three things easy to miss:
+Four things easy to miss:
 - **The realm's DNS is the source of truth** for the DC's address; pointing the
   DC elsewhere breaks the join with `Insufficient permissions`.
 - **`access_provider = ad` with no rule denies every account**, and `realm permit
   --all` exits zero without writing one, so the fixture sets `permit`.
 - **sssd starts before the join points the guest at the realm DNS**: the check
   restarts it and waits for the domain.
+- **A serving DC is not an authenticating one.** Samba answers the domain level
+  and its own SRV while it is still starting; a join that fails there asks for the
+  password a second time with stdin already drained, so the unit waits on a prompt
+  and reports nothing (#312). The fixture now requires two consecutive `status`
+  answers ten seconds apart, and the guest waits for a `kinit` that succeeds before
+  joining, with a deadline on the wait and on the join.
 
 **One machine, one realm.** A disk that joined FreeIPA keeps `krb5.conf`,
 `sssd.conf`, the keytab, the default realm and the `authselect` state; joining
