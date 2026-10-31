@@ -194,6 +194,61 @@
           "path": "/usr/share/rpm/rpmdb.sqlite"
         }
       ]
+    },
+    {
+      "id": "CVE-2026-98432",
+      "kind": "accepted-risk-vendor-kernel",
+      "reason": "Accepted by the owner on 2026-10-31. Not a false positive: the kernel is Red Hat's, DeskOS neither builds nor patches it, and RHEL 10 is Affected with no fixed build (checked on access.redhat.com the same day, after Red Hat moved the score from Moderate 5.9 to Important 8.1 and then to Critical 9.8). The defect is an old IPv4 request-socket use-after-free that was only published in 2026-10; blocking every build on it would stall the fleet without reducing the risk, which is the vendor's rebuild. The tracked issue is #302, and the base bump that carries the fix closes it. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "kernel",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-core",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-core",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-extra",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools-libs",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "python3-perf",
+          "type": "rpm",
+          "version": "6.12.0-279.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        }
+      ]
     }
   ]
 }

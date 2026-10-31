@@ -95,7 +95,31 @@ jobs:
             || { echo "::error::commit must be a hex commit"; exit 1; }
           echo "ISO_REPO=${IMAGE}-iso" >> "$GITHUB_ENV"
 
+      - name: Is there an image to install?
+        id: presence
+        env:
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! command -v skopeo > /dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq --no-install-recommends skopeo
+          fi
+          printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          # The gate publishes :<commit> only for a leg that passed. No tag means
+          # this platform's publish leg failed or did not run, and an installer
+          # for an image nobody may use is not an artifact.
+          if skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$COMMIT" > /dev/null 2>&1; then
+            echo "build=yes" >> "$GITHUB_OUTPUT"
+            echo "$IMAGE:$COMMIT is published"
+          else
+            echo "build=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::$IMAGE:$COMMIT is not published; no installer to build"
+          fi
+
       - name: Put container storage and the ISO on /mnt
+        if: steps.presence.outputs.build == 'yes'
         # The root disk is small; the image, the ISO and the builder's tree do
         # not fit beside the runner's own tooling.
         run: |
@@ -108,6 +132,7 @@ jobs:
           echo "WORK=/mnt/iso" >> "$GITHUB_ENV"
 
       - name: Install oras, checksum-verified, and prove the push form
+        if: steps.presence.outputs.build == 'yes'
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
@@ -139,11 +164,13 @@ jobs:
           echo "oras push preflight ok"
 
       - name: Install cosign
+        if: steps.presence.outputs.build == 'yes'
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
           cosign-release: 'v3.1.3'
 
       - name: Verify the digest and pull it, with the builder
+        if: steps.presence.outputs.build == 'yes'
         # What the ISO carries is the digest, and the digest is what the gate
         # signed. The signature is the link between the two, so it is checked
         # before the build, not after.
@@ -184,6 +211,7 @@ jobs:
           retry sudo podman pull "$BIB"
 
       - name: Build the ISO from that digest
+        if: steps.presence.outputs.build == 'yes'
         run: |
           set -euo pipefail
           # An empty --rootfs is not the same as no flag: bootc infers a default
@@ -201,6 +229,7 @@ jobs:
           ( cd "$WORK/bootiso" && sha256sum install.iso ) | tee iso.sha256
 
       - name: Publish it signed, and follow the image's channel
+        if: steps.presence.outputs.build == 'yes'
         env:
           QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
