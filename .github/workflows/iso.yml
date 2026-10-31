@@ -107,16 +107,33 @@ jobs:
             sudo apt-get install -y -qq --no-install-recommends skopeo
           fi
           printf '%s' "$QUAY_ROBOT_TOKEN" | sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # The gate publishes :<commit> only for a leg that passed. No tag means
-          # this platform's publish leg failed or did not run, and an installer
-          # for an image nobody may use is not an artifact.
-          if skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$COMMIT" > /dev/null 2>&1; then
-            echo "build=yes" >> "$GITHUB_OUTPUT"
-            echo "$IMAGE:$COMMIT is published"
-          else
-            echo "build=no" >> "$GITHUB_OUTPUT"
-            echo "::notice::$IMAGE:$COMMIT is not published; no installer to build"
-          fi
+          # The gate publishes :<commit> only for a leg that passed. Read it with
+          # retries: a transient registry answer must not be read as "not
+          # published", which skipped both installers and reported success in run
+          # 41238729664 (2026-10-31). Only "manifest unknown" means absent.
+          err=""
+          for i in 1 2 3 4 5; do
+            if err="$(skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$COMMIT" 2>&1)"; then
+              echo "build=yes" >> "$GITHUB_OUTPUT"
+              echo "$IMAGE:$COMMIT is published at $err"
+              exit 0
+            fi
+            case "$err" in
+              *"manifest unknown"*) break ;;
+            esac
+            echo "attempt $i could not read $IMAGE:$COMMIT; retrying in 10s: $err" >&2
+            sleep 10
+          done
+          case "$err" in
+            *"manifest unknown"*)
+              echo "build=no" >> "$GITHUB_OUTPUT"
+              echo "::notice::$IMAGE:$COMMIT is not published; no installer to build"
+              ;;
+            *)
+              echo "::error::cannot read $IMAGE:$COMMIT: $err"
+              exit 1
+              ;;
+          esac
 
       - name: Put container storage and the ISO on /mnt
         if: steps.presence.outputs.build == 'yes'
