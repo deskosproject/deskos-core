@@ -184,21 +184,6 @@
     },
     {
       "type": "application",
-      "name": "org.mozilla.firefox",
-      "version": "stable",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "flatpak"
-        },
-        {
-          "name": "deskos:remote",
-          "value": "flathub"
-        }
-      ]
-    },
-    {
-      "type": "application",
       "name": "overpass",
       "version": "4.0",
       "hashes": [
@@ -343,6 +328,16 @@
     {
       "type": "library",
       "name": "dejavu-serif-fonts",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "firefox",
       "properties": [
         {
           "name": "deskos:source",

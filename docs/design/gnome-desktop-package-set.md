@@ -32,8 +32,8 @@ The environment is eleven groups. Their direct members add up to **297**; the ot
 
 What arrives with it, beyond a session, and is worth naming:
 
-- **18 desktop applications**: `baobab`, `firefox` (the RPM, next to the Flatpak the
-  profiles declare), `gnome-calculator`, `gnome-characters`, `gnome-clocks`,
+- **18 desktop applications**: `baobab`, `firefox` (the RPM the workstations
+  request as well), `gnome-calculator`, `gnome-characters`, `gnome-clocks`,
   `gnome-color-manager`, `gnome-disk-utility`, `gnome-font-viewer`,
   `gnome-initial-setup`, `gnome-remote-desktop`, `gnome-software`,
   `gnome-system-monitor`, `gnome-text-editor`, `gnome-user-docs`, `loupe`,

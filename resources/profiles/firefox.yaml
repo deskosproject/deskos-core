@@ -4,7 +4,7 @@ metadata:
   name: firefox
 spec:
   layer: foundation
-  description: Firefox from Flathub, which updates independently of the image. A platform that keeps the vendor RPM, as RHEL 10 does in AppStream, can install it in a PackageSet instead.
+  description: Firefox, from the platform's own archive. DeskOS delivers the vendor RPM on every flavor, so an installation that never reaches the network still has a browser.
   resources:
-    - kind: FlatpakSet
+    - kind: PackageSet
       name: firefox

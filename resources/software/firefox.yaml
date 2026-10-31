@@ -1,13 +1,23 @@
 apiVersion: software.deskos.org/v1alpha1
-kind: FlatpakSet
+kind: PackageSet
 metadata:
   name: firefox
 spec:
-  # The reference workstations take Firefox from Flathub, which updates
-  # independently of the image. RHEL 10 also keeps the Firefox RPM in AppStream
-  # (10.2 release notes), so an organization that cannot reach a Flatpak remote at
-  # runtime installs the vendor package in its own PackageSet instead.
-  remote: flathub
-  applications:
-    - id: org.mozilla.firefox
-      branch: stable
+  # The browser is the vendor's RPM on every DeskOS flavor. A Flatpak is only
+  # preinstalled at first boot by deskos-flatpak-preinstall.service, so a machine
+  # that reaches no remote has no browser at all until it does; an RPM travels in
+  # the image. The RPM is also the channel that carries enterprise policy, native
+  # messaging and smartcards, and the one the vendor keeps for a fleet without
+  # runtime entitlement (docs/design/browsers-rpm-or-flatpak.md).
+  #
+  # Measured (2026-11-01): Fedora Silverblue 45 carries firefox-158.0.1-2.fc45;
+  # CentOS Stream 10 AppStream carries firefox-140.17.0-1.el10, and its Workstation
+  # environment already installs it through the Internet Browser group; AlmaLinux
+  # 10 AppStream carries firefox-153.5.0-1.el10_2, while its Internet Browser group
+  # ships only redhat-flatpak-preinstall-firefox; RHEL 10 AppStream carries the RPM
+  # (firefox-140.16.0-1.el10 on the RHEL 10.2 build in docs/adr/0012), so the
+  # subscription that builds the image is the only entitlement it needs. Naming it
+  # is a no-op where a group or base already installed it, and it is the browser
+  # on a base that does not.
+  packages:
+    - firefox

@@ -48,7 +48,9 @@ one.
 ## What DeskOS adds
 
 The GNOME base stays distribution packages; only an organization's extra
-applications go to Flatpak (ADR 0005). The platform installs
+applications go to Flatpak (ADR 0005). Fedora's own `firefox` RPM is the browser,
+not a Flatpak: it is already in the base, and naming it in `PackageSet/firefox`
+keeps the same browser on every flavor. The platform installs
 `workstation-product-environment` to complete the desktop, removes GNOME Software
 so Bazaar is the application store (ADR 0022), and declares the terminal, the
 extensions and the boot arguments as facts, the same way the EL10 platforms do.

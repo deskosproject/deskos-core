@@ -21,7 +21,9 @@ spec:
     - name: workstation
       rpmGroups: [workstation-product-environment]
       graphical: true
-      # Its Firefox Flatpak needs a session-bus authenticator, which fails the system preinstall of every declared Flatpak.
+      # It preinstalls the Red Hat Firefox Flatpak, whose OCI authenticator needs a
+      # session bus and fails the system preinstall of every declared Flatpak. The
+      # browser is PackageSet/firefox, the RPM from AppStream (Profile/firefox).
       excludePackages: [redhat-flatpak-preinstall-firefox]
   # Bazaar is the workstation's application store; GNOME Software is not. The
   # build removes it after the package transaction and proves it is absent
@@ -29,12 +31,11 @@ spec:
   # them, which is why the same declaration is safe across the EL10 family.
   removePackages: [gnome-software, gnome-software-rpm-ostree]
   # Firefox and Thunderbird stay in AppStream and Red Hat supports them for the
-  # life of RHEL 10 (10.2 release notes, 2026-07-30), so a PackageSet may install
-  # them: measured 2026-10-31 on the EL10 compose, firefox 140.17.0-1.el10 and
-  # thunderbird 140.17.0-1.el10 in appstream. The environment's
+  # life of RHEL 10 (10.2 release notes, 2026-07-30): measured 2026-10-31 on the
+  # EL10 compose, firefox 140.17.0-1.el10 and thunderbird 140.17.0-1.el10 in
+  # appstream. The browser is PackageSet/firefox, the vendor RPM; the environment's
   # redhat-flatpak-preinstall-firefox stays excluded above because its OCI
-  # authenticator needs a session bus; the reference workstations still take the
-  # Flathub build (Profile/firefox), which updates independently of the image.
+  # authenticator needs a session bus.
   unavailablePackages:
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support

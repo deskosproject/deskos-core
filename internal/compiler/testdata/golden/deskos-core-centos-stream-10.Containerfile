@@ -32,6 +32,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'dejavu-sans-fonts' \
         'dejavu-sans-mono-fonts' \
         'dejavu-serif-fonts' \
+        'firefox' \
         'flatpak' \
         'google-carlito-fonts' \
         'google-crosextra-caladea-fonts' \
