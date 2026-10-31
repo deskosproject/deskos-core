@@ -207,6 +207,20 @@ func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	}
 }
 
+// Fedora 45 moved repository definitions out of /etc/yum.repos.d, and
+// bootc-image-builder still reads the old path when it builds the installer. The
+// platform says where they live, so the image can expose them in both places.
+func TestFedoraExposesRepositoriesWhereTheInstallerReadsThem(t *testing.T) {
+	fedora := mustPlan(t, "deskos-core-fedora-45", resourcesRoot)
+	if !slices.Contains(fedora.Artifact.RepoConfigDirs, "/usr/share/dnf5/repos.d") {
+		t.Errorf("Fedora repoConfigDirs = %v, want /usr/share/dnf5/repos.d", fedora.Artifact.RepoConfigDirs)
+	}
+	centos := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
+	if len(centos.Artifact.RepoConfigDirs) != 0 {
+		t.Errorf("CentOS Stream 10 declares repoConfigDirs = %v", centos.Artifact.RepoConfigDirs)
+	}
+}
+
 // Disabling the tray UUID delivers nothing, whatever the platform's catalog shape:
 // no package, no pinned artifact and no enabled default. The decision is a profile's
 // and the delivery is the platform's (docs/adr/0021); this is the inverse of the

@@ -69,6 +69,12 @@ type Artifact struct {
 	// The build compares the installed set with it and fails on a difference, so
 	// a comps change is reviewed (docs/adr/0028).
 	PackageManifest []string `json:"packageManifest,omitempty"`
+	// RepoConfigDirs are directories of .repo files the image also exposes in
+	// /etc/yum.repos.d, for tools that still read the pre-Fedora-45 location.
+	// Fedora 45 moved them to /usr/share/dnf5/repos.d
+	// (Changes/RelocateRpmRepoConfigsToUsr), and bootc-image-builder's installer
+	// build fails with "no enabled repositories" without this.
+	RepoConfigDirs []string `json:"repoConfigDirs,omitempty"`
 	// RemovePackages are negative package operations: the build removes them
 	// after installing groups and packages, then proves they are absent
 	// (docs/adr/0022).

@@ -43,6 +43,7 @@ const (
 	aptSourcesDir = "/etc/apt/sources.list.d"
 	rpmKeysDir    = "rpm-keys"
 	rootfsDir     = "rootfs"
+	yumReposDir   = "/etc/yum.repos.d"
 	imagePlanPath = "/usr/share/deskos/plan.json"
 	dconfFileName = "50-deskos"
 	schemasDir    = "/usr/share/glib-2.0/schemas"
@@ -1026,6 +1027,15 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 
 	if hasRootfs {
 		w("\n# Image files\nCOPY %s/ /\n", rootfsDir)
+	}
+
+	if len(a.RepoConfigDirs) > 0 {
+		w("\n# Repository definitions where tools that predate the move still read them\n")
+		w("RUN set -eu; mkdir -p %s; \\\n", yumReposDir)
+		for _, dir := range a.RepoConfigDirs {
+			w("    for f in %s/*.repo; do [ -e \"$f\" ] || continue; ln -sf \"$f\" %s/; done; \\\n", shq(dir), yumReposDir)
+		}
+		w("    true\n")
 	}
 
 	var steps []string

@@ -74,6 +74,12 @@
             }
           }
         },
+        "repoConfigDirs": {
+          "description": "Directories of .repo files the image also exposes in /etc/yum.repos.d, for tools that still read the pre-Fedora-45 location (Fedora 45 moved them to /usr/share/dnf5/repos.d).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" }
+        },
         "removePackages": {
           "description": "RPM packages the platform image must not carry. The build removes them after the package transactions and fails if one remains. A package the composition explicitly installs is a conflict (ADR 0022).",
           "type": "array",
