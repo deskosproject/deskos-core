@@ -135,6 +135,17 @@ jobs:
         # published image.
         run: jq -e 'all(.artifact.rpmRepositories[]; .gpgCheck)' ctx/plan.json > /dev/null
 
+      - name: Free the runner's unused toolchains
+        # The hosted image carries a .NET SDK, an Android SDK, GHC and the whole
+        # hostedtoolcache that nothing here uses. Removing them before the build
+        # is the practice Fatherlinux documents for image-mode CI on hosted
+        # runners (crunchtools.com/ci-cd-for-image-mode-rhel), and it leaves the
+        # disk and the page cache to the image instead of to toolchains.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+          df -h / /mnt
+
       - name: Put container storage and the large artifacts on /mnt
         # The root disk is small; the same layout as vm-bootcheck.yml.
         run: |
@@ -219,8 +230,15 @@ jobs:
           # enough to cross it. /mnt is the disk this job already uses for the
           # image and the disk images.
           TMPDIR: ${{ env.WORK }}/tmp
+          # The Fedora image is twice the CentOS Stream one and the scanner's
+          # default is one worker per core; two keeps the peak inside the
+          # runner's memory. GOMEMLIMIT is the Go runtime's soft limit, so the
+          # collector works harder instead of the kernel killing the job.
+          SYFT_PARALLELISM: '2'
+          GOMEMLIMIT: '6GiB'
         run: |
           mkdir -p "$TMPDIR"
+          free -h
           df -h / /mnt
           syft "oci-archive:$WORK/image.tar" -o cyclonedx-json=installed.sbom.cdx.json
 
@@ -228,8 +246,11 @@ jobs:
         env:
           # Same reason as the SBOM: Grype reads the same archive.
           TMPDIR: ${{ env.WORK }}/tmp
+          GRYPE_PARALLELISM: '2'
+          GOMEMLIMIT: '6GiB'
         run: |
           mkdir -p "$TMPDIR"
+          free -h
           # Evidence passes: pinned to the raw configuration, so grype.txt and
           # cves.json stay unfiltered even when Grype finds another
           # configuration on the runner.

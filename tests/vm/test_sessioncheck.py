@@ -1231,6 +1231,19 @@ class JoinTest(unittest.TestCase):
         self.assertIn("join-client.sh", sc.join_script())
         self.assertNotIn("realm join", sc.join_script())
 
+    def test_an_ad_join_waits_for_authentication_and_is_bounded(self):
+        # The DC can serve DNS and SRV while it still refuses authentication, and
+        # a join that fails there asks for the password again with stdin drained
+        # (issue #312). The client waits for a kinit that succeeds, and both the
+        # wait and the join carry a deadline.
+        script = sc.join_client_script("ad")
+        self.assertIn('timeout 10 kinit "$JOIN_PRINCIPAL@$REALM_NAME"', script)
+        self.assertIn("timeout 120 realm join", script)
+        self.assertIn("does not wait on a prompt", script)
+        self.assertIn('tr \'\\n\' \' \' < /tmp/kinit.log', script)
+        # The driver leaves room for the wait and the join.
+        self.assertIn("timeout 480 /bin/bash /var/lib/deskos-qa/join-client.sh", sc.join_script())
+
     def test_a_joined_machine_is_not_joined_to_a_second_realm(self):
         # One machine, one realm: the guard runs before either client.
         for kind in ("ipa", "ad"):

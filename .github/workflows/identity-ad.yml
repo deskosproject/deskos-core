@@ -102,11 +102,23 @@ jobs:
           # Provisioning builds the directory from the schema and takes under a
           # minute; a dead container is reported at once instead of waiting out
           # the loop.
+          #
+          # One answer is a serving answer, not an authenticating one: Samba can
+          # answer the domain level and its own SRV while it is still starting,
+          # and a guest that joins in that window waits on a password prompt
+          # (issue #312). Require two answers ten seconds apart.
+          ok=0
           for i in $(seq 1 60); do
             if sudo tests/identity/samba-ad.sh status; then
-              echo "the DC answers after $((i * 5))s"
-              exit 0
+              ok=$((ok + 1))
+              if [ "$ok" -ge 2 ]; then
+                echo "the DC answered twice, ten seconds apart"
+                exit 0
+              fi
+              sleep 10
+              continue
             fi
+            ok=0
             state=$(sudo podman inspect --format '{{.State.Status}}' deskos-ad 2>/dev/null || echo missing)
             if [ "$state" != running ]; then
               echo "container deskos-ad is $state, not running" >&2
@@ -117,7 +129,7 @@ jobs:
             fi
             sleep 5
           done
-          echo "the DC did not answer within five minutes" >&2
+          echo "the DC did not answer twice within the timeout" >&2
           sudo podman logs deskos-ad 2>&1 | tail -80 || true
           exit 1
 

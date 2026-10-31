@@ -17,5 +17,8 @@ spec:
     - sssd-ad
     # realmd's discovery lists it as required for AD.
     - samba-common-tools
+    # kinit and klist: the join waits for an authenticated exchange instead of a
+    # DNS answer, and the report reads the keytab it produced.
+    - krb5-workstation
     # The home policy both clients use.
     - oddjob-mkhomedir
