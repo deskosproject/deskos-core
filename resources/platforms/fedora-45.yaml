@@ -62,6 +62,12 @@ spec:
       # `virt-manager` (5.1.0 in this archive), which the EL10 platforms report as
       # a gap because it sits in their disabled builder repository, installs from
       # Fedora's own archive here.
+  # Fedora 45 moved repository definitions from /etc/yum.repos.d to
+  # /usr/share/dnf5/repos.d (Changes/RelocateRpmRepoConfigsToUsr). dnf5 reads the
+  # new location; bootc-image-builder's installer build reads the old one and
+  # stops with "NoReposError: There are no enabled repositories" (run 41140733589,
+  # 2026-10-30). The image exposes the same files in both places.
+  repoConfigDirs: [/usr/share/dnf5/repos.d]
   # This base already carries both; a group exclusion would not remove them.
   # Bazaar is the workstation's application store, so the build removes GNOME
   # Software and proves it is gone (docs/adr/0022).
