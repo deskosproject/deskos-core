@@ -692,3 +692,14 @@ baked into the image.
 
 **Not settled:** whether the subscription agreement permits the installed
 machines to stay unregistered; that is a question for Red Hat, not for the docs.
+
+## Microsoft Teams on Linux
+
+- **No vendor RPM (measured 2026-10-31).** `packages.microsoft.com/yumrepos/ms-teams`
+  exists but its metadata reports `packages="0"`. The RHEL 10 `prod` repository
+  lists 299 packages, including `intune-portal` and `mdatp`, and no `teams`.
+  Microsoft Edge has its own repository (`yumrepos/edge`, `microsoft-edge-stable`).
+- Microsoft retired the classic native client. Teams on Linux is the web app; the
+  only installable native client is the unofficial `teams-for-linux`, which is not
+  a vendor package and carries the support gap of any community package.
+- Consequence: `resources/software.md` no longer lists Teams as a vendor package.
