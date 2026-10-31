@@ -3,9 +3,10 @@ kind: FlatpakSet
 metadata:
   name: firefox
 spec:
-  # Firefox is a Flatpak on every DeskOS flavor. RHEL 10 publishes no Firefox RPM,
-  # and the Flathub build updates independently of the image; the RPM package sets
-  # no longer carry it.
+  # The reference workstations take Firefox from Flathub, which updates
+  # independently of the image. RHEL 10 also keeps the Firefox RPM in AppStream
+  # (10.2 release notes), so an organization that cannot reach a Flatpak remote at
+  # runtime installs the vendor package in its own PackageSet instead.
   remote: flathub
   applications:
     - id: org.mozilla.firefox

@@ -300,6 +300,22 @@ func TestAPlatformGapIsReportedWithItsReason(t *testing.T) {
 	}
 }
 
+// RHEL 10 keeps Firefox and Thunderbird in AppStream, and Red Hat supports them
+// for the life of RHEL 10 (10.2 release notes, 2026-07-30). The platform reported
+// Firefox as unavailable, which blocked the vendor package and left only the
+// Flathub one; a PackageSet installs the RPM.
+func TestRhelKeepsTheFirefoxRpm(t *testing.T) {
+	dir := fixture{
+		"p.yaml": profile("wants-firefox", "role", "PackageSet/example-firefox"),
+		"s.yaml": packageSet("example-firefox", "firefox"),
+		"w.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: firefox-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, wants-firefox]\n",
+	}.dir(t)
+	p := mustPlan(t, "firefox-rhel", resourcesRoot, dir)
+	if !slices.Contains(packages(p), "firefox") {
+		t.Errorf("packages = %v, want the AppStream firefox RPM", packages(p))
+	}
+}
+
 // A repository kind belongs to one package manager's world. Asking a deb platform
 // for an RPM repository is a gap to report, not a file to copy where nothing
 // reads it.

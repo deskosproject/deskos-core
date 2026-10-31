@@ -28,9 +28,14 @@ spec:
   # (docs/adr/0022). The names are a no-op on a base or group that does not ship
   # them, which is why the same declaration is safe across the EL10 family.
   removePackages: [gnome-software, gnome-software-rpm-ostree]
+  # Firefox and Thunderbird stay in AppStream and Red Hat supports them for the
+  # life of RHEL 10 (10.2 release notes, 2026-07-30), so a PackageSet may install
+  # them: measured 2026-10-31 on the EL10 compose, firefox 140.17.0-1.el10 and
+  # thunderbird 140.17.0-1.el10 in appstream. The environment's
+  # redhat-flatpak-preinstall-firefox stays excluded above because its OCI
+  # authenticator needs a session bus; the reference workstations still take the
+  # Flathub build (Profile/firefox), which updates independently of the image.
   unavailablePackages:
-    - name: firefox
-      reason: RHEL 10 publishes Firefox only as a Flatpak; the workstation gets it from Flathub (Profile/firefox), never as an RPM
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support
     - name: gnome-shell-extension-appindicator
