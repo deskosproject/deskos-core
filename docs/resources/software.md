@@ -95,12 +95,19 @@ with the same `id` conflict unless their entries are identical.
 
 ### Vendor applications
 
-Some applications only ship as a vendor package: Microsoft Edge, the Intune app,
-Teams. They are a `PackageSet` plus the vendor's `RpmRepository` with its GPG key,
-not a kind, because the image can own the package and the repository it trusts and
-nothing else. Everything after that belongs to the vendor: a tenant, a device
+Some applications only ship as a vendor package: Microsoft Edge and the Intune
+app (`intune-portal`). They are a `PackageSet` plus the vendor's `RpmRepository`
+with its GPG key, not a kind, because the image can own the package and the
+repository it trusts and nothing else. Everything after that belongs to the vendor: a tenant, a device
 enrolment, a compliance decision, a licence. A kind for one of them would freeze a
 vendor's state machine in the public API, and the next vendor would need another.
+
+Teams is not in that group. Microsoft's `ms-teams` yum repository is empty
+(measured 2026-10-31: `packages="0"`), the RHEL 10 `prod` repository carries
+`intune-portal` and `mdatp` but no `teams`, and the classic native client was
+retired. Teams on Linux is the web app, which a `DesktopEntry` can open in the
+browser, or an organization's own decision to run an unofficial client. Neither is
+a vendor package.
 
 The example organization already adds Microsoft's and Google's repositories for its
 tools; the same shape carries a browser and a compliance agent. The enrolment is
