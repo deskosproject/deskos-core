@@ -1,9 +1,6 @@
 // @ts-check
 const { themes } = require('prism-react-renderer');
-
-// Engineering-only pages: they answer questions about the repository, not about
-// DeskOS (docs/style.md, "Docs").
-const EXCLUDED = ['README.md', 'style.md', 'research-notes.md', 'future-backlog.md'];
+const { EXCLUDED } = require('./docs-pages.cjs');
 
 /**
  * The site is a view of ../docs, not a second copy of it: Docusaurus reads the
@@ -25,15 +22,14 @@ const config = {
   organizationName: 'deskosproject',
   projectName: 'deskos-core',
 
-  // The pages link to the repository (tests, examples, ADRs) on purpose: a
-  // link that only works on GitHub is reported, not hidden, and the repository
-  // link checker is the one that must pass.
-  onBrokenLinks: 'warn',
+  // A broken internal link is a build failure, not a warning: the site and the
+  // repository must not drift apart because a page moved.
+  onBrokenLinks: 'throw',
   // The pages are plain Markdown: `<name>` in a sentence is text, not JSX.
   markdown: {
     format: 'md',
     hooks: {
-      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownLinks: 'throw',
     },
   },
 
@@ -81,6 +77,7 @@ const config = {
     ({
       image: 'img/logo.svg',
       navbar: {
+        title: 'DeskOS',
         logo: {
           alt: 'DeskOS',
           src: 'img/logo.svg',
