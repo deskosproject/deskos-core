@@ -14,7 +14,7 @@ deskosctl plan ./examples/identity \
 | `example-identity` (organization) | the CA, the network profile and the client packages |
 | `example-identity-ca` (TrustAnchor) | the domain root CA in the platform trust store |
 | `example-identity-network` (NetworkProfile) | the corporate Wi-Fi, 802.1X/PEAP |
-| `example-identity` (PackageSet) | `oddjob`, `oddjob-mkhomedir`, `krb5-workstation` |
+| `example-identity` (PackageSet) | `ipa-client`, `adcli`, `sssd-ad`, `samba-common-tools`, `krb5-workstation`, `oddjob-mkhomedir` |
 
 ## What it shows
 

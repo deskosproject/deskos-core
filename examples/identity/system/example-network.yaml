@@ -12,4 +12,7 @@ spec:
   identity: deskos-example
   phase2: mschapv2
   serverName: radius.example.com
-  autoconnect: false
+  # The machine needs the corporate network before anyone logs in, so this
+  # profile autoconnects; a profile that did not would leave a fresh boot with
+  # no route to the domain.
+  autoconnect: true

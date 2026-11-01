@@ -3,10 +3,13 @@ kind: PackageSet
 metadata:
   name: example-identity
 spec:
-  # sssd and realmd are already in the workstation group on EL10; naming them
-  # here would install nothing. What the domain join adds is the home-directory
-  # helper, the Kerberos client and the oddjob service it runs through.
+  # The client side only: the image never carries a realm, a principal or a
+  # password. sssd and realmd are already in the workstation group on EL10;
+  # these are the pieces a FreeIPA or AD join adds on top.
   packages:
-    - oddjob
-    - oddjob-mkhomedir
+    - ipa-client
+    - adcli
+    - sssd-ad
+    - samba-common-tools
     - krb5-workstation
+    - oddjob-mkhomedir
