@@ -1048,7 +1048,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		w("\n# Repository definitions where tools that predate the move still read them\n")
 		w("RUN set -eu; mkdir -p %s; \\\n", yumReposDir)
 		for _, dir := range a.RepoConfigDirs {
-			w("    for f in %s/*.repo; do [ -e \"$f\" ] || continue; ln -sf \"$f\" %s/; done; \\\n", shq(dir), yumReposDir)
+			w("    for f in %s/*.repo; do [ -e \"$f\" ] || continue; cp -f --remove-destination \"$f\" %s/; done; \\\n", shq(dir), yumReposDir)
 		}
 		w("    true\n")
 	}

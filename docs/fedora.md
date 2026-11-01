@@ -43,7 +43,9 @@ Fedora 45 moved those definitions with
 and stopped with `NoReposError: There are no enabled repositories` (run
 `41140733589`). The platform declares `repoConfigDirs: [/usr/share/dnf5/repos.d]`,
 so the image carries the same files in both places and dnf5 keeps reading the new
-one.
+one. They are copies, not links: BIB's installer depsolve reads the directory
+without the tree the links point at and finds no repositories (run
+`41304158163`, where every installer package answered `No match for argument`).
 
 Silverblue keeps OSTree's strict layout: `/opt` is a symlink to `var/opt` and
 `/usr/local` to `../var/usrlocal`, so a package or artifact that installs there
