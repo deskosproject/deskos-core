@@ -715,25 +715,25 @@ jobs:
   # there costs one ISO build and a dispatch, not a two-hour rebuild of an image
   # that already passed this gate, and the image's evidence is unaffected.
   #
-  # One entry per platform that publishes an installer. A second platform gets a
-  # second call here; the digest always comes from the job above, so a wrong
-  # repository fails at the pull instead of shipping the wrong ISO.
+  # One entry per platform that publishes an installer in Core. Only CentOS
+  # Stream 10 does: Fedora publishes an image and no installer, and its
+  # downstream organization builds the installer from that image. The digest
+  # always comes from the job above, so a wrong repository fails at the pull
+  # instead of shipping the wrong ISO.
   iso:
     needs: publish
     # Each leg resolves its own image: a platform whose publish leg failed has no
-    # image, so its installer skips, and the platforms that did publish still get
-    # theirs. Without `always()` one failed leg cancels both installers.
+    # image, so its installer skips. Without `always()` a failed publish leg
+    # would cancel the installer.
     if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
     strategy:
-      # One installer per published image, and one failing installer must not
-      # hide the other.
+      # Keep a future leg from hiding another; one failing installer is a
+      # failure of its own leg.
       fail-fast: false
       matrix:
         include:
           - image: quay.io/deskos/deskos-core-centos-stream-10
             rootfs: xfs
-          - image: quay.io/deskos/deskos-core-fedora-45
-            rootfs: btrfs
     uses: ./.github/workflows/iso.yml
     with:
       image: ${{ matrix.image }}
