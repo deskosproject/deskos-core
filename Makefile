@@ -49,6 +49,7 @@ validate: build
 	$(BIN) validate ./examples/centos-stream-10
 	$(BIN) validate ./examples/almalinux-10
 	$(BIN) validate ./examples/rhel-10
+	$(BIN) validate ./examples/vanilla-gnome
 # Fedora 45 is a shipped platform (resources/platforms/), so it is validated with
 # the Core tree the binary carries; the identity fixture is the exception.
 	$(BIN) validate tests/identity/resources
