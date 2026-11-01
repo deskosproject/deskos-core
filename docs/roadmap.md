@@ -212,6 +212,34 @@ polkit action file is a security surface; autostart, custom sessions and
 single-application mode are refused under invariant 5. Next: one issue per field,
 one PR per group, each with its check.
 
+### GNOME settings for a fleet (Ansible collection, proposed 2026-11-01)
+
+Core compiles GNOME settings into the image: `GnomeProfile` writes the distro
+dconf database and the session check reads every key back. A separate Ansible
+collection could apply the same vocabulary to a running fleet, system-wide and,
+where a person opts in, to one user's session. It would be a consumer of the
+model, never a compiler dependency, and it would live outside Core: invariant 1
+keeps the artifact free of a controller, and invariant 5 keeps the compiler out
+of `$HOME`. The person using it decides whether a machine or a user is managed.
+
+What to analyze:
+
+- which database a role writes (`local` or `site` for the machine, the user's
+  own `dconf` for one account) and how that interacts with the image's `distro`
+  database and with `GnomeProfile.locks` ([locks.md](locks.md));
+- run as the user, not as root, for a user session: `gsettings` needs the
+  session bus, and a root `dconf` write lands in the wrong profile;
+- idempotence, offline behaviour, and what happens when the image later changes
+  a key the collection also manages;
+- the boundary: the collection may lock keys as a site policy, but Core never
+  locks and the image stays the source of defaults;
+- acceptance: one machine setting and one user setting applied and reverted, a
+  lock a user cannot override, and no file outside the dconf database touched.
+
+Decision: whether it is a separate repository and who owns it. The GNOME
+administration audit ([gnome-coverage.md](gnome-coverage.md)) is the inventory
+of what the vocabulary already covers.
+
 ## Open work
 
 - **P1-00, installing image mode over the network** (deferred 2026-10-30). The
