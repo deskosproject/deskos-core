@@ -39,9 +39,11 @@ Design: [visual-identity-and-boot.md](design/visual-identity-and-boot.md).
 - **Publishing:** `image-publish.yml` runs weekly and publishes by itself
   ([Release model](architecture.md#release-model)).
 - **Pinned base:** both shipped Platforms pin a digest.
-- **Example AlmaLinux and Fedora:** neither is shipped; their roots compose and
-  render in CI, and `examples-weekly.yml` builds and boots them weekly
-  ([example-platforms.md](example-platforms.md)).
+- **Example AlmaLinux:** it is not shipped; its root composes and renders in CI,
+  and `examples-weekly.yml` builds and boots it weekly
+  ([example-platforms.md](example-platforms.md)). Fedora 45 is shipped now: its
+  image publishes from `image-publish.yml`, and its status is in
+  [platforms.md](platforms.md).
 - **Decided (2026-10-24):** the three vendor-scriptlet lint warnings stand, and
   `bootc container lint` stays in report mode
   ([architecture.md](architecture.md#lint-warnings)).
@@ -324,8 +326,8 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).
-- **Example AlmaLinux and Fedora:** weekly builds, no publication, no support
-  promise.
+- **Example AlmaLinux:** weekly builds, no publication, no support promise.
+  Fedora 45 is a shipped platform; the weekly gate publishes its image.
 - The **splash race**: one disk booted to text for a whole boot and drew the
   splash on the next; the retry absorbs it but not always. Cause unexplained.
 - RHEL's Red Hat logo in the Activities button: replacing `fedora-logo-icon`

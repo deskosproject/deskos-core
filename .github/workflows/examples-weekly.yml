@@ -2,10 +2,11 @@ name: examples-weekly
 
 # Weekly smoke test for the example platforms.
 #
-# AlmaLinux 10 and Fedora 45 are examples, not shipped platforms: nothing here
-# publishes an image, signs one, or touches a registry. The job builds each
-# example from its vendor's *current* tag, writes a disposable QCOW2, boots it,
-# and runs the same boot, session and first-boot checks as the shipped platform.
+# AlmaLinux 10 is the example platform left: nothing here publishes an image,
+# signs one, or touches a registry. Fedora 45 is shipped and has its own publish
+# path (image-publish.yml). The job builds the example from its vendor's
+# *current* tag, writes a disposable QCOW2, boots it, and runs the same boot,
+# session and first-boot checks as the shipped platform.
 #
 # The committed example keeps its pinned digest for reference and promotion. The
 # weekly job copies the root to a temporary directory and replaces its digest
