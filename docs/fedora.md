@@ -45,6 +45,14 @@ and stopped with `NoReposError: There are no enabled repositories` (run
 so the image carries the same files in both places and dnf5 keeps reading the new
 one.
 
+Silverblue keeps OSTree's strict layout: `/opt` is a symlink to `var/opt` and
+`/usr/local` to `../var/usrlocal`, so a package or artifact that installs there
+writes to `/var`, which an image does not ship. The platform declares
+`imageOwnedDirs: [/opt, /usr/local]` and the build replaces both symlinks with real
+directories before the first package transaction. Content an installed machine had
+in `/var/opt` or `/var/usrlocal` stays there and is not moved
+([migrations](migrations.md)).
+
 ## What DeskOS adds
 
 The GNOME base stays distribution packages; only an organization's extra

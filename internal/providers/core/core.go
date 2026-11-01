@@ -4,6 +4,7 @@ package core
 
 import (
 	"fmt"
+	"path"
 	"regexp"
 	"slices"
 	"sort"
@@ -49,6 +50,11 @@ type PlatformSpec struct {
 	// /etc/yum.repos.d. A distribution that moved them (Fedora 45) leaves tools
 	// that read the old path with no repositories, which is a platform fact.
 	RepoConfigDirs []string `json:"repoConfigDirs,omitempty"`
+	// ImageOwnedDirs are absolute directories whose content is image content, not
+	// /var state. An OSTree base can still symlink one of them into /var, where a
+	// package or artifact writes are dropped with the image; the build replaces the
+	// symlink with a real directory before the first transaction.
+	ImageOwnedDirs []string `json:"imageOwnedDirs,omitempty"`
 	// RemovePackages are RPM packages the platform image must not carry. The
 	// build removes them after the package transactions and fails if one remains
 	// (docs/adr/0022). They are not group exclusions: a group exclusion only
@@ -411,6 +417,16 @@ func (platformProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "package %q is removed twice", name))
 		}
 		removed[name] = true
+	}
+	owned := map[string]bool{}
+	for _, dir := range s.ImageOwnedDirs {
+		if !strings.HasPrefix(dir, "/") || path.Clean(dir) != dir || dir == "/" {
+			errs.Add(model.Errorf(res, "imageOwnedDirs %q must be an absolute, clean path other than /", dir))
+		}
+		if owned[dir] {
+			errs.Add(model.Errorf(res, "imageOwnedDirs lists %q twice", dir))
+		}
+		owned[dir] = true
 	}
 	seen := map[string]bool{}
 	for _, g := range s.PackageGroups {

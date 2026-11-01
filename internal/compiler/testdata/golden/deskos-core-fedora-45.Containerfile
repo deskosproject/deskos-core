@@ -5,6 +5,14 @@
 
 FROM quay.io/deskos/fedora-silverblue:45@sha256:d81de11d75fed47e420e08c04be879f65544bce7a83178a8ef8422f29df3d613
 
+# Directories whose content is image content, not /var state
+RUN set -eu; \
+    for d in '/opt' '/usr/local'; do \
+        if [ -L "$d" ]; then rm "$d"; fi; \
+        if [ -e "$d" ] && [ ! -d "$d" ]; then echo "$d is not a directory" >&2; exit 1; fi; \
+        mkdir -p "$d"; \
+    done
+
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \

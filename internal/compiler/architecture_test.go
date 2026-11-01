@@ -221,6 +221,43 @@ func TestFedoraExposesRepositoriesWhereTheInstallerReadsThem(t *testing.T) {
 	}
 }
 
+// Silverblue still symlinks /opt and /usr/local into /var, where the image does
+// not carry content. The platform declares them image-owned and the build takes
+// them back before the first transaction; a directory that never had the symlink
+// declares nothing.
+func TestImageOwnedDirsAreTakenBackBeforePackages(t *testing.T) {
+	fedora := mustPlan(t, "deskos-core-fedora-45", resourcesRoot)
+	if want := []string{"/opt", "/usr/local"}; !slices.Equal(fedora.Artifact.ImageOwnedDirs, want) {
+		t.Errorf("Fedora imageOwnedDirs = %v, want %v", fedora.Artifact.ImageOwnedDirs, want)
+	}
+	centos := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
+	if len(centos.Artifact.ImageOwnedDirs) != 0 {
+		t.Errorf("CentOS Stream 10 declares imageOwnedDirs = %v", centos.Artifact.ImageOwnedDirs)
+	}
+
+	files, err := containerfile.Render(fedora)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range files {
+		if f.Path != containerfile.ContainerfilePath {
+			continue
+		}
+		body := string(f.Data)
+		step := strings.Index(body, "for d in '/opt' '/usr/local'; do")
+		first := strings.Index(body, "dnf -y group install")
+		if step < 0 {
+			t.Error("the Containerfile does not take the image-owned directories back")
+		}
+		if first < 0 {
+			t.Fatal("the Containerfile has no package transaction to compare against")
+		}
+		if step > first {
+			t.Error("imageOwnedDirs runs after the first package transaction")
+		}
+	}
+}
+
 // Disabling the tray UUID delivers nothing, whatever the platform's catalog shape:
 // no package, no pinned artifact and no enabled default. The decision is a profile's
 // and the delivery is the platform's (docs/adr/0021); this is the inverse of the

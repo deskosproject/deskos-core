@@ -5,6 +5,18 @@ DeskOS. A release note says what changed; read the section for the version you c
 from, then the ones after it. Verify every download before you use it:
 [check what you download](https://deskos.org/verify/).
 
+## v0.18 → `/opt` and `/usr/local` on Fedora
+
+- Fedora 45's base symlinks `/opt` to `var/opt` and `/usr/local` to
+  `../var/usrlocal`, so a package or artifact that installs there writes to `/var`
+  and the image does not carry it. The platform now declares
+  `imageOwnedDirs: [/opt, /usr/local]`, and the build replaces both symlinks with
+  real directories before the first package transaction.
+- On an installed machine, the switch leaves the old content where it was: `/var/opt`
+  and `/var/usrlocal` keep whatever was there, and `/opt` and `/usr/local` start
+  empty with the image's content. Move or reinstall what you need; DeskOS does not
+  move a user's files.
+
 ## v0.12 or earlier → names
 
 - `deskosctl render --workstation deskos-core-centos10` is now

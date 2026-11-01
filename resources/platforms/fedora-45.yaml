@@ -42,6 +42,12 @@ spec:
     # Fedora's archive is freely redistributable and needs no subscription.
     redistributable: true
     requiresSubscription: false
+  # Silverblue keeps OSTree's strict layout: /opt is a symlink to var/opt and
+  # /usr/local to ../var/usrlocal, so a package or artifact that installs there
+  # writes to /var, which an image does not ship. fedora-bootc uses real
+  # directories, and so does every other DeskOS platform; the build takes them back
+  # before the first package transaction. Measured 2026-11-01 on this pin.
+  imageOwnedDirs: [/opt, /usr/local]
   # The set the group below resolves to on this base digest: 1509 packages in
   # Silverblue, 1857 after workstation-product-environment. Measured 2026-10-30
   # with `dnf group install` on the mirrored digest, and verified by the build's
