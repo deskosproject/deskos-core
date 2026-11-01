@@ -2,7 +2,7 @@
 slug: /
 ---
 
-# What DeskOS is
+# What is DeskOS?
 
 DeskOS builds a **Linux workstation** as an operating-system image. You describe
 the machine in YAML, DeskOS compiles that description into an image, and the

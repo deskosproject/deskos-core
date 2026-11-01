@@ -33,7 +33,7 @@ function group(label, description, items) {
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
   docs: [
-    { type: 'doc', id: 'mission', label: 'What DeskOS is' },
+    { type: 'doc', id: 'mission', label: 'What is DeskOS?' },
     { type: 'doc', id: 'quickstart', label: 'Quick start' },
     { type: 'doc', id: 'install', label: 'Installation' },
     { type: 'doc', id: 'installer-iso', label: 'Installer ISO' },
