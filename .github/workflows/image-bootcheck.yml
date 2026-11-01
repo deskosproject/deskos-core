@@ -11,9 +11,8 @@ name: image-bootcheck
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
-# The AlmaLinux example is not built here: it is an example platform, not a
-# published platform. Fedora 45 is shipped and is in the matrix above; its root
-# still validates and renders in checks.yml.
+# The AlmaLinux and Fedora examples are not built here: they are example platforms,
+# not published platforms. Their roots still validate and render in checks.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
 # the raw disk are test input and are not uploaded; the only publish path is
