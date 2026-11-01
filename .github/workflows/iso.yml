@@ -111,9 +111,12 @@ jobs:
           # retries: a transient registry answer must not be read as "not
           # published", which skipped both installers and reported success in run
           # 41238729664 (2026-10-31). Only "manifest unknown" means absent.
+          # `sudo`: the login above is root's, and the runner user's
+          # /run/user/*/containers/auth.json can be stale, which skopeo reports as
+          # "getting username and password" even for a public repository.
           err=""
           for i in 1 2 3 4 5; do
-            if err="$(skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$COMMIT" 2>&1)"; then
+            if err="$(sudo skopeo inspect --format '{{.Digest}}' "docker://$IMAGE:$COMMIT" 2>&1)"; then
               echo "build=yes" >> "$GITHUB_OUTPUT"
               echo "$IMAGE:$COMMIT is published at $err"
               exit 0
