@@ -1,0 +1,15 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-vanilla-gnome
+spec:
+  displayName: Vanilla GNOME (CentOS Stream 10)
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - rhel-family
+    - firefox
+    # No deskos-dock: this is the one axis the example removes. GNOME's own
+    # dash stays, and the platform's dash-to-dock artifact is not installed
+    # or enabled.

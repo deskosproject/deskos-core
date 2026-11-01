@@ -1,6 +1,6 @@
 # Examples
 
-Four resource roots, each a thing DeskOS can compile, each showing **one axis**.
+Five resource roots, each a thing DeskOS can compile, each showing **one axis**.
 The AlmaLinux root carries its own example Platform resource.
 
 | Example | Shows |
@@ -8,6 +8,7 @@ The AlmaLinux root carries its own example Platform resource.
 | [`centos-stream-10/`](centos-stream-10/) | the minimal Core composition on the public, redistributable platform |
 | [`rhel-10/`](rhel-10/) | the same on RHEL 10, which is **never** published (`redistributable: false`, ADR 0004) |
 | [`almalinux-10/`](almalinux-10/) | an example platform on AlmaLinux 10, whose vendor base is the vendor's own *experimental* one |
+| [`vanilla-gnome/`](vanilla-gnome/) | the **desktop axis**: the Core desktop with GNOME's own dash and no `deskos-dock` |
 | [`organization-and-role/`](organization-and-role/) | the **composition axis**: an organization baseline and a role, on two platforms (`example-devops-rhel-10`, `example-devops-centos-stream-10`) |
 
 ## How the names work
@@ -16,7 +17,9 @@ The AlmaLinux root carries its own example Platform resource.
   spells it: `centos-stream-10`, `rhel-10`, `almalinux-10`.
 - **The workstation inside is `example-<platform>`**; shipped ones are
   `deskos-core-<platform>` ([resources/workstations/](../resources/workstations/)).
-- **`organization-and-role/` is the exception**: its name is about composition.
+- **`vanilla-gnome/` and `organization-and-role/` are the exceptions**: their
+  names are about the desktop and the composition, not the platform.
+
 
 ## Running one
 
