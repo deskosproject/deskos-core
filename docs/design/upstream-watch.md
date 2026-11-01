@@ -24,7 +24,7 @@ check, and one of them shipped as a gap.
 | [adwaita-fonts](https://gitlab.gnome.org/GNOME/adwaita-fonts) | the family, its files and the sizes GNOME ships | the pinned artifacts and their checksums | a new release changes a file: re-pin, and check whether the default size moved with it |
 | [CentOS Stream 10](https://gitlab.com/redhat/centos-stream) and [RHEL 10](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10) | base digests, package names, group contents, gschema overrides | `validate` checks the pinned base digest; the weekly build fails on a missing package | a package DeskOS requires disappears or an override changes: `unavailablePackages`, a pinned artifact, or a field that stops being true |
 | [bootc and image mode](https://containers.github.io/bootc/) | install and update semantics, kickstart verbs | `lifecycle-test.yml` and the VM harness | a kickstart verb or a flag is deprecated: update the recipe before the deprecation lands in a base |
-| [Fedora](https://fedoraproject.org/) (example platform) | everything above, earlier | `examples-weekly.yml` | the example stops being representative of a supported platform: say so in `example-platforms.md` |
+| [Fedora](https://fedoraproject.org/) (shipped platform) | everything above, earlier | `image-publish.yml` and `image-bootcheck.yml` | the platform stops being representative: say so in `platforms.md` |
 
 ## How a change becomes work
 

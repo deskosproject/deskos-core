@@ -31,6 +31,7 @@ deskosctl render   ./examples/centos-stream-10 --workstation example-centos-stre
 
 `make check` validates every example and CI renders them. The weekly
 [`examples-weekly.yml`](../.github/workflows/examples-weekly.yml) builds and
-boots the AlmaLinux and Fedora examples without publishing. See
+boots the AlmaLinux example without publishing; Fedora 45 is a shipped platform
+([docs/platforms.md](../docs/platforms.md)). See
 [docs/platforms.md](../docs/platforms.md) and
 [docs/example-platforms.md](../docs/example-platforms.md).

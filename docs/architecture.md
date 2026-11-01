@@ -267,8 +267,9 @@ or boots RHEL, though composition and rendering stay covered by tests.
   SLSA-provenance attestations bound to the digest. Sixteen records came back
   verified from `evidence.deskos.org`; the approval record names the build run.
   The same digest's ISO is signed and mirrored to `download.deskos.org`.
-- **Example AlmaLinux and Fedora.** Their roots compose and render in CI, and
-  `examples-weekly.yml` builds and boots them weekly without publishing.
+- **Example AlmaLinux.** Its root composes and renders in CI, and
+  `examples-weekly.yml` builds and boots it weekly without publishing. Fedora 45
+  is shipped: its image publishes from `image-publish.yml`.
 - **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
   Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
   `flatpak preinstall --system` (no session bus).

@@ -99,5 +99,5 @@ jobs:
             echo "Destination: \`${{ inputs.destination }}\` \`${{ inputs.source }}\` tag and the vendor version tag"
             echo
             echo "Pin \`${{ inputs.destination }}:45\` at the digest printed above, then"
-            echo "update the Fedora example in a pull request."
+            echo "update the Fedora platform pin in a pull request."
           } >> "$GITHUB_STEP_SUMMARY"

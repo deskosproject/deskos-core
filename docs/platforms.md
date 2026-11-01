@@ -15,7 +15,7 @@ in [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubunt
 |---|---|---|---|---|---|---|---|
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | not yet | Flatpak preinstall |
+| Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-fedora-45`) | Flatpak preinstall |
 
 `(vendor)` means the platform's own supplier: Red Hat for RHEL, the CentOS
 project for CentOS Stream. A session starts with the vendor's desktop where

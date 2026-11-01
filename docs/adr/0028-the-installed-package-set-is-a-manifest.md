@@ -56,10 +56,10 @@ review is the diff.
 - A comps or base-image change fails the build until a person regenerates the
   manifest. Regenerating is a deliberate act: run the same group install on the new
   base digest and commit the new file, with the diff in the pull request.
-- The manifest is per platform and per base digest. CentOS Stream 10 has one now;
-  RHEL 10's comes from the organization's entitled build, because this repository
-  cannot resolve RHEL repositories; AlmaLinux and Fedora follow when their platforms
-  become first-class.
+- The manifest is per platform and per base digest. CentOS Stream 10 and Fedora 45
+  have one now; RHEL 10's comes from the organization's entitled build, because
+  this repository cannot resolve RHEL repositories; AlmaLinux follows when its
+  platform becomes first-class.
 - The manifest travels in the Plan and the SBOM, so `deskos report` can say what the
   image was expected to carry, not only what it carries.
 - A platform that declares no manifest gets no check, and that is visible in the
