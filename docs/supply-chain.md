@@ -113,16 +113,18 @@ mirror then do nothing, and `:stable` keeps serving the last good digest
 ### The installer
 
 `.github/workflows/iso.yml` is a workflow of its own: the weekly build calls it
-once per published image, and a dispatch can do the same. It is separate
-so that an image which passed its checks is published and promoted whether or not
-its installer built, and a retry costs one ISO build. The promotion reads the
-`publish` job's conclusion, not the run's.
+for each published image that has an installer in Core, and a dispatch can do
+the same. Only CentOS Stream 10 publishes one: Fedora publishes an image only,
+and its downstream organization builds the installer from that image. The
+workflow is separate so that an image which passed its checks is published and
+promoted whether or not its installer built, and a retry costs one ISO build.
+The promotion reads the `publish` job's conclusion, not the run's.
 
 The publish job is a matrix, so one job output would be whichever leg finished
 last: the installer is called with the image and the commit, resolves
 `$IMAGE:$COMMIT`, and verifies the gate's signature over the digest it resolved.
-It also builds with the image's own root filesystem (`xfs` on EL10, `btrfs` on
-Fedora), because bootc cannot always infer it.
+It also builds with the image's own root filesystem (`xfs` on EL10), because
+bootc cannot always infer it.
 
 The installer runs even when another platform's publish leg failed, and decides
 per image: it looks for its own `:<commit>` tag, builds when it finds it, and
