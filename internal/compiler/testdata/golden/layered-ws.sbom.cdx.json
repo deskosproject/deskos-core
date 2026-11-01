@@ -5,16 +5,16 @@
   "metadata": {
     "component": {
       "type": "operating-system",
-      "name": "example-devops-rhel-10",
+      "name": "layered-ws",
       "version": "10",
       "properties": [
         {
           "name": "deskos:platform",
-          "value": "rhel-10"
+          "value": "centos-stream-10"
         },
         {
           "name": "deskos:baseImage",
-          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
+          "value": "quay.io/centos-bootc/centos-bootc:stream10@sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11"
         }
       ]
     }
@@ -38,27 +38,6 @@
         {
           "name": "deskos:url",
           "value": "https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip"
-        }
-      ]
-    },
-    {
-      "type": "application",
-      "name": "dash-to-dock@micxgx.gmail.com",
-      "version": "110",
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2"
-        }
-      ],
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "gnome-extension"
-        },
-        {
-          "name": "deskos:url",
-          "value": "https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip"
         }
       ]
     },
@@ -148,42 +127,6 @@
     },
     {
       "type": "application",
-      "name": "io.github.kolunmi.Bazaar",
-      "version": "stable",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "flatpak"
-        },
-        {
-          "name": "deskos:remote",
-          "value": "flathub"
-        }
-      ]
-    },
-    {
-      "type": "application",
-      "name": "openshift-client",
-      "version": "4.22.17",
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "87f436029301f4856d3c3df85586bd34aafb807d7870939f1aa4885afdd4834f"
-        }
-      ],
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "binary"
-        },
-        {
-          "name": "deskos:destination",
-          "value": "/usr/local/bin/oc"
-        }
-      ]
-    },
-    {
-      "type": "application",
       "name": "overpass",
       "version": "4.0",
       "hashes": [
@@ -246,68 +189,8 @@
       ]
     },
     {
-      "type": "data",
-      "name": "example-root-ca",
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "3abcdda49dfa4b96f511cce7cba1419f09c0f155458b929bd4fa0ce262c37349"
-        }
-      ],
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "trust-anchor"
-        },
-        {
-          "name": "deskos:destination",
-          "value": "/etc/pki/ca-trust/source/anchors/example-root-ca.crt"
-        }
-      ]
-    },
-    {
       "type": "library",
       "name": "bash-completion",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "buildah",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "cockpit",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "cockpit-machines",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "code",
       "properties": [
         {
           "name": "deskos:source",
@@ -347,16 +230,6 @@
     },
     {
       "type": "library",
-      "name": "firefox",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "flatpak",
       "properties": [
         {
@@ -387,27 +260,7 @@
     },
     {
       "type": "library",
-      "name": "google-chrome-stable",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "google-crosextra-caladea-fonts",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "google-droid-sans-mono-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -477,16 +330,6 @@
     },
     {
       "type": "library",
-      "name": "kubectl",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "liberation-mono-fonts",
       "properties": [
         {
@@ -527,87 +370,7 @@
     },
     {
       "type": "library",
-      "name": "libvirt",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "plymouth",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "plymouth-scripts",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "plymouth-system-theme",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "plymouth-theme-spinner",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "podman",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "qemu-kvm",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "redhat-display-fonts",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "redhat-mono-fonts",
       "properties": [
         {
           "name": "deskos:source",
@@ -637,37 +400,7 @@
     },
     {
       "type": "library",
-      "name": "skopeo",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "terraform",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "tmux",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "toolbox",
       "properties": [
         {
           "name": "deskos:source",
@@ -707,26 +440,6 @@
     },
     {
       "type": "library",
-      "name": "virt-install",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "virt-viewer",
-      "properties": [
-        {
-          "name": "deskos:source",
-          "value": "rpm"
-        }
-      ]
-    },
-    {
-      "type": "library",
       "name": "wget",
       "properties": [
         {
@@ -747,12 +460,12 @@
     },
     {
       "type": "operating-system",
-      "name": "registry.redhat.io/rhel10/rhel-bootc:10.2",
-      "version": "sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee",
+      "name": "quay.io/centos-bootc/centos-bootc:stream10",
+      "version": "sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
+          "content": "0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11"
         }
       ]
     }

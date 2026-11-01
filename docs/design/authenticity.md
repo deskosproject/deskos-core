@@ -76,9 +76,13 @@ docker:
 **Signing** with cosign 3, then switch or upgrade normally:
 
 ```bash
-cosign sign --key cosign.key \
-  --new-bundle-format=false --use-signing-config=false --tlog-upload=false \
-  --registry-referrers-mode=legacy --yes \
+cosign sign \
+  --key cosign.key \
+  --new-bundle-format=false \
+  --use-signing-config=false \
+  --tlog-upload=false \
+  --registry-referrers-mode=legacy \
+  --yes \
   registry.example:5000/os/image@sha256:<digest>
 ```
 

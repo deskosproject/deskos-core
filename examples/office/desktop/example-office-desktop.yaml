@@ -1,0 +1,20 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-office-desktop
+spec:
+  defaults:
+    applications:
+      # The document role: opening a PDF starts Papers, not a browser tab.
+      pdfViewer: org.gnome.Papers.desktop
+    appearance:
+      fonts:
+        # Core ships Gelasio as a pinned artifact; naming it here makes the
+        # office look a role decision without adding a file to the image.
+        document: {family: Gelasio, size: 11}
+    shell:
+      favorites:
+        - org.libreoffice.LibreOffice.writer.desktop
+        - org.libreoffice.LibreOffice.calc.desktop
+        - org.libreoffice.LibreOffice.impress.desktop
+        - org.gnome.Papers.desktop

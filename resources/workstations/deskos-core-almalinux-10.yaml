@@ -1,7 +1,7 @@
 apiVersion: core.deskos.org/v1alpha1
 kind: Workstation
 metadata:
-  name: example-almalinux-10
+  name: deskos-core-almalinux-10
 spec:
   displayName: DeskOS Core (AlmaLinux 10)
   platformRef: almalinux-10

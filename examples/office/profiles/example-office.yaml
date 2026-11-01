@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-office
+spec:
+  layer: role
+  description: An office role; documents, the PDF viewer and the document family.
+  resources:
+    - kind: PackageSet
+      name: example-office
+    - kind: FlatpakSet
+      name: example-office-apps
+    - kind: GnomeProfile
+      name: example-office-desktop

@@ -70,8 +70,8 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux is an example and has no
-        # publication leg.
+        # release. RHEL is never published. AlmaLinux is a shipped platform; its
+        # leg has no installer because Core publishes images only for it.
         #
         # Adding a leg with `disk: bib` here needs a matching `iso:` call at the
         # bottom of this file, which is where its installer is built.
@@ -104,6 +104,14 @@ jobs:
             diskfile: output/qcow2/disk.qcow2
             rootfs: btrfs
             config: tests/vm/config-btrfs.toml
+            splash: true
+          - token: almalinux-10
+            workstation: deskos-core-almalinux-10
+            exceptions: tests/supply-chain/exceptions-almalinux-10.json
+            disk: bib
+            diskfile: output/qcow2/disk.qcow2
+            rootfs: xfs
+            config: tests/vm/config.toml
             splash: true
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci

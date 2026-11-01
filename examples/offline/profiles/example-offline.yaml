@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-offline
+spec:
+  layer: organization
+  description: A workstation for a site with no network; updates are a deliberate act.
+  resources:
+    - kind: PackageSet
+      name: example-offline
+    - kind: UpdatePolicy
+      name: example-offline
+    - kind: GnomeProfile
+      name: example-offline-desktop

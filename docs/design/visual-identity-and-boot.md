@@ -99,7 +99,7 @@ identity stays truthful:** os-release and logo packages are never falsified.
 
 ## Example organization assets
 
-Artwork placeholders: `examples/organization-and-role/assets/`, with a
+Artwork placeholders: `examples/layers/assets/`, with a
 `PROVENANCE.md` recording owner, source and permission.
 
 ## Slices (each reviewable on its own)
@@ -127,7 +127,7 @@ dracut-ng `main`) loads those drivers unconditionally. *Unresolved*.
 
 ## VM QA
 
-Implemented in `tests/vm/` (CS10 in CI; AlmaLinux/Fedora weekly; Ubuntu in its
+Implemented in `tests/vm/` (CS10 in CI; AlmaLinux and Fedora in the publish gate; Ubuntu in its
 own repository; RHEL on the retired factory host): Tier A (`bootcheck.py`, no
 reference matching) and a Tier B subset (`sessioncheck.py`, SMBIOS credentials,
 serial report). See

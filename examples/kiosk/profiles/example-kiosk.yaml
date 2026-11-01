@@ -1,0 +1,10 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-kiosk
+spec:
+  layer: role
+  description: A locked-down public session; the image-level half of a kiosk.
+  resources:
+    - kind: GnomeProfile
+      name: example-kiosk-desktop

@@ -28,7 +28,7 @@ spec:
     - example-devops
 ```
 
-`deskosctl plan ./examples/organization-and-role --workstation
+`deskosctl plan ./examples/layers --workstation
 example-devops-centos-stream-10` shows which layer won each setting.
 
 A workstation can retire a Flatpak remote the base ships:

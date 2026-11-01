@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-identity
+spec:
+  layer: organization
+  description: The image-level half of joining a corporate identity domain.
+  resources:
+    - kind: PackageSet
+      name: example-identity
+    - kind: TrustAnchor
+      name: example-identity-ca
+    - kind: NetworkProfile
+      name: example-identity-network

@@ -12,4 +12,4 @@ deskosctl plan ./examples/centos-stream-10 \
 |---|---|
 | `example-centos-stream-10` | the target: `centos-stream-10` + the `deskos-core` and `deskos-gnome` profiles |
 
-The composition example lives in `../organization-and-role/`.
+The composition example lives in `../layers/`.

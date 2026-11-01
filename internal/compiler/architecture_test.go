@@ -357,15 +357,12 @@ func TestAPlatformGapIsReportedWithItsReason(t *testing.T) {
 	dir := fixture{
 		"p.yaml": profile("needs-virt-manager", "role", "PackageSet/example-virt-manager"),
 		"s.yaml": packageSet("example-virt-manager", "virt-manager"),
-		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
-		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, example-organization, example-devops, needs-virt-manager]\n",
+		"c.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-centos\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, needs-virt-manager]\n",
+		"r.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: gap-rhel\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, needs-virt-manager]\n",
 	}.dir(t)
 	for ws, want := range map[string]string{"gap-centos": "Platform/centos-stream-10: only in the CentOS Stream CRB", "gap-rhel": "Platform/rhel-10: RHEL 10 moved it to the CodeReady Linux Builder"} {
-		_, err := planOf(t, ws, resourcesRoot, exampleRoot, dir)
+		_, err := planOf(t, ws, resourcesRoot, dir)
 		mustFail(t, err, `package "virt-manager" is not available on `+strings.SplitN(want, ":", 2)[0], strings.SplitN(want, ": ", 2)[1], "PackageSet/example-virt-manager")
-	}
-	if slices.Contains(packages(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)), "virt-manager") {
-		t.Error("virt-manager must not be installed silently")
 	}
 }
 
@@ -614,10 +611,10 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 		t.Error("DeskOS Core locks settings; Core provides defaults only")
 	}
 
-	example := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
-	for _, want := range []string{"libvirt", "virt-install", "terraform", "kubectl", "code", "google-chrome-stable"} {
-		if !slices.Contains(packages(example), want) {
-			t.Errorf("the example DevOps workstation is missing %s", want)
+	layered := mustPlan(t, layeredWorkstation, resourcesRoot, layeredFixture(t))
+	for _, want := range []string{"vim-enhanced", "git"} {
+		if !slices.Contains(packages(layered), want) {
+			t.Errorf("the layered workstation is missing %s", want)
 		}
 	}
 	// The DeskOS look is a workstation's own choice, so the floor an organization
@@ -625,8 +622,8 @@ func TestCoreCarriesNoOrganizationalSoftware(t *testing.T) {
 	foundation := mustPlan(t, "foundation-ws", resourcesRoot,
 		fixture{"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: foundation-ws\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, rhel-family]\n"}.dir(t))
 	for _, pkg := range packages(foundation) {
-		if pkg != "flatpak" && !slices.Contains(packages(example), pkg) {
-			t.Errorf("the example workstation lost Core package %s", pkg)
+		if pkg != "flatpak" && !slices.Contains(packages(layered), pkg) {
+			t.Errorf("the layered workstation lost Core package %s", pkg)
 		}
 	}
 }
@@ -694,7 +691,8 @@ func TestCoreKeepsSELinuxAndAudit(t *testing.T) {
 			t.Errorf("the CS10 group transaction does not exclude %s", x)
 		}
 	}
-	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
+	rhelFixture := fixture{"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: rhel-ws\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, rhel-family]\n"}
+	rhel, err := containerfile.Render(mustPlan(t, "rhel-ws", resourcesRoot, rhelFixture.dir(t)))
 	if err != nil {
 		t.Fatal(err)
 	}

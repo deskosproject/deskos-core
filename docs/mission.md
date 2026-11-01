@@ -26,9 +26,9 @@ booted.
 
 DeskOS is **not a distribution**. It starts from a vendor's official base,
 pinned by digest, and composes on top. The supported platforms are CentOS
-Stream 10, RHEL 10 and Fedora 45; AlmaLinux 10 is the example platform and its
-promotion is next ([Platforms](platforms.md)). RHEL images are never published
-by Core; an organization builds them with its own subscription.
+Stream 10, RHEL 10, Fedora 45 and AlmaLinux 10 ([Platforms](platforms.md)). RHEL
+images are never published by Core; an organization builds them with its own
+subscription.
 
 ## Start here
 

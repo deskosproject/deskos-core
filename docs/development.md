@@ -21,7 +21,7 @@ Validate the included resources, and inspect the public CentOS reference
 workstation (`--format json` prints the canonical plan):
 
 ```bash
-./bin/deskosctl validate ./examples/organization-and-role
+./bin/deskosctl validate ./examples/layers
 ./bin/deskosctl plan --workstation deskos-core-centos-stream-10
 ```
 
@@ -50,13 +50,13 @@ The QCOW2 and ISO commands in [Installing DeskOS](install.md) take
 
 An example that composes an organization baseline and a developer role on RHEL 10
 reuses DeskOS resources without copying them
-([README](../examples/organization-and-role/README.md)):
+([README](../examples/layers/README.md)):
 
 ```bash
-./bin/deskosctl plan ./examples/organization-and-role \
+./bin/deskosctl plan ./examples/layers \
   --workstation example-devops-rhel-10
 
-./bin/deskosctl render ./examples/organization-and-role \
+./bin/deskosctl render ./examples/layers \
   --workstation example-devops-rhel-10 \
   --output ./dist/example-devops-rhel-10
 ```
@@ -89,9 +89,14 @@ inside the image, so only the output directory needs a mount:
 
 ```bash
 mkdir -p out
-podman run --rm --userns=keep-id -v "$PWD/out":/out:z \
-    quay.io/deskos/deskosctl:latest render \
-    --workstation deskos-core-centos-stream-10 --output /out
+podman run \
+    --rm \
+    --userns=keep-id \
+    --volume "$PWD/out":/out:z \
+    quay.io/deskos/deskosctl:latest \
+    render \
+    --workstation deskos-core-centos-stream-10 \
+    --output /out
 ```
 
 Your own resources are an **extra** root, one that adds resources rather than
@@ -101,10 +106,16 @@ SELinux host an unrelabeled root fails with `permission denied`, and relabeling 
 whole checkout can fail on root-owned artifacts, so mount the resource tree:
 
 ```bash
-podman run --rm --userns=keep-id \
-    -v "$PWD/org-resources":/org:ro,z -v "$PWD/out":/out:z \
-    quay.io/deskos/deskosctl:latest render \
-    /org --workstation my-workstation --output /out
+podman run \
+    --rm \
+    --userns=keep-id \
+    --volume "$PWD/org-resources":/org:ro,z \
+    --volume "$PWD/out":/out:z \
+    quay.io/deskos/deskosctl:latest \
+    render \
+    /org \
+    --workstation my-workstation \
+    --output /out
 ```
 
 `:latest` is the newest **stable** release: a `vX.Y.Z-<prerelease>` tag publishes
@@ -138,14 +149,19 @@ To download and verify the current release (a `vX.Y.Z` name pins one), with `gh`
 or without it:
 
 ```bash
-gh release download --repo deskosproject/deskos-core \
-  --pattern 'deskosctl-linux-amd64' --pattern 'SHA256SUMS'
+gh release download \
+  --repo deskosproject/deskos-core \
+  --pattern 'deskosctl-linux-amd64' \
+  --pattern 'SHA256SUMS'
 sha256sum -c --ignore-missing SHA256SUMS
 chmod +x deskosctl-linux-amd64
 ```
 
 ```bash
 base=https://github.com/deskosproject/deskos-core/releases/latest/download
-curl -fL -O "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
+curl \
+  -fL \
+  -O "$base/deskosctl-linux-amd64" \
+  -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 ```

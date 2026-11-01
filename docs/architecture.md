@@ -62,10 +62,10 @@ by name.
 Core is `resources/profiles/deskos-core.yaml`, a foundation profile, with
 `deskos-gnome` for GNOME defaults and `deskos-dock` for the dock. A RHEL
 workstation starts from `registry.redhat.io/rhel10/rhel-bootc`, never from the
-CentOS-based DeskOS image. A test asserts that the **two shipped RPM platforms**,
-CentOS Stream 10 and RHEL 10, produce the same Core content over the fields it
-compares: groups, packages, enabled units, dconf defaults, installed files, default
-target. AlmaLinux and Fedora have their own roots; Ubuntu has its own repository
+CentOS-based DeskOS image. A test asserts that the shipped RPM platforms
+produce the same Core content over the fields it compares: groups, packages,
+enabled units, dconf defaults, installed files, default target. Fedora and
+AlmaLinux are shipped platforms with their own roots; Ubuntu has its own repository
 ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
 ## Composition
@@ -267,9 +267,8 @@ or boots RHEL, though composition and rendering stay covered by tests.
   SLSA-provenance attestations bound to the digest. Sixteen records came back
   verified from `evidence.deskos.org`; the approval record names the build run.
   The same digest's ISO is signed and mirrored to `download.deskos.org`.
-- **Example AlmaLinux.** Its root composes and renders in CI, and
-  `examples-weekly.yml` builds and boots it weekly without publishing. Fedora 45
-  is shipped: its image publishes from `image-publish.yml`.
+- **AlmaLinux 10 and Fedora 45.** Both are shipped: their images publish from
+  `image-publish.yml`. Core publishes no installer for either.
 - **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
   Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
   `flatpak preinstall --system` (no session bus).

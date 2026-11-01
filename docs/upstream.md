@@ -19,7 +19,7 @@ measurement attached.
 |---|---|---|---|
 | bootc install and first boot | [`bootc-dev/bootc`](https://github.com/bootc-dev/bootc) | the first-boot check and its summary; the composefs finding that `/run/ostree-booted` is absent on a bootc host (#177) | no |
 | Fedora image mode | [Fedora bootc docs](https://docs.fedoraproject.org/en-US/bootc/) | the Fedora build and its checks; a released-compose re-pin | no |
-| AlmaLinux atomic desktop | [`AlmaLinux/atomic-desktop`](https://github.com/AlmaLinux/atomic-desktop) | the AlmaLinux example build and boot in `examples-weekly.yml` | no |
+| AlmaLinux atomic desktop | [`AlmaLinux/atomic-desktop`](https://github.com/AlmaLinux/atomic-desktop) | the AlmaLinux platform build, scan and boot in `image-publish.yml` | no |
 | CentOS Stream and alternative images | the Alternative Images SIG in the [CentOS GitLab group](https://gitlab.com/CentOS) | a base re-review and its scan; a package only CRB carries, so a composed image cannot install it (`virt-manager` on stream10) | no |
 | GNOME and the login screen | [`gitlab.gnome.org/GNOME/gdm`](https://gitlab.gnome.org/GNOME/gdm) | a greeter behaviour reproduced in the VM, with the digest and the database it read | no |
 | Flatpak preinstall | the Flatpak tracker | the preinstall unit the plan emits and what first boot observed | no |

@@ -57,9 +57,8 @@ review is the diff.
   manifest. Regenerating is a deliberate act: run the same group install on the new
   base digest and commit the new file, with the diff in the pull request.
 - The manifest is per platform and per base digest. CentOS Stream 10 and Fedora 45
-  have one now; RHEL 10's comes from the organization's entitled build, because
-  this repository cannot resolve RHEL repositories; AlmaLinux follows when its
-  platform becomes first-class.
+  have one now, and AlmaLinux 10 does too; RHEL 10's comes from the organization's
+  entitled build, because this repository cannot resolve RHEL repositories.
 - The manifest travels in the Plan and the SBOM, so `deskos report` can say what the
   image was expected to carry, not only what it carries.
 - A platform that declares no manifest gets no check, and that is visible in the

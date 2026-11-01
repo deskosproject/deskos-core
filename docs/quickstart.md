@@ -13,6 +13,7 @@ KVM for the virtual machine.
 |---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10:latest` |
 | Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:latest` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10:latest` |
 
 `:latest` is the newest image that passed the weekly build; `:candidate` is the
 digest that build published and signed. Outside a lab, pin the digest you
@@ -22,23 +23,34 @@ verified ([install.md](install.md#option-1-install-the-published-image)).
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+  --rm \
+  --interactive \
+  --tty \
+  --privileged \
+  --pull=missing \
   --security-opt label=type:unconfined_t \
-  -v "$PWD/output:/output" \
-  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  --volume "$PWD/output:/output" \
+  --volume /var/lib/containers/storage:/var/lib/containers/storage \
   quay.io/centos-bootc/bootc-image-builder:latest \
-  build --type qcow2 --rootfs xfs \
+  build \
+  --type qcow2 \
+  --rootfs xfs \
   quay.io/deskos/deskos-core-centos-stream-10:latest
 ```
 
 The disk lands at `output/qcow2/disk.qcow2`. Fedora's root filesystem is
 `btrfs`: pass `--rootfs btrfs` and the Fedora image
-([Fedora 45](fedora.md)).
+([Fedora 45](fedora.md)). CentOS Stream 10 and AlmaLinux 10 use `xfs`, which is
+what the command already asks for.
 
 ## 3. Boot it
 
 ```bash
-sudo qemu-system-x86_64 -enable-kvm -m 4096 -smp 2 \
+sudo qemu-system-x86_64 \
+  -enable-kvm \
+  -m 4096 \
+  -smp 2 \
   -drive file=output/qcow2/disk.qcow2,if=virtio,format=qcow2 \
   -nic user,model=virtio-net-pci
 ```

@@ -30,7 +30,7 @@ It resolves no versions and scans no bytes: it lists ingredients, not installed
 content.
 
 ```bash
-deskosctl sbom ./examples/organization-and-role \
+deskosctl sbom ./examples/layers \
   --workstation example-devops-rhel-10 \
   --output dist/example-devops-rhel-10.sbom.cdx.json
 ```
@@ -43,8 +43,12 @@ package versions and file contents exist:
 ```bash
 # Build the Core image from its rendered context.
 mkdir -p dist
-deskosctl render --workstation deskos-core-centos-stream-10 --output dist/deskos-core-centos-stream-10
-sudo podman build -t localhost/deskos-core-centos-stream-10:test dist/deskos-core-centos-stream-10
+deskosctl render \
+  --workstation deskos-core-centos-stream-10 \
+  --output dist/deskos-core-centos-stream-10
+sudo podman build \
+  -t localhost/deskos-core-centos-stream-10:test \
+  dist/deskos-core-centos-stream-10
 
 image=localhost/deskos-core-centos-stream-10:test
 syft "$image" -o cyclonedx-json > installed.sbom.cdx.json
@@ -178,8 +182,9 @@ The policy the check applies is
   distribution's security response, and a Critical in them still blocks;
 - **every exception is explicit**: an OpenVEX statement
   (`tests/supply-chain/vex.openvex.json`) or an entry in the platform's reviewed
-  record: `tests/supply-chain/exceptions.json` for CentOS Stream 10 and
-  `tests/supply-chain/exceptions-fedora-45.json` for Fedora 45. Nothing is
+  record: `tests/supply-chain/exceptions.json` for CentOS Stream 10,
+  `tests/supply-chain/exceptions-fedora-45.json` for Fedora 45 and
+  `tests/supply-chain/exceptions-almalinux-10.json` for AlmaLinux 10. Nothing is
   silently ignored.
 
 The record names the owner, the review date, the base image digest it was reviewed
@@ -249,24 +254,33 @@ ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
 identity='https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main'
 
-cosign verify --certificate-oidc-issuer "$issuer" \
-  --certificate-identity "$identity" "$ref"
+cosign verify \
+  --certificate-oidc-issuer "$issuer" \
+  --certificate-identity "$identity" \
+  "$ref"
 
 for type in \
   slsaprovenance1 \
   https://deskos.org/supply-chain/sbom/v1 \
   https://deskos.org/supply-chain/exceptions/v1 \
   https://deskos.org/supply-chain/effective-exceptions/v1; do
-  cosign verify-attestation --type "$type" \
+  cosign verify-attestation \
+    --type "$type" \
     --certificate-oidc-issuer "$issuer" \
-    --certificate-identity "$identity" "$ref"
+    --certificate-identity "$identity" \
+    "$ref"
 done
 
 # The reference names the image digest and the SBOM's SHA-256; read it and
 # check the SBOM you obtained against it.
-cosign verify-attestation --type https://deskos.org/supply-chain/sbom/v1 \
-  --certificate-oidc-issuer "$issuer" --certificate-identity "$identity" "$ref" \
-  | jq -r '.payload' | base64 -d | jq '{image, sha256, components}'
+cosign verify-attestation \
+  --type https://deskos.org/supply-chain/sbom/v1 \
+  --certificate-oidc-issuer "$issuer" \
+  --certificate-identity "$identity" \
+  "$ref" \
+  | jq -r '.payload' \
+  | base64 -d \
+  | jq '{image, sha256, components}'
 ```
 
 **Rescan a published digest.** The weekly job builds from the checkout and does not
@@ -280,10 +294,16 @@ podman pull "$ref"
 
 # Record what produced the result, not only the result.
 grype version            # scanner and vulnerability database versions
-syft --from containers-storage "$ref"   --select-catalogers "-file-content-cataloger,-file-digest-cataloger,-file-executable-cataloger,-file-metadata-cataloger"   -o cyclonedx-json=installed.sbom.cdx.json
+syft \
+  --from containers-storage "$ref" \
+  --select-catalogers "-file-content-cataloger,-file-digest-cataloger,-file-executable-cataloger,-file-metadata-cataloger" \
+  -o cyclonedx-json=installed.sbom.cdx.json
 
 # Evidence pass, unfiltered.
-grype --from containers-storage "$ref"   --config tests/supply-chain/grype-raw.yaml -o json > cves.json
+grype \
+  --from containers-storage "$ref" \
+  --config tests/supply-chain/grype-raw.yaml \
+  -o json > cves.json
 
 # The plan the image carries names its base digest; the exception record
 # must have been reviewed against that base.
@@ -291,10 +311,17 @@ id=$(podman create "$ref")
 podman cp "$id:/usr/share/deskos/plan.json" plan.json
 podman rm "$id"
 
-python3 tests/supply-chain/check_exceptions.py   --cves cves.json --exceptions tests/supply-chain/exceptions.json   --plan plan.json --emit-gate gate.grype.yaml
+python3 tests/supply-chain/check_exceptions.py \
+  --cves cves.json \
+  --exceptions tests/supply-chain/exceptions.json \
+  --plan plan.json \
+  --emit-gate gate.grype.yaml
 
 # The gate: Critical blocks, with only the reviewed exceptions applied.
-grype --from containers-storage "$ref"   --config gate.grype.yaml --fail-on critical
+grype \
+  --from containers-storage "$ref" \
+  --config gate.grype.yaml \
+  --fail-on critical
 ```
 
 When a new Critical appears, the release owner for that digest chooses one of

@@ -54,8 +54,7 @@ daily, on AC power):
 > **Platform scope.** Everything `bootc` here is on every shipped platform. The
 > Flatpak half needs a system Flatpak channel: the EL family's
 > `PackageSet/rhel-family` provides one, and a platform with no channel fails
-> composition for a `FlatpakSet`. The AlmaLinux example is not shipped support
-> ([platforms.md](platforms.md)).
+> composition for a `FlatpakSet` ([platforms.md](platforms.md)).
 
 The timers are `OnCalendar=daily` with a two-hour randomized delay and
 `Persistent=true`; the services carry `ConditionACPower=true`. The base image's

@@ -65,8 +65,11 @@ If you prefer to run the compiler here, the same three commands work:
 ```bash
 ./bin/deskosctl validate ./examples/centos-stream-10
 ./bin/deskosctl render ./examples/centos-stream-10 \
-    --workstation example-centos-stream-10 --output ./dist/centos
-sudo podman build -t localhost/deskos-centos:test ./dist/centos
+    --workstation example-centos-stream-10 \
+    --output ./dist/centos
+sudo podman build \
+    -t localhost/deskos-centos:test \
+    ./dist/centos
 ```
 
 `deskosctl` is a single binary from
@@ -117,7 +120,7 @@ digest, and summarised at [deskos.org/evidence](https://deskos.org/evidence/).
 | CentOS Stream 10 | published image, installer ISO, and the checks above on every weekly build |
 | RHEL 10 | composes and renders here; the entitled build runs in the organization that owns the subscription, and is never published |
 | Fedora 45 | published image; Core publishes no installer for it, a downstream organization does |
-| AlmaLinux 10 | example platform: it composes, renders and boots weekly, and publishes nothing |
+| AlmaLinux 10 | published image; Core publishes no installer for it |
 
 The full matrix, with what is and is not verified on each platform, is
 [platforms.md](docs/platforms.md).

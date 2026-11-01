@@ -1,0 +1,10 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-offline-desktop
+spec:
+  defaults:
+    # The desktop's own update entry says what the image policy says: an update
+    # is a deliberate action, not a background one.
+    software:
+      updates: manual

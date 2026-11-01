@@ -1,0 +1,16 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-developer
+spec:
+  layer: role
+  description: A developer role; toolchain, containers and terminals on top of Core.
+  # Every resource this role names is an RPM the platform already serves. A
+  # vendor tool that is not an RPM (a container image, an editor archive) is a
+  # different decision: an organization repository or a BinaryArtifact, which
+  # examples/layers shows.
+  resources:
+    - kind: PackageSet
+      name: example-developer
+    - kind: GnomeProfile
+      name: example-developer-desktop

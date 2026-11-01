@@ -1,21 +1,76 @@
 {
   "owner": "rarguello",
-  "review": "2026-11-17",
+  "review": "2026-12-10",
   "base": {
     "image": "quay.io/almalinuxorg/almalinux-bootc:10",
-    "digest": "sha256:e99bb7fbd7155e1ce45bd99077f3ae0dbe9a13ce9abf0951765f9b0e4470a2b4"
+    "digest": "sha256:0a036afe9ddfb987f2b5c428242ebeaf5c74d4279122f4ccf45dc7c38fe55c73"
   },
   "exceptions": [
     {
+      "id": "CVE-2026-98432",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the Linux kernel shipped by the AlmaLinux 10 bootc base has a TCP use-after-free (CVE-2026-98432). Grype reports fix state not-fixed on the 2026-10-31 base, and AlmaLinux has published no kernel build with the fix. DeskOS neither builds nor patches the vendor kernel, so the fix is AlmaLinux's rebuild. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "kernel",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-core",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-core",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-extra",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools-libs",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "python3-perf",
+          "type": "rpm",
+          "version": "6.12.0-211.69.1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        }
+      ]
+    },
+    {
       "id": "GHSA-p77j-4mvh-x3m3",
       "kind": "accepted-risk-upstream-binary",
-      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the 2026-10-17 AlmaLinux base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the vulnerable Go module is compiled into binaries the base installs (podman), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. The 2026-10-31 base still carries it. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "google.golang.org/grpc",
           "type": "go-module",
           "version": "v1.72.2",
-          "path": "/sysroot/ostree/repo/objects/13/14920e574319fd3429f2a1e162747a2d85972723965720d3c3e59cb21b6cf9.file"
+          "path": "/sysroot/ostree/repo/objects/f6/a30b5a92fe21f3923d131ab8aa8d6b64c7f01ee31e6d8293aaf6d205cfef7f.file"
         },
         {
           "package": "google.golang.org/grpc",
@@ -28,13 +83,13 @@
     {
       "id": "GO-2026-6612",
       "kind": "accepted-risk-upstream-binary",
-      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the 2026-10-17 AlmaLinux base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. The 2026-10-31 base still carries them. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "golang.org/x/net",
           "type": "go-module",
           "version": "v0.48.0",
-          "path": "/sysroot/ostree/repo/objects/ca/2fdc0bd48d772525274a8853bb24d5a878ca1ff319a3cd4a413a10b339db9c.file"
+          "path": "/sysroot/ostree/repo/objects/27/fe15f5ea684daf8845d014beaaa547a8888c54c29ec3a7fae66e10b624f499.file"
         },
         {
           "package": "golang.org/x/net",
@@ -46,7 +101,7 @@
           "package": "golang.org/x/net",
           "type": "go-module",
           "version": "v0.56.0",
-          "path": "/sysroot/ostree/repo/objects/13/14920e574319fd3429f2a1e162747a2d85972723965720d3c3e59cb21b6cf9.file"
+          "path": "/sysroot/ostree/repo/objects/f6/a30b5a92fe21f3923d131ab8aa8d6b64c7f01ee31e6d8293aaf6d205cfef7f.file"
         },
         {
           "package": "golang.org/x/net",
@@ -65,79 +120,31 @@
           "type": "go-module",
           "version": "go1.26.2",
           "path": "/usr/bin/toolbox"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.7",
-          "path": "/sysroot/ostree/repo/objects/13/14920e574319fd3429f2a1e162747a2d85972723965720d3c3e59cb21b6cf9.file"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.7",
-          "path": "/sysroot/ostree/repo/objects/ca/2fdc0bd48d772525274a8853bb24d5a878ca1ff319a3cd4a413a10b339db9c.file"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.7",
-          "path": "/usr/bin/podman"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.7",
-          "path": "/usr/bin/skopeo"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.7",
-          "path": "/usr/sbin/ipp-usb"
         }
       ]
     },
     {
       "id": "GO-2026-6770",
       "kind": "accepted-risk-upstream-binary",
-      "reason": "Accepted by the owner on 2026-10-20. Not a false positive: podman 5.8.2's Go module is compiled into /usr/bin/podman, quadlet and rootlessport, and DeskOS neither builds nor patches the vendor's binary, so the fix is the distribution's rebuild. A newer base was checked first and does not fix it yet: today's :10 and :latest both carry podman 5.8.2, and the fix is 5.8.8. The vulnerable path is `podman run` honouring an image annotation that disables sandboxing, so it is exercised when a user runs an untrusted image; DeskOS itself does not run untrusted images. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: podman's Go module is compiled into the base's podman binaries, and DeskOS neither builds nor patches the vendor's binary, so the fix is the distribution's rebuild. The 2026-10-31 base still carries it. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "github.com/containers/podman/v5",
           "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/sysroot/ostree/repo/objects/13/14920e574319fd3429f2a1e162747a2d85972723965720d3c3e59cb21b6cf9.file"
+          "version": "v5.0.0-20261022202640-2ac951d7cee0+dirty",
+          "path": "/sysroot/ostree/repo/objects/77/82e24621c2d2e91fb33ad4bb5b97c252b57efe858ffb87307718eab6e32712.file"
         },
         {
           "package": "github.com/containers/podman/v5",
           "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/sysroot/ostree/repo/objects/3a/229bd2ebdff7622ab60854048a2ce4c4ea716ebdf3eb82926e8f1ca52af91e.file"
+          "version": "v5.0.0-20261022202640-2ac951d7cee0+dirty",
+          "path": "/sysroot/ostree/repo/objects/ef/5e6f8a471c7ff0a44e1005ae3097d23c2004897cae4bfe87faa5b9d19ce4f9.file"
         },
         {
           "package": "github.com/containers/podman/v5",
           "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/sysroot/ostree/repo/objects/7e/e4d86cc4f9a6c00c4464aafdf5042747921d5fca5ee4113cabc5245a5a3c78.file"
-        },
-        {
-          "package": "github.com/containers/podman/v5",
-          "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/usr/bin/podman"
-        },
-        {
-          "package": "github.com/containers/podman/v5",
-          "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/usr/libexec/podman/quadlet"
-        },
-        {
-          "package": "github.com/containers/podman/v5",
-          "type": "go-module",
-          "version": "v5.0.0-20260922173920-d70093ef8b40+dirty",
-          "path": "/usr/libexec/podman/rootlessport"
+          "version": "v5.0.0-20261022202640-2ac951d7cee0+dirty",
+          "path": "/sysroot/ostree/repo/objects/f6/a30b5a92fe21f3923d131ab8aa8d6b64c7f01ee31e6d8293aaf6d205cfef7f.file"
         }
       ]
     }

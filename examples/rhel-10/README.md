@@ -28,16 +28,22 @@ On a RHEL 10 machine registered to your subscription, as root:
 # 1. the compiler, from the release this repository pins
 base=https://github.com/deskosproject/deskos-core/releases/latest/download
 mkdir -p deskos/bin && cd deskos
-curl -fL -O "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
+curl \
+  -fL \
+  -O "$base/deskosctl-linux-amd64" \
+  -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 # 2. your resources. This example is one: copy it and change it
 ./bin/deskosctl validate /path/to/your/resources
 # 3. the build context, as a plan you can read and diff before anything runs
 ./bin/deskosctl render /path/to/your/resources \
-  --workstation example-rhel-10 --output ./dist/rhel
+  --workstation example-rhel-10 \
+  --output ./dist/rhel
 # 4. the image
-sudo podman build -t registry.example.com/deskos/rhel10:latest ./dist/rhel
+sudo podman build \
+  -t registry.example.com/deskos/rhel10:latest \
+  ./dist/rhel
 ```
 
 A disk or an ISO comes from that image with `bootc-image-builder`. The whole

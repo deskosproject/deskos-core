@@ -46,19 +46,20 @@ jobs:
         run: go build -o bin/deskosctl ./cmd/deskosctl
       - name: validate resources and examples
         run: |
-          for ex in organization-and-role centos-stream-10 almalinux-10 rhel-10 vanilla-gnome; do
+          # Examples are validated, not planned or rendered: a change to one
+          # cannot slow the pipeline, and the compiler fixtures are reference
+          # workstations rather than example roots.
+          for ex in layers developer office kiosk identity offline centos-stream-10 rhel-10 vanilla-gnome; do
             ./bin/deskosctl validate "./examples/$ex"
           done
-      - name: plan CentOS reference workstation
-        run: ./bin/deskosctl plan --workstation deskos-core-centos-stream-10
-      - name: plan per-platform examples
+      - name: validate the Core tree
+        run: ./bin/deskosctl validate --no-core ./resources
+      - name: plan the reference workstations
         run: |
-          ./bin/deskosctl plan ./examples/centos-stream-10 --workstation example-centos-stream-10
-          ./bin/deskosctl plan ./examples/almalinux-10 --workstation example-almalinux-10
-          ./bin/deskosctl plan ./examples/rhel-10 --workstation example-rhel-10
-          ./bin/deskosctl plan ./examples/vanilla-gnome --workstation example-vanilla-gnome
-      - name: plan example RHEL workstation
-        run: ./bin/deskosctl plan ./examples/organization-and-role --workstation example-devops-rhel-10
+          ./bin/deskosctl plan --workstation deskos-core-centos-stream-10
+          ./bin/deskosctl plan --workstation deskos-core-almalinux-10
+          ./bin/deskosctl plan --workstation deskos-core-fedora-45
+          ./bin/deskosctl plan --no-core ./resources ./tests/identity/resources --workstation identity-client-centos-stream-10
       - name: Which platform pins changed
         id: pins
         run: |
@@ -127,15 +128,15 @@ jobs:
           done < /tmp/pins.txt
       - name: render twice and compare
         run: |
-          # The embedded Core, twice (determinism), and a Core passed in two
-          # orders with --no-core (order independence), all identical.
-          for ws in deskos-core-centos-stream-10 example-devops-rhel-10; do
-            ./bin/deskosctl render ./examples/organization-and-role --workstation "$ws" --output "dist/a/$ws"
-            ./bin/deskosctl render ./examples/organization-and-role --workstation "$ws" --output "dist/b/$ws"
-            ./bin/deskosctl render --no-core ./resources ./examples/organization-and-role --workstation "$ws" --output "dist/c/$ws"
-            ./bin/deskosctl render --no-core ./examples/organization-and-role ./resources --workstation "$ws" --output "dist/d/$ws"
+          # The embedded Core, twice, for every shipped workstation.
+          for ws in deskos-core-centos-stream-10 deskos-core-almalinux-10 deskos-core-fedora-45; do
+            ./bin/deskosctl render --workstation "$ws" --output "dist/a/$ws"
+            ./bin/deskosctl render --workstation "$ws" --output "dist/b/$ws"
           done
-          # The example platforms still render from their self-contained roots.
-          ./bin/deskosctl render ./examples/almalinux-10 --workstation example-almalinux-10 --output dist/alma
+          # An organization overlay passed in both orders, with --no-core.
+          ./bin/deskosctl render --no-core ./resources ./tests/identity/resources \
+            --workstation identity-client-centos-stream-10 --output dist/c/identity
+          ./bin/deskosctl render --no-core ./tests/identity/resources ./resources \
+            --workstation identity-client-centos-stream-10 --output dist/d/identity
           diff -r dist/a dist/b
-          diff -r dist/a dist/c
+          diff -r dist/c dist/d

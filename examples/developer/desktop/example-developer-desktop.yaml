@@ -1,0 +1,16 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-developer-desktop
+spec:
+  # A role's defaults, not a lock: the person can move or remove a favorite.
+  # Core already binds the platform terminal; naming it here makes the role's
+  # choice explicit and fails composition if the platform stops declaring one.
+  defaults:
+    keyboard:
+      terminal: org.gnome.Ptyxis.desktop
+    shell:
+      favorites:
+        - org.gnome.Ptyxis.desktop
+        - org.gnome.Nautilus.desktop
+        - org.gnome.TextEditor.desktop

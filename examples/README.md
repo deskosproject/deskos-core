@@ -1,37 +1,44 @@
 # Examples
 
-Five resource roots, each a thing DeskOS can compile, each showing **one axis**.
-The AlmaLinux root carries its own example Platform resource.
+The resource roots here are compile-and-render examples, each showing **one use
+case**. They are not shipped platform support, and CI does not build them.
 
 | Example | Shows |
 |---|---|
 | [`centos-stream-10/`](centos-stream-10/) | the minimal Core composition on the public, redistributable platform |
 | [`rhel-10/`](rhel-10/) | the same on RHEL 10, which is **never** published (`redistributable: false`, ADR 0004) |
-| [`almalinux-10/`](almalinux-10/) | an example platform on AlmaLinux 10, whose vendor base is the vendor's own *experimental* one |
 | [`vanilla-gnome/`](vanilla-gnome/) | the **desktop axis**: the Core desktop with GNOME's own dash and no `deskos-dock` |
-| [`organization-and-role/`](organization-and-role/) | the **composition axis**: an organization baseline and a role, on two platforms (`example-devops-rhel-10`, `example-devops-centos-stream-10`) |
+| [`layers/`](layers/) | the **composition axis**: an organization baseline and a role, on two platforms |
+| [`developer/`](developer/) | a role with the compiler and container toolchain |
+| [`office/`](office/) | a role with documents, a PDF viewer and the serif families |
+| [`kiosk/`](kiosk/) | a locked-down public session, and what the image cannot lock |
+| [`identity/`](identity/) | the image-level half of a domain join |
+| [`offline/`](offline/) | a site with no network and no automatic updates |
 
 ## How the names work
 
-- **A directory is named after its platform**, spelled as its Platform resource
-  spells it: `centos-stream-10`, `rhel-10`, `almalinux-10`.
-- **The workstation inside is `example-<platform>`**; shipped ones are
+- **An example is named after the use case**, not after a platform.
+- **The workstation inside is `example-<use case>`**; shipped ones are
   `deskos-core-<platform>` ([resources/workstations/](../resources/workstations/)).
-- **`vanilla-gnome/` and `organization-and-role/` are the exceptions**: their
-  names are about the desktop and the composition, not the platform.
-
+- **`layers/` is the exception**: its two workstations carry a platform suffix
+  because the point is the same profiles on two platforms.
 
 ## Running one
 
 ```bash
-deskosctl validate ./examples/centos-stream-10
-deskosctl plan     ./examples/centos-stream-10 --workstation example-centos-stream-10
-deskosctl render   ./examples/centos-stream-10 --workstation example-centos-stream-10 --output ./dist/example
+deskosctl validate ./examples/developer
+deskosctl plan \
+  ./examples/developer \
+  --workstation example-developer
+deskosctl render \
+  ./examples/developer \
+  --workstation example-developer \
+  --output ./dist/example
 ```
 
-`make check` validates every example and CI renders them. The weekly
-[`examples-weekly.yml`](../.github/workflows/examples-weekly.yml) builds and
-boots the AlmaLinux example without publishing; Fedora 45 is a shipped platform
-([docs/platforms.md](../docs/platforms.md)). See
-[docs/platforms.md](../docs/platforms.md) and
-[docs/example-platforms.md](../docs/example-platforms.md).
+`make check` validates every example. CI does not plan or render them, and it
+does not build the use-case examples. The one exception is `layers/`:
+`image-bootcheck.yml` builds and boots its CentOS workstation to prove the four
+RPM repositories it declares. See [docs/platforms.md](../docs/platforms.md) for
+the shipped platforms and
+[docs/example-platforms.md](../docs/example-platforms.md) for what an example is.

@@ -2,9 +2,11 @@
 
 Two ways to end up with a machine:
 
-- **Option 1: install the published image.** Nothing is compiled: take the
-  CentOS Stream 10 image the pipeline built, scanned and booted, write a disk or an
-  ISO from it, install it. **This is for evaluating DeskOS, not for a fleet.**
+- **Option 1: install the published image.** Nothing is compiled: take a
+  published image the pipeline built, scanned and booted, write a disk or an ISO
+  from it, install it. CentOS Stream 10 is the only one with a Core installer;
+  Fedora 45 and AlmaLinux 10 publish an image you write a disk from. **This is for
+  evaluating DeskOS, not for a fleet.**
 - **Option 2: build your own image, then install it.** Author a `Workstation` in a
   resource root, render it, build it, and install the result. RHEL 10 is this
   option on an entitled base. **This is the point of DeskOS:** your image, your
@@ -35,10 +37,16 @@ KVM for a virtual machine or a spare disk for a machine.
 | Platform | Image | Tags |
 |---|---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:latest`, `:candidate`, `:<commit>` |
 
 `:latest` is the newest image that passed the weekly build and `:stable` is the digest a
 promotion accepted. Outside a lab, **pin the verified digest**:
 [validation status](architecture.md#validation-status) names the current one.
+
+The commands below use the CentOS Stream 10 image. For Fedora 45 or AlmaLinux
+10, replace the image reference; Fedora also needs `--rootfs btrfs` when the disk
+is written, and Core publishes no installer ISO for either of them.
 
 ### 2. Resolve it to a digest
 
@@ -57,12 +65,19 @@ echo "$digest"
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --interactive \
+    --tty \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args \
+    build \
+    --type qcow2 \
+    --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
@@ -91,12 +106,18 @@ reboot
 """
 EOF
 
-sudo podman run --rm --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output -v ./config.toml:/config.toml:ro \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume ./config.toml:/config.toml:ro \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type anaconda-iso --config /config.toml \
+    build \
+    --type anaconda-iso \
+    --config /config.toml \
     --chown "$(id -u):$(id -g)" \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
@@ -165,7 +186,8 @@ spec:
 ```bash
 ./bin/deskosctl validate ./examples/centos-stream-10
 ./bin/deskosctl render ./examples/centos-stream-10 \
-    --workstation example-centos-stream-10 --output ./dist/centos
+    --workstation example-centos-stream-10 \
+    --output ./dist/centos
 sudo podman build -t localhost/deskos-centos:test ./dist/centos
 ```
 
@@ -176,12 +198,19 @@ argument:
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --interactive \
+    --tty \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args \
+    build \
+    --type qcow2 \
+    --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     localhost/deskos-centos:test
 ```

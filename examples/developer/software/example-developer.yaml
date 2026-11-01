@@ -1,0 +1,17 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-developer
+spec:
+  # Measured 2026-11-01: all of these are in CentOS Stream 10 AppStream or BaseOS.
+  # The command line every workstation already has (tmux, the editor, completion)
+  # comes from deskos-tools; this adds the compiler and the container toolchain.
+  packages:
+    - git
+    - make
+    - gcc
+    - golang
+    - podman
+    - buildah
+    - skopeo
+    - toolbox

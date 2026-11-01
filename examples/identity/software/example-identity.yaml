@@ -1,0 +1,15 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-identity
+spec:
+  # The client side only: the image never carries a realm, a principal or a
+  # password. sssd and realmd are already in the workstation group on EL10;
+  # these are the pieces a FreeIPA or AD join adds on top.
+  packages:
+    - ipa-client
+    - adcli
+    - sssd-ad
+    - samba-common-tools
+    - krb5-workstation
+    - oddjob-mkhomedir
