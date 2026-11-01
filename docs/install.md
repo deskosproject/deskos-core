@@ -2,9 +2,11 @@
 
 Two ways to end up with a machine:
 
-- **Option 1: install the published image.** Nothing is compiled: take the
-  CentOS Stream 10 image the pipeline built, scanned and booted, write a disk or an
-  ISO from it, install it. **This is for evaluating DeskOS, not for a fleet.**
+- **Option 1: install the published image.** Nothing is compiled: take a
+  published image the pipeline built, scanned and booted, write a disk or an ISO
+  from it, install it. CentOS Stream 10 is the only one with a Core installer;
+  Fedora 45 and AlmaLinux 10 publish an image you write a disk from. **This is for
+  evaluating DeskOS, not for a fleet.**
 - **Option 2: build your own image, then install it.** Author a `Workstation` in a
   resource root, render it, build it, and install the result. RHEL 10 is this
   option on an entitled base. **This is the point of DeskOS:** your image, your
@@ -35,10 +37,16 @@ KVM for a virtual machine or a spare disk for a machine.
 | Platform | Image | Tags |
 |---|---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:latest`, `:candidate`, `:<commit>` |
 
 `:latest` is the newest image that passed the weekly build and `:stable` is the digest a
 promotion accepted. Outside a lab, **pin the verified digest**:
 [validation status](architecture.md#validation-status) names the current one.
+
+The commands below use the CentOS Stream 10 image. For Fedora 45 or AlmaLinux
+10, replace the image reference; Fedora also needs `--rootfs btrfs` when the disk
+is written, and Core publishes no installer ISO for either of them.
 
 ### 2. Resolve it to a digest
 

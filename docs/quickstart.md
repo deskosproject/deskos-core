@@ -13,6 +13,7 @@ KVM for the virtual machine.
 |---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10:latest` |
 | Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:latest` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10:latest` |
 
 `:latest` is the newest image that passed the weekly build; `:candidate` is the
 digest that build published and signed. Outside a lab, pin the digest you
@@ -40,7 +41,8 @@ sudo podman run \
 
 The disk lands at `output/qcow2/disk.qcow2`. Fedora's root filesystem is
 `btrfs`: pass `--rootfs btrfs` and the Fedora image
-([Fedora 45](fedora.md)).
+([Fedora 45](fedora.md)). CentOS Stream 10 and AlmaLinux 10 use `xfs`, which is
+what the command already asks for.
 
 ## 3. Boot it
 
