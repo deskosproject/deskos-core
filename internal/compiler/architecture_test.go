@@ -2,6 +2,7 @@ package compiler_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"go/parser"
 	"go/token"
 	"os"
@@ -10,10 +11,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
+	"github.com/deskosproject/deskos-core/internal/loader"
 	"github.com/deskosproject/deskos-core/internal/plan"
 	softwares "github.com/deskosproject/deskos-core/internal/providers/software"
 	"github.com/deskosproject/deskos-core/internal/schema"
@@ -254,6 +257,35 @@ func TestImageOwnedDirsAreTakenBackBeforePackages(t *testing.T) {
 		}
 		if step > first {
 			t.Error("imageOwnedDirs runs after the first package transaction")
+		}
+	}
+}
+
+// A package list is read by a person and reviewed by a diff; alphabetical order
+// is the only order that does not make a one-line addition look like a rewrite.
+func TestPackageSetsListPackagesAlphabetically(t *testing.T) {
+	resources, err := loader.Load([]string{resourcesRoot})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, res := range resources {
+		if res.Kind != "PackageSet" {
+			continue
+		}
+		var spec map[string]json.RawMessage
+		if err := json.Unmarshal(res.Spec, &spec); err != nil {
+			t.Fatalf("%s: %v", res.Source, err)
+		}
+		raw, ok := spec["packages"]
+		if !ok {
+			continue
+		}
+		var packages []string
+		if err := json.Unmarshal(raw, &packages); err != nil {
+			t.Fatalf("%s: %v", res.Source, err)
+		}
+		if !sort.StringsAreSorted(packages) {
+			t.Errorf("%s: packages are not alphabetical: %v", res.Source, packages)
 		}
 	}
 }
