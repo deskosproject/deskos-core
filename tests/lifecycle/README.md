@@ -1,7 +1,7 @@
 # Lifecycle tests: A to B to A
 
 The design is [docs/design/lifecycle.md](../../docs/design/lifecycle.md).
-`.github/workflows/lifecycle.yml` runs the driver weekly and on dispatch; no pull
+`.github/workflows/lifecycle-test.yml` runs the driver weekly and on dispatch; no pull
 request runs it.
 
 ## What is here
@@ -17,7 +17,7 @@ request runs it.
   fail-closed evaluator: a missing block, a missing key, an unknown image, a lost
   `/var` marker, a deployment that did not stage, or a rollback that was not queued
   all fail.
-- `test_lifecycle.py` and `test_driver.py` are the unit tests; `ci.yml` runs them
+- `test_lifecycle.py` and `test_driver.py` are the unit tests; `checks.yml` runs them
   with the other harness tests.
 
 ## Unit tests

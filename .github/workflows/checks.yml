@@ -1,4 +1,4 @@
-name: ci
+name: checks
 
 on:
   push:
@@ -70,7 +70,7 @@ jobs:
             exit 0
           fi
           if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
-             | grep -qE '^resources/platforms/|^\.github/workflows/ci\.yml$'; then
+             | grep -qE '^resources/platforms/|^\.github/workflows/checks\.yml$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"

@@ -21,14 +21,14 @@ npm run build --prefix website   # website/build
 npm run start --prefix website   # live preview at http://localhost:3000/docs/
 ```
 
-Node 20 or newer. `docs-site.yml` runs the same two commands on a pull request
+Node 20 or newer. `docs-deploy.yml` runs the same two commands on a pull request
 that touches `docs/` or `website/`, and uploads `website/build` as the run's
 artifact.
 
 ## Publish it
 
 `docs.deskos.org` is a GitHub Pages site of this repository, deployed by
-`docs-site.yml` from `main`. It is not a directory of `deskos.org`: the
+`docs-deploy.yml` from `main`. It is not a directory of `deskos.org`: the
 marketing site (`deskosproject/deskos-site`) is deliberately buildless and says
 docs belong in the repository, and putting a generated site inside it would make
 that repo a build output.

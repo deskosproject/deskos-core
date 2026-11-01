@@ -35,7 +35,7 @@ Composition and rendering are **validated for both targets**. The RHEL 10.2
 workstation is built on an entitled factory VM, passes `bootc container lint`,
 and its QCOW2 passes the boot and session checks there (retired factory host);
 this repository no longer builds RHEL. The CentOS Stream 10 workstation is built
-and booted in CI (`.github/workflows/vm-bootcheck.yml`), and its boot, session
+and booted in CI (`.github/workflows/image-bootcheck.yml`), and its boot, session
 and first-boot checks pass with its four declared RPM sources enabled.
 
 `assets/` holds placeholder art ([`assets/PROVENANCE.md`](assets/PROVENANCE.md)).

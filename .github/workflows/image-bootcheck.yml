@@ -1,4 +1,4 @@
-name: vm-bootcheck
+name: image-bootcheck
 
 # Boots the artifact and asks the guest what it did, per platform.
 #
@@ -12,11 +12,11 @@ name: vm-bootcheck
 # the requested packages installed, not which source each package came from.
 #
 # The AlmaLinux and Fedora examples are not built here: they are example platforms,
-# not published platforms. Their roots still validate and render in ci.yml.
+# not published platforms. Their roots still validate and render in checks.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
 # the raw disk are test input and are not uploaded; the only publish path is
-# supply-chain.yml. Nested virtualization on GitHub-hosted runners is not officially
+# image-publish.yml. Nested virtualization on GitHub-hosted runners is not officially
 # supported, so a failure here is not by itself evidence of an artifact defect — but it has
 # worked, and /dev/kvm is enabled below the same way it has been since the first run. That
 # caveat is why this workflow used to say "experimental" in its name; it belongs here,
@@ -33,7 +33,7 @@ on:
       - "go.mod"
       - "tests/vm/*.py"
       - "tests/vm/config.toml"
-      - ".github/workflows/vm-bootcheck.yml"
+      - ".github/workflows/image-bootcheck.yml"
   push:
     branches: [main]
     paths:
@@ -45,13 +45,13 @@ on:
       - "go.mod"
       - "tests/vm/*.py"
       - "tests/vm/config.toml"
-      - ".github/workflows/vm-bootcheck.yml"
+      - ".github/workflows/image-bootcheck.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: vm-bootcheck-${{ github.ref }}
+  group: image-bootcheck-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -91,7 +91,7 @@ jobs:
           fi
           changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
           # Shared code, shared Core resources, or the harness itself: every leg.
-          if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/vm-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/profiles/deskos-|resources/software/deskos-)'; then
+          if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/image-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/profiles/deskos-|resources/software/deskos-)'; then
             all; exit 0
           fi
           printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/(centos-stream-10|organization-and-role)/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"

@@ -1,4 +1,4 @@
-name: docs-site
+name: docs-deploy
 
 # The documentation site at docs.deskos.org, built from docs/ and website/.
 #
@@ -16,20 +16,20 @@ on:
     paths:
       - docs/**
       - website/**
-      - .github/workflows/docs-site.yml
+      - .github/workflows/docs-deploy.yml
   push:
     branches: [main]
     paths:
       - docs/**
       - website/**
-      - .github/workflows/docs-site.yml
+      - .github/workflows/docs-deploy.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: docs-site-${{ github.ref }}
+  group: docs-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

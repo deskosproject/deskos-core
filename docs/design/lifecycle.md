@@ -101,7 +101,7 @@ On the 24 GiB lab disk, setting the on-disk GRUB default to the previous entry
 install to-disk` and boots. `--interrupt` adds the power-loss run;
 `--boot-failure` adds D and the host-side GRUB recovery. It needs rootful podman,
 qemu, `qemu-nbd`, `skopeo` and `/dev/kvm`, and is **not a pull-request check**:
-`ci.yml` runs its unit tests, and `lifecycle.yml` runs it weekly and by hand.
+`checks.yml` runs its unit tests, and `lifecycle-test.yml` runs it weekly and by hand.
 
 ## Markers and evaluation
 

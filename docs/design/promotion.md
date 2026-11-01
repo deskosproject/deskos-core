@@ -29,7 +29,7 @@ rebuild. The weekly build scans and boots an image and moves `:candidate` and
   digest, a digest-keyed index under `evidence.deskos.org` (P0-05, implemented
   2026-10-26).
 - `promotion.yml` is the only writer of `:stable`: it verifies the keyless
-  signature (identity `supply-chain.yml` on `main`) and every object the index
+  signature (identity `image-publish.yml` on `main`) and every object the index
   names, records the approval, moves the tag by digest, and verifies the tag
   resolves to the same digest.
 - Machines follow the reference they were installed from; `:latest` is mutable, a
@@ -88,7 +88,7 @@ approval record is the source of truth.
   issues".
 - If the **installer** failed, the image is still promoted: promotion depends on
   the `publish` job (scan, boot, signature, records), and the installer is a
-  separate workflow whose failure leaves the ISO channel where it was; `iso.yml`
+  separate workflow whose failure leaves the ISO channel where it was; `installer-build.yml`
   follows the image channel whenever it succeeds, or on a dispatch for that
   digest.
 - Withdrawal is an explicit tag move to the previous digest plus an advisory; it
@@ -115,12 +115,12 @@ no controller).
   names the run, the dispatch the actor.
 - The ISO channel moves with the image: `promotion.yml` finds the ISO tagged
   `sha256-<image digest>`, verifies it and moves the ISO `:stable`. A platform
-  with no ISO leaves that channel alone; `iso.yml` tags the ISO `:stable` when
+  with no ISO leaves that channel alone; `installer-build.yml` tags the ISO `:stable` when
   the installer appears after the promotion.
 - **One person approves, deliberately (2026-10-28).** An environment approval on
   `evidence-write` would pause every weekly promotion. The automatic path moves
   only the digest its triggering run published (the records name that `run_id`),
-  after the keyless signature verifies against `supply-chain.yml` on `main` and
+  after the keyless signature verifies against `image-publish.yml` on `main` and
   every object matches its hash. A dispatch records its actor. What is left to a
   person is upstream: a merge to `main` under branch protection and the
   `validate` check. Revisit with a second maintainer, or under an SLA.

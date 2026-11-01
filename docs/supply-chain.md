@@ -69,7 +69,7 @@ or a workflow dispatch, never an automatic merge (ADR 0011). "Resolver" is
 | Binary artifacts (CLI tools, extensions) | `BinaryArtifact` resources | Renovate proposes a release version; a person fills the SHA-256, which Renovate cannot compute | resolver downloads and hashes; image build |
 | Runtime companion (`deskos`) | `resources/software/deskos.yaml` | Hand, from a released asset | checksum, release version check, image build; it must read the plan the same release renders |
 | ISO builder (BIB) | `docs/installer-iso.md`, the ISO workflows | Hand, by digest | image build, boot check, ISO install test |
-| Syft and Grype | `.github/workflows/supply-chain.yml` | Renovate proposes the installer tag | pinned installer, check in the same run |
+| Syft and Grype | `.github/workflows/image-publish.yml` | Renovate proposes the installer tag | pinned installer, check in the same run |
 | GitHub Actions | workflow files | Hand; the token has no workflows permission | action version review; no action runs with registry or signing credentials |
 | Flatpak remotes and apps | `FlatpakRemote`/`FlatpakSet` resources | Hand, on the vendor's release | build and first-boot preinstall; **not** the resolver |
 
@@ -80,7 +80,7 @@ Compilation makes no network request; everything above is checked in CI.
 
 ## CI job
 
-`.github/workflows/supply-chain.yml` runs weekly and on `workflow_dispatch`. The
+`.github/workflows/image-publish.yml` runs weekly and on `workflow_dispatch`. The
 weekly run publishes; a dispatch publishes only with `publish=true` on `main`,
 and otherwise is a dry look at a base bump.
 
@@ -112,7 +112,7 @@ mirror then do nothing, and `:stable` keeps serving the last good digest
 
 ### The installer
 
-`.github/workflows/iso.yml` is a workflow of its own: the weekly build calls it
+`.github/workflows/installer-build.yml` is a workflow of its own: the weekly build calls it
 for each published image that has an installer in Core, and a dispatch can do
 the same. Only CentOS Stream 10 publishes one: Fedora publishes an image only,
 and its downstream organization builds the installer from that image. The
@@ -133,7 +133,7 @@ everybody's.
 
 It verifies the image's keyless signature before building, then signs the installer
 with its own workflow identity:
-`…/deskos-core/.github/workflows/iso.yml@refs/heads/main`. The OIDC token names the
+`…/deskos-core/.github/workflows/installer-build.yml@refs/heads/main`. The OIDC token names the
 file that holds the job, so a verifier that pins the wrong identity rejects a valid
 installer. It tags `sha256-<image digest>` for promotion, and moves its own
 `:stable` when the image is already stable.
@@ -142,7 +142,7 @@ installer. It tags `sha256-<image digest>` for promotion, and moves its own
 # The installer for the digest :stable serves.
 cosign verify quay.io/deskos/deskos-core-centos-stream-10-iso@sha256:… \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/iso.yml@refs/heads/main'
+  --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/installer-build.yml@refs/heads/main'
 ```
 
 The ISO is signed, not attested: a suffix on a 3 GB disk image would claim what the
@@ -247,7 +247,7 @@ keeps key-based signing ([authenticity](design/authenticity.md)).
 # quay.io/deskos/deskos-core-fedora-45
 ref=quay.io/deskos/deskos-core-centos-stream-10@sha256:…
 issuer=https://token.actions.githubusercontent.com
-identity='https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
+identity='https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main'
 
 cosign verify --certificate-oidc-issuer "$issuer" \
   --certificate-identity "$identity" "$ref"
@@ -321,9 +321,9 @@ this repository and verified against its public key. That key's rotation, and th
 fact that verification without a transparency log proves less than the keyless
 path, are recorded with the organization.
 
-`supply-chain.yml` is the single publish path, and it boots, scans, signs and
+`image-publish.yml` is the single publish path, and it boots, scans, signs and
 attests the same image before it is promoted. The weekly run publishes by itself;
-a dispatch with `publish=true` does the same on demand. `vm-bootcheck.yml` is a
+a dispatch with `publish=true` does the same on demand. `image-bootcheck.yml` is a
 pure check.
 
 The matrix runs with `fail-fast: false`, so one platform failing does not stop
@@ -357,7 +357,7 @@ A digest moves forward only when, for that digest:
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.
 
-Steps 1 to 4 run in `supply-chain.yml`. Promotion is a separate, recorded move:
+Steps 1 to 4 run in `image-publish.yml`. Promotion is a separate, recorded move:
 
 - the publish step writes `:<commit>`, `:latest` and `:candidate`, all by digest.
   `:candidate` is the digest a promotion checks, `:latest` is the fast lane for

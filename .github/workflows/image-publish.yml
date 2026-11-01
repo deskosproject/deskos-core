@@ -1,4 +1,4 @@
-name: supply-chain
+name: image-publish
 
 # The single publish path: builds the DeskOS Core reference workstation for each
 # platform in the matrix from this checkout, writes the
@@ -36,12 +36,12 @@ permissions:
   id-token: write
 
 concurrency:
-  group: supply-chain
+  group: image-publish
   cancel-in-progress: false
 
 env:
   # bootc-image-builder pinned to the digest used for local test disks (same
-  # as vm-bootcheck.yml).
+  # as image-bootcheck.yml).
   # Pinned to a specific build, not to :latest. The image :latest serves today
   # (e8df8c53) no longer accepts --no-default-kernel-args, which is what makes the
   # disk boot with the image's own kernel arguments instead of the builder's serial
@@ -147,7 +147,7 @@ jobs:
           df -h / /mnt
 
       - name: Put container storage and the large artifacts on /mnt
-        # The root disk is small; the same layout as vm-bootcheck.yml.
+        # The root disk is small; the same layout as image-bootcheck.yml.
         run: |
           sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
           sudo mount --bind /mnt/containers /var/lib/containers
@@ -453,14 +453,14 @@ jobs:
               buildDefinition: {
                 buildType: "https://deskos.org/build/supply-chain/v1",
                 externalParameters: {platform: $platform, baseImage: $base},
-                internalParameters: {workflow: "supply-chain.yml"},
+                internalParameters: {workflow: "image-publish.yml"},
                 resolvedDependencies: [
                   {uri: $repo, digest: {gitCommit: $commit}},
                   {uri: "base-image", digest: {sha256: ($base | sub("^sha256:"; ""))}}
                 ]
               },
               runDetails: {
-                builder: {id: ($repo + "/.github/workflows/supply-chain.yml@refs/heads/main")},
+                builder: {id: ($repo + "/.github/workflows/image-publish.yml@refs/heads/main")},
                 metadata: {invocationId: $run}
               }
             }' > provenance.json
@@ -468,7 +468,7 @@ jobs:
           jq -e --arg commit "$GITHUB_SHA" --arg base "$base" --arg run "$GITHUB_RUN_ID" '
             (.buildDefinition.buildType == "https://deskos.org/build/supply-chain/v1")
             and (.runDetails.metadata.invocationId == $run)
-            and (.runDetails.builder.id | endswith("/.github/workflows/supply-chain.yml@refs/heads/main"))
+            and (.runDetails.builder.id | endswith("/.github/workflows/image-publish.yml@refs/heads/main"))
             and any(.buildDefinition.resolvedDependencies[]; .digest.gitCommit == $commit)
             and any(.buildDefinition.resolvedDependencies[];
                     .digest.sha256 == ($base | sub("^sha256:"; "")))
@@ -476,27 +476,27 @@ jobs:
           retry cosign attest --yes --type slsaprovenance1 --predicate provenance.json "$ref"
           cosign verify-attestation --type slsaprovenance1 \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           # Pin the release workflow, not the repository: another workflow in
           # this repository must not be able to sign a published image.
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' | tee cosign-verify.txt
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main' | tee cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/sbom/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           cosign verify-attestation \
             --type "https://deskos.org/supply-chain/effective-exceptions/v1" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main' "$ref" \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main' "$ref" \
             | tee -a cosign-verify.txt
           # :latest moves only after the digest is signed and verified, and it
           # moves **by digest**: skopeo copies the manifest the signature is
@@ -734,7 +734,7 @@ jobs:
         include:
           - image: quay.io/deskos/deskos-core-centos-stream-10
             rootfs: xfs
-    uses: ./.github/workflows/iso.yml
+    uses: ./.github/workflows/installer-build.yml
     with:
       image: ${{ matrix.image }}
       # Empty on purpose: the publish job above is a matrix, so a single

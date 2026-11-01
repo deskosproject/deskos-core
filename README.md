@@ -8,8 +8,8 @@
 <p align="center"><strong>Managed Linux workstations, built like infrastructure.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/deskosproject/deskos-core/actions/workflows/ci.yml/badge.svg?branch=main"></a>
-  <a href="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml"><img alt="vm-bootcheck" src="https://github.com/deskosproject/deskos-core/actions/workflows/vm-bootcheck.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/deskosproject/deskos-core/actions/workflows/checks.yml"><img alt="ci" src="https://github.com/deskosproject/deskos-core/actions/workflows/checks.yml/badge.svg?branch=main"></a>
+  <a href="https://github.com/deskosproject/deskos-core/actions/workflows/image-bootcheck.yml"><img alt="vm-bootcheck" src="https://github.com/deskosproject/deskos-core/actions/workflows/image-bootcheck.yml/badge.svg?branch=main"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
 </p>
 
@@ -98,12 +98,12 @@ passes:
 
 | Check | What it proves | Where |
 |---|---|---|
-| Compile and render | the same resources produce the same plan and build context | [ci.yml](.github/workflows/ci.yml) |
-| Image build and lint | the image builds from a pinned base and passes `bootc container lint` | [supply-chain.yml](.github/workflows/supply-chain.yml) |
+| Compile and render | the same resources produce the same plan and build context | [checks.yml](.github/workflows/checks.yml) |
+| Image build and lint | the image builds from a pinned base and passes `bootc container lint` | [image-publish.yml](.github/workflows/image-publish.yml) |
 | Boot | QEMU boots the disk to a graphical screen and shuts down | `tests/vm/bootcheck.py` |
 | Session | every dconf default, extension, favorite, wallpaper and installed binary matches the plan; the desktop exposes its applications through AT-SPI and opens one | `tests/vm/sessioncheck.py` |
 | First boot | the GNOME Initial Setup wizard is the session that comes up, and no account exists yet | `tests/vm/firstbootcheck.py` |
-| Update and rollback | a machine moves A to B and back, including a candidate that cannot boot | [lifecycle.yml](.github/workflows/lifecycle.yml) |
+| Update and rollback | a machine moves A to B and back, including a candidate that cannot boot | [lifecycle-test.yml](.github/workflows/lifecycle-test.yml) |
 | Domain login | a throwaway FreeIPA realm and a Samba AD domain, joined at first boot, with a session as the directory user | [identity-freeipa.yml](.github/workflows/identity-freeipa.yml) |
 | Supply chain | installed SBOM, CVE scan, keyless signature and provenance on the digest | [supply-chain.md](docs/supply-chain.md) |
 
