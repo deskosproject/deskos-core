@@ -35,8 +35,8 @@
     },
     {
       "customType": "regex",
-      "description": "Syft installer tag in supply-chain.yml",
-      "managerFilePatterns": ["/^\\.github/workflows/supply-chain\\.yml$/"],
+      "description": "Syft installer tag in image-publish.yml",
+      "managerFilePatterns": ["/^\\.github/workflows/image-publish\\.yml$/"],
       "matchStrings": ["SYFT_VERSION: (?<currentValue>v[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "anchore/syft",
@@ -44,8 +44,8 @@
     },
     {
       "customType": "regex",
-      "description": "Grype installer tag in supply-chain.yml",
-      "managerFilePatterns": ["/^\\.github/workflows/supply-chain\\.yml$/"],
+      "description": "Grype installer tag in image-publish.yml",
+      "managerFilePatterns": ["/^\\.github/workflows/image-publish\\.yml$/"],
       "matchStrings": ["GRYPE_VERSION: (?<currentValue>v[\\d.]+)"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "anchore/grype",

@@ -1,4 +1,4 @@
-name: lifecycle
+name: lifecycle-test
 
 # Tier C: install a CS10 disk, stage a second deployment from a local registry,
 # reboot into it, roll back, lose power mid-upgrade and (optionally) recover a
@@ -30,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: lifecycle
+  group: lifecycle-test
   cancel-in-progress: false
 
 env:

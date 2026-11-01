@@ -73,7 +73,7 @@ golden:
 	$(GO) test ./internal/compiler -update
 
 # The documentation site (website/README.md). Node, not Go: it is not part of
-# `check`, and CI builds it in docs-site.yml.
+# `check`, and CI builds it in docs-deploy.yml.
 docs-site:
 	npm ci --prefix website
 	npm run build --prefix website

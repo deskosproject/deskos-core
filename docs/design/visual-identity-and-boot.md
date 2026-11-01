@@ -35,7 +35,7 @@ identity stays truthful:** os-release and logo packages are never falsified.
 | Splash in early boot | base initramfs has **no Plymouth** (0 entries; built before the Workstation group added plymouth); bootc dracut drop-ins do not add it | verified; requires in-image `dracut` regeneration with a drop-in under `/usr/lib/dracut/dracut.conf.d` (bootc `docs/src/initramfs.md`, Fedora bootc initramfs guide) |
 | Graphical vs text splash | Plymouth shows the graphical splash only with `rhgb`, `splash`, `splash=silent` or `plymouth.graphical`; `single`, `splash=verbose` force details; ESC toggles details (`src/main.c`) | verified in source |
 | Quiet boot | `/usr/lib/bootc/kargs.d/*.toml` (`kargs = [...]`); base image ships none; bootc applies kargs.d at install and applies the kargs.d diff on each update, keeping machine-local args (`bootc_kargs.rs`, `install.rs`, docs) | verified in source/docs; `quiet` makes systemd `show_status` default to `error` (systemd(1)) |
-| Rollback | initramfs and kargs.d are image content; each deployment has its own boot entry | rollback and boot recovery tested by `lifecycle.yml`; that a deployment boots *its own* kargs and initramfs is not measured |
+| Rollback | initramfs and kargs.d are image content; each deployment has its own boot entry | rollback and boot recovery tested by `lifecycle-test.yml`; that a deployment boots *its own* kargs and initramfs is not measured |
 | Dock | `gnome-shell-extension-dash-to-dock` is delivered as the pinned upstream v110 artifact (GNOME Shell 45-51); DeskOS installs and enables it only when a profile selects `deskos-dock`, which the reference workstations do | verified in the CS10 group and images; active in the CS10 instrumented session check |
 
 ## Decisions

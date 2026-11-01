@@ -8,8 +8,8 @@ request.
 |---|---|---|
 | [`examples/almalinux-10`](../examples/almalinux-10/) | [`platforms/almalinux-10.yaml`](../examples/almalinux-10/platforms/almalinux-10.yaml) | The vendor labels its bootc base experimental. It is useful for EL10 composition work, but it is not a support commitment. |
 
-It composes and renders in `ci.yml`; it is not in `resources/platforms/`,
-`supply-chain.yml`, or the image legs of `vm-bootcheck.yml`.
+It composes and renders in `checks.yml`; it is not in `resources/platforms/`,
+`image-publish.yml`, or the image legs of `image-bootcheck.yml`.
 
 Fedora 45 was an example until 2026-10-30 and is now a shipped platform: its
 mirrored base, pin and status are in [Fedora 45](fedora.md).
@@ -95,8 +95,8 @@ promise.
    platform will publish an image.
 4. Add it to `resources/README.md`, `docs/platforms.md`, `docs/install.md`,
    `docs/architecture.md`, `docs/roadmap.md` and the `README.md` platform matrix.
-5. Re-add its image leg to `vm-bootcheck.yml` and its publication leg to
-   `supply-chain.yml`. Do not make a new platform inherit another platform's disk
+5. Re-add its image leg to `image-bootcheck.yml` and its publication leg to
+   `image-publish.yml`. Do not make a new platform inherit another platform's disk
    path; declare its own.
 6. Regenerate goldens with `go test ./internal/compiler -update`, review the diff,
    run `make check`, build and boot the image, run the session and first-boot

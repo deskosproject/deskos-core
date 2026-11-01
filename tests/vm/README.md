@@ -176,9 +176,9 @@ and an unlocked or empty password; and no unexpected failed service, by
 
 ## CI and unit tests
 
-`.github/workflows/vm-bootcheck.yml` runs the same build, boot, session and
+`.github/workflows/image-bootcheck.yml` runs the same build, boot, session and
 first-boot checks on pull requests, on `main` for image-affecting paths, and on
-demand. The QCOW2 is test input, not uploaded; publishing is `supply-chain.yml`.
+demand. The QCOW2 is test input, not uploaded; publishing is `image-publish.yml`.
 
 Unit tests: `python3 -m unittest discover -s tests/vm` (run by CI, not by
 `make check`).

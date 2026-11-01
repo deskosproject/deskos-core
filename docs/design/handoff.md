@@ -32,7 +32,7 @@ skopeo inspect --format '{{.Digest}}' docker://quay.io/deskos/deskos-core-centos
 # 2. who built it
 cosign verify <image>@<digest> \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/supply-chain.yml@refs/heads/main'
+  --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main'
 
 # 3. what it says about itself
 cosign verify-attestation --type slsaprovenance1 <image>@<digest> … | jq -r '.payload' | base64 -d
@@ -50,7 +50,7 @@ hash. `tests/evidence/verify.py` does that and takes the index and the directory
   (Sigstore's transparency log) and the approval records (bucket); a different CI
   could produce the same handoff.
 - **Is:** the workflow files, the certificate identity
-  (`…/supply-chain.yml@refs/heads/main`) and the provenance run id. A different
+  (`…/image-publish.yml@refs/heads/main`) and the provenance run id. A different
   builder signs with its own identity, which a verifier pins deliberately.
 
 ## Gaps, named

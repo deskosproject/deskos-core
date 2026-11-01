@@ -18,9 +18,9 @@ registries or branch protection needs its own approval (AGENTS.md).
 
 ## Trust boundaries
 
-1. **Untrusted pull request → unprivileged check.** Core's `ci.yml`, `artifacts.yml`
-   and path-filtered `vm-bootcheck.yml` run without publish secrets on
-   GitHub-hosted runners. An organization's `ci.yml` runs on its self-hosted,
+1. **Untrusted pull request → unprivileged check.** Core's `checks.yml`, `artifacts.yml`
+   and path-filtered `image-bootcheck.yml` run without publish secrets on
+   GitHub-hosted runners. An organization's `checks.yml` runs on its self-hosted,
    entitled runner for pull requests (see gaps).
 2. **`main` → privileged build.** Core publishes only from `main`, by the weekly
    run or a `publish=true` dispatch, under branch protection and the `validate`
@@ -42,12 +42,12 @@ registries or branch protection needs its own approval (AGENTS.md).
 | Control | State | Evidence |
 |---|---|---|
 | Pull-request checks get no publish secrets | verified in Core workflows | triggers and `permissions` in `.github/workflows/` |
-| Publish is `main`-only and runs the reviewed workflow | verified | `supply-chain.yml` triggers (`schedule`, `workflow_dispatch`) and its `refs/heads/main` guards; an organization's `build-rhel-10.yml` |
+| Publish is `main`-only and runs the reviewed workflow | verified | `image-publish.yml` triggers (`schedule`, `workflow_dispatch`) and its `refs/heads/main` guards; an organization's `build-rhel-10.yml` |
 | Workflow tokens default to read | verified in the workflow files | `permissions: contents: read`; `id-token: write` only where keyless signing runs |
 | Third-party actions pinned by commit | verified for cosign and Renovate | `uses: …@<40-char sha> # version` |
 | First-party actions pinned by commit | Core pinned; an organization still uses tags | `actions/checkout@<sha> # v7` and the same for setup/upload/download in Core; an organization is the remaining gap |
 | Tools downloaded with a checksum or a digest | verified where recorded | BIB by digest; Syft/Grype installer commit + release checksums; cosign checksums |
-| Signing | Core keyless OIDC with manual verification and no enforcement; an organization's key outside the repo, no transparency log, enforcing on update | `supply-chain.yml`, an organization's `docs/supply-chain.md`, [authenticity](design/authenticity.md) |
+| Signing | Core keyless OIDC with manual verification and no enforcement; an organization's key outside the repo, no transparency log, enforcing on update | `image-publish.yml`, an organization's `docs/supply-chain.md`, [authenticity](design/authenticity.md) |
 | Automatic publication is bounded | verified 2026-10-28 | the schedule publishes, but `promotion.yml` moves only the digest its triggering run published (`run_id` in the record), after the keyless signature and every record verifies, and records `automatic (gate)` with the run. See [promotion.md](design/promotion.md) |
 | A second human approval before publish | **decided: one person** (2026-10-28) | an environment approval on `evidence-write` would stop the weekly automatic promotion; the bounds above stand in for it. Revisit with a second maintainer or an SLA. See [promotion.md](design/promotion.md) |
 | Branch and tag protection | **unverified here** | GitHub setting, not in the repository |

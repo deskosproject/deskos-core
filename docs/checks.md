@@ -6,14 +6,14 @@ Required status checks are a GitHub setting outside the repository.
 
 | Workflow | Trigger | Proves | Keeps |
 |---|---|---|---|
-| `ci.yml` | pull request, `main`, called by release | resources validate and render deterministically | job log |
+| `checks.yml` | pull request, `main`, called by release | resources validate and render deterministically | job log |
 | `artifacts.yml` | pull request, `main`, dispatch | declared URLs resolve and bytes match their checksums; repositories look like repositories | job log and summary |
-| `vm-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
-| `supply-chain.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots, and on the schedule (or a `publish=true` dispatch from `main`) pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, records directory |
-| `iso.yml` | called by the weekly build; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
+| `image-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
+| `image-publish.yml` | Mondays 06:17 UTC; dispatch | a platform builds, scans, compares declared and installed SBOMs, boots, and on the schedule (or a `publish=true` dispatch from `main`) pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, records directory |
+| `installer-build.yml` | called by the weekly build; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
 | `promotion.yml` | the weekly build's success (`workflow_run`); dispatch | `:stable` moves only to a digest whose signature and every stored record verify, with an approval record | approval record, job log |
 | `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the weekly build is dispatched when it is | job log |
-| `lifecycle.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
+| `lifecycle-test.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
 | `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | AlmaLinux and Fedora examples build and boot; not published | boot, session and first-boot records |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
@@ -25,7 +25,7 @@ Required status checks are a GitHub setting outside the repository.
 | `track.yml` | Mondays 05:17 UTC; dispatch | every checksum-pinned resource still resolves, and moves the ones the curated list covers, as a pull request | pull request |
 | `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed record store; a prefix with an index is refused without `force` | job log |
 
-A scheduled run has no dispatch inputs. `supply-chain.yml` falls back to
+A scheduled run has no dispatch inputs. `image-publish.yml` falls back to
 `fail-on: critical`, so the weekly run has a severity threshold, and since
 2026-10-28 it publishes: signature, records, promotion. A dispatch with
 `publish=false` is the dry run.
@@ -83,9 +83,9 @@ autologin or a session script; **unmodified** boots the disk as shipped.
 | Screen locks on request | `sessioncheck.py` | `org.gnome.ScreenSaver.GetActive` is true after `Lock` | false or no answer | instrumented |
 | Firefox runs | `sessioncheck.py` headless probe | the guest reports Firefox installed, headless exit 0 and a non-empty screenshot | non-zero or no screenshot; an image without Firefox says so | instrumented |
 | System Flatpaks materialize | `sessioncheck.py` and `flatpak list --system --app` | every declared application id is installed | a declared id is missing | instrumented |
-| Lifecycle A → B → A | `lifecycle.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
+| Lifecycle A → B → A | `lifecycle-test.yml` | stage, boot B, roll back, local state, failed candidate and host-side recovery | wrong deployment, lost `/var`, failed retry, recovered wrong digest | unmodified, weekly |
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
-| Published ISO carries the signed digest | `iso.yml` (called by the weekly build, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
+| Published ISO carries the signed digest | `installer-build.yml` (called by the weekly build, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
 
 A missing result, an unreadable value or a `not measurable` count is a failure or
 an unverified item, not a pass. The session row is an **instrumented autologin

@@ -161,5 +161,5 @@ the next milestone.
   and review the diff.
 - `tests/vm`: QEMU boot and instrumented session checks
   (`python3 -m unittest discover -s tests/vm` for their unit tests).
-- `.github/workflows`: `ci.yml`, `vm-bootcheck.yml`, `supply-chain.yml`,
-  `promotion.yml`, `iso.yml` and `release.yml`.
+- `.github/workflows`: `checks.yml`, `image-bootcheck.yml`, `image-publish.yml`,
+  `promotion.yml`, `installer-build.yml` and `release.yml`.

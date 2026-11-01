@@ -33,10 +33,10 @@ Design: [visual-identity-and-boot.md](design/visual-identity-and-boot.md).
 
 ## Milestone 2: independent CentOS CI build
 
-- **CI build:** `vm-bootcheck.yml` builds both CentOS Stream 10 workstations into
+- **CI build:** `image-bootcheck.yml` builds both CentOS Stream 10 workstations into
   QCOW2 disks and runs the boot, session and first-boot checks, on pull requests,
   on `main` for image-changing paths, and on dispatch.
-- **Publishing:** `supply-chain.yml` runs weekly and publishes by itself
+- **Publishing:** `image-publish.yml` runs weekly and publishes by itself
   ([Release model](architecture.md#release-model)).
 - **Pinned base:** both shipped Platforms pin a digest.
 - **Example AlmaLinux and Fedora:** neither is shipped; their roots compose and
@@ -63,7 +63,7 @@ Harness: [`tests/vm/`](../tests/vm/README.md). Design:
   whether the wizard came up and whether an account could log in.
 - **Tier C lifecycle:** `tests/lifecycle/driver.py` ran A → B → A on CS10,
   including power loss mid-upgrade and a candidate that cannot boot, recovered by
-  its composefs verity. `lifecycle.yml` ran the full path on GitHub-hosted runners
+  its composefs verity. `lifecycle-test.yml` ran the full path on GitHub-hosted runners
   (2026-10-26, run `40305080925`), weekly rather than per pull request; the
   ostree-write window is untested.
 - **Test ISO:** `tests/installer/` installs unattended in QEMU
@@ -151,7 +151,7 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 | Item | Status | Records |
 |---|---|---|
 | P0-01 actionable check failures | closed | attempt-suffixed artifacts (14 days) beside the retry; `identity.json`; failed-boot journal kept |
-| P0-02 upgrade, rollback, state | closed, one residual | `lifecycle.yml` green 2026-10-26 (run `40305080925`); ostree-write interruption untested |
+| P0-02 upgrade, rollback, state | closed, one residual | `lifecycle-test.yml` green 2026-10-26 (run `40305080925`); ostree-write interruption untested |
 | P0-03 consumer-side enforcement | closed by decision | keyless signature, manual verification; an organization enforcing keeps key-based signing |
 | P0-04 bound build authority, rehearse incidents | closed | incident exercise ran 2026-10-28 ([threat-model.md](threat-model.md)) and produced `PUBLISH_FREEZE`; one-person residual recorded |
 | P0-05 digest-indexed records | closed | `evidence.deskos.org`; `promotion.yml` refuses unverified records; SLSA v1 provenance |

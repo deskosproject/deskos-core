@@ -308,7 +308,7 @@ The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
   `:stable` with a recorded approval. Not every green `main` publishes; pin a
   digest in production.
 - **A CentOS Stream 10 preview ISO** is at <https://download.deskos.org/>.
-  `iso.yml` builds it from the published digest after verifying the image's
+  `installer-build.yml` builds it from the published digest after verifying the image's
   keyless signature, and publishes it as a signed OCI artifact (`:candidate`,
   `sha256-<image digest>`, `:stable` once stable). It is a preview, not a supported
   channel; QCOW2 and RHEL ISOs are never published, and CI builds a QCOW2 only as

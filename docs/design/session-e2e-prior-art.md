@@ -48,7 +48,7 @@ persistence, and lets a promotion continue only if the run passed.
 
 ## Which shape this repository is
 
-Shape 2 for the session; shape 3 is already in place: `lifecycle.yml` stages a
+Shape 2 for the session; shape 3 is already in place: `lifecycle-test.yml` stages a
 second deployment, rolls back and recovers a failed candidate, and
 `promotion.yml` moves only what the check accepted.
 

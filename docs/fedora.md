@@ -76,7 +76,7 @@ in the same families as CentOS Stream 10.
 
 | | |
 |---|---|
-| Composes and renders | validated by the compiler tests and `ci.yml` |
+| Composes and renders | validated by the compiler tests and `checks.yml` |
 | Image built | CI, every pull request |
 | Booted and checked | CI: GNOME, session check |
 | Published image | not yet |
