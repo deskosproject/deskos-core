@@ -76,14 +76,14 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
-# Binary artifact deskos 0.18.0 (sha256-verified)
+# Binary artifact deskos 0.19.0 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
         --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
         --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
-        -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.18.0/deskos-v0.18.0-linux-amd64'; \
-    echo '344a099ba4ae4846b65c721ec14e3c92e9fd55c5e2c1d086b39a56b6cebe2d27  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+        -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.19.0/deskos-v0.19.0-linux-amd64'; \
+    echo 'cf605efd754229ac2b04378f91d223f6578d59afbd140cc8b2203f6d500e3085  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     mkdir -p "$(readlink -m "$(dirname '/usr/bin/deskos')")"; \
     install -D -m 0755 "$tmp/download" '/usr/bin/deskos'; \
     rm -rf "$tmp"
