@@ -8,3 +8,7 @@ spec:
   # operator moves it, which is the point of an offline site.
   image:
     automatic: false
+  # The RHEL family declares a Flatpak channel and consents to updating it. An
+  # offline site consents to neither, so it turns the timer off too.
+  flatpak:
+    automatic: false

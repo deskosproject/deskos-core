@@ -13,7 +13,7 @@ deskosctl plan ./examples/offline \
 |---|---|
 | `example-offline` (organization) | the package set, the update policy and the desktop default |
 | `example-offline` (PackageSet) | Papers, the text editor and the calculator, all RPMs |
-| `example-offline` (UpdatePolicy) | `image.automatic: false`, overriding Core's daily staging |
+| `example-offline` (UpdatePolicy) | `image.automatic: false` and `flatpak.automatic: false`, overriding Core's and the family's timers |
 | `example-offline-desktop` | `software.updates: manual` |
 
 ## What it shows
