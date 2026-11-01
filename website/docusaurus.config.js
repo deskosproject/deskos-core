@@ -25,6 +25,9 @@ const config = {
   // A broken internal link is a build failure, not a warning: the site and the
   // repository must not drift apart because a page moved.
   onBrokenLinks: 'throw',
+  // Anchors are a separate check in Docusaurus; a heading that moved must fail
+  // too, or a page can link to a section that no longer exists.
+  onBrokenAnchors: 'throw',
   // The pages are plain Markdown: `<name>` in a sentence is text, not JSX.
   markdown: {
     format: 'md',
@@ -77,7 +80,6 @@ const config = {
     ({
       image: 'img/logo.svg',
       navbar: {
-        title: 'DeskOS',
         logo: {
           alt: 'DeskOS',
           src: 'img/logo.svg',
