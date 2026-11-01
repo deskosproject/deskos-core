@@ -58,8 +58,11 @@ extensions and the boot arguments as facts, the same way the EL10 platforms do.
 The workstation carries `deskos-look`, so Fedora boots with the DeskOS splash:
 Plymouth's stock spinner frames from the vendor package, made the default theme
 and copied into the initramfs, which the build asserts. Fedora's own wallpaper is
-replaced by the DeskOS one, exactly as on CentOS Stream 10; a workstation that
-wants only the boot behaviour and not the look takes `deskos-boot`.
+replaced by the DeskOS one, the same as on every flavor
+([desktop parity](desktop-parity.md)); a workstation that wants only the boot
+behaviour and not the look takes `deskos-boot`. The platform also names Adwaita
+Sans and Adwaita Mono, the families its base already ships, so the desktop is drawn
+in the same families as CentOS Stream 10.
 
 ## Status
 

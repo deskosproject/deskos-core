@@ -10,8 +10,11 @@ spec:
     - deskos-trust
     - deskos-gnome
     - rhel-family
-    # Like RHEL 10: AlmaLinux's own wallpaper and splash stay, only the text goes.
-    - deskos-boot
+    # The DeskOS look and the DeskOS families, the same as on CentOS Stream 10 and
+    # Fedora: EL10's own default is Red Hat Text and Red Hat Mono, and the Core
+    # look draws GNOME's Adwaita Sans and Adwaita Mono (ADR 0026).
+    - deskos-look
+    - deskos-adwaita
     - firefox
     - deskos-dock
     - deskos-reference-apps

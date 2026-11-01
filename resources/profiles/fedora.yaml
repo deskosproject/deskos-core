@@ -8,6 +8,12 @@ spec:
   resources:
     - kind: PackageSet
       name: fedora
+    # The families every DeskOS flavor draws with, named here because Fedora's base
+    # already ships Adwaita Sans and Adwaita Mono and its schema picks them: the
+    # declaration keeps the look a promise instead of a base default, and it needs
+    # no artifact because the files are in the base (ADR 0026).
+    - kind: GnomeProfile
+      name: deskos-adwaita
     # Flatpak updates travel with the Flatpak channel: the family declares the
     # channel, so it also declares the consent to update it.
     - kind: UpdatePolicy

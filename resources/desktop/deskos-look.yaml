@@ -4,14 +4,10 @@ metadata:
   name: deskos-look
 spec:
   defaults:
-    # The same window controls on every DeskOS look: minimize, maximize and close
-    # on the right. A profile that wants other buttons declares them; the plan adds
-    # no app-menu token of its own (ADR 0016).
-    windows:
-      buttons: [minimize, maximize, close]
-    # The DeskOS artwork: the wallpaper and the login-screen lockup. Opt-in, and
-    # an organization that overrides either scalar still wins, so a workstation
-    # can take the DeskOS splash and keep its own wallpaper.
+    # The DeskOS artwork: the wallpaper and the login-screen lockup. Window
+    # controls and the hot corner are defaults every workstation shares, in
+    # GnomeProfile/deskos-core. An organization that overrides either scalar still
+    # wins, so a workstation can take the DeskOS splash and keep its own wallpaper.
     appearance:
       wallpaper:
         light: ../assets/deskos/deskos-light.svg

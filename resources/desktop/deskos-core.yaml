@@ -4,6 +4,14 @@ metadata:
   name: deskos-core
 spec:
   defaults:
+    # The same window controls on every flavor: minimize, maximize and close on the
+    # right, and the top-left corner opens the overview. They are defaults, so an
+    # organization that declares other buttons or no hot corner wins at its layer
+    # (ADR 0003); the plan adds no app-menu token of its own (ADR 0016).
+    windows:
+      buttons: [minimize, maximize, close]
+    shell:
+      hotCorners: true
     # GNOME Software offers updates but never downloads or applies them on its own.
     software:
       updates: manual
@@ -13,8 +21,7 @@ spec:
       lock:
         enabled: true
         delay: 0s
-    # Wallpaper, login logo, window buttons, shell favorites and Dash to Dock are
-    # deliberately absent. They are the platform's look and feel, or an
-    # organization's choice, not the foundation's: Ubuntu ships its own GNOME
-    # layout and its own artwork, and an organization that wants the DeskOS look
-    # adds the deskos-look profile from its own layer.
+    # Wallpaper, login logo, shell favorites and Dash to Dock are deliberately
+    # absent. They are the workstation's look, or an organization's choice, not
+    # the foundation's: an organization that wants its own wallpaper overrides it,
+    # and one that wants the DeskOS artwork adds the deskos-look profile.

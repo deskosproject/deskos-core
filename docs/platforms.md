@@ -31,6 +31,8 @@ project owns one, and its build, boot and publication live in
 AlmaLinux 10 is an **example platform**: not in `resources/platforms/`, not
 published, not blocking a pull request. CI composes and renders it and a weekly
 workflow builds and boots it; see [Example platforms](example-platforms.md).
+The desktop itself is the same on every flavor; what each platform contributes is in
+[desktop parity](desktop-parity.md).
 Fedora 45 moved into the matrix in 2026-10-30; its base, mirror and pin are in
 [Fedora 45](fedora.md).
 

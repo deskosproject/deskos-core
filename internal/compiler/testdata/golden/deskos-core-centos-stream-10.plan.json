@@ -2115,6 +2115,20 @@
           ]
         },
         {
+          "key": "/org/gnome/desktop/interface/enable-hot-corners",
+          "type": "b",
+          "value": "true",
+          "setting": "shell.hotCorners",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/desktop/interface/font-name",
           "type": "s",
           "value": "'Adwaita Sans 11'",
@@ -2205,10 +2219,10 @@
           "setting": "windows.buttons",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-look",
-              "profile": "deskos-look",
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-look.yaml:1"
+              "source": "resources/desktop/deskos-core.yaml:1"
             }
           ]
         },
