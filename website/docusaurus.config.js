@@ -81,7 +81,6 @@ const config = {
     ({
       image: 'img/logo.svg',
       navbar: {
-        title: 'DeskOS',
         logo: {
           alt: 'DeskOS',
           src: 'img/logo.svg',
