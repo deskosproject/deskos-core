@@ -269,13 +269,18 @@ or boots RHEL, though composition and rendering stay covered by tests.
   The same digest's ISO is signed and mirrored to `download.deskos.org`.
 - **AlmaLinux 10 and Fedora 45.** Both are shipped: their images publish from
   `image-publish.yml`. Core publishes no installer for either.
-- **AlmaLinux 10, published (2026-11-01).** Run `41341412399` on commit
-  `ba9e4ae` built `deskos-core-almalinux-10` from base `0a036afe…`, scanned it,
-  and passed the boot, session and first-boot checks on its QCOW2 with
-  `publish=false`. Run `41344699522` on `d5b69a8` then published
-  `sha256:d46f4f77…`; `:latest` and `:candidate` serve that digest, and
-  `cosign verify` plus the SLSA, SBOM and exception attestations pass. `:stable`
-  stays where the promotion workflow puts it.
+- **AlmaLinux 10, published (2026-11-02).** Run `41341412399` on `ba9e4ae`
+  built `deskos-core-almalinux-10` from base `0a036afe…`, scanned it, and passed
+  the boot, session and first-boot checks with `publish=false`. The green gate
+  `41357644674` on `5133889` published `sha256:f83dc65a…`; `:latest`,
+  `:candidate` and the commit tag serve it, and `cosign verify` plus the SLSA,
+  SBOM and exception attestations pass. An earlier gate published
+  `sha256:d46f4f77…`; this page names the current one. `:stable` stays where the
+  promotion workflow puts it.
+- **Fedora 45, published after the base move (2026-11-02).** The same gate
+  rebuilt Fedora on `45.20261101.0` (`sha256:900e1adf…`) and published
+  `sha256:fa02f94c…`; the earlier pin's `firefox` 158.0.1 and `ImageMagick`
+  7.1.2.32 Criticals are gone, and the signature verifies.
 - **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
   Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
   `flatpak preinstall --system` (no session bus).
