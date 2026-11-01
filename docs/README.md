@@ -44,6 +44,7 @@ Start with the [README](../README.md), then [Platforms](platforms.md).
 | [Recovery](recovery.md) | install, first boot, registry, update and rollback failures |
 | [Diagnostics](diagnostics.md) | what a failure looks like and what to do next |
 | [Supply chain](supply-chain.md) | SBOM, scan, exceptions, signing, verifying a digest |
+| [Why the records](why-supply-chain.md) | the five questions the SBOM, scan, signature, attestation and evidence answer |
 | [Checks](checks.md) | what each workflow proves and how to read a red run |
 | [Threat model](threat-model.md) | assets, boundaries, controls, the incident exercise |
 | [Development](development.md) | build `deskosctl`, run the tests, cut a release |

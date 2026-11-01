@@ -63,6 +63,7 @@ const sidebars = {
         'resources',
         'gnome-coverage',
         'supply-chain',
+        'why-supply-chain',
         'compatibility',
         'threat-model',
         'support',
