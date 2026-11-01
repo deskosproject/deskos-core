@@ -3,7 +3,9 @@
 The resource roots under [examples/](../examples/) are compile-and-render
 examples. They are not shipped platform support, and they are not built as
 images: `checks.yml` validates them, and each README says which use case it shows
-and which half of that use case the model cannot express.
+and which half of that use case the model cannot express. The exception is
+`examples/layers/`, which `image-bootcheck.yml` builds and boots because it
+exercises four declared RPM repositories.
 
 The shipped platforms, their verification and their publication are in
 [Platforms](platforms.md). An example can reference their profiles by name; it

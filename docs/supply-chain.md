@@ -182,8 +182,9 @@ The policy the check applies is
   distribution's security response, and a Critical in them still blocks;
 - **every exception is explicit**: an OpenVEX statement
   (`tests/supply-chain/vex.openvex.json`) or an entry in the platform's reviewed
-  record: `tests/supply-chain/exceptions.json` for CentOS Stream 10 and
-  `tests/supply-chain/exceptions-fedora-45.json` for Fedora 45. Nothing is
+  record: `tests/supply-chain/exceptions.json` for CentOS Stream 10,
+  `tests/supply-chain/exceptions-fedora-45.json` for Fedora 45 and
+  `tests/supply-chain/exceptions-almalinux-10.json` for AlmaLinux 10. Nothing is
   silently ignored.
 
 The record names the owner, the review date, the base image digest it was reviewed

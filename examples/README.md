@@ -36,7 +36,9 @@ deskosctl render \
   --output ./dist/example
 ```
 
-`make check` validates every example; CI does not plan, render or build them, so
-an example cannot slow the pipeline down. See
-[docs/platforms.md](../docs/platforms.md) for the shipped platforms and
+`make check` validates every example. CI does not plan or render them, and it
+does not build the use-case examples. The one exception is `layers/`:
+`image-bootcheck.yml` builds and boots its CentOS workstation to prove the four
+RPM repositories it declares. See [docs/platforms.md](../docs/platforms.md) for
+the shipped platforms and
 [docs/example-platforms.md](../docs/example-platforms.md) for what an example is.
