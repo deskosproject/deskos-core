@@ -205,7 +205,7 @@ COPY rootfs/ /
 
 # Repository definitions where tools that predate the move still read them
 RUN set -eu; mkdir -p /etc/yum.repos.d; \
-    for f in '/usr/share/dnf5/repos.d'/*.repo; do [ -e "$f" ] || continue; ln -sf "$f" /etc/yum.repos.d/; done; \
+    for f in '/usr/share/dnf5/repos.d'/*.repo; do [ -e "$f" ] || continue; cp -f --remove-destination "$f" /etc/yum.repos.d/; done; \
     true
 
 # System configuration
