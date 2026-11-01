@@ -4,10 +4,11 @@ metadata:
   name: deskos-tools
 spec:
   # The general-purpose command line every DeskOS workstation carries: a login
-  # shell, a multiplexer, a copy tool, completion, a tree view, a downloader and a
-  # full editor. Measured 2026-11-01: all of them are in the Fedora 45 archive and
-  # in the EL10 AppStream, and `chsh` needs no package of its own because
-  # util-linux provides it on both families.
+  # shell, a multiplexer, a copy tool, completion, a tree view and a full editor.
+  # Measured 2026-11-01: all of them are in the Fedora 45 archive and in the EL10
+  # AppStream, and `chsh` needs no package of its own because util-linux provides
+  # it on both families. The downloader is per family: Fedora's wget is a provide
+  # of wget2-wget, EL10's RPM is wget, so each family profile names its own.
   #
   # Developer tooling is not here: a compiler, git and a container CLI are a role's
   # choice, and an organization that wants them names them in its own PackageSet.
@@ -17,5 +18,4 @@ spec:
     - tmux
     - tree
     - vim-enhanced
-    - wget
     - zsh

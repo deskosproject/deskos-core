@@ -63,7 +63,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'tree' \
         'urw-base35-fonts' \
         'vim-enhanced' \
-        'wget' \
+        'wget2-wget' \
         'zsh' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
