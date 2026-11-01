@@ -269,6 +269,11 @@ or boots RHEL, though composition and rendering stay covered by tests.
   The same digest's ISO is signed and mirrored to `download.deskos.org`.
 - **AlmaLinux 10 and Fedora 45.** Both are shipped: their images publish from
   `image-publish.yml`. Core publishes no installer for either.
+- **AlmaLinux 10, built and booted (2026-11-01).** Run `41341412399` on commit
+  `ba9e4ae` built `deskos-core-almalinux-10` from base `0a036afe…`, scanned it,
+  and passed the boot, session and first-boot checks on its QCOW2. The dispatch
+  used `publish=false`, so it validated the leg without pushing; the weekly gate
+  publishes the digest.
 - **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
   Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
   `flatpak preinstall --system` (no session bus).
