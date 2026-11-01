@@ -81,9 +81,9 @@ in the same families as CentOS Stream 10.
 | Composes and renders | validated by the compiler tests and `checks.yml` |
 | Image built | CI, every pull request |
 | Booted and checked | CI: GNOME, session check |
-| Published image | not yet |
+| Published image | **published** (`quay.io/deskos/deskos-core-fedora-45`); Core publishes no installer for it |
 | System Flatpak | preinstall |
 
-The package manifest (ADR 0028) is not declared yet: the group resolution has to be
-measured on the mirrored digest and committed, which is the next step before
-publication.
+The package manifest (ADR 0028) is `manifests/fedora-45.txt`, measured on this
+base and checked by the build. A downstream organization builds the installer
+from the published image.
