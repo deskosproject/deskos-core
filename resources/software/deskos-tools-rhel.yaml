@@ -1,0 +1,8 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-tools-rhel
+spec:
+  # EL10 publishes the downloader as wget.
+  packages:
+    - wget

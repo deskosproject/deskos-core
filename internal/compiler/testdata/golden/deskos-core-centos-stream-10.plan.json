@@ -446,10 +446,10 @@
         "name": "wget",
         "provenance": [
           {
-            "resource": "PackageSet/deskos-tools",
-            "profile": "deskos-gnome",
+            "resource": "PackageSet/deskos-tools-rhel",
+            "profile": "rhel-family",
             "layer": "foundation",
-            "source": "resources/software/deskos-tools.yaml:1"
+            "source": "resources/software/deskos-tools-rhel.yaml:1"
           }
         ]
       },

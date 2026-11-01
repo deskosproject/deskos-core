@@ -1,0 +1,9 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-tools-fedora
+spec:
+  # Fedora publishes wget as a provide of wget2-wget; naming the provide leaves
+  # the declared SBOM with the name the RPM DB does not carry.
+  packages:
+    - wget2-wget
