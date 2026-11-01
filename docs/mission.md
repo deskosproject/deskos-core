@@ -2,7 +2,40 @@
 slug: /
 ---
 
-# Mission
+# What DeskOS is
+
+DeskOS builds a **Linux workstation** as an operating-system image. You describe
+the machine in YAML, DeskOS compiles that description into an image, and the
+machine runs that image.
+
+It is **image mode**: the operating system is a bootc image, a standard OCI
+container image that boots. The running system is not mutated package by
+package. An update is a new image deployed beside the running one; a reboot
+switches to it, and a rollback switches back.
+
+The description is **declarative**: resources list packages, desktop settings,
+branding and update policy. DeskOS validates them, composes the layers into a
+typed Plan and renders one build context. The same inputs produce the same
+context, with no model and no network during compilation.
+
+It is built to repeat: one definition can produce the same workstation for a
+team, an organization, a public-sector deployment or one person's machine. There
+is no controller, inventory or agent. Each machine moves forward by updating to
+another image, and the image carries the records of what was built, scanned and
+booted.
+
+DeskOS is **not a distribution**. It starts from a vendor's official base,
+pinned by digest, and composes on top. The supported platforms are CentOS
+Stream 10, RHEL 10, Fedora 45 and AlmaLinux 10. RHEL images are never published
+by Core; an organization builds them with its own subscription.
+
+## Start here
+
+- [Quick start](quickstart.md): build an image and boot it.
+- [Platforms](platforms.md): what each base supports today.
+- [Architecture](architecture.md): the path from YAML to a bootable image.
+
+## Mission
 
 DeskOS compiles a workstation from declared intent into a bootable image.
 
