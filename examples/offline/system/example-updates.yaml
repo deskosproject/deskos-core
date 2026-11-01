@@ -1,0 +1,10 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: UpdatePolicy
+metadata:
+  name: example-offline
+spec:
+  # Core stages and applies image updates; this organization turns automatic
+  # staging off. The machine stays on the image it was installed from until an
+  # operator moves it, which is the point of an offline site.
+  image:
+    automatic: false

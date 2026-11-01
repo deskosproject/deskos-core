@@ -1,0 +1,31 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-kiosk-desktop
+spec:
+  # The kiosk is the one place a workstation locks its defaults: Core never
+  # locks, and an organization that runs a public session does (invariant 8).
+  defaults:
+    shell:
+      favorites:
+        - firefox.desktop
+      # A kiosk has no tour and no overview to explain.
+      welcomeTour: false
+    lockdown:
+      disablePrinting: true
+      disablePrintSetup: true
+      disableSaveToDisk: true
+      disableApplicationHandlers: true
+      disableCommandLine: true
+      disableUserAdministration: true
+      mountRemovableStorageReadOnly: true
+  locks:
+    - shell.favorites
+    - shell.welcomeTour
+    - lockdown.disablePrinting
+    - lockdown.disablePrintSetup
+    - lockdown.disableSaveToDisk
+    - lockdown.disableApplicationHandlers
+    - lockdown.disableCommandLine
+    - lockdown.disableUserAdministration
+    - lockdown.mountRemovableStorageReadOnly

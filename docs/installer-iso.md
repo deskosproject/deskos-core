@@ -22,7 +22,9 @@ reference is where installed machines update from.
   source:
 
   ```bash
-  deskosctl render --workstation deskos-core-centos-stream-10 --output ctx
+  deskosctl render \
+    --workstation deskos-core-centos-stream-10 \
+    --output ctx
   sudo podman build -t registry.example.com/deskos/core:stable ctx
   sudo podman push registry.example.com/deskos/core:stable
   ```
@@ -130,13 +132,20 @@ it. Never bake it into the image.
 
 ```bash
 mkdir -p output
-sudo podman run --rm --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output -v ./config.toml:/config.toml:ro \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume ./config.toml:/config.toml:ro \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type anaconda-iso --config /config.toml \
-    --chown "$(id -u):$(id -g)" registry.example.com/deskos/core:stable
+    build \
+    --type anaconda-iso \
+    --config /config.toml \
+    --chown "$(id -u):$(id -g)" \
+    registry.example.com/deskos/core:stable
 ```
 
 The ISO is `output/bootiso/install.iso`.

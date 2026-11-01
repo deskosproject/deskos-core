@@ -16,6 +16,7 @@ in [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubunt
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
 | Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-fedora-45`) | Flatpak preinstall |
+| AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | Flatpak preinstall |
 
 `(vendor)` means the platform's own supplier: Red Hat for RHEL, the CentOS
 project for CentOS Stream. A session starts with the vendor's desktop where
@@ -28,9 +29,10 @@ Ubuntu 26.04 is not a row here: no vendor publishes a bootc base for it, so the
 project owns one, and its build, boot and publication live in
 [`deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu) (ADR 0020).
 
-AlmaLinux 10 is an **example platform**: not in `resources/platforms/`, not
-published, not blocking a pull request. CI composes and renders it and a weekly
-workflow builds and boots it; see [Example platforms](example-platforms.md).
+AlmaLinux 10 moved into the matrix in 2026-11-01. Its base is the vendor's
+bootc image, which the vendor still labels experimental; the pin is in
+`resources/platforms/almalinux-10.yaml`. Core publishes an image and no
+installer for it.
 The desktop itself is the same on every flavor; what each platform contributes is in
 [desktop parity](desktop-parity.md).
 Fedora 45 moved into the matrix in 2026-10-30; its base, mirror and pin are in
@@ -96,6 +98,7 @@ vendor's lifecycle dates do not become DeskOS dates.
 - **Losing a maintainer or a vendor base** retires the platform: it leaves
   `resources/platforms/`, the publish matrix and the CI image legs, and moves to
   an example root or is removed. It never quietly keeps "published". Re-promotion
-  follows [example-platforms.md](example-platforms.md#re-promoting-an-example-platform).
+  needs a new Platform resource and a publish leg, the path that promoted
+  AlmaLinux 10.
 - **Consumer notice:** a status change lands here and in the release notes. No
   telemetry, no fleet action; a machine changes only with its update reference.

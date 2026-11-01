@@ -3,7 +3,7 @@
 The resources this repository ships: the foundation an organization references by
 name, the facts about each platform, and the reference workstations. An
 organization adds its own next to these in any layout; the
-[example organization](../examples/organization-and-role/) is one shape.
+[example organization](../examples/layers/) is one shape.
 
 The model behind them, meaning envelopes, layers and how sets and keyed
 definitions compose, is in [docs/resources.md](../docs/resources.md). This file is
@@ -23,11 +23,11 @@ the map of the directories.
 Some kinds are not here:
 
 - `RpmRepository`, and a `TrustAnchor` that adds a CA, live only in the
-  [example organization](../examples/organization-and-role/).
+  [example organization](../examples/layers/).
 - `AptRepository` is rendered but has no shipped resource; its examples are in the
   tests and in the Ubuntu repository, where apt is the platform's own package
   manager.
 - `Theme` has no resource using it yet; its example in
   [docs/resources.md](../docs/resources.md) is illustrative.
-- The Ubuntu platform is in its own repository (ADR 0020); AlmaLinux and Fedora
-  live in their example roots.
+- The Ubuntu platform is in its own repository (ADR 0020); Fedora and AlmaLinux
+  live here, each on its vendor's bootc base.

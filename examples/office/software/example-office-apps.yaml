@@ -1,0 +1,12 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: example-office-apps
+spec:
+  # Flathub is the application channel Core declares. A role names the
+  # application; the channel, its key and the update consent stay where Core
+  # put them.
+  remote: flathub
+  applications:
+    - id: org.libreoffice.LibreOffice
+      branch: stable

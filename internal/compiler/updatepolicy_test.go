@@ -376,7 +376,8 @@ func TestUpdatePolicyUnits(t *testing.T) {
 		t.Errorf("flatpak update without requireACPower has an AC condition:\n%s", svc)
 	}
 
-	rhel, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
+	rhelFixture := fixture{"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: rhel-ws\nspec:\n  platformRef: rhel-10\n  profiles: [deskos-core, rhel-family]\n"}
+	rhel, err := containerfile.Render(mustPlan(t, "rhel-ws", resourcesRoot, rhelFixture.dir(t)))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,13 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-office
+spec:
+  # Measured 2026-11-01: the document viewer and the calculator are in CentOS
+  # Stream 10 AppStream; the office suite itself is not, and is a Flatpak below.
+  # The serif families make a document look like a document on every platform.
+  packages:
+    - papers
+    - gnome-calculator
+    - google-noto-serif-fonts
+    - liberation-serif-fonts

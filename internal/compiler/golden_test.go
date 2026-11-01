@@ -19,11 +19,24 @@ var update = flag.Bool("update", false, "rewrite golden files")
 
 const (
 	resourcesRoot = "../../resources"
-	exampleRoot   = "../../examples/organization-and-role"
-	// Fedora and AlmaLinux are example-only. Their Platforms live in these roots,
-	// so the examples stay self-contained and can be promoted later.
-	almaExampleRoot = "../../examples/almalinux-10"
+	// layeredWorkstation is the layering fixture: a reference platform, Core's
+	// desktop, and an organization plus a role the test writes here. It is not an
+	// example root, so a change to an example never changes a golden.
+	layeredWorkstation = "layered-ws"
 )
+
+// layeredFixture is a small organization and role over Core, which is the
+// composition the golden plan and Containerfile pin.
+func layeredFixture(t *testing.T) string {
+	t.Helper()
+	return fixture{
+		"ws.yaml": "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + layeredWorkstation +
+			"\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core, deskos-gnome, rhel-family, example-org, example-role]\n",
+		"org.yaml":  profile("example-org", "organization", "PackageSet/org-set"),
+		"role.yaml": profile("example-role", "role", "PackageSet/role-set"),
+		"sets.yaml": packageSet("org-set", "vim-enhanced") + "---\n" + packageSet("role-set", "git"),
+	}.dir(t)
+}
 
 func rawResource(apiVersion, kind, name, spec string) *model.Resource {
 	return &model.Resource{
@@ -62,23 +75,22 @@ func TestGoldenCentOSReferencePlan(t *testing.T) {
 	golden(t, "deskos-core-centos-stream-10.plan.json", b)
 }
 
-func TestGoldenExampleRHELPlan(t *testing.T) {
-	p := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
-	b, err := p.JSON()
+func TestGoldenLayeredPlan(t *testing.T) {
+	b, err := mustPlan(t, layeredWorkstation, resourcesRoot, layeredFixture(t)).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-devops-rhel-10.plan.json", b)
+	golden(t, layeredWorkstation+".plan.json", b)
 }
 
 // The declared SBOM is part of the artifact evidence: it must be canonical
-// for the example workstation, like the plan and the Containerfile.
-func TestGoldenExampleRHELSBOM(t *testing.T) {
-	b, err := sbom.Build(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
+// for the layered workstation, like the plan and the Containerfile.
+func TestGoldenLayeredSBOM(t *testing.T) {
+	b, err := sbom.Build(mustPlan(t, layeredWorkstation, resourcesRoot, layeredFixture(t)))
 	if err != nil {
 		t.Fatal(err)
 	}
-	golden(t, "example-devops-rhel-10.sbom.cdx.json", b)
+	golden(t, layeredWorkstation+".sbom.cdx.json", b)
 }
 
 // The Debian half of the golden coverage, and it is synthetic on purpose: no platform
@@ -124,10 +136,8 @@ func TestGoldenContainerfiles(t *testing.T) {
 		roots []string
 	}{
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
-		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
-		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		// The example-only platform keeps its rendered build context pinned too.
-		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
+		{"deskos-core-almalinux-10", []string{resourcesRoot}},
+		{layeredWorkstation, []string{resourcesRoot, layeredFixture(t)}},
 		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
@@ -175,11 +185,12 @@ func TestFlatpakPreinstallUnitOrdering(t *testing.T) {
 }
 
 func TestDeterministicPlanJSON(t *testing.T) {
-	a, err := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot).JSON()
+	layered := layeredFixture(t)
+	a, err := mustPlan(t, layeredWorkstation, resourcesRoot, layered).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := mustPlan(t, "example-devops-rhel-10", exampleRoot, resourcesRoot).JSON()
+	b, err := mustPlan(t, layeredWorkstation, layered, resourcesRoot).JSON()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,8 +209,9 @@ func TestDeterministicPlanJSON(t *testing.T) {
 }
 
 func TestDeterministicRender(t *testing.T) {
+	layered := layeredFixture(t)
 	render := func(dir string) map[string][]byte {
-		files, err := containerfile.Render(mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot))
+		files, err := containerfile.Render(mustPlan(t, layeredWorkstation, resourcesRoot, layered))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -236,7 +248,7 @@ func TestDeterministicRender(t *testing.T) {
 		t.Fatal("re-render changed the file set")
 	}
 	// Repository assets are copied verbatim; only generated text is checked.
-	p := mustPlan(t, "example-devops-rhel-10", resourcesRoot, exampleRoot)
+	p := mustPlan(t, layeredWorkstation, resourcesRoot, layered)
 	copied := map[string]bool{}
 	for _, f := range p.Artifact.Files {
 		copied[filepath.Join("rootfs", f.Path)] = true
@@ -270,20 +282,17 @@ func TestRenderRefusesForeignDirectory(t *testing.T) {
 // RHSM directories are tmpfs, and the generated redhat.repo is removed in the
 // same RUN. Declared vendor repository files stay in the build context.
 //
-// The Fedora example is here because this is the backend's shape for *any* RPM
-// platform, not a RHEL one: a Fedora base has no subscription-manager at all, so
-// the test asserts that the same transaction carries the same hygiene rather than
-// claiming Fedora has RHSM state to keep out. Fedora is example-only; it is not
-// part of the published platform set.
+// The Fedora workstation is here because this is the backend's shape for *any*
+// RPM platform, not a RHEL one: a Fedora base has no subscription-manager at
+// all, so the test asserts that the same transaction carries the same hygiene
+// rather than claiming Fedora has RHSM state to keep out.
 func TestRpmTransactionsKeepRHSMStateOutOfLayers(t *testing.T) {
 	for _, tc := range []struct {
 		ws    string
 		roots []string
 	}{
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
-		{"example-devops-centos-stream-10", []string{resourcesRoot, exampleRoot}},
-		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}},
-		{"example-almalinux-10", []string{resourcesRoot, almaExampleRoot}},
+		{"deskos-core-almalinux-10", []string{resourcesRoot}},
 		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
@@ -357,7 +366,6 @@ func TestWallpaperReachesInitialSetupAsSchemaDefault(t *testing.T) {
 		light, dark string
 	}{
 		{lookWorkstation, []string{resourcesRoot, look}, "deskos-light.svg", "deskos-dark.svg"},
-		{"example-devops-rhel-10", []string{resourcesRoot, exampleRoot}, "example.svg", "example.svg"},
 	} {
 		p := mustPlan(t, tc.ws, tc.roots...)
 		want := header + "[org.gnome.desktop.background]\n" +

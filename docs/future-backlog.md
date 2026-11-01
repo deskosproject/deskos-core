@@ -161,7 +161,7 @@ retirement process, with no LTS inferred from a vendor lifecycle.
 UEFI QCOW2, creating a first user, updating and recovering.
 **Done when:** an unfamiliar engineer completes it without private steps, recording
 versions, digests and prerequisites, and the gaps they hit are recorded.
-[WALKTHROUGH](../examples/organization-and-role/WALKTHROUGH.md)
+[WALKTHROUGH](../examples/layers/WALKTHROUGH.md)
 
 <a id="p1-04"></a>
 ### P1-04: Correct guidance, make recovery discoverable
@@ -237,7 +237,7 @@ bounded baseline change in their Containerfiles and CI against DeskOS profiles:
 duplication, effort, conflicts, provenance, portability, cost.
 **Done when:** two external environments document onboarding, update, recovery and
 maintenance, and a ranked follow-up list exists before any new abstraction.
-[Organization example](../examples/organization-and-role/README.md)
+[Organization example](../examples/layers/README.md)
 
 <a id="p2-04"></a>
 ### P2-04: Make releases and findings followable

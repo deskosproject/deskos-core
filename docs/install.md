@@ -57,12 +57,19 @@ echo "$digest"
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --interactive \
+    --tty \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args \
+    build \
+    --type qcow2 \
+    --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
@@ -91,12 +98,18 @@ reboot
 """
 EOF
 
-sudo podman run --rm --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output -v ./config.toml:/config.toml:ro \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume ./config.toml:/config.toml:ro \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type anaconda-iso --config /config.toml \
+    build \
+    --type anaconda-iso \
+    --config /config.toml \
     --chown "$(id -u):$(id -g)" \
     "quay.io/deskos/deskos-core-centos-stream-10@$digest"
 ```
@@ -165,7 +178,8 @@ spec:
 ```bash
 ./bin/deskosctl validate ./examples/centos-stream-10
 ./bin/deskosctl render ./examples/centos-stream-10 \
-    --workstation example-centos-stream-10 --output ./dist/centos
+    --workstation example-centos-stream-10 \
+    --output ./dist/centos
 sudo podman build -t localhost/deskos-centos:test ./dist/centos
 ```
 
@@ -176,12 +190,19 @@ argument:
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --interactive \
+    --tty \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./output:/output \
-    -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./output:/output \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args \
+    build \
+    --type qcow2 \
+    --no-default-kernel-args \
     --chown "$(id -u):$(id -g)" \
     localhost/deskos-centos:test
 ```

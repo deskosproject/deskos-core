@@ -1,0 +1,16 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-identity
+spec:
+  displayName: Example identity-managed workstation (CentOS Stream 10)
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - deskos-adwaita
+    - rhel-family
+    - deskos-look
+    - firefox
+    - deskos-dock
+    - example-identity

@@ -15,7 +15,6 @@ Required status checks are a GitHub setting outside the repository.
 | `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the weekly build is dispatched when it is | job log |
 | `lifecycle-test.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
-| `examples-weekly.yml` | Wednesdays 06:00 UTC; dispatch | the AlmaLinux example builds and boots; not published | boot, session and first-boot records |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
 | `tool-image.yml` | `Containerfile` or compiler paths; dispatch | the `deskosctl` container builds and runs | job log |
 | `mirror-fedora.yml` | dispatch | a Fedora base is mirrored to DeskOS Quay | job log |

@@ -9,7 +9,7 @@ BIN      := bin/deskosctl
 BIN_RUNTIME := bin/deskos
 # DeskOS Core is embedded in the binary; only an organization's resources are
 # passed on the command line.
-EXAMPLE   := ./examples/organization-and-role
+EXAMPLE   := ./examples/layers
 
 .PHONY: build test test-evidence fmt fmt-check vet check validate links style plan-centos plan-example render-centos render-example sbom-example golden docs-site clean
 
@@ -45,13 +45,11 @@ style:
 	python3 tools/check-style.py
 
 validate: build
-	$(BIN) validate $(EXAMPLE)
-	$(BIN) validate ./examples/centos-stream-10
-	$(BIN) validate ./examples/almalinux-10
-	$(BIN) validate ./examples/rhel-10
-	$(BIN) validate ./examples/vanilla-gnome
-# Fedora 45 is a shipped platform (resources/platforms/), so it is validated with
-# the Core tree the binary carries; the identity fixture is the exception.
+	$(BIN) validate --no-core ./resources
+	@for ex in layers developer office kiosk identity offline centos-stream-10 rhel-10 vanilla-gnome; do \
+		$(BIN) validate "./examples/$$ex" || exit 1; \
+	done
+	# The identity fixture is not an example: it is the client-side FreeIPA test.
 	$(BIN) validate tests/identity/resources
 
 plan-centos: build

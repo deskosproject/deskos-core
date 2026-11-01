@@ -38,12 +38,10 @@ Design: [visual-identity-and-boot.md](design/visual-identity-and-boot.md).
   on `main` for image-changing paths, and on dispatch.
 - **Publishing:** `image-publish.yml` runs weekly and publishes by itself
   ([Release model](architecture.md#release-model)).
-- **Pinned base:** both shipped Platforms pin a digest.
-- **Example AlmaLinux:** it is not shipped; its root composes and renders in CI,
-  and `examples-weekly.yml` builds and boots it weekly
-  ([example-platforms.md](example-platforms.md)). Fedora 45 is shipped now: its
-  image publishes from `image-publish.yml`, and its status is in
-  [platforms.md](platforms.md).
+- **Pinned base:** every shipped Platform pins a digest.
+- **AlmaLinux 10 is shipped:** its image publishes from `image-publish.yml`
+  and its status is in [platforms.md](platforms.md). Fedora 45 is shipped on the
+  same path.
 - **Decided (2026-10-24):** the three vendor-scriptlet lint warnings stand, and
   `bootc container lint` stays in report mode
   ([architecture.md](architecture.md#lint-warnings)).
@@ -162,7 +160,7 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 | P0-08 upstream inputs deliberate | closed | input inventory in [supply-chain.md](supply-chain.md#inputs-and-who-moves-them) |
 | P1-01 compatibility contract | closed | [compatibility.md](compatibility.md) |
 | P1-02 platform support and retirement | closed | [platforms.md](platforms.md), [example-platforms.md](example-platforms.md) |
-| P1-03 one adoption journey | closed, one residual | `examples/organization-and-role/WALKTHROUGH.md`; no outside reader has followed it |
+| P1-03 one adoption journey | closed, one residual | `examples/layers/WALKTHROUGH.md`; no outside reader has followed it |
 | P1-04 current guidance, recovery | closed | [recovery.md](recovery.md), [troubleshooting.md](troubleshooting.md) |
 | P1-05 diagnostics for outside authors | closed | [diagnostics.md](diagnostics.md) |
 | P1-06 behaviour a vendor update can break | closed | the organization's field validation, 2026-10-27, digest `sha256:5e80b551…` |
@@ -326,8 +324,8 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).
-- **Example AlmaLinux:** weekly builds, no publication, no support promise.
-  Fedora 45 is a shipped platform; the weekly gate publishes its image.
+- **Shipped platforms:** the weekly gate publishes the CentOS Stream 10,
+  Fedora 45 and AlmaLinux 10 images; installers are Core's only for CentOS.
 - The **splash race**: one disk booted to text for a whole boot and drew the
   splash on the next; the retry absorbs it but not always. Cause unexplained.
 - RHEL's Red Hat logo in the Activities button: replacing `fedora-logo-icon`

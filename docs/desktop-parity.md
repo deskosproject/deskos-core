@@ -6,10 +6,10 @@ differ?
 Every flavor composes the same desktop from the same profiles. A platform
 contributes its stack and, on one flavor, its families; it does not contribute the
 look. The reference workstations are
-[CentOS Stream 10](../resources/workstations/deskos-core-centos-stream-10.yaml) and
-[Fedora 45](../resources/workstations/deskos-core-fedora-45.yaml); the AlmaLinux 10
-and RHEL 10 workstations here are examples, and the RHEL fleet is built by the
-organization ([example platforms](example-platforms.md)).
+[CentOS Stream 10](../resources/workstations/deskos-core-centos-stream-10.yaml),
+[Fedora 45](../resources/workstations/deskos-core-fedora-45.yaml) and
+[AlmaLinux 10](../resources/workstations/deskos-core-almalinux-10.yaml); the RHEL
+fleet is built by the organization ([example platforms](example-platforms.md)).
 
 ## What every flavor shares
 
@@ -38,7 +38,7 @@ from the base on Fedora (ADR 0026).
 ## What each platform brings
 
 Measured 2026-11-01 with `dnf repoquery` on the pinned digests: CentOS Stream 10
-`0af0dc39`, AlmaLinux 10 `61e79630`, Fedora 45 `d81de11d`.
+`0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `d81de11d`.
 
 | | CentOS Stream 10 | Fedora 45 | AlmaLinux 10 | RHEL 10.2 |
 |---|---|---|---|---|
@@ -71,6 +71,7 @@ scans in [research notes](research-notes.md)). Fedora's Flatpak package reports
 
 ## What this page is not
 
-It is not a support statement for AlmaLinux 10: that platform is an example, not a
-shipped one. It is also not a promise that a vendor's next minor release keeps the
-same versions; every pin and every platform decision is reviewed when it moves.
+It is not a promise that a vendor's next minor release keeps the same versions;
+every pin and every platform decision is reviewed when it moves. It is also not a
+support contract: the vendor still labels the AlmaLinux bootc base experimental,
+and [Platforms](platforms.md) records what was verified.

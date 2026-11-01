@@ -19,7 +19,9 @@ git clone https://github.com/deskosproject/deskos-core
 cd deskos-core
 git checkout v0.19.0
 base=https://github.com/deskosproject/deskos-core/releases/download/v0.19.0
-curl -fLO "$base/deskosctl-linux-amd64" -O "$base/SHA256SUMS"
+curl \
+  -fLO "$base/deskosctl-linux-amd64" \
+  -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 ./bin/deskosctl version      # deskosctl v0.19.0 (commit …)
@@ -28,9 +30,10 @@ install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
 ## 2. Validate, then plan
 
 ```bash
-./bin/deskosctl validate ./examples/organization-and-role
-./bin/deskosctl plan ./examples/organization-and-role \
-    --workstation example-devops-centos-stream-10 --format json > plan.json
+./bin/deskosctl validate ./examples/layers
+./bin/deskosctl plan ./examples/layers \
+    --workstation example-devops-centos-stream-10 \
+    --format json > plan.json
 ```
 
 `validate` is offline and deterministic; `plan.json` is the effective intent,
@@ -42,14 +45,15 @@ jq '.artifact.packages[] | select(.name == "buildah") | .provenance' plan.json
 
 ```json
 [{"resource":"PackageSet/example-containers","profile":"example-devops",
-  "layer":"role","source":"organization-and-role/software/example-devops.yaml:1"}]
+  "layer":"role","source":"layers/software/example-devops.yaml:1"}]
 ```
 
 The **declared** SBOM is not an inventory of a built image:
 
 ```bash
-./bin/deskosctl sbom ./examples/organization-and-role \
-    --workstation example-devops-centos-stream-10 --output declared.cdx.json
+./bin/deskosctl sbom ./examples/layers \
+    --workstation example-devops-centos-stream-10 \
+    --output declared.cdx.json
 jq -r '.bomFormat, (.components | length)' declared.cdx.json
 ```
 
@@ -75,9 +79,10 @@ spec:
 ```
 
 ```bash
-./bin/deskosctl validate ./examples/organization-and-role
-./bin/deskosctl plan ./examples/organization-and-role \
-    --workstation example-devops-centos-stream-10 --format json > plan.json
+./bin/deskosctl validate ./examples/layers
+./bin/deskosctl plan ./examples/layers \
+    --workstation example-devops-centos-stream-10 \
+    --format json > plan.json
 jq '.artifact.packages[] | select(.name == "htop") | .provenance' plan.json
 jq '.artifact.scheduledUpdates[] | select(.kind == "image") |
     {schedule, provenance}' plan.json
@@ -88,9 +93,12 @@ The schedule reads `weekly`; the package says `role`.
 ## 4. Render and build
 
 ```bash
-./bin/deskosctl render ./examples/organization-and-role \
-    --workstation example-devops-centos-stream-10 --output ctx
-sudo podman build -t localhost/example-devops-centos-stream-10:test ctx
+./bin/deskosctl render ./examples/layers \
+    --workstation example-devops-centos-stream-10 \
+    --output ctx
+sudo podman build \
+    -t localhost/example-devops-centos-stream-10:test \
+    ctx
 ```
 
 `localhost/` is enough for a lab image, **not** an update source. See step 7.
@@ -99,11 +107,18 @@ sudo podman build -t localhost/example-devops-centos-stream-10:test ctx
 
 ```bash
 mkdir -p out
-sudo podman run --rm --privileged --pull=missing \
+sudo podman run \
+    --rm \
+    --privileged \
+    --pull=missing \
     --security-opt label=type:unconfined_t \
-    -v ./out:/output -v /var/lib/containers/storage:/var/lib/containers/storage \
+    --volume ./out:/output \
+    --volume /var/lib/containers/storage:/var/lib/containers/storage \
     quay.io/centos-bootc/bootc-image-builder:latest \
-    build --type qcow2 --no-default-kernel-args --chown "$(id -u):$(id -g)" \
+    build \
+    --type qcow2 \
+    --no-default-kernel-args \
+    --chown "$(id -u):$(id -g)" \
     localhost/example-devops-centos-stream-10:test
 ```
 
@@ -116,11 +131,16 @@ UEFI paths: Fedora and RHEL `/usr/share/edk2/ovmf/`, Ubuntu
 
 ```bash
 cp /usr/share/edk2/ovmf/OVMF_VARS.fd ./OVMF_VARS.fd
-qemu-system-x86_64 -machine q35,accel=kvm -cpu host -m 4096 -smp 4 \
+qemu-system-x86_64 \
+    -machine q35,accel=kvm \
+    -cpu host \
+    -m 4096 \
+    -smp 4 \
     -drive if=pflash,format=raw,readonly=on,file=/usr/share/edk2/ovmf/OVMF_CODE.fd \
     -drive if=pflash,format=raw,file=./OVMF_VARS.fd \
     -drive if=virtio,format=qcow2,file=out/qcow2/disk.qcow2 \
-    -nic user,model=virtio-net-pci -display gtk
+    -nic user,model=virtio-net-pci \
+    -display gtk
 ```
 
 GNOME Initial Setup creates the first account, the administrator. Then inspect:

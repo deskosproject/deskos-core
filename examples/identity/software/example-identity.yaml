@@ -1,0 +1,12 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-identity
+spec:
+  # sssd and realmd are already in the workstation group on EL10; naming them
+  # here would install nothing. What the domain join adds is the home-directory
+  # helper, the Kerberos client and the oddjob service it runs through.
+  packages:
+    - oddjob
+    - oddjob-mkhomedir
+    - krb5-workstation

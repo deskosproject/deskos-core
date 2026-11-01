@@ -11,8 +11,9 @@ name: image-bootcheck
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
-# The AlmaLinux and Fedora examples are not built here: they are example platforms,
-# not published platforms. Their roots still validate and render in checks.yml.
+# AlmaLinux 10 and Fedora 45 are shipped platforms, but this workflow boots only
+# the CentOS Stream 10 legs; their images are built, scanned and booted by the
+# publish pipeline, and their roots still validate in checks.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
 # the raw disk are test input and are not uploaded; the only publish path is
@@ -94,7 +95,7 @@ jobs:
           if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/image-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/profiles/deskos-|resources/software/deskos-)'; then
             all; exit 0
           fi
-          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/(centos-stream-10|organization-and-role)/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/layers/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"
 
   core-centos-stream-10:
     needs: changes
@@ -111,7 +112,7 @@ jobs:
         # dnf resolves them and installs the packages with GPG checking. It proves
         # the transaction succeeds, not which source each package came from, and it
         # does not claim the example's virt-manager requirement is met
-        # (see examples/organization-and-role/README.md).
+        # (see examples/layers/README.md).
         include:
           - workstation: deskos-core-centos-stream-10
             root: ""
@@ -120,7 +121,7 @@ jobs:
             rootfs: xfs
             config: tests/vm/config.toml
           - workstation: example-devops-centos-stream-10
-            root: examples/organization-and-role
+            root: examples/layers
             artifact: vm-evidence-example-devops-centos-stream-10
             image: localhost/example-devops-centos-stream-10:ci
             rootfs: xfs

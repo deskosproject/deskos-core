@@ -1,0 +1,15 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: NetworkProfile
+metadata:
+  name: example-identity-network
+spec:
+  # The corporate Wi-Fi the machine joins before a user logs in. The identity
+  # here is the outer EAP identity; the per-user credential is runtime state and
+  # never image content (ADR 0027).
+  type: wifi
+  ssid: ExampleCorp
+  eap: peap
+  identity: deskos-example
+  phase2: mschapv2
+  serverName: radius.example.com
+  autoconnect: false

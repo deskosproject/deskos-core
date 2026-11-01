@@ -3,32 +3,30 @@ kind: Platform
 metadata:
   name: almalinux-10
 spec:
-  displayName: AlmaLinux 10 (example only)
-  # EXAMPLE ONLY. AlmaLinux 10 is not a shipped DeskOS platform and is not in
-  # the published platform matrix. Its Platform lives here so composition and
-  # rendering stay exercised without carrying a second experimental EL10 image
-  # in CI and release. To re-promote it, mirror the base digest at a stable
-  # reference and follow docs/example-platforms.md.
-  # The vendor here is the AlmaLinux project, which publishes this base itself, so
-  # the platform follows ADR 0004's official-base rule and declares no
-  # organization owner or tier — like centos-stream-10 and rhel-10. The vendor
-  # labels the base experimental. The example is what exercises its paths; the
-  # facts below remain EL10 conventions modeled on rhel-10, and this is not a
-  # support statement (invariant 10).
+  displayName: AlmaLinux 10
+  # AlmaLinux 10 is a shipped EL10 platform. The vendor publishes the bootc
+  # base itself, so the platform follows ADR 0004's official-base rule and
+  # declares no organization owner or tier, like centos-stream-10 and rhel-10.
+  # The vendor still labels its bootc images experimental; the pin below is the
+  # base DeskOS builds and tests. The facts are EL10 conventions modeled on
+  # rhel-10, and the platform matrix states what was verified (invariant 10).
   family: almalinux
   release: "10"
   architectures: [x86_64]
   packageManager: rpm
   bootc:
     image: quay.io/almalinuxorg/almalinux-bootc:10
-    # x86_64 manifest of the :10 index, 2026-10-22 (the base as served that day).
-    # Moved from the 2026-10-14 manifest: the vulnerability gate found Criticals in
-    # Go modules compiled into binaries this base ships (podman, skopeo, toolbox,
-    # ipp-usb), and a newer base is the fix that accepts nothing. The next scan says
-    # whether it was enough; whatever remains goes on the record, with a reason.
-    # The vendor's bootc images are experimental; move this deliberately. The
-    # example is not built by CI, so this pin is documentation until promotion.
-    digest: sha256:61e7963066ef53e6c729826117ddfb1e2afc5fce8ceb591b5992a7d1d6e36878
+    # x86_64 manifest of the :10 index, 2026-10-31 (the base as served that day).
+    # Moved from the 2026-10-22 manifest after the vulnerability gate found a
+    # Critical in ca-certificates, which this base fixes, and Criticals in Go
+    # modules compiled into binaries the base ships (podman, skopeo, toolbox,
+    # ipp-usb), which it does not. A newer base is the fix that accepts nothing;
+    # what remains is recorded, with a reason, in
+    # tests/supply-chain/exceptions-almalinux-10.json.
+    digest: sha256:0a036afe9ddfb987f2b5c428242ebeaf5c74d4279122f4ccf45dc7c38fe55c73
+  # ADR 0028: the installed package set the group must resolve to. Measured on
+  # this base digest by the first publish leg.
+  packageManifest: manifests/almalinux-10.txt
   distribution:
     # AlmaLinux's archive is freely redistributable and needs no subscription.
     redistributable: true

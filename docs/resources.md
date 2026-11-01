@@ -74,9 +74,8 @@ public reference workstation uses CentOS Stream 10.
   CentOS image.
 - Fedora 45: the same Core on the vendor's Silverblue base, published by
   `image-publish.yml`; Core publishes no installer for it.
-- AlmaLinux 10: the same Core in an example root, built and booted by the weekly
-  check but never published
-  ([example-platforms.md](example-platforms.md)).
+- AlmaLinux 10: the same Core on the vendor's bootc base, published by
+  `image-publish.yml`; Core publishes no installer for it.
 - Ubuntu 26.04: the same Core in its own repository, on a base owned by the Project
   DeskOS and without the RHEL family's software
   ([ADR 0014](adr/0014-platform-base-ownership.md),

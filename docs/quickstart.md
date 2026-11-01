@@ -22,12 +22,19 @@ verified ([install.md](install.md#option-1-install-the-published-image)).
 
 ```bash
 mkdir -p output
-sudo podman run --rm -it --privileged --pull=missing \
+sudo podman run \
+  --rm \
+  --interactive \
+  --tty \
+  --privileged \
+  --pull=missing \
   --security-opt label=type:unconfined_t \
-  -v "$PWD/output:/output" \
-  -v /var/lib/containers/storage:/var/lib/containers/storage \
+  --volume "$PWD/output:/output" \
+  --volume /var/lib/containers/storage:/var/lib/containers/storage \
   quay.io/centos-bootc/bootc-image-builder:latest \
-  build --type qcow2 --rootfs xfs \
+  build \
+  --type qcow2 \
+  --rootfs xfs \
   quay.io/deskos/deskos-core-centos-stream-10:latest
 ```
 
@@ -38,7 +45,10 @@ The disk lands at `output/qcow2/disk.qcow2`. Fedora's root filesystem is
 ## 3. Boot it
 
 ```bash
-sudo qemu-system-x86_64 -enable-kvm -m 4096 -smp 2 \
+sudo qemu-system-x86_64 \
+  -enable-kvm \
+  -m 4096 \
+  -smp 2 \
   -drive file=output/qcow2/disk.qcow2,if=virtio,format=qcow2 \
   -nic user,model=virtio-net-pci
 ```

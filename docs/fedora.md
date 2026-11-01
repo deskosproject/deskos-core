@@ -16,7 +16,9 @@ vendor's index digest and every manifest. It is refreshed by a person, never on 
 schedule:
 
 ```bash
-gh workflow run mirror-fedora.yml --repo deskosproject/deskos-core --ref main
+gh workflow run mirror-fedora.yml \
+  --repo deskosproject/deskos-core \
+  --ref main
 ```
 
 The job prints the source digest. Bumping the pin is a pull request: set

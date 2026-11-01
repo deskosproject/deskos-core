@@ -27,7 +27,9 @@ No GitHub account, no workflow, no access to this repository:
 
 ```bash
 # 1. the digest :stable serves
-skopeo inspect --format '{{.Digest}}' docker://quay.io/deskos/deskos-core-centos-stream-10:stable
+skopeo inspect \
+  --format '{{.Digest}}' \
+  docker://quay.io/deskos/deskos-core-centos-stream-10:stable
 
 # 2. who built it
 cosign verify <image>@<digest> \
@@ -35,7 +37,11 @@ cosign verify <image>@<digest> \
   --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main'
 
 # 3. what it says about itself
-cosign verify-attestation --type slsaprovenance1 <image>@<digest> … | jq -r '.payload' | base64 -d
+cosign verify-attestation \
+  --type slsaprovenance1 \
+  <image>@<digest> … \
+  | jq -r '.payload' \
+  | base64 -d
 
 # 4. the evidence, byte for byte
 curl https://evidence.deskos.org/deskos/deskos-core-centos-stream-10/sha256/<digest>/index.json

@@ -1,0 +1,14 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-offline
+spec:
+  # Everything a person needs with no network: a document viewer, a text editor
+  # and a calculator, all RPMs in the platform archive. The browser comes from
+  # the `firefox` profile, which is also an RPM. No Flatpak is declared: a
+  # machine with no route cannot fetch one, and preinstalling from a remote
+  # during the build would make the image depend on one.
+  packages:
+    - papers
+    - gnome-text-editor
+    - gnome-calculator

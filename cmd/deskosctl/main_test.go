@@ -17,20 +17,26 @@ func runCLI(args ...string) (int, string, string) {
 
 func TestValidate(t *testing.T) {
 	// The embedded Core is loaded by default.
-	code, out, errOut := runCLI("validate", "../../examples/organization-and-role")
+	code, out, errOut := runCLI("validate", "--no-core", "../../resources")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
-	if !strings.Contains(out, "example-devops-rhel-10") || !strings.Contains(out, "deskos-core-centos-stream-10") {
+	if !strings.Contains(out, "deskos-core-centos-stream-10") {
 		t.Errorf("unexpected output: %s", out)
 	}
-	// --no-core drops it, so an organization overlay alone cannot resolve Core.
-	code, _, errOut = runCLI("validate", "--no-core", "../../examples/organization-and-role")
+	// --no-core drops it, so a workstation that references Core alone cannot
+	// resolve it.
+	overlay := t.TempDir()
+	ws := "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: overlay-ws\nspec:\n  platformRef: centos-stream-10\n  profiles: [deskos-core]\n"
+	if err := os.WriteFile(filepath.Join(overlay, "ws.yaml"), []byte(ws), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	code, _, errOut = runCLI("validate", "--no-core", overlay)
 	if code != exitInvalid || !strings.Contains(errOut, "Profile/deskos-core, which is not defined") {
 		t.Errorf("exit %d: %s", code, errOut)
 	}
-	// With --no-core, the same tree works when it is passed explicitly.
-	if code, _, errOut := runCLI("validate", "--no-core", "../../resources", "../../examples/organization-and-role"); code != exitOK {
+	// With --no-core, the same tree works when Core is passed explicitly.
+	if code, _, errOut := runCLI("validate", "--no-core", "../../resources", overlay); code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
 }
@@ -52,11 +58,11 @@ func TestCoreExport(t *testing.T) {
 }
 
 func TestPlanFlagsAfterRoots(t *testing.T) {
-	code, out, errOut := runCLI("plan", "../../examples/organization-and-role", "--workstation", "example-devops-rhel-10")
+	code, out, errOut := runCLI("plan", "--workstation", "deskos-core-centos-stream-10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
-	for _, want := range []string{"WORKSTATION", "PLATFORM", "registry.redhat.io/rhel10/rhel-bootc", "PROFILES", "organization:", "ARTIFACT", "/usr/local/bin/oc", "PROVISIONING", "ENROLLMENT"} {
+	for _, want := range []string{"WORKSTATION", "PLATFORM", "quay.io/centos-bootc/centos-bootc", "PROFILES", "foundation:", "ARTIFACT", "PROVISIONING", "ENROLLMENT"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("plan output lacks %q", want)
 		}
@@ -97,7 +103,7 @@ func TestRender(t *testing.T) {
 }
 
 func TestSBOM(t *testing.T) {
-	code, out, errOut := runCLI("sbom", "../../examples/organization-and-role", "--workstation", "example-devops-rhel-10")
+	code, out, errOut := runCLI("sbom", "--workstation", "deskos-core-centos-stream-10")
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
@@ -161,7 +167,7 @@ spec:
 		t.Errorf("stdout = %q", out)
 	}
 
-	_, _, errOut = runCLI("validate", "../../examples/organization-and-role")
+	_, _, errOut = runCLI("validate", "--no-core", "../../resources")
 	if strings.Contains(errOut, "masked") {
 		t.Errorf("current resources report masked dock options:\n%s", errOut)
 	}

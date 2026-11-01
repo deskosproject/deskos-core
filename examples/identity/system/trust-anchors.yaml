@@ -1,0 +1,11 @@
+apiVersion: system.deskos.org/v1alpha1
+kind: TrustAnchor
+metadata:
+  name: example-identity-ca
+spec:
+  # The domain's root CA, so the machine trusts the directory's TLS endpoints
+  # before anyone logs in. The file is a placeholder; an organization replaces
+  # it with its own and records the origin (see assets/PROVENANCE.md).
+  anchors:
+    - name: example-identity-ca
+      file: ../assets/example-root-ca.crt
