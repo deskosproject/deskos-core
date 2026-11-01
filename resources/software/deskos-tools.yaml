@@ -12,10 +12,10 @@ spec:
   # Developer tooling is not here: a compiler, git and a container CLI are a role's
   # choice, and an organization that wants them names them in its own PackageSet.
   packages:
-    - zsh
-    - tmux
-    - rsync
     - bash-completion
+    - rsync
+    - tmux
     - tree
-    - wget
     - vim-enhanced
+    - wget
+    - zsh
