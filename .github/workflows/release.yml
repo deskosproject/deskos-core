@@ -29,6 +29,21 @@ jobs:
           re='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$'
           [[ "$TAG" =~ $re ]] || { echo "::error::$TAG is not vX.Y.Z or vX.Y.Z-<prerelease>"; exit 1; }
           if [[ "$TAG" == *-* ]]; then echo "prerelease=true" >> "$GITHUB_OUTPUT"; else echo "prerelease=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The tag's history, so main can be checked as an ancestor.
+          fetch-depth: 0
+      - name: Require the tag on main, and no release yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "::error::$TAG is not on main; a release is cut from main"; exit 1; }
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::release $TAG already exists; a bad tag gets a patch, not a move"; exit 1
+          fi
 
   ci:
     needs: tag
@@ -36,7 +51,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/ci.yml
 
-  build:
+  companion:
     needs: ci
     runs-on: ubuntu-24.04
     steps:
@@ -44,7 +59,49 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
-      - name: Build deskosctl for linux/amd64
+      - name: Build the runtime companion
+        env:
+          TAG: ${{ github.ref_name }}
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p companion
+          asset="deskos-${TAG}-linux-amd64"
+          go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "companion/$asset" ./cmd/deskos
+          out=$("companion/$asset" version)
+          echo "$out"
+          [ "$out" = "deskos ${TAG} (commit ${GITHUB_SHA})" ]
+          sha256sum "companion/$asset" > companion/sha256.txt
+          cat companion/sha256.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: companion
+          path: companion/
+          retention-days: 1
+          if-no-files-found: error
+
+  build:
+    needs: [ci, companion]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: companion
+          path: companion
+      - name: Pin the companion this release built
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          sha="$(cut -d' ' -f1 companion/sha256.txt)"
+          test -n "$sha"
+          python3 tools/set-companion-pin.py "$TAG" "$sha" "$GITHUB_REPOSITORY"
+          grep -E '^  version:|^    url:|^    sha256:' resources/software/deskos.yaml
+      - name: Build deskosctl and the resources
         env:
           TAG: ${{ github.ref_name }}
           CGO_ENABLED: "0"
@@ -52,19 +109,16 @@ jobs:
           GOARCH: amd64
         run: |
           mkdir -p release
+          runtime="deskos-${TAG}-linux-amd64"
+          cp "companion/$runtime" "release/$runtime"
           asset="deskosctl-${TAG}-linux-amd64"
           go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "release/$asset" ./cmd/deskosctl
           out=$("release/$asset" version)
           echo "$out"
           [ "$out" = "deskosctl ${TAG} (commit ${GITHUB_SHA})" ]
-          # The runtime companion, same commit, same checks: it reads the plan an
-          # image carries instead of building one (docs/adr/0018).
-          runtime="deskos-${TAG}-linux-amd64"
-          go build -trimpath -ldflags "-s -w -X main.version=${TAG} -X main.commit=${GITHUB_SHA}" -o "release/$runtime" ./cmd/deskos
-          out=$("release/$runtime" version)
-          echo "$out"
-          [ "$out" = "deskos ${TAG} (commit ${GITHUB_SHA})" ]
-          # Resources of the same commit; reproducible archive (sorted, commit time, no owner, no gzip name or time).
+          # Resources of the same commit, with the pin this release just set; the
+          # archive is reproducible (sorted, commit time, no owner, no gzip name
+          # or time).
           resources="deskos-core-resources-${TAG}.tar.gz"
           tar --sort=name --mtime="@$(git log -1 --format=%ct)" --owner=0 --group=0 --numeric-owner \
             -cf - resources | gzip -9n > "release/$resources"
@@ -92,10 +146,11 @@ jobs:
     # compiler without installing it. It is a release artifact like the binary,
     # so pushing a tag publishes it; it is scanned and signed before :latest
     # moves.
-    # The `needs` context only exposes direct dependencies, so `tag` is listed
-    # beside `ci`: the job reads needs.tag.outputs.prerelease to decide whether
-    # this release may move :latest.
-    needs: [tag, ci]
+    # The `needs` context only exposes direct dependencies, so `tag` and
+    # `companion` are listed: the job reads needs.tag.outputs.prerelease to decide
+    # whether this release may move :latest, and the companion's sha to pin the
+    # Core the image builds.
+    needs: [tag, ci, companion]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -103,6 +158,17 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: companion
+          path: companion
+      - name: Pin the companion this release built
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          sha="$(cut -d' ' -f1 companion/sha256.txt)"
+          test -n "$sha"
+          python3 tools/set-companion-pin.py "$TAG" "$sha" "$GITHUB_REPOSITORY"
 
       - name: Build the tool image
         env:
