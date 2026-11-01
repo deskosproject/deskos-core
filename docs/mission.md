@@ -8,8 +8,8 @@ DeskOS builds a **Linux workstation** as an operating-system image. You describe
 the machine in YAML, DeskOS compiles that description into an image, and the
 machine runs that image.
 
-It is **image mode**: the operating system is a bootc image, a standard OCI
-container image that boots. The running system is not mutated package by
+It is **image mode**: the operating system is a [`bootc`](https://containers.github.io/bootc/)
+image, a standard OCI container image that boots. The running system is not mutated package by
 package. An update is a new image deployed beside the running one; a reboot
 switches to it, and a rollback switches back.
 
