@@ -99,9 +99,11 @@ spec:
       package: plymouth-theme-spinner
       imageDir: /usr/share/plymouth/themes/spinner
   updates:
-    # Enabled by the base image (default.target.wants); runs bootc upgrade --apply,
-    # which reboots.
-    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+    # bootc-fetch-apply-updates is enabled by the base image (default.target.wants)
+    # and runs bootc upgrade --apply, which reboots. rpm-ostreed-automatic is the
+    # ostree CLI staging timer; masking both keeps `deskos update` the only path
+    # that can stage an update, whatever an ostree image left enabled.
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service, rpm-ostreed-automatic.timer, rpm-ostreed-automatic.service]
   flatpak:
     package: flatpak
     preinstall: true

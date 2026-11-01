@@ -162,8 +162,10 @@ spec:
     # unbound-anchor only (unlike quay.io/fedora/fedora-bootc:45, where the timer is
     # enabled). They are listed so that DeskOS's own staging timer stays the only
     # update path if Fedora enables one: what DeskOS masks is the platform's units,
-    # never Core's.
-    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service]
+    # never Core's. rpm-ostreed-automatic is the same hazard on a machine that
+    # arrived from an ostree image, where it is enabled; masking it makes the guard
+    # hold there too.
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service, rpm-ostreed-automatic.timer, rpm-ostreed-automatic.service]
   flatpak:
     # Measured: Flatpak 1.18.4 with `flatpak preinstall`, /usr/share/flatpak/preinstall.d
     # present and empty. The base also enables flatpak-add-fedora-repos.service, which

@@ -267,6 +267,16 @@
     },
     {
       "type": "library",
+      "name": "bash-completion",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "buildah",
       "properties": [
         {
@@ -617,6 +627,16 @@
     },
     {
       "type": "library",
+      "name": "rsync",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "skopeo",
       "properties": [
         {
@@ -637,7 +657,27 @@
     },
     {
       "type": "library",
+      "name": "tmux",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "toolbox",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "tree",
       "properties": [
         {
           "name": "deskos:source",
@@ -678,6 +718,26 @@
     {
       "type": "library",
       "name": "virt-viewer",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "wget",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "zsh",
       "properties": [
         {
           "name": "deskos:source",

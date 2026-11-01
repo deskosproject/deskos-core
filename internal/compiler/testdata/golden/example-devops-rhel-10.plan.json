@@ -201,6 +201,17 @@
     ],
     "packages": [
       {
+        "name": "bash-completion",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "buildah",
         "provenance": [
           {
@@ -617,6 +628,17 @@
         ]
       },
       {
+        "name": "rsync",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "skopeo",
         "provenance": [
           {
@@ -639,6 +661,17 @@
         ]
       },
       {
+        "name": "tmux",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "toolbox",
         "provenance": [
           {
@@ -646,6 +679,17 @@
             "profile": "example-devops",
             "layer": "role",
             "source": "organization-and-role/software/example-devops.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "tree",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
           }
         ]
       },
@@ -663,6 +707,12 @@
       {
         "name": "vim-enhanced",
         "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          },
           {
             "resource": "PackageSet/example-organization",
             "profile": "example-organization",
@@ -690,6 +740,28 @@
             "profile": "example-devops",
             "layer": "role",
             "source": "organization-and-role/software/example-devops.yaml:13"
+          }
+        ]
+      },
+      {
+        "name": "wget",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "zsh",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
           }
         ]
       }
@@ -1573,6 +1645,28 @@
       },
       {
         "unit": "bootc-fetch-apply-updates.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.service",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.timer",
         "provenance": [
           {
             "resource": "UpdatePolicy/deskos-core",

@@ -105,6 +105,17 @@
     ],
     "packages": [
       {
+        "name": "bash-completion",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "dejavu-sans-fonts",
         "provenance": [
           {
@@ -377,6 +388,39 @@
         ]
       },
       {
+        "name": "rsync",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "tmux",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "tree",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "urw-base35-fonts",
         "provenance": [
           {
@@ -384,6 +428,39 @@
             "profile": "deskos-gnome",
             "layer": "foundation",
             "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "vim-enhanced",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "wget",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "zsh",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
           }
         ]
       }
@@ -2569,6 +2646,28 @@
       },
       {
         "unit": "bootc-fetch-apply-updates.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.service",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.timer",
         "provenance": [
           {
             "resource": "UpdatePolicy/deskos-core",

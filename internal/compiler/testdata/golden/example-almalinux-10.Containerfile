@@ -23,6 +23,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'bash-completion' \
         'dejavu-sans-fonts' \
         'dejavu-sans-mono-fonts' \
         'dejavu-serif-fonts' \
@@ -46,7 +47,13 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth-theme-spinner' \
         'redhat-display-fonts' \
         'redhat-text-fonts' \
+        'rsync' \
+        'tmux' \
+        'tree' \
         'urw-base35-fonts' \
+        'vim-enhanced' \
+        'wget' \
+        'zsh' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
@@ -284,7 +291,7 @@ RUN tmp="$(mktemp -d)" \
     && dconf update \
     && 'update-ca-trust' \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
     && systemctl set-default 'graphical.target'
 
 # Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default

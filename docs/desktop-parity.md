@@ -22,6 +22,7 @@ organization ([example platforms](example-platforms.md)).
 | Tray | `Profile/deskos-gnome` | the pinned AppIndicator artifact (ADR 0021) |
 | Store | `Profile/deskos-reference-apps` | Bazaar; every platform removes GNOME Software and the build fails if it is still installed (ADR 0022) |
 | Session | `GnomeProfile/deskos-core` | session locked at login, screen blank after 10 minutes, software updates manual |
+| Command line | `Profile/deskos-gnome` | zsh, tmux, rsync, bash-completion, tree, wget and vim-enhanced |
 | Families | `Profile/deskos-adwaita` | Adwaita Sans and Adwaita Mono: pinned artifacts on EL10, the base's own files on Fedora 45 |
 
 These are defaults, not locks: an organization that declares another wallpaper,
