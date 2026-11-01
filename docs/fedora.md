@@ -29,7 +29,7 @@ and :45, 2026-10-17), it has no `gnome-shell`, no `gdm`, no `gnome-initial-setup
 no Flatpak, no Plymouth, no `fedora-logos` and no `gtk-update-icon-cache`. A DeskOS
 workstation on it would be a desktop DeskOS invented. Silverblue carries all of
 them as distribution packages: `gnome-shell` 51.0, `gdm` 51.0, `nautilus` 51.0.1,
-`gnome-software` 51.0 and `firefox` 158.0.1 (measured 2026-10-30), 1509 packages in
+`gnome-software` 51.0 and `firefox` 159.0 (measured 2026-11-01), 1509 packages in
 total.
 
 ## Repositories

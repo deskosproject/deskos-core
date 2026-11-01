@@ -3,7 +3,7 @@
 # Workstation: deskos-core-fedora-45
 # Platform:    fedora-45 (Fedora 45 (Silverblue))
 
-FROM quay.io/deskos/fedora-silverblue:45@sha256:d81de11d75fed47e420e08c04be879f65544bce7a83178a8ef8422f29df3d613
+FROM quay.io/deskos/fedora-silverblue:45@sha256:900e1adffe4824472c02b129cacb8c97a35718d14d2abb876500b05d86172dd2
 
 # Directories whose content is image content, not /var state
 RUN set -eu; \

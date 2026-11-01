@@ -38,7 +38,7 @@ from the base on Fedora (ADR 0026).
 ## What each platform brings
 
 Measured 2026-11-01 with `dnf repoquery` on the pinned digests: CentOS Stream 10
-`0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `d81de11d`.
+`0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `900e1adf`.
 
 | | CentOS Stream 10 | Fedora 45 | AlmaLinux 10 | RHEL 10.2 |
 |---|---|---|---|---|
@@ -48,7 +48,7 @@ Measured 2026-11-01 with `dnf repoquery` on the pinned digests: CentOS Stream 10
 | Flatpak | **1.18.0-2** | 1.18.4 | 1.16.0-9 | 1.16.0-9† |
 | Mesa | 26.1.1-2 | 26.2.3-1 | 25.2.7-4 | 25.2.7* |
 | PipeWire | 1.6.9-1 | 1.6.9-1 | 1.4.11-1 | 1.4.11* |
-| Firefox | 140.17.0-1 | **158.0.1-2** | 153.5.0-1 | 140.16.0-1† |
+| Firefox | 140.17.0-1 | **159.0-1** | 153.5.0-1 | 140.16.0-1† |
 
 `*` RHEL 10.2 publishes the version AlmaLinux rebuilds: the `el10_2` NEVRA without
 the `.alma` suffix. `†` recorded in this repository
@@ -67,7 +67,7 @@ scans in [research notes](research-notes.md)). Fedora's Flatpak package reports
   That is a support model, not a polish level: features sooner, no ESR window and no
   vendor validation against the desktop.
 - **Fedora 45 is the newest stack** (GNOME 51, GDM 51, Ptyxis 50) and publishes the
-  newest Firefox (158.0.1) because it tracks the release, not the ESR.
+  newest Firefox (159.0) because it tracks the release, not the ESR.
 
 ## What this page is not
 

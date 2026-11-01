@@ -10,7 +10,7 @@ spec:
   # messaging and smartcards, and the one the vendor keeps for a fleet without
   # runtime entitlement (docs/design/browsers-rpm-or-flatpak.md).
   #
-  # Measured (2026-11-01): Fedora Silverblue 45 carries firefox-158.0.1-2.fc45;
+  # Measured (2026-11-01): Fedora Silverblue 45 carries firefox-159.0-1.fc45;
   # CentOS Stream 10 AppStream carries firefox-140.17.0-1.el10, and its Workstation
   # environment already installs it through the Internet Browser group; AlmaLinux
   # 10 AppStream carries firefox-153.5.0-1.el10_2, while its Internet Browser group
