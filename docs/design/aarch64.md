@@ -10,7 +10,7 @@ that would turn it into work.
 |---|---|---|
 | Base images | `quay.io/centos-bootc/centos-bootc:stream10` and `bootc-image-builder` are multi-arch: `amd64`, `arm64`, `ppc64le`, `s390x` (measured 2026-10-30) | nothing |
 | `deskosctl` and `deskos` | released for `linux/amd64` only; the release workflow sets `GOARCH=amd64` and publishes two amd64 assets | an arm64 build, and an arm64 runner to test it |
-| The runtime pin | `resources/software/deskos.yaml` names `deskos-v0.18.0-linux-amd64` | a per-architecture pin, which the model does not have |
+| The runtime pin | `resources/software/deskos.yaml` names `deskos-v0.19.0-linux-amd64` | a per-architecture pin, which the model does not have |
 | Platform resources | every `Platform` declares `architectures: [x86_64]` | an arm64 platform resource, and the fields it would change |
 | Example artifacts | `openshift-client` pins `openshift-client-linux-amd64-rhel9` | an arm64 asset, or an example that does not use it |
 | Runners | 23 jobs, all `ubuntu-24.04` or `ubuntu-latest`, all x86_64 | arm64 runners, or QEMU emulation for the VM checks |
