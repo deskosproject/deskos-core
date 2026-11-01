@@ -27,6 +27,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'bash-completion' \
         'buildah' \
         'cockpit' \
         'cockpit-machines' \
@@ -34,6 +35,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'dejavu-sans-fonts' \
         'dejavu-sans-mono-fonts' \
         'dejavu-serif-fonts' \
+        'firefox' \
         'flatpak' \
         'git' \
         'google-carlito-fonts' \
@@ -55,18 +57,24 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
+        'plymouth-theme-spinner' \
         'podman' \
         'qemu-kvm' \
         'redhat-display-fonts' \
         'redhat-mono-fonts' \
         'redhat-text-fonts' \
+        'rsync' \
         'skopeo' \
         'terraform' \
+        'tmux' \
         'toolbox' \
+        'tree' \
         'urw-base35-fonts' \
         'vim-enhanced' \
         'virt-install' \
         'virt-viewer' \
+        'wget' \
+        'zsh' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
@@ -234,8 +242,21 @@ RUN tmp="$(mktemp -d)" \
     && dconf update \
     && 'update-ca-trust' \
     && systemctl enable 'cockpit.socket' 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
     && systemctl set-default 'graphical.target'
+
+# Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default
+RUN set -eu; \
+    for f in '/usr/share/plymouth/themes/spinner'/*.png; do \
+        [ -f "$f" ] || continue; \
+        name="$(basename "$f")"; \
+        [ "$name" != 'watermark.png' ] || continue; \
+        [ ! -e '/usr/share/plymouth/themes/deskos'/"$name" ] || { echo "$name already exists in /usr/share/plymouth/themes/deskos" >&2; exit 1; }; \
+        install -m 0644 "$f" '/usr/share/plymouth/themes/deskos'/"$name"; \
+    done; \
+    [ -e '/usr/share/plymouth/themes/deskos'/throbber-0001.png ] || { echo 'no two-step throbber frames in /usr/share/plymouth/themes/spinner' >&2; exit 1; }; \
+    plymouth-set-default-theme 'deskos'; \
+    [ "$(plymouth-set-default-theme)" = 'deskos' ] || { echo 'Plymouth default theme is not deskos' >&2; exit 1; }
 
 # Initramfs: rebuilt for every kernel in the image, with plymouth
 RUN set -eu; found=0; \
@@ -248,6 +269,10 @@ RUN set -eu; found=0; \
         env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods "${kdir}initramfs.img" "$kver"; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'ostree-prepare-root' || { echo "ostree-prepare-root missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'plymouthd' || { echo "plymouth missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/deskos.plymouth' || { echo "/usr/share/plymouth/themes/deskos/deskos.plymouth missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/watermark.png' || { echo "/usr/share/plymouth/themes/deskos/watermark.png missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/throbber-0001.png' || { echo "/usr/share/plymouth/themes/deskos/throbber-0001.png missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd -f etc/plymouth/plymouthd.conf "${kdir}initramfs.img" | grep -qx 'Theme=deskos' || { echo "initramfs of $kver does not select Plymouth theme deskos" >&2; exit 1; }; \
         found=$((found + 1)); \
     done; \
     [ "$found" -gt 0 ] || { echo 'no kernel found under /usr/lib/modules' >&2; exit 1; }

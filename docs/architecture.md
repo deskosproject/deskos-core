@@ -225,8 +225,9 @@ example organization shows this with `virt-manager`, which EL10 ships only in CR
 A group may list `excludePackages`, which become `--exclude` options of the group
 transaction only, so a `PackageSet` naming one still installs it: CS10 excludes
 setroubleshoot, RHEL 10 excludes `redhat-flatpak-preinstall-firefox` (its OCI
-authenticator needs a session bus and would break `flatpak preinstall`). Core
-installs the Firefox RPM on both EL platforms.
+authenticator needs a session bus and would break `flatpak preinstall`). Core's
+`firefox` profile installs the vendor RPM on every flavor, so an installation that
+never reaches a network still has a browser (`docs/design/browsers-rpm-or-flatpak.md`).
 
 ## Validation status
 

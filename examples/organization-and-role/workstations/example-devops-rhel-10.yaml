@@ -9,7 +9,7 @@ spec:
     - deskos-core
     - deskos-gnome
     - rhel-family
-    - deskos-boot
+    - deskos-look
     - example-organization
     - example-devops
     - firefox

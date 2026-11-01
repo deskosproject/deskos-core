@@ -168,6 +168,17 @@ anything else is marked as **not verified**.
 - Flathub signing key: fingerprint
   `6E5C05D979C76DAF93C081354184DD4D907A7CAE`, expires 2027-06-14. The key
   in `flathub.flatpakrepo` and `flathub.gpg` are byte-identical.
+- Browser channels (2026-11-01). CentOS Stream 10 AppStream carries
+  `firefox-140.17.0-1.el10`, and the Workstation environment installs it through
+  the Internet Browser group. AlmaLinux 10 AppStream carries
+  `firefox-153.5.0-1.el10_2`, but its Internet Browser group names only
+  `redhat-flatpak-preinstall-firefox`, which AlmaLinux's archive does not carry, so
+  the group installs no browser. Fedora Silverblue 45 carries
+  `firefox-158.0.1-2.fc45`. RHEL 10.2 carries `firefox-140.16.0-1.el10` (the scan
+  in ADR 0012 saw it installed), so its AppStream publishes the RPM as well.
+  Bluefin's build installs `firefox` and `firefox-langpacks` as RPMs. A Flatpak is
+  only preinstalled at first boot by `deskos-flatpak-preinstall.service`, so a
+  machine that reaches no remote has no browser at all until it does.
 - Bazaar: Flathub id `io.github.kolunmi.Bazaar` (GPL-3.0-or-later). No RPM
   exists in EL10, EPEL10 or Fedora.
 

@@ -14,9 +14,8 @@ spec:
   # nothing. The set keeps flatpak for a trimmer Fedora base; it does not name
   # firewalld, which the base and the workstation group already provide.
   #
-  # Firefox is not here: DeskOS delivers it as the Flathub Flatpak (Profile/firefox)
-  # on every flavor. The Silverblue base still carries its own Firefox RPM; removing
-  # a base package is not something composition can express (ADR 0003), so the
-  # vendor's RPM stays until a removal operation is modeled.
+  # Firefox is Profile/firefox, the platform's own RPM: the Silverblue base already
+  # carries it, so naming it installs nothing here, and the same profile keeps the
+  # browser on a base that does not.
   packages:
     - flatpak

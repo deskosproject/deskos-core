@@ -10,6 +10,7 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y group install \
+        '--exclude=redhat-flatpak-preinstall-firefox' \
         '--exclude=setroubleshoot' \
         '--exclude=setroubleshoot-plugins' \
         '--exclude=setroubleshoot-server' \
@@ -22,9 +23,11 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'bash-completion' \
         'dejavu-sans-fonts' \
         'dejavu-sans-mono-fonts' \
         'dejavu-serif-fonts' \
+        'firefox' \
         'flatpak' \
         'google-carlito-fonts' \
         'google-crosextra-caladea-fonts' \
@@ -41,9 +44,16 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth' \
         'plymouth-scripts' \
         'plymouth-system-theme' \
+        'plymouth-theme-spinner' \
         'redhat-display-fonts' \
         'redhat-text-fonts' \
+        'rsync' \
+        'tmux' \
+        'tree' \
         'urw-base35-fonts' \
+        'vim-enhanced' \
+        'wget' \
+        'zsh' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
@@ -54,6 +64,90 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     && installed=""; for pkg in 'gnome-software' 'gnome-software-rpm-ostree'; do rpm -q "$pkg" > /dev/null 2>&1 && installed="$installed $pkg"; done; if [ -n "$installed" ]; then dnf -y remove --noautoremove $installed || exit 1; fi; for pkg in 'gnome-software' 'gnome-software-rpm-ostree'; do if rpm -q "$pkg" > /dev/null 2>&1; then echo "package $pkg is still installed after removal" >&2; exit 1; fi; done \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
+
+# Binary artifact adwaita-license 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/LICENSE'; \
+    echo '459687971d21c53923c1d1c9c062ec273a7ea03226b36195b79ec6af7d98dc81  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/Adwaita-OFL.txt')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/Adwaita-OFL.txt'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Regular.ttf'; \
+    echo 'ffc549b7fc28057d624086111f1ba0b1f752d2d7ff7c5363dfa064e4dca17d47  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Regular.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Regular.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-bold 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Bold.ttf'; \
+    echo '9963c9a54805dd29cd803aa5f816c9f7c74c7bdae015467a485ae729868d2325  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Bold.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Bold.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-bold-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-BoldItalic.ttf'; \
+    echo '7108404fc597fa8586b822c6d03b676caad353be1bc4a89adfab77084663a04e  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-BoldItalic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-mono-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/mono/AdwaitaMono-Italic.ttf'; \
+    echo '20795e28c01f7df230002925d93e16cfe1bc1ab9e84426ac106344fb419cb57b  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaMono-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaMono-Italic.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-sans 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Regular.ttf'; \
+    echo '8381c33b9a44f066f2b99dba3d416a2342891e28c956a35dfd8d16ee2987e6d4  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaSans-Regular.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaSans-Regular.ttf'; \
+    rm -rf "$tmp"
+
+# Binary artifact adwaita-sans-italic 51.0 (sha256-verified)
+RUN set -eu; \
+    tmp="$(mktemp -d)"; \
+    curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+        --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
+        --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
+        -o "$tmp/download" 'https://gitlab.gnome.org/GNOME/adwaita-fonts/-/raw/301f8351840087c0bcd5f3f97aae37b3734b8648/sans/AdwaitaSans-Italic.ttf'; \
+    echo 'a3dc55af75f746756596dca37f3ff7c0f0b015f2fd2e87f2cf0ef4a69d4f3015  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+    mkdir -p "$(readlink -m "$(dirname '/usr/local/share/fonts/AdwaitaSans-Italic.ttf')")"; \
+    install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaSans-Italic.ttf'; \
+    rm -rf "$tmp"
 
 # Binary artifact deskos 0.18.0 (sha256-verified)
 RUN set -eu; \
@@ -189,11 +283,29 @@ RUN set -eu; \
 COPY rootfs/ /
 
 # System configuration
-RUN dconf update \
+RUN tmp="$(mktemp -d)" \
+    && cp /usr/share/glib-2.0/schemas/*.xml /usr/share/glib-2.0/schemas/50_deskos.gschema.override "$tmp"/ \
+    && glib-compile-schemas --strict --dry-run "$tmp" \
+    && rm -rf "$tmp" \
+    && glib-compile-schemas /usr/share/glib-2.0/schemas \
+    && dconf update \
     && 'update-ca-trust' \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
     && systemctl set-default 'graphical.target'
+
+# Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default
+RUN set -eu; \
+    for f in '/usr/share/plymouth/themes/spinner'/*.png; do \
+        [ -f "$f" ] || continue; \
+        name="$(basename "$f")"; \
+        [ "$name" != 'watermark.png' ] || continue; \
+        [ ! -e '/usr/share/plymouth/themes/deskos'/"$name" ] || { echo "$name already exists in /usr/share/plymouth/themes/deskos" >&2; exit 1; }; \
+        install -m 0644 "$f" '/usr/share/plymouth/themes/deskos'/"$name"; \
+    done; \
+    [ -e '/usr/share/plymouth/themes/deskos'/throbber-0001.png ] || { echo 'no two-step throbber frames in /usr/share/plymouth/themes/spinner' >&2; exit 1; }; \
+    plymouth-set-default-theme 'deskos'; \
+    [ "$(plymouth-set-default-theme)" = 'deskos' ] || { echo 'Plymouth default theme is not deskos' >&2; exit 1; }
 
 # Initramfs: rebuilt for every kernel in the image, with plymouth
 RUN set -eu; found=0; \
@@ -206,6 +318,10 @@ RUN set -eu; found=0; \
         env DRACUT_NO_XATTR=1 dracut --force --no-hostonly $mods "${kdir}initramfs.img" "$kver"; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'ostree-prepare-root' || { echo "ostree-prepare-root missing from initramfs of $kver" >&2; exit 1; }; \
         lsinitrd "${kdir}initramfs.img" | grep -q 'plymouthd' || { echo "plymouth missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/deskos.plymouth' || { echo "/usr/share/plymouth/themes/deskos/deskos.plymouth missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/watermark.png' || { echo "/usr/share/plymouth/themes/deskos/watermark.png missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd "${kdir}initramfs.img" | grep -qF 'usr/share/plymouth/themes/deskos/throbber-0001.png' || { echo "/usr/share/plymouth/themes/deskos/throbber-0001.png missing from initramfs of $kver" >&2; exit 1; }; \
+        lsinitrd -f etc/plymouth/plymouthd.conf "${kdir}initramfs.img" | grep -qx 'Theme=deskos' || { echo "initramfs of $kver does not select Plymouth theme deskos" >&2; exit 1; }; \
         found=$((found + 1)); \
     done; \
     [ "$found" -gt 0 ] || { echo 'no kernel found under /usr/lib/modules' >&2; exit 1; }

@@ -65,6 +65,9 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	for _, dir := range pl.RepoConfigDirs {
 		p.Artifact.RepoConfigDirs = append(p.Artifact.RepoConfigDirs, dir)
 	}
+	for _, dir := range pl.ImageOwnedDirs {
+		p.Artifact.ImageOwnedDirs = append(p.Artifact.ImageOwnedDirs, dir)
+	}
 	for _, name := range pl.RemovePackages {
 		p.Artifact.RemovePackages = append(p.Artifact.RemovePackages, plan.PackageRemove{
 			Name: name, Provenance: platformProv,

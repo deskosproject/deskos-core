@@ -105,6 +105,17 @@
     ],
     "packages": [
       {
+        "name": "bash-completion",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "dejavu-sans-fonts",
         "provenance": [
           {
@@ -138,6 +149,17 @@
         ]
       },
       {
+        "name": "firefox",
+        "provenance": [
+          {
+            "resource": "PackageSet/firefox",
+            "profile": "firefox",
+            "layer": "foundation",
+            "source": "resources/software/firefox.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "flatpak",
         "provenance": [
           {
@@ -152,19 +174,6 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
-          },
-          {
-            "resource": "FlatpakRemote/flathub",
-            "via": "FlatpakSet/firefox",
-            "profile": "firefox",
-            "layer": "foundation",
-            "source": "resources/software/flathub.yaml:1"
-          },
-          {
-            "resource": "FlatpakSet/firefox",
-            "profile": "firefox",
-            "layer": "foundation",
-            "source": "resources/software/firefox.yaml:1"
           },
           {
             "resource": "PackageSet/rhel-family",
@@ -379,6 +388,39 @@
         ]
       },
       {
+        "name": "rsync",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "tmux",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "tree",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
         "name": "urw-base35-fonts",
         "provenance": [
           {
@@ -386,6 +428,39 @@
             "profile": "deskos-gnome",
             "layer": "foundation",
             "source": "resources/software/deskos-fonts.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "vim-enhanced",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "wget",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
+          }
+        ]
+      },
+      {
+        "name": "zsh",
+        "provenance": [
+          {
+            "resource": "PackageSet/deskos-tools",
+            "profile": "deskos-gnome",
+            "layer": "foundation",
+            "source": "resources/software/deskos-tools.yaml:1"
           }
         ]
       }
@@ -2117,6 +2192,20 @@
           ]
         },
         {
+          "key": "/org/gnome/desktop/interface/enable-hot-corners",
+          "type": "b",
+          "value": "true",
+          "setting": "shell.hotCorners",
+          "provenance": [
+            {
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-gnome",
+              "layer": "foundation",
+              "source": "resources/desktop/deskos-core.yaml:1"
+            }
+          ]
+        },
+        {
           "key": "/org/gnome/desktop/interface/font-name",
           "type": "s",
           "value": "'Adwaita Sans 11'",
@@ -2207,10 +2296,10 @@
           "setting": "windows.buttons",
           "provenance": [
             {
-              "resource": "GnomeProfile/deskos-look",
-              "profile": "deskos-look",
+              "resource": "GnomeProfile/deskos-core",
+              "profile": "deskos-gnome",
               "layer": "foundation",
-              "source": "resources/desktop/deskos-look.yaml:1"
+              "source": "resources/desktop/deskos-core.yaml:1"
             }
           ]
         },
@@ -2506,12 +2595,6 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
-          },
-          {
-            "resource": "FlatpakSet/firefox",
-            "profile": "firefox",
-            "layer": "foundation",
-            "source": "resources/software/firefox.yaml:1"
           }
         ]
       },
@@ -2563,6 +2646,28 @@
       },
       {
         "unit": "bootc-fetch-apply-updates.timer",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.service",
+        "provenance": [
+          {
+            "resource": "UpdatePolicy/deskos-core",
+            "profile": "deskos-core",
+            "layer": "foundation",
+            "source": "resources/system/deskos-core-updates.yaml:1"
+          }
+        ]
+      },
+      {
+        "unit": "rpm-ostreed-automatic.timer",
         "provenance": [
           {
             "resource": "UpdatePolicy/deskos-core",
@@ -2638,13 +2743,6 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/flathub.yaml:1"
-          },
-          {
-            "resource": "FlatpakRemote/flathub",
-            "via": "FlatpakSet/firefox",
-            "profile": "firefox",
-            "layer": "foundation",
-            "source": "resources/software/flathub.yaml:1"
           }
         ]
       }
@@ -2661,20 +2759,6 @@
             "profile": "deskos-reference-apps",
             "layer": "foundation",
             "source": "resources/software/deskos-reference-apps.yaml:1"
-          }
-        ]
-      },
-      {
-        "id": "org.mozilla.firefox",
-        "branch": "stable",
-        "remote": "flathub",
-        "collectionID": "org.flathub.Stable",
-        "provenance": [
-          {
-            "resource": "FlatpakSet/firefox",
-            "profile": "firefox",
-            "layer": "foundation",
-            "source": "resources/software/firefox.yaml:1"
           }
         ]
       }

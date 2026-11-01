@@ -899,6 +899,21 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 	}
 	w("\nFROM %s\n", a.BaseImage.Ref)
 
+	// An OSTree base can still symlink /opt or /usr/local into /var. Take the
+	// directory back before anything installs into it, or the content is dropped
+	// with /var: the step must stay first, before repositories and packages.
+	if len(a.ImageOwnedDirs) > 0 {
+		w("\n# Directories whose content is image content, not /var state\n")
+		w("RUN set -eu; \\\n    for d in")
+		for _, dir := range a.ImageOwnedDirs {
+			w(" %s", shq(dir))
+		}
+		w("; do \\\n")
+		w("        if [ -L \"$d\" ]; then rm \"$d\"; fi; \\\n")
+		w("        if [ -e \"$d\" ] && [ ! -d \"$d\" ]; then echo \"$d is not a directory\" >&2; exit 1; fi; \\\n")
+		w("        mkdir -p \"$d\"; \\\n    done\n")
+	}
+
 	// Repositories are on disk before the first package transaction: a
 	// transaction that installs a member of a group, or a package, from a
 	// declared repository needs the repository file to exist by then.

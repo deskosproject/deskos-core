@@ -45,10 +45,20 @@ and stopped with `NoReposError: There are no enabled repositories` (run
 so the image carries the same files in both places and dnf5 keeps reading the new
 one.
 
+Silverblue keeps OSTree's strict layout: `/opt` is a symlink to `var/opt` and
+`/usr/local` to `../var/usrlocal`, so a package or artifact that installs there
+writes to `/var`, which an image does not ship. The platform declares
+`imageOwnedDirs: [/opt, /usr/local]` and the build replaces both symlinks with real
+directories before the first package transaction. Content an installed machine had
+in `/var/opt` or `/var/usrlocal` stays there and is not moved
+([migrations](migrations.md)).
+
 ## What DeskOS adds
 
 The GNOME base stays distribution packages; only an organization's extra
-applications go to Flatpak (ADR 0005). The platform installs
+applications go to Flatpak (ADR 0005). Fedora's own `firefox` RPM is the browser,
+not a Flatpak: it is already in the base, and naming it in `PackageSet/firefox`
+keeps the same browser on every flavor. The platform installs
 `workstation-product-environment` to complete the desktop, removes GNOME Software
 so Bazaar is the application store (ADR 0022), and declares the terminal, the
 extensions and the boot arguments as facts, the same way the EL10 platforms do.
@@ -56,8 +66,11 @@ extensions and the boot arguments as facts, the same way the EL10 platforms do.
 The workstation carries `deskos-look`, so Fedora boots with the DeskOS splash:
 Plymouth's stock spinner frames from the vendor package, made the default theme
 and copied into the initramfs, which the build asserts. Fedora's own wallpaper is
-replaced by the DeskOS one, exactly as on CentOS Stream 10; a workstation that
-wants only the boot behaviour and not the look takes `deskos-boot`.
+replaced by the DeskOS one, the same as on every flavor
+([desktop parity](desktop-parity.md)); a workstation that wants only the boot
+behaviour and not the look takes `deskos-boot`. The platform also names Adwaita
+Sans and Adwaita Mono, the families its base already ships, so the desktop is drawn
+in the same families as CentOS Stream 10.
 
 ## Status
 

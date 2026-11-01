@@ -80,6 +80,12 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" }
         },
+        "imageOwnedDirs": {
+          "description": "Absolute directories whose content is image content, not /var state. The build replaces a base image's symlink with a real directory before the first package or artifact installs, so the content ships with the image instead of landing in /var.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" }
+        },
         "removePackages": {
           "description": "RPM packages the platform image must not carry. The build removes them after the package transactions and fails if one remains. A package the composition explicitly installs is a conflict (ADR 0022).",
           "type": "array",

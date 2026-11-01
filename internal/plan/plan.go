@@ -75,6 +75,11 @@ type Artifact struct {
 	// (Changes/RelocateRpmRepoConfigsToUsr), and bootc-image-builder's installer
 	// build fails with "no enabled repositories" without this.
 	RepoConfigDirs []string `json:"repoConfigDirs,omitempty"`
+	// ImageOwnedDirs are absolute directories whose content ships with the image.
+	// The build replaces a base image's symlink with a real directory before the
+	// first package or artifact installs, or the content lands in /var and the
+	// image does not carry it.
+	ImageOwnedDirs []string `json:"imageOwnedDirs,omitempty"`
 	// RemovePackages are negative package operations: the build removes them
 	// after installing groups and packages, then proves they are absent
 	// (docs/adr/0022).

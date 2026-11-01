@@ -5,6 +5,14 @@
 
 FROM quay.io/deskos/fedora-silverblue:45@sha256:d81de11d75fed47e420e08c04be879f65544bce7a83178a8ef8422f29df3d613
 
+# Directories whose content is image content, not /var state
+RUN set -eu; \
+    for d in '/opt' '/usr/local'; do \
+        if [ -L "$d" ]; then rm "$d"; fi; \
+        if [ -e "$d" ] && [ ! -d "$d" ]; then echo "$d is not a directory" >&2; exit 1; fi; \
+        mkdir -p "$d"; \
+    done
+
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
@@ -26,9 +34,11 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
     --mount=type=tmpfs,target=/var/log/rhsm \
     if [ -e /etc/yum.repos.d/redhat.repo ]; then echo 'refusing to run dnf: /etc/yum.repos.d/redhat.repo already exists' >&2; exit 1; fi \
     && dnf -y install \
+        'bash-completion' \
         'dejavu-sans-fonts' \
         'dejavu-sans-mono-fonts' \
         'dejavu-serif-fonts' \
+        'firefox' \
         'flatpak' \
         'google-carlito-fonts' \
         'google-crosextra-caladea-fonts' \
@@ -48,7 +58,13 @@ RUN --mount=type=tmpfs,target=/var/lib/rhsm \
         'plymouth-theme-spinner' \
         'redhat-display-fonts' \
         'redhat-text-fonts' \
+        'rsync' \
+        'tmux' \
+        'tree' \
         'urw-base35-fonts' \
+        'vim-enhanced' \
+        'wget' \
+        'zsh' \
     && dnf clean all \
     && rm -f /etc/yum.repos.d/redhat.repo
 
@@ -200,7 +216,7 @@ RUN tmp="$(mktemp -d)" \
     && glib-compile-schemas /usr/share/glib-2.0/schemas \
     && dconf update \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
     && systemctl set-default 'graphical.target'
 
 # Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default
