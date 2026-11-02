@@ -1419,7 +1419,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"f {E2E_SETTINGS_PATH} 0755 root root - {tmpfiles_arg(e2e_settings())}",
             f"f {E2E_CLOSE_PATH} 0755 root root - {tmpfiles_arg(e2e_close())}",
             *([f"f {LOCK_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_lock())}"]
-              if not gdm_user else []),
+              if not gdm_user and join is None else []),
             f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
@@ -1506,7 +1506,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart=/bin/bash {JOIN_SCRIPT_PATH}\n"
                 "StandardOutput=journal+console\nStandardError=journal+console\n"
             )
-    if mode == "session" and not gdm_user:
+    if mode == "session" and not gdm_user and join is None:
         # The lock probe needs a password the host can type. The test user comes
         # from sysusers, which does not set one; a oneshot before GDM does.
         creds["systemd.extra-unit.deskos-qa-password.service"] = (
@@ -1548,7 +1548,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     wants = "deskos-qa-report.service"
     if join:
         wants += " deskos-qa-join.service"
-    if mode == "session" and not gdm_user:
+    if mode == "session" and not gdm_user and join is None:
         wants += " deskos-qa-password.service"
     creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
@@ -2420,7 +2420,7 @@ def main():
                                            font_families=[f["family"] for f in plan_font_families(plan)],
                                            network_profiles=plan_network_profiles(plan))),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
-        keys_on_marker=[("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user else [],
+        keys_on_marker=[("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user and join is None else [],
     )
     try:
         summary = bootcheck.run(run_args)

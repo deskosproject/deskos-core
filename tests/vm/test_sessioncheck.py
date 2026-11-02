@@ -1215,6 +1215,14 @@ class JoinTest(unittest.TestCase):
         self.assertIn("session_results=missing", sc.WATCHDOG_SCRIPT)
         self.assertIn("join.status", sc.WATCHDOG_SCRIPT)
 
+    def test_a_join_boot_carries_no_lock_probe(self):
+        # A joined session is about the realm, not the lock screen, and the
+        # probe would run before the directory user can log in.
+        c = sc.credentials("session", join=JOIN)
+        self.assertNotIn(sc.LOCK_PROBE_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
+        self.assertNotIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)
         unit = c["systemd.extra-unit.deskos-qa-join.service"]
