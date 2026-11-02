@@ -88,6 +88,9 @@ GOOD = {
     "e2e_launch_entry": "/usr/share/applications/org.gnome.Calculator.desktop",
     "e2e_launch_ok": "yes", "e2e_launch_app": "gnome-calculator",
     "e2e_launch_frames": "Calculator", "e2e_launch_closed": "yes",
+    "e2e_settings_ok": "yes", "e2e_settings_app": "org.gnome.Settings",
+    "e2e_settings_panel": "About", "e2e_settings_marker": "GNOME Version",
+    "e2e_close_ok": "yes", "e2e_close_app": "org.gnome.Nautilus",
     "deskos_report_exit": "0", "deskos_report_workstation": "ws",
     "deskos_check_exit": "0",
     "system_failed_units": "", "user_failed_units": "",
@@ -381,6 +384,16 @@ class ParseEvaluateTest(unittest.TestCase):
                  if c["check"] == "an application opens from its desktop entry")
         self.assertFalse(c["pass"])
         self.assertIn("no-desktop-entry", c["detail"])
+
+    def test_a_settings_panel_that_is_not_reached_fails(self):
+        bad = dict(GOOD, e2e_settings_ok="no", e2e_settings_reason="no-marker")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"Settings opens and exposes a panel"})
+
+    def test_a_window_that_does_not_close_fails(self):
+        bad = dict(GOOD, e2e_close_ok="no", e2e_close_reason="no-close-button")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"a file manager window closes through the tree"})
 
     def test_a_session_that_did_not_report_the_launch_fails(self):
         values = {k: v for k, v in GOOD.items() if not k.startswith("e2e_launch_")}

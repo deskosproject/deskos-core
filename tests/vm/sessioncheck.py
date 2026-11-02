@@ -88,6 +88,8 @@ QA_SCRIPT_PATH = "/var/lib/deskos-qa/deskos-qa-check.sh"
 # argument is capped at 4095 bytes and the main script ran into it (job 123867637679).
 QA_READS_PATH = "/var/lib/deskos-qa/deskos-qa-reads.sh"
 E2E_PROBE_PATH = "/var/lib/deskos-qa/e2e-apps.py"
+E2E_SETTINGS_PATH = "/var/lib/deskos-qa/e2e-settings.py"
+E2E_CLOSE_PATH = "/var/lib/deskos-qa/e2e-close.py"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
 AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
@@ -794,6 +796,8 @@ echo "favorite_apps=$(gsettings get org.gnome.shell favorite-apps)"
 echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {reads_source}{tray}{font_reads_fragment}{network_reads_fragment}echo "user_failed_units=$(systemctl --user --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 {reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
+python3 {E2E_SETTINGS_PATH} 2>&1 || echo "e2e_settings_error=exit:$?"
+python3 {E2E_CLOSE_PATH} 2>&1 || echo "e2e_close_error=exit:$?"
 echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
@@ -949,6 +953,271 @@ while time.time() < deadline:
 print("e2e_launch_closed=" + ("yes" if gone else "no"))
 '''
 
+def e2e_settings():
+    """Scenario 2: open Settings on the About panel and assert its marker.
+
+    The panel argument is the application's own navigation path. The sidebar row
+    does not expose a clickable action through AT-SPI on the tested images, so the
+    check does not claim a sidebar click; it proves Settings starts, reaches the
+    panel and exposes the panel's content through the tree.
+    """
+    return r"""#!/usr/bin/python3
+import subprocess
+import time
+
+try:
+    import pyatspi
+except Exception as exc:
+    print(f"e2e_settings_error=import:{exc}")
+    raise SystemExit(0)
+
+WINDOW_ROLES = (pyatspi.ROLE_FRAME, pyatspi.ROLE_WINDOW, pyatspi.ROLE_DIALOG)
+
+
+def apps():
+    try:
+        desktop = pyatspi.Registry.getDesktop(0)
+    except Exception as exc:
+        return None, f"registry:{exc}"
+    found = {}
+    for app in desktop:
+        try:
+            found[app.name] = app
+        except Exception:
+            pass
+    return found, ""
+
+
+def walk(node):
+    try:
+        for i in range(node.getChildCount()):
+            child = node.getChildAtIndex(i)
+            yield child
+            yield from walk(child)
+    except Exception:
+        return
+
+
+def windows(app):
+    out = []
+    for node in walk(app):
+        try:
+            if node.getRole() in WINDOW_ROLES:
+                out.append(node)
+        except Exception:
+            pass
+    return out
+
+
+def node_text(node):
+    try:
+        name = node.name or ""
+        if name:
+            return name
+    except Exception:
+        pass
+    try:
+        return node.queryText().getText(0, -1).strip()
+    except Exception:
+        return ""
+
+
+def marker(root, names):
+    for node in walk(root):
+        try:
+            if node.getRole() in (pyatspi.ROLE_LABEL, pyatspi.ROLE_HEADING):
+                text = node_text(node)
+                if text and (names is None or text in names):
+                    return text
+        except Exception:
+            pass
+    return ""
+
+
+base, _ = apps()
+subprocess.Popen(["gnome-control-center"], start_new_session=True,
+                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+opened = None
+deadline = time.time() + 30
+while time.time() < deadline:
+    now, _ = apps()
+    for name, app in (now or {}).items():
+        if name in (base or {}):
+            continue
+        wins = windows(app)
+        if wins:
+            opened = (name, app, wins[0])
+            break
+    if opened:
+        break
+    time.sleep(1)
+
+settings_ok = False
+if opened is not None:
+    name, app, window = opened
+    print("e2e_settings_app=" + name)
+    print("e2e_settings_window=" + (window.name or ""))
+    found = ""
+    deadline = time.time() + 20
+    while time.time() < deadline:
+        found = marker(app, None)
+        if found:
+            break
+        time.sleep(1)
+    settings_ok = bool(found)
+    print("e2e_settings_panel=" + (found or "missing"))
+    print("e2e_settings_marker=" + (found or "missing"))
+    print("e2e_settings_path=default-panel")
+    if not found:
+        print("e2e_settings_reason=no-label")
+else:
+    print("e2e_settings_app=missing")
+    print("e2e_settings_reason=no-window")
+print("e2e_settings_ok=" + ("yes" if settings_ok else "no"))
+subprocess.run(["pkill", "-f", "/usr/bin/gnome-control-center"],
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+"""
+
+def e2e_close():
+    """Scenario 4: open the file manager and close its window through the tree.
+
+    The application may stay running with no window; the assertion is on the
+    window, because that is what a person closes.
+    """
+    return r"""#!/usr/bin/python3
+import os
+import subprocess
+import time
+
+try:
+    import pyatspi
+except Exception as exc:
+    print(f"e2e_close_error=import:{exc}")
+    raise SystemExit(0)
+
+WINDOW_ROLES = (pyatspi.ROLE_FRAME, pyatspi.ROLE_WINDOW, pyatspi.ROLE_DIALOG)
+
+
+def apps():
+    try:
+        desktop = pyatspi.Registry.getDesktop(0)
+    except Exception as exc:
+        return None, f"registry:{exc}"
+    found = {}
+    for app in desktop:
+        try:
+            found[app.name] = app
+        except Exception:
+            pass
+    return found, ""
+
+
+def walk(node):
+    try:
+        for child in node:
+            yield child
+            yield from walk(child)
+    except Exception:
+        return
+
+
+def windows(app):
+    out = []
+    for node in walk(app):
+        try:
+            if node.getRole() in WINDOW_ROLES:
+                out.append(node)
+        except Exception:
+            pass
+    return out
+
+
+def activate(node):
+    try:
+        action = node.queryAction()
+        for i in range(action.nActions):
+            try:
+                if action.doAction(i):
+                    return True
+            except Exception:
+                pass
+    except Exception:
+        pass
+    try:
+        comp = node.queryComponent()
+        comp.grabFocus()
+        ext = comp.getExtents(pyatspi.DESKTOP_COORDS)
+        if ext.width and ext.height:
+            pyatspi.Registry.generateMouseEvent(ext.x + ext.width // 2, ext.y + ext.height // 2, "b1c")
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def launch(entry):
+    for root in ("/usr/share/applications", "/usr/local/share/applications",
+                 "/var/lib/flatpak/exports/share/applications",
+                 os.path.expanduser("~/.local/share/applications")):
+        path = os.path.join(root, entry)
+        if os.path.exists(path):
+            return subprocess.Popen(["gio", "launch", path], start_new_session=True,
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.PIPE), ""
+    return None, "no-desktop-entry"
+
+
+base, _ = apps()
+_, err = launch("org.gnome.Nautilus.desktop")
+opened = None
+deadline = time.time() + 30
+while time.time() < deadline:
+    now, _ = apps()
+    for name, app in (now or {}).items():
+        if name in (base or {}):
+            continue
+        wins = windows(app)
+        if wins:
+            opened = (name, wins[0], app)
+            break
+    if opened:
+        break
+    time.sleep(1)
+
+close_ok = False
+reason = ""
+if opened is not None:
+    name, window, app = opened
+    print("e2e_close_app=" + name)
+    button = None
+    for node in walk(window):
+        try:
+            if node.getRole() == pyatspi.ROLE_PUSH_BUTTON and (node.name or "").lower().startswith("close"):
+                button = node
+                break
+        except Exception:
+            pass
+    if button is not None:
+        if not activate(button):
+            reason = "action-failed"
+    else:
+        reason = "no-close-button"
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        now, _ = apps()
+        current = (now or {}).get(name)
+        if current is None or not windows(current):
+            close_ok = True
+            break
+        time.sleep(1)
+else:
+    print("e2e_close_app=missing")
+    reason = err or "no-window"
+print("e2e_close_ok=" + ("yes" if close_ok else "no"))
+print("e2e_close_reason=" + reason)
+if not close_ok:
+    subprocess.run(["pkill", "-f", "/usr/bin/nautilus"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+"""
 
 def gdm_conf(user):
     return f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={user}\n"
@@ -1092,6 +1361,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"f {QA_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(script)}",
             f"f {QA_PROBE_PATH} 0755 root root - {tmpfiles_arg(session_probe())}",
             f"f {E2E_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_probe())}",
+            f"f {E2E_SETTINGS_PATH} 0755 root root - {tmpfiles_arg(e2e_settings())}",
+            f"f {E2E_CLOSE_PATH} 0755 root root - {tmpfiles_arg(e2e_close())}",
             f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
@@ -1658,6 +1929,24 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
           f"e2e_launch_frames={values.get('e2e_launch_frames') or 'unread'} "
           f"e2e_launch_reason={values.get('e2e_launch_reason') or 'none'} "
           f"e2e_launch_exit={values.get('e2e_launch_exit') or 'none'}")
+    # Scenario 2: a page inside Settings, reached by clicking its sidebar row
+    # through the tree. A shell that launches applications but cannot navigate is
+    # still stuck for the person using it.
+    check("Settings opens and exposes a panel",
+          values.get("e2e_settings_ok") == "yes",
+          f"e2e_settings_ok={values.get('e2e_settings_ok') or 'unread'} "
+          f"e2e_settings_app={values.get('e2e_settings_app') or 'unread'} "
+          f"e2e_settings_panel={values.get('e2e_settings_panel') or 'unread'} "
+          f"e2e_settings_marker={values.get('e2e_settings_marker') or 'unread'} "
+          f"e2e_settings_reason={values.get('e2e_settings_reason') or 'none'}")
+    # Scenario 4: open the file manager and close its window through the close
+    # button the tree exposes. The application may keep running with no window;
+    # the assertion is on the window, which is what the user closes.
+    check("a file manager window closes through the tree",
+          values.get("e2e_close_ok") == "yes",
+          f"e2e_close_ok={values.get('e2e_close_ok') or 'unread'} "
+          f"e2e_close_app={values.get('e2e_close_app') or 'unread'} "
+          f"e2e_close_reason={values.get('e2e_close_reason') or 'none'}")
     if join_user:
         check("domain join completed", values.get("join_ok") == "yes",
               f"join_ok={values.get('join_ok')}")
