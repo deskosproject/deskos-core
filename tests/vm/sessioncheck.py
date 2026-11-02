@@ -95,6 +95,8 @@ E2E_PROBE_PATH = "/var/lib/deskos-qa/e2e-apps.py"
 E2E_SETTINGS_PATH = "/var/lib/deskos-qa/e2e-settings.py"
 E2E_CLOSE_PATH = "/var/lib/deskos-qa/e2e-close.py"
 LOCK_PROBE_PATH = "/var/lib/deskos-qa/e2e-lock.py"
+LOCK_TRIGGER_PATH = "/var/tmp/deskos-qa/locked"
+LOCK_SIGNAL_PATH = "/var/lib/deskos-qa/lock-signal.sh"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
 AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
@@ -1260,7 +1262,9 @@ time.sleep(2)
 locked = "true" in call("GetActive")
 print("e2e_lock_locked=" + ("yes" if locked else "no"), flush=True)
 if locked:
-    print("DESKOS_QA_LOCKED", flush=True)
+    # The session cannot write the serial console, so a root unit watches this
+    # trigger and prints the marker the host reads.
+    open("/var/tmp/deskos-qa/locked", "w").close()
     deadline = time.time() + 30
     while time.time() < deadline:
         if "false" in call("GetActive"):
@@ -1271,6 +1275,22 @@ if locked:
         print("e2e_lock_ok=no", flush=True)
 else:
     print("e2e_lock_ok=no", flush=True)
+"""
+
+
+def lock_signal():
+    """The root side of scenario 3: announce the lock on the serial port.
+
+    The session runs as the test user and cannot write /dev/ttyS0. This unit
+    waits for the probe's trigger, then prints the marker the host watches for.
+    """
+    return f"""#!/bin/bash
+for i in $(seq 1 900); do
+  test -e {LOCK_TRIGGER_PATH} && break
+  sleep 1
+done
+stty -F /dev/ttyS0 115200 2>/dev/null
+echo DESKOS_QA_LOCKED > /dev/ttyS0 2>&1
 """
 
 
@@ -1419,7 +1439,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"f {E2E_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_probe())}",
             f"f {E2E_SETTINGS_PATH} 0755 root root - {tmpfiles_arg(e2e_settings())}",
             f"f {E2E_CLOSE_PATH} 0755 root root - {tmpfiles_arg(e2e_close())}",
-            *([f"f {LOCK_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_lock())}"]
+            *([f"f {LOCK_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_lock())}",
+                f"f {LOCK_SIGNAL_PATH} 0755 root root - {tmpfiles_arg(lock_signal())}"]
               if not gdm_user and join is None else []),
             f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
@@ -1510,6 +1531,13 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     if mode == "session" and not gdm_user and join is None:
         # The lock probe needs a password the host can type. The test user comes
         # from sysusers, which does not set one; a oneshot before GDM does.
+        creds["systemd.extra-unit.deskos-qa-lock-signal.service"] = (
+            "[Unit]\nDescription=Print the DeskOS QA lock marker on the serial port\n"
+            "After=graphical.target\n\n"
+            "[Service]\nType=oneshot\nTimeoutStartSec=960\n"
+            "StandardOutput=journal+console\nStandardError=journal+console\n"
+            f"ExecStart=/bin/bash {LOCK_SIGNAL_PATH}\n"
+        )
         creds["systemd.extra-unit.deskos-qa-password.service"] = (
             "[Unit]\nDescription=Set the DeskOS QA password for the lock probe\n"
             "After=systemd-sysusers.service\nBefore=gdm.service\n\n"
@@ -1550,7 +1578,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     if join:
         wants += " deskos-qa-join.service"
     if mode == "session" and not gdm_user and join is None:
-        wants += " deskos-qa-password.service"
+        wants += " deskos-qa-password.service deskos-qa-lock-signal.service"
     creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     return creds

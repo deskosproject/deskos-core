@@ -155,9 +155,16 @@ class TmpfilesTest(unittest.TestCase):
         script = sc.e2e_lock()
         self.assertIn('call("Lock")', script)
         self.assertIn('call("GetActive")', script)
-        self.assertIn("DESKOS_QA_LOCKED", script)
+        # The session user cannot write the console; the trigger is its only
+        # output to the root side.
+        self.assertIn(sc.LOCK_TRIGGER_PATH, script)
         self.assertIn("e2e_lock_ok=yes", script)
         self.assertIn("e2e_lock_ok=no", script)
+
+    def test_the_lock_signal_prints_the_marker_on_the_serial_port(self):
+        script = sc.lock_signal()
+        self.assertIn(sc.LOCK_TRIGGER_PATH, script)
+        self.assertIn("echo DESKOS_QA_LOCKED > /dev/ttyS0", script)
 
     def test_session_credentials_set_the_lock_password_before_gdm(self):
         # The host types this password through the hypervisor; the test user
@@ -167,6 +174,10 @@ class TmpfilesTest(unittest.TestCase):
         self.assertIn("Before=gdm.service", unit)
         self.assertIn(f"echo deskos-qa:{sc.LOCK_PASSWORD} | /usr/sbin/chpasswd", unit)
         self.assertIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        signal = c["systemd.extra-unit.deskos-qa-lock-signal.service"]
+        self.assertIn(f"ExecStart=/bin/bash {sc.LOCK_SIGNAL_PATH}", signal)
+        self.assertIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_a_directory_login_has_no_lock_password(self):
         # The lock probe is skipped for directory users, so their image carries
@@ -175,6 +186,8 @@ class TmpfilesTest(unittest.TestCase):
         self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
         self.assertNotIn(sc.LOCK_PROBE_PATH, c["tmpfiles.extra"])
         self.assertNotIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertNotIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_journal_credentials_add_no_lock_password(self):
         c = sc.credentials("journal")
@@ -1222,6 +1235,8 @@ class JoinTest(unittest.TestCase):
         self.assertNotIn(sc.LOCK_PROBE_PATH, c["tmpfiles.extra"])
         self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
         self.assertNotIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertNotIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)
