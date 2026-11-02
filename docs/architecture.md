@@ -10,7 +10,7 @@ DeskOS **compiles artifact state**. It does not reconcile running machines.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers (workstation, role, organization and foundation, where the higher layer wins rather than file order), then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, published at quay.io/deskos/deskos-core-centos-stream-10; RHEL 10, built privately with a subscription and not published. bootc-image-builder makes QCOW2 disks and installer ISOs from those images" src="images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers (workstation, role, organization and foundation, where the higher layer wins rather than file order), then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, Fedora 45 and AlmaLinux 10, which are published, and RHEL 10, built privately with a subscription and not published. bootc-image-builder writes a QCOW2 disk from any of them; only CentOS Stream 10 also has an installer ISO" src="images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 

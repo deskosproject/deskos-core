@@ -42,7 +42,7 @@ resulting plan records where every value came from.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="Resource roots pass through validation, composition and a typed plan, become a build context, and build into one bootc image per platform" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="Resource roots pass through validation, composition and a typed plan, become a build context, and build into one bootc image per platform: CentOS Stream 10, Fedora 45 and AlmaLinux 10 are published, RHEL 10 is built privately, and only CentOS Stream 10 also has an installer ISO" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
