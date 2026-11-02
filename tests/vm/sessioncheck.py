@@ -1001,14 +1001,7 @@ def windows(app):
     return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
 
 
-def action_count(node):
-    try:
-        return node.queryAction().nActions
-    except Exception:
-        return 0
-
-
-def run_action(node):
+def activate(node):
     try:
         action = node.queryAction()
         for i in range(action.nActions):
@@ -1017,6 +1010,15 @@ def run_action(node):
                     return True
             except Exception:
                 pass
+    except Exception:
+        pass
+    try:
+        comp = node.queryComponent()
+        comp.grabFocus()
+        ext = comp.getExtents(pyatspi.DESKTOP_COORDS)
+        if ext.width and ext.height:
+            pyatspi.Registry.generateMouseEvent(ext.x + ext.width // 2, ext.y + ext.height // 2, "b1c")
+            return True
     except Exception:
         pass
     return False
@@ -1065,17 +1067,7 @@ if opened is not None:
     name, app = opened
     print("e2e_settings_app=" + name)
     row = named(app, "About", (pyatspi.ROLE_LIST_ITEM, pyatspi.ROLE_TABLE_ROW, pyatspi.ROLE_PAGE_TAB))
-    if row is None:
-        for node in walk(app):
-            try:
-                if (node.name or "") == "About" and action_count(node) > 0:
-                    row = node
-                    break
-            except Exception:
-                pass
-    acted = False
-    if row is not None:
-        acted = run_action(row)
+    acted = bool(row is not None and activate(row))
     marker = None
     deadline = time.time() + 20
     while time.time() < deadline:
@@ -1145,14 +1137,7 @@ def windows(app):
     return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
 
 
-def action_count(node):
-    try:
-        return node.queryAction().nActions
-    except Exception:
-        return 0
-
-
-def run_action(node):
+def activate(node):
     try:
         action = node.queryAction()
         for i in range(action.nActions):
@@ -1161,6 +1146,15 @@ def run_action(node):
                     return True
             except Exception:
                 pass
+    except Exception:
+        pass
+    try:
+        comp = node.queryComponent()
+        comp.grabFocus()
+        ext = comp.getExtents(pyatspi.DESKTOP_COORDS)
+        if ext.width and ext.height:
+            pyatspi.Registry.generateMouseEvent(ext.x + ext.width // 2, ext.y + ext.height // 2, "b1c")
+            return True
     except Exception:
         pass
     return False
@@ -1208,7 +1202,7 @@ if opened is not None:
         except Exception:
             pass
     if button is not None:
-        if not run_action(button):
+        if not activate(button):
             reason = "action-failed"
     else:
         reason = "no-close-button"
