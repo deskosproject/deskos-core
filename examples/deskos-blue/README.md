@@ -16,6 +16,7 @@ deskosctl render ./examples/deskos-blue \
 |---|---|
 | `fedora-45-flatpak` (Platform) | the shipped Fedora 45 pin, with the GNOME applications removed from the RPM set |
 | `deskos-blue` (organization) | the VPN, the Flatpak set and the desktop defaults |
+| `deskos-blue-tools` | `distrobox` from the Fedora archive |
 | `deskos-blue-apps` (FlatpakSet) | the Bluefin-style application set, including Chrome, VSCode, virt-manager, Podman Desktop and Builder |
 | `deskos-blue-desktop` | Firefox, Papers, the developer favorites and blur-my-shell |
 | `deskos-blue-vpn` | Tailscale from its RPM repository, the one system daemon |
@@ -30,8 +31,9 @@ deskosctl render ./examples/deskos-blue \
 - **An extension the shipped catalog does not carry.** `blur-my-shell` is a
   pinned source on the example Platform, enabled by the profile.
 - **A userland development desktop.** Chrome, VSCode, virt-manager, Podman
-  Desktop, Builder and DevToolbox are Flatpaks. Tailscale is the one system
-  daemon; a VPN client has no Flatpak.
+  Desktop, Builder and DevToolbox are Flatpaks. `distrobox` is an RPM on top of
+  the Podman the base carries, and Tailscale is the one system daemon; a VPN
+  client has no Flatpak.
 
 ## What it does not show
 
