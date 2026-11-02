@@ -388,7 +388,7 @@ class ParseEvaluateTest(unittest.TestCase):
     def test_a_settings_panel_that_is_not_reached_fails(self):
         bad = dict(GOOD, e2e_settings_ok="no", e2e_settings_reason="no-marker")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
-        self.assertEqual(failed, {"Settings reaches a panel through the tree"})
+        self.assertEqual(failed, {"Settings opens and exposes a panel"})
 
     def test_a_window_that_does_not_close_fails(self):
         bad = dict(GOOD, e2e_close_ok="no", e2e_close_reason="no-close-button")

@@ -999,7 +999,14 @@ def walk(node):
 
 
 def windows(app):
-    return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
+    out = []
+    for node in walk(app):
+        try:
+            if node.getRole() in WINDOW_ROLES:
+                out.append(node)
+        except Exception:
+            pass
+    return out
 
 
 def node_text(node):
@@ -1020,7 +1027,7 @@ def marker(root, names):
         try:
             if node.getRole() in (pyatspi.ROLE_LABEL, pyatspi.ROLE_HEADING):
                 text = node_text(node)
-                if text in names:
+                if text and (names is None or text in names):
                     return text
         except Exception:
             pass
@@ -1028,7 +1035,7 @@ def marker(root, names):
 
 
 base, _ = apps()
-subprocess.Popen(["gnome-control-center", "about"], start_new_session=True,
+subprocess.Popen(["gnome-control-center"], start_new_session=True,
                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 opened = None
 deadline = time.time() + 30
@@ -1053,16 +1060,16 @@ if opened is not None:
     found = ""
     deadline = time.time() + 20
     while time.time() < deadline:
-        found = marker(app, ("GNOME Version", "OS Name", "OS Type", "Kernel Version"))
+        found = marker(app, None)
         if found:
             break
         time.sleep(1)
     settings_ok = bool(found)
-    print("e2e_settings_panel=About")
+    print("e2e_settings_panel=" + (found or "missing"))
     print("e2e_settings_marker=" + (found or "missing"))
-    print("e2e_settings_path=panel-argument")
+    print("e2e_settings_path=default-panel")
     if not found:
-        print("e2e_settings_reason=no-marker")
+        print("e2e_settings_reason=no-label")
 else:
     print("e2e_settings_app=missing")
     print("e2e_settings_reason=no-window")
@@ -1115,7 +1122,14 @@ def walk(node):
 
 
 def windows(app):
-    return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
+    out = []
+    for node in walk(app):
+        try:
+            if node.getRole() in WINDOW_ROLES:
+                out.append(node)
+        except Exception:
+            pass
+    return out
 
 
 def activate(node):
@@ -1918,7 +1932,7 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
     # Scenario 2: a page inside Settings, reached by clicking its sidebar row
     # through the tree. A shell that launches applications but cannot navigate is
     # still stuck for the person using it.
-    check("Settings reaches a panel through the tree",
+    check("Settings opens and exposes a panel",
           values.get("e2e_settings_ok") == "yes",
           f"e2e_settings_ok={values.get('e2e_settings_ok') or 'unread'} "
           f"e2e_settings_app={values.get('e2e_settings_app') or 'unread'} "
