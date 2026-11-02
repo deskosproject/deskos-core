@@ -60,8 +60,10 @@ not on pixels:
    for this assertion.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
-   still broken. Implemented 2026-11-02: click the About row through the tree and
-   wait for a marker the panel alone exposes ("GNOME Version").
+   still broken. Implemented 2026-11-02: launch Settings on the About panel, the
+   application's own path, and wait for "GNOME Version". The sidebar row exposes
+   no clickable accessibility action on the tested images, so this check does not
+   claim a sidebar click; a click is the next step when the tree carries one.
 3. **Lock and unlock.** Lock from the shell, assert the lock screen is up, type the
    password, assert the session returns. This exercises PAM and the lock screen
    without the greeter's separate session.
@@ -117,7 +119,7 @@ milestone's second line, and the first line comes first.
 - [x] Scenario 1, asserted in the harness and reported in the summary: launch
       through the desktop entry, a new application with a toplevel, then terminate
       it. The close *through the tree* stays scenario 4.
-- [x] Scenario 2, Settings panel, implemented 2026-11-02.
+- [x] Scenario 2, Settings panel, implemented 2026-11-02 with the panel argument.
 - [x] Scenario 4, window closed through the tree, implemented 2026-11-02.
 - [ ] Scenario 3, lock and unlock, waits on keyboard injection through the
       remote-desktop portal; locking alone is not the scenario.

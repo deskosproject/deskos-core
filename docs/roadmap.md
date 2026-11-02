@@ -86,7 +86,7 @@ Design: [session-e2e.md](design/session-e2e.md); prior art and what we take:
 |---|---|
 | Session exposes its applications through AT-SPI | **done** 2026-10-29, run `40795106343` |
 | Launch an application and see its window | **done** 2026-10-29, same run |
-| Reach a Settings page | implemented 2026-11-02, first VM run pending |
+| Reach a Settings page | implemented 2026-11-02 (panel argument), first VM run pending |
 | Lock and unlock | designed; waits on keyboard injection |
 | Open and close a window through the tree | implemented 2026-11-02, first VM run pending |
 | Promotion waits for E2E | not before the steps above exist |
