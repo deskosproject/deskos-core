@@ -1,0 +1,9 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-blue-tools
+spec:
+  # Distrobox is an RPM in the Fedora archive; it drives the Podman the base
+  # already carries.
+  packages:
+    - distrobox
