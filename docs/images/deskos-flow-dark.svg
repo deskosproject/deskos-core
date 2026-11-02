@@ -15,17 +15,17 @@
 <text x="20" y="224" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="normal" fill="#A3A9B4" text-anchor="start">Higher layer wins, not file order</text>
 <rect x="300" y="9" width="360" height="234" rx="10" fill="none" stroke="#6B7380" stroke-width="1.5"/>
 <text x="318" y="38" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="bold" fill="#F5F3EE" text-anchor="start">deskosctl</text>
-<rect x="330" y="78" width="62" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
-<text x="361.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">validate</text>
-<rect x="425" y="78" width="66" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
-<text x="458.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">compose</text>
-<rect x="528" y="78" width="52" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
-<text x="554.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">plan</text>
-<rect x="604" y="78" width="58" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
-<text x="633.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">render</text>
-<path d="M392 94L419 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M425 94L417 89.5L417 98.5Z" fill="#A3A9B4"/>
-<path d="M491 94L522 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M528 94L520 89.5L520 98.5Z" fill="#A3A9B4"/>
-<path d="M580 94L598 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M604 94L596 89.5L596 98.5Z" fill="#A3A9B4"/>
+<rect x="334" y="78" width="62" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
+<text x="365.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">validate</text>
+<rect x="414" y="78" width="66" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
+<text x="447.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">compose</text>
+<rect x="498" y="78" width="52" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
+<text x="524.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">plan</text>
+<rect x="568" y="78" width="58" height="32" rx="8" fill="none" stroke="#6B7380" stroke-width="1.5"/>
+<text x="597.0" y="99" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="middle">render</text>
+<path d="M396 94L408 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M414 94L406 89.5L406 98.5Z" fill="#A3A9B4"/>
+<path d="M480 94L492 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M498 94L490 89.5L490 98.5Z" fill="#A3A9B4"/>
+<path d="M550 94L562 94" fill="none" stroke="#A3A9B4" stroke-width="1.75" stroke-linejoin="round"/><path d="M568 94L560 89.5L560 98.5Z" fill="#A3A9B4"/>
 <text x="520" y="132" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="normal" fill="#A3A9B4" text-anchor="start">typed IR</text>
 <text x="318" y="178" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="start">Deterministic: same inputs,</text>
 <text x="318" y="196" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#F5F3EE" text-anchor="start">byte-identical plan and build context</text>
@@ -42,8 +42,8 @@
 <rect x="5" y="286" width="214" height="250" rx="10" fill="none" stroke="#6B7380" stroke-width="1.5"/>
 <text x="22" y="316" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="16" font-weight="bold" fill="#F5F3EE" text-anchor="start">bootc image</text>
 <text x="22" y="338" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="11" font-weight="normal" fill="#A3A9B4" text-anchor="start">OCI image, one per platform</text>
-<rect x="34" y="390" width="36" height="36" fill="#4E7892"/>
-<path fill="#F5F3EE" d="M22 408H34V432H82V408H94V444H22Z"/>
+<rect x="24" y="396" width="68" height="48" rx="6" fill="none" stroke="#F5F3EE" stroke-width="4"/>
+<rect x="34" y="406" width="48" height="28" fill="#4E7892"/>
 <text x="22" y="518" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="10" font-weight="normal" fill="#A3A9B4" text-anchor="start">published or private</text>
 <rect x="268" y="286" width="335" height="54" rx="10" fill="none" stroke="#6B7380" stroke-width="1.5"/>
 <text x="286" y="308" font-family="Manrope, ui-sans-serif, system-ui, sans-serif" font-size="13" font-weight="bold" fill="#F5F3EE" text-anchor="start">CentOS Stream 10</text>
