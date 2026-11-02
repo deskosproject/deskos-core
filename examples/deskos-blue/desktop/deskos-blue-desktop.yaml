@@ -1,0 +1,21 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: deskos-blue-desktop
+spec:
+  defaults:
+    applications:
+      browser: org.mozilla.firefox.desktop
+      pdfViewer: org.gnome.Papers.desktop
+    shell:
+      favorites:
+        - google-chrome.desktop
+        - com.visualstudio.code.desktop
+        - org.mozilla.firefox.desktop
+        - org.gnome.Nautilus.desktop
+        - org.gnome.Ptyxis.desktop
+        - io.github.kolunmi.Bazaar.desktop
+        - io.podman_desktop.PodmanDesktop.desktop
+        - org.virt_manager.virt-manager.desktop
+      extensions:
+        - {uuid: blur-my-shell@aunetx, enabled: true}

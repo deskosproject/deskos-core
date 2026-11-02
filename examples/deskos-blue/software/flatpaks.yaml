@@ -1,0 +1,48 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: deskos-blue-apps
+spec:
+  remote: flathub
+  applications:
+    - {id: be.alexandervanhee.gradia, branch: stable}
+    - {id: com.github.PintaProject.Pinta, branch: stable}
+    - {id: com.github.tchx84.Flatseal, branch: stable}
+    - {id: com.mattjakeman.ExtensionManager, branch: stable}
+    - {id: com.ranfdev.DistroShelf, branch: stable}
+    - {id: com.visualstudio.code, branch: stable}
+    - {id: de.leopoldluley.Clapgrep, branch: stable}
+    - {id: io.github.flattool.Ignition, branch: stable}
+    - {id: io.github.getnf.embellish, branch: stable}
+    - {id: io.github.kolunmi.Bazaar, branch: stable}
+    - {id: io.gitlab.adhami3310.Impression, branch: stable}
+    - {id: io.missioncenter.MissionCenter, branch: stable}
+    - {id: io.podman_desktop.PodmanDesktop, branch: stable}
+    - {id: me.iepure.devtoolbox, branch: stable}
+    - {id: org.gnome.Builder, branch: stable}
+    - {id: org.gnome.Calculator, branch: stable}
+    - {id: org.gnome.Calendar, branch: stable}
+    - {id: org.gnome.Characters, branch: stable}
+    - {id: org.gnome.Connections, branch: stable}
+    - {id: org.gnome.Contacts, branch: stable}
+    - {id: org.gnome.DejaDup, branch: stable}
+    - {id: org.gnome.FileRoller, branch: stable}
+    - {id: org.gnome.Firmware, branch: stable}
+    - {id: org.gnome.Logs, branch: stable}
+    - {id: org.gnome.Loupe, branch: stable}
+    - {id: org.gnome.Maps, branch: stable}
+    - {id: org.gnome.NautilusPreviewer, branch: stable}
+    - {id: org.gnome.Papers, branch: stable}
+    - {id: org.gnome.Showtime, branch: stable}
+    - {id: org.gnome.SimpleScan, branch: stable}
+    - {id: org.gnome.Snapshot, branch: stable}
+    - {id: org.gnome.Decibels, branch: stable}
+    - {id: org.gnome.TextEditor, branch: stable}
+    - {id: org.gnome.Weather, branch: stable}
+    - {id: org.gnome.baobab, branch: stable}
+    - {id: org.gnome.clocks, branch: stable}
+    - {id: org.gnome.font-viewer, branch: stable}
+    - {id: org.mozilla.firefox, branch: stable}
+    - {id: org.mozilla.thunderbird, branch: stable}
+    - {id: org.virt_manager.virt-manager, branch: stable}
+    - {id: page.tesk.Refine, branch: stable}

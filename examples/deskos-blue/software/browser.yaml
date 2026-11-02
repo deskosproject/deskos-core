@@ -1,0 +1,22 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: google-chrome
+spec:
+  id: google-chrome
+  displayName: google-chrome
+  baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
+  gpgKeyFiles:
+    - ../assets/rpm-keys/google-chrome.pub
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-blue-browser
+spec:
+  # Chrome has no Flatpak, so it is the one application from a vendor RPM
+  # repository beside the Flatpak set.
+  packages:
+    - google-chrome-stable
+  repositories:
+    - google-chrome

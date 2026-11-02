@@ -1,0 +1,15 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: deskos-blue
+spec:
+  displayName: DeskOS Blue (Fedora 45)
+  platformRef: fedora-45-flatpak
+  profiles:
+    # Order is not precedence (ADR 0003); keep it alphabetical for reading.
+    - deskos-blue
+    - deskos-core
+    - deskos-dock
+    - deskos-gnome
+    - deskos-look
+    - fedora
