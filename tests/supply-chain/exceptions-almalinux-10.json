@@ -9,7 +9,7 @@
     {
       "id": "CVE-2026-98432",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the Linux kernel shipped by the AlmaLinux 10 bootc base has a TCP use-after-free (CVE-2026-98432). Grype reports fix state not-fixed on the 2026-10-31 base, and AlmaLinux has published no kernel build with the fix. DeskOS neither builds nor patches the vendor kernel, so the fix is AlmaLinux's rebuild. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the Linux kernel shipped by the AlmaLinux 10 bootc base has a TCP use-after-free (CVE-2026-98432). Grype reports fix state not-fixed for the 2026-10-31 base when it was checked on 2026-11-01. DeskOS neither builds nor patches the vendor kernel, so the fix is AlmaLinux's rebuild. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "kernel",
