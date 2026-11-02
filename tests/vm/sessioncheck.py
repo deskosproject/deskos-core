@@ -1002,14 +1002,29 @@ def windows(app):
     return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
 
 
-def named(root, name, roles=None):
+def node_text(node):
+    try:
+        name = node.name or ""
+        if name:
+            return name
+    except Exception:
+        pass
+    try:
+        return node.queryText().getText(0, -1).strip()
+    except Exception:
+        return ""
+
+
+def marker(root, names):
     for node in walk(root):
         try:
-            if (node.name or "") == name and (roles is None or node.getRole() in roles):
-                return node
+            if node.getRole() in (pyatspi.ROLE_LABEL, pyatspi.ROLE_HEADING):
+                text = node_text(node)
+                if text in names:
+                    return text
         except Exception:
             pass
-    return None
+    return ""
 
 
 base, _ = apps()
@@ -1024,7 +1039,7 @@ while time.time() < deadline:
             continue
         wins = windows(app)
         if wins:
-            opened = (name, app)
+            opened = (name, app, wins[0])
             break
     if opened:
         break
@@ -1032,20 +1047,21 @@ while time.time() < deadline:
 
 settings_ok = False
 if opened is not None:
-    name, app = opened
+    name, app, window = opened
     print("e2e_settings_app=" + name)
-    marker = None
+    print("e2e_settings_window=" + (window.name or ""))
+    found = ""
     deadline = time.time() + 20
     while time.time() < deadline:
-        marker = named(app, "GNOME Version", (pyatspi.ROLE_LABEL, pyatspi.ROLE_HEADING))
-        if marker is not None:
+        found = marker(app, ("GNOME Version", "OS Name", "OS Type", "Kernel Version"))
+        if found:
             break
         time.sleep(1)
-    settings_ok = marker is not None
+    settings_ok = bool(found)
     print("e2e_settings_panel=About")
-    print("e2e_settings_marker=" + (marker.name if marker is not None else "missing"))
+    print("e2e_settings_marker=" + (found or "missing"))
     print("e2e_settings_path=panel-argument")
-    if marker is None:
+    if not found:
         print("e2e_settings_reason=no-marker")
 else:
     print("e2e_settings_app=missing")
