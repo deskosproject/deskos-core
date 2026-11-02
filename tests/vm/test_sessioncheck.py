@@ -165,7 +165,7 @@ class TmpfilesTest(unittest.TestCase):
         c = sc.credentials("session")
         unit = c["systemd.extra-unit.deskos-qa-password.service"]
         self.assertIn("Before=gdm.service", unit)
-        self.assertIn("echo deskos-qa:deskosqa | /usr/sbin/chpasswd", unit)
+        self.assertIn(f"echo deskos-qa:{sc.LOCK_PASSWORD} | /usr/sbin/chpasswd", unit)
         self.assertIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_a_directory_login_has_no_lock_password(self):

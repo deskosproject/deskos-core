@@ -34,6 +34,9 @@ import bootcheck
 
 USER, UID = "deskos-qa", 1500
 HOME = f"/var/home/{USER}"
+# The lock probe's password is typed by the harness. It is deliberately not
+# based on the account name: pam_pwquality rejects a password that is.
+LOCK_PASSWORD = "Ridge42Lantern"
 RESULTS = "/var/tmp/deskos-qa/results.txt"
 MARK_BEGIN, MARK_JOURNAL, MARK_END = "DESKOS-QA-BEGIN", "DESKOS-QA-JOURNAL-BEGIN", "DESKOS-QA-END"
 # The page the guest's browser must fetch from the host side of QEMU's user
@@ -1510,7 +1513,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             "[Unit]\nDescription=Set the DeskOS QA password for the lock probe\n"
             "After=systemd-sysusers.service\nBefore=gdm.service\n\n"
             "[Service]\nType=oneshot\n"
-            f"ExecStart=/bin/sh -c 'echo {USER}:deskosqa | /usr/sbin/chpasswd'\n"
+            f"ExecStart=/bin/sh -c 'echo {USER}:{LOCK_PASSWORD} | /usr/sbin/chpasswd'\n"
         )
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
@@ -2417,7 +2420,7 @@ def main():
                                            font_families=[f["family"] for f in plan_font_families(plan)],
                                            network_profiles=plan_network_profiles(plan))),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
-        keys_on_marker=[("DESKOS_QA_LOCKED", "deskosqa")] if not gdm_user else [],
+        keys_on_marker=[("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user else [],
     )
     try:
         summary = bootcheck.run(run_args)
