@@ -14,6 +14,7 @@ case**. They are not shipped platform support, and CI does not build them.
 | [`kiosk/`](kiosk/) | a locked-down public session, and what the image cannot lock |
 | [`identity/`](identity/) | the image-level half of a domain join |
 | [`offline/`](offline/) | a site with no network and no automatic updates |
+| [`corporate/`](corporate/) | a vendor browser, meetings, chat, passwords and a VPN |
 
 ## How the names work
 

@@ -23,6 +23,7 @@ does not copy a platform or promise support for one.
 | [`kiosk/`](../examples/kiosk/) | a locked-down public session |
 | [`identity/`](../examples/identity/) | the image-level half of a domain join |
 | [`offline/`](../examples/offline/) | a site with no network and no automatic updates |
+| [`corporate/`](../examples/corporate/) | a vendor browser, meetings, chat, passwords and a VPN |
 
 Each README follows the same shape: what it shows, what it does not show, and
 which part is runtime work rather than image content. An example that cannot

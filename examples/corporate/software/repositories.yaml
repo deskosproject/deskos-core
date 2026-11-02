@@ -1,0 +1,26 @@
+# Vendor RPM repositories, as the vendors document them. The signing keys are
+# local assets, pinned by this repository's commit, so a build never trusts a
+# key fetched from the network.
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: google-chrome
+spec:
+  # https://www.google.com/linuxrepositories/
+  id: google-chrome
+  displayName: google-chrome
+  baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
+  gpgKeyFiles:
+    - ../assets/rpm-keys/google-chrome.pub
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: tailscale-stable
+spec:
+  # https://tailscale.com/kb/1023/installation
+  id: tailscale-stable
+  displayName: Tailscale stable
+  baseURL: https://pkgs.tailscale.com/stable/fedora/$basearch
+  gpgKeyFiles:
+    - ../assets/rpm-keys/tailscale.gpg

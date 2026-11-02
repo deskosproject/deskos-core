@@ -1,0 +1,26 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-corporate-browser
+spec:
+  # Chrome is a vendor RPM, not a Flatpak: Google does not ship it on Flathub.
+  # The organization that builds the image accepts Google's terms; Core neither
+  # builds nor publishes the result.
+  packages:
+    - google-chrome-stable
+  repositories:
+    - google-chrome
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-corporate-vpn
+spec:
+  # Tailscale is the example VPN: a public repository and a system daemon.
+  # Replace the repository and package with your vendor's; the shape stays.
+  packages:
+    - tailscale
+  repositories:
+    - tailscale-stable
+  enableUnits:
+    - tailscaled.service
