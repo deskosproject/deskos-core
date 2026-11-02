@@ -7,6 +7,7 @@ spec:
   applications:
     - {id: be.alexandervanhee.gradia, branch: stable}
     - {id: com.github.PintaProject.Pinta, branch: stable}
+    - {id: com.google.Chrome, branch: stable}
     - {id: com.github.tchx84.Flatseal, branch: stable}
     - {id: com.mattjakeman.ExtensionManager, branch: stable}
     - {id: com.ranfdev.DistroShelf, branch: stable}

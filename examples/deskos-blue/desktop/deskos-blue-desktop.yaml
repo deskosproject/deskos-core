@@ -5,11 +5,11 @@ metadata:
 spec:
   defaults:
     applications:
-      browser: org.mozilla.firefox.desktop
+      browser: com.google.Chrome.desktop
       pdfViewer: org.gnome.Papers.desktop
     shell:
       favorites:
-        - google-chrome.desktop
+        - com.google.Chrome.desktop
         - com.visualstudio.code.desktop
         - org.mozilla.firefox.desktop
         - org.gnome.Nautilus.desktop
