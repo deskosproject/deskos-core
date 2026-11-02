@@ -35,8 +35,9 @@ import bootcheck
 USER, UID = "deskos-qa", 1500
 HOME = f"/var/home/{USER}"
 # The lock probe's password is typed by the harness. It is deliberately not
-# based on the account name: pam_pwquality rejects a password that is.
-LOCK_PASSWORD = "Ridge42Lantern"
+# based on the account name: pam_pwquality rejects a password that is. It
+# stays lowercase and digits so every keysym is unshifted on a raw VNC client.
+LOCK_PASSWORD = "ridge42lantern"
 RESULTS = "/var/tmp/deskos-qa/results.txt"
 MARK_BEGIN, MARK_JOURNAL, MARK_END = "DESKOS-QA-BEGIN", "DESKOS-QA-JOURNAL-BEGIN", "DESKOS-QA-END"
 # The page the guest's browser must fetch from the host side of QEMU's user
