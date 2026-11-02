@@ -115,12 +115,14 @@ jobs:
         # (see examples/layers/README.md).
         include:
           - workstation: deskos-core-centos-stream-10
+            platform: centos-stream-10
             root: ""
             artifact: vm-evidence-core-centos-stream-10
             image: localhost/deskos-core-centos-stream-10:ci
             rootfs: xfs
             config: tests/vm/config.toml
           - workstation: example-devops-centos-stream-10
+            platform: centos-stream-10
             root: examples/layers
             artifact: vm-evidence-example-devops-centos-stream-10
             image: localhost/example-devops-centos-stream-10:ci
@@ -134,6 +136,7 @@ jobs:
           # does not take the filesystem customization the EL10 disk uses, so
           # this leg passes its own config rather than a silently ignored one.
           - workstation: deskos-core-fedora-45
+            platform: fedora-45
             root: ""
             artifact: vm-evidence-core-fedora-45
             image: localhost/deskos-core-fedora-45:ci
@@ -310,7 +313,7 @@ jobs:
             --set run_attempt="$GITHUB_RUN_ATTEMPT"
             --set workflow="$GITHUB_WORKFLOW"
             --set job="$GITHUB_JOB"
-            --set platform="centos-stream-10"
+            --set platform="${{ matrix.platform }}"
             --set workstation="$WS"
             --set image_id="$(sudo podman image inspect "$IMAGE" --format '{{.Id}}' 2>/dev/null || true)"
             --file plan=ctx/plan.json

@@ -556,8 +556,11 @@ jobs:
           # The id lives on the exception; each of its matches carries the rest.
           declared = {(e["id"], m["package"], m["type"], m.get("version", ""), m.get("path", ""))
                       for e in rec.get("exceptions") or [] for m in e["matches"]}
+          accepted = eff.get("accepted")
+          if accepted is None:
+              raise SystemExit("effective-exceptions.json has no accepted key")
           used = {(e["id"], e["package"], e["type"], e.get("version", ""), e.get("path", ""))
-                  for e in eff.get("exceptions") or []}
+                  for e in accepted}
           droppable = declared - used
           print("## Accepted risk on this platform\n")
           print(f"- declared in the record: {len(declared)}")
@@ -680,23 +683,33 @@ jobs:
 
   evidence:
     needs: publish
-    if: (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && needs.publish.result == 'success'
+    # Run even when one publish leg failed: a successful leg still has a
+    # signed digest and its evidence should outlive the 14-day Actions artifact.
+    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: evidence-write
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
         include:
           - token: centos-stream-10
             workstation: deskos-core-centos-stream-10
+          - token: fedora-45
+            workstation: deskos-core-fedora-45
+          - token: almalinux-10
+            workstation: deskos-core-almalinux-10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        id: download
+        continue-on-error: true
         with:
           name: supply-chain-durable-${{ matrix.token }}-attempt-${{ github.run_attempt }}
           path: durable
       - name: Publish durable evidence
+        if: steps.download.outcome == 'success'
         env:
           EVIDENCE_S3_ENDPOINT: ${{ vars.EVIDENCE_S3_ENDPOINT }}
           EVIDENCE_S3_REGION: ${{ vars.EVIDENCE_S3_REGION }}

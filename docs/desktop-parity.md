@@ -42,7 +42,7 @@ Measured 2026-11-01 with `dnf repoquery` on the pinned digests: CentOS Stream 10
 
 | | CentOS Stream 10 | Fedora 45 | AlmaLinux 10 | RHEL 10.2 |
 |---|---|---|---|---|
-| GNOME Shell | 49.5-18 | **51.0-1** | 49.4-9 | 49.4-9* |
+| GNOME Shell | 49.5-18 | **51.1-1** | 49.4-9 | 49.4-9* |
 | GDM | 47.0-32 | **51.0-1** | 47.0-24 | 47.0* |
 | Ptyxis | 47.13-1 | **50.1-6** | 47.13-1 | 47.13* |
 | Flatpak | **1.18.0-2** | 1.18.4 | 1.16.0-9 | 1.16.0-9† |

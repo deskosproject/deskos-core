@@ -354,10 +354,12 @@ a dispatch with `publish=true` does the same on demand. `image-bootcheck.yml` is
 pure check.
 
 The matrix runs with `fail-fast: false`, so one platform failing does not stop
-another: promotions are independent per platform, each checked on its own build,
-boot, session and first-boot checks. A red leg means that platform did not move; it
-does not retract a platform that already did. A `publish=true` dispatch has built,
-scanned, booted, pushed and signed one digest per platform, listed in
+another from publishing. Promotion is a separate move: `promotion.yml` promotes
+CentOS Stream 10 automatically after a green gate, while Fedora 45 and AlmaLinux
+10 stay on `:latest`/`:candidate` unless a person dispatches a promotion for
+their repository. A red leg means that platform did not publish; it does not
+retract a platform that already did. A `publish=true` dispatch has built, scanned,
+booted, pushed and signed one digest per platform, listed in
 [architecture.md](architecture.md#validation-status) with its run.
 
 ## Before accepting a risk, check whether the base moved
@@ -380,7 +382,7 @@ A digest moves forward only when, for that digest:
 
 1. the render validates and the boot, session and first-boot checks pass (see
    [development.md](development.md) and `tests/vm`);
-2. the installed SBOM contains every component the declared SBOM lists;
+2. the installed SBOM contains every declared RPM package name;
 3. the CVE scan is at or below the agreed threshold;
 4. the image carries a signature over its digest.
 
