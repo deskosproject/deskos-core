@@ -108,7 +108,7 @@ first, so a DeskOS default can be overridden and a DeskOS lock cannot:
 | a **default** | `local`, `site` or a user change overrides it |
 | a **lock** | the `distro` value applies and is not writable; `local` and `site` locks are ignored |
 
-> [!WARNING]
+> **Warning:**
 > A lock is image-level enforcement that defeats `site` and `local`. Core uses
 > none. Lock only what the image must enforce; leave Ansible- or
 > Satellite-managed settings as defaults.

@@ -61,7 +61,7 @@ reuses DeskOS resources without copying them
   --output ./dist/example-devops-rhel-10
 ```
 
-> [!IMPORTANT]
+> **Important:**
 > RHEL builds require appropriate Red Hat access and **must not be publicly
 > redistributed**.
 
@@ -137,7 +137,7 @@ The version-less aliases `deskosctl-linux-amd64` and `deskos-linux-amd64` make
 `releases/latest/download/<name>` work without knowing the tag; they track the
 latest stable release, not a prerelease.
 
-> [!NOTE]
+> **Note:**
 > The binary is not signed.
 
 ```bash

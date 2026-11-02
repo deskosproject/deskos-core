@@ -129,7 +129,7 @@ that encryption is opt-in. The test-only ISO under `tests/installer/` is a
 different fixture: its kickstart runs `clearpart --all`, which erases every disk
 the installer sees.
 
-> [!IMPORTANT]
+> **Important:**
 > The disk and the ISO both bake in the reference they were built from, and **that
 > is what the installed machine follows for every later `bootc upgrade`**. The
 > kickstarts and the reasoning behind them are in

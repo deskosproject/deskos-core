@@ -10,7 +10,7 @@ Records from 2026-09-28: the built CentOS reference image
 experiment and booted CS10 Core VMs
 ([research-notes.md](../research-notes.md#visual-identity-and-boot-2026-09-28)).
 
-> [!NOTE]
+> **Note:**
 > Verified on CS10 unless stated. On RHEL 10.2 the retired factory host booted
 > `example-devops-rhel-10` through the same boot and session checks.
 

@@ -51,7 +51,7 @@ reboot
 """
 ```
 
-> [!WARNING]
+> **Warning:**
 > The installer asks for language, keyboard, timezone, network (optional), the
 > disk and LUKS, and then erases the selected disk. It no longer wipes every disk
 > it sees; read the destination screen.
@@ -157,7 +157,7 @@ organization's repository, on an entitled host logged in to `registry.redhat.io`
 with `registry.redhat.io/rhel10/bootc-image-builder` instead of the CentOS
 builder.
 
-> [!IMPORTANT]
+> **Important:**
 > RHEL ISOs **must never be published**: keep them inside the organization that
 > builds them.
 
