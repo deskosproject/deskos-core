@@ -1,8 +1,8 @@
 # Session E2E through accessibility
 
-**Status: scenarios 1, 2 and 4 implemented (scenario 1 run `40795106343`,
-2026-10-29; 2 and 4 await their first VM run); scenario 3 waits on keyboard
-injection.** Drive a GNOME session the way a person does, and fail the VM check
+**Status: scenarios 1, 2 and 4 implemented and verified by the VM harness
+(scenario 1 run `40795106343`, 2026-10-29; 2 and 4 run `41528142670`,
+2026-11-02); scenario 3 waits on keyboard injection.** Drive a GNOME session the way a person does, and fail the VM check
 where a user would be stuck.
 
 ## What exists, and what it does not prove
@@ -119,8 +119,8 @@ milestone's second line, and the first line comes first.
 - [x] Scenario 1, asserted in the harness and reported in the summary: launch
       through the desktop entry, a new application with a toplevel, then terminate
       it. The close *through the tree* stays scenario 4.
-- [x] Scenario 2, Settings opens and exposes a panel label, implemented 2026-11-02.
-- [x] Scenario 4, window closed through the tree, implemented 2026-11-02.
+- [x] Scenario 2, Settings opens and exposes a panel label, implemented and run 2026-11-02.
+- [x] Scenario 4, window closed through the tree, implemented and run 2026-11-02.
 - [ ] Scenario 3, lock and unlock, waits on keyboard injection through the
       remote-desktop portal; locking alone is not the scenario.
-- [ ] Run 2 and 4 on both images, then wire them into promotion.
+- [ ] Wire 2 and 4 into promotion.
