@@ -211,7 +211,7 @@ a defect and blocks; re-run each release.
 `deskos-core-centos-stream-10` is redistributable and is the source of
 `quay.io/deskos/deskos-core-centos-stream-10`.
 
-> [!IMPORTANT]
+> **Important:**
 > RHEL-derived images are covered by the RHEL EULA and are **never published**.
 > The `rhel-10` Platform marks them `redistributable: false`, and plans and
 > Containerfiles carry the notice. Subscription material never appears in
@@ -257,16 +257,14 @@ or boots RHEL, though composition and rendering stay covered by tests.
   `d13af792…`; lint passed with the three warnings; all 75 layers scanned free of
   RHSM paths, entitlement serial, consumer UUID and hostname; `bootcheck.py` and
   `sessioncheck.py` passed on its disk under nested KVM on the factory VM.
-- **Published, signed and durable (verified 2026-10-28).** One repository per
-  shipped platform, published by the weekly build (run `40716569103`, commit
-  `2ef9f75`) and promoted automatically (run `40723460708`):
-  `quay.io/deskos/deskos-core-centos-stream-10` at `sha256:871e59cc…`, with
-  `:<commit>`, `:latest`, `:candidate` and `:stable` at that digest. `cosign verify`
-  with the
+- **Published, signed and durable (verified 2026-11-02).** Run `41367946272` on
+  commit `7ffef1c` published `quay.io/deskos/deskos-core-centos-stream-10` at
+  `sha256:19d8ed52…`, with `:<commit>`, `:latest` and `:candidate`; the promotion
+  (run `41374252523`) moved `:stable` to the same digest. `cosign verify` with the
   workflow issuer and this repository's identity passes, with SBOM, exception and
-  SLSA-provenance attestations bound to the digest. Sixteen records came back
-  verified from `evidence.deskos.org`; the approval record names the build run.
-  The same digest's ISO is signed and mirrored to `download.deskos.org`.
+  SLSA-provenance attestations bound to the digest. The records come back verified
+  from `evidence.deskos.org`; the approval record names the build run. The same
+  run's ISO is signed and published by `installer-build.yml`.
 - **AlmaLinux 10 and Fedora 45.** Both are shipped: their images publish from
   `image-publish.yml`. Core publishes no installer for either.
 - **AlmaLinux 10, published (2026-11-02).** Run `41341412399` on `ba9e4ae`
@@ -312,17 +310,21 @@ Everything after boot is in [runtime.md](runtime.md).
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **One repository per shipped platform**, `quay.io/deskos/deskos-core-centos-stream-10`,
-  `quay.io/deskos/deskos-core-fedora-45` and
-  `quay.io/deskos/deskos-core-almalinux-10`, with `:stable` at the digest in
-  [Validation status](#validation-status) where promotion has run. The weekly
-  build publishes by itself: it builds, scans and boots, then pushes and signs
-  `:<commit>`, `:latest` and `:candidate` by digest; `promotion.yml` verifies the
-  signature and the stored records and moves `:stable` with a recorded approval.
-  Automatic promotion is CentOS-only today; Fedora and AlmaLinux stay on
-  `:latest`/`:candidate` unless a person dispatches a promotion for their
-  repository. Not every green `main` publishes; pin a
-  digest in production.
+- **One repository per shipped platform:**
+  - `quay.io/deskos/deskos-core-centos-stream-10`
+  - `quay.io/deskos/deskos-core-fedora-45`
+  - `quay.io/deskos/deskos-core-almalinux-10`
+
+  A weekly build publishes by itself: it builds, scans and boots, then pushes and
+  signs `:<commit>`, `:latest` and `:candidate` by digest. It does not move
+  `:stable`.
+- **`:stable` is a separate, recorded promotion.** `promotion.yml` verifies the
+  signature and the stored records and moves `:stable` with an approval record.
+  Automatic promotion runs for CentOS Stream 10 only today; Fedora 45 and
+  AlmaLinux 10 stay on `:latest`/`:candidate` unless a person dispatches a
+  promotion for their repository. [Validation status](#validation-status) names
+  the digest `:stable` serves where promotion has run. Not every green `main`
+  publishes; pin a digest in production.
 - **A CentOS Stream 10 preview ISO** is at <https://download.deskos.org/>.
   `installer-build.yml` builds it from the published digest after verifying the image's
   keyless signature, and publishes it as a signed OCI artifact (`:candidate`,
