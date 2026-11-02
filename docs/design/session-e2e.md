@@ -1,8 +1,9 @@
 # Session E2E through accessibility
 
-**Status: scenario 1 implemented 2026-10-29 (run `40795106343`, both images);
-scenarios 2-4 designed.** Drive a GNOME session the way a person does, and fail
-the VM check where a user would be stuck.
+**Status: scenarios 1, 2 and 4 implemented (scenario 1 run `40795106343`,
+2026-10-29; 2 and 4 await their first VM run); scenario 3 waits on keyboard
+injection.** Drive a GNOME session the way a person does, and fail the VM check
+where a user would be stuck.
 
 ## What exists, and what it does not prove
 
@@ -59,13 +60,15 @@ not on pixels:
    for this assertion.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
-   still broken.
+   still broken. Implemented 2026-11-02: click the About row through the tree and
+   wait for a marker the panel alone exposes ("GNOME Version").
 3. **Lock and unlock.** Lock from the shell, assert the lock screen is up, type the
    password, assert the session returns. This exercises PAM and the lock screen
    without the greeter's separate session.
 4. **Open a file manager window and close it.** Assert the window appears and that
    closing it returns to the previous state, a basic window-lifecycle check the
-   session check cannot see.
+   session check cannot see. Implemented 2026-11-02: click the close button the
+   window's accessibility tree exposes and wait for the window to leave the tree.
 
 The **GDM greeter** stays out of the driver: it runs in its own session and bus,
 and reaching it from the autologin user is not something to fake. It remains what
@@ -114,6 +117,8 @@ milestone's second line, and the first line comes first.
 - [x] Scenario 1, asserted in the harness and reported in the summary: launch
       through the desktop entry, a new application with a toplevel, then terminate
       it. The close *through the tree* stays scenario 4.
-- [ ] Then 2 to 4, one at a time, each with its failure message.
-- [ ] Wire the remaining scenarios into the VM check, and only then into
-      promotion.
+- [x] Scenario 2, Settings panel, implemented 2026-11-02.
+- [x] Scenario 4, window closed through the tree, implemented 2026-11-02.
+- [ ] Scenario 3, lock and unlock, waits on keyboard injection through the
+      remote-desktop portal; locking alone is not the scenario.
+- [ ] Run 2 and 4 on both images, then wire them into promotion.
