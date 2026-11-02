@@ -44,4 +44,7 @@ deskosctl render ./examples/deskos-blue \
   list; the optional `full-desktop` list is not preinstalled.
 - **Bluefin's own tooling.** There is no `ujust`; `deskos` is the runtime command.
 
-The example compiles and renders; it is not built by CI.
+The example compiles and renders; it is not built by CI. A QCOW2 built from
+this context on 2026-11-02 booted with **41 Flatpaks and Google Chrome**, and the
+Flatpak preinstall service finished with `Result=success`; that run is the
+evidence, not a CI claim.
