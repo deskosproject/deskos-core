@@ -7,8 +7,6 @@ spec:
   description: A Flatpak-first desktop; the applications the platform does not carry as RPMs.
   resources:
     - kind: PackageSet
-      name: deskos-blue-browser
-    - kind: PackageSet
       name: deskos-blue-vpn
     - kind: FlatpakSet
       name: deskos-blue-apps

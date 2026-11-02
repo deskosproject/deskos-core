@@ -16,8 +16,7 @@ deskosctl render ./examples/deskos-blue \
 |---|---|
 | `fedora-45-flatpak` (Platform) | the shipped Fedora 45 pin, with the GNOME applications removed from the RPM set |
 | `deskos-blue` (organization) | the VPN, the Flatpak set and the desktop defaults |
-| `deskos-blue-browser` | `google-chrome-stable` from Google's RPM repository, the one app without a Flatpak |
-| `deskos-blue-apps` (FlatpakSet) | the Bluefin-style application set, including VSCode, virt-manager, Podman Desktop and Builder |
+| `deskos-blue-apps` (FlatpakSet) | the Bluefin-style application set, including Chrome, VSCode, virt-manager, Podman Desktop and Builder |
 | `deskos-blue-desktop` | Firefox, Papers, the developer favorites and blur-my-shell |
 | `deskos-blue-vpn` | Tailscale from its RPM repository, the one system daemon |
 
@@ -30,10 +29,9 @@ deskosctl render ./examples/deskos-blue \
   image stays small and the applications arrive from Flathub.
 - **An extension the shipped catalog does not carry.** `blur-my-shell` is a
   pinned source on the example Platform, enabled by the profile.
-- **A userland development desktop.** VSCode, virt-manager, Podman Desktop,
-  Builder and DevToolbox are Flatpaks. Chrome is the one application from a
-  vendor RPM repository, and Tailscale is the one system daemon; neither has a
-  Flatpak.
+- **A userland development desktop.** Chrome, VSCode, virt-manager, Podman
+  Desktop, Builder and DevToolbox are Flatpaks. Tailscale is the one system
+  daemon; a VPN client has no Flatpak.
 
 ## What it does not show
 
@@ -44,7 +42,4 @@ deskosctl render ./examples/deskos-blue \
   list; the optional `full-desktop` list is not preinstalled.
 - **Bluefin's own tooling.** There is no `ujust`; `deskos` is the runtime command.
 
-The example compiles and renders; it is not built by CI. A QCOW2 built from
-this context on 2026-11-02 booted with **41 Flatpaks and Google Chrome**, and the
-Flatpak preinstall service finished with `Result=success`; that run is the
-evidence, not a CI claim.
+The example compiles and renders; it is not built by CI.
