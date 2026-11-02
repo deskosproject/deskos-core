@@ -115,6 +115,14 @@ func TestGoldenLayeredSBOM(t *testing.T) {
 	golden(t, layeredWorkstation+".sbom.cdx.json", b)
 }
 
+func TestGoldenLayeredRHELSBOM(t *testing.T) {
+	b, err := sbom.Build(mustPlan(t, layeredRHELWorkstation, resourcesRoot, layeredRHELFixture(t)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	golden(t, layeredRHELWorkstation+".sbom.cdx.json", b)
+}
+
 // The Debian half of the golden coverage, and it is synthetic on purpose: no platform
 // this repository ships is Debian-family any more, because the Ubuntu one lives in its own
 // repository (ADR 0020). Core still *expresses* a Debian-family platform -- deb, apt,
@@ -160,6 +168,7 @@ func TestGoldenContainerfiles(t *testing.T) {
 		{"deskos-core-centos-stream-10", []string{resourcesRoot}},
 		{"deskos-core-almalinux-10", []string{resourcesRoot}},
 		{layeredWorkstation, []string{resourcesRoot, layeredFixture(t)}},
+		{layeredRHELWorkstation, []string{resourcesRoot, layeredRHELFixture(t)}},
 		{"deskos-core-fedora-45", []string{resourcesRoot}},
 	} {
 		files, err := containerfile.Render(mustPlan(t, tc.ws, tc.roots...))
