@@ -248,11 +248,12 @@ or boots RHEL, though composition and rendering stay covered by tests.
   [checks.md](checks.md#workstation-behavior-matrix). The reference workstation:
   23 dconf defaults read twice, dock `Yes/ACTIVE`; the GDM login logo was seen in
   a Core VM.
-- **Accessibility and one E2E step (2026-10-29).** The session exposes nine
-  applications through AT-SPI (the shell, its `gsd-*` daemons, the portal, ibus,
-  the alarm notifier), and launching the Calculator entry opens a
-  `gnome-calculator` window; run `40795106343` on both images. Other scenarios are
-  designed, not implemented ([session-e2e.md](design/session-e2e.md)).
+- **Accessibility and three E2E steps (2026-11-02).** The session exposes its
+  applications through AT-SPI, the Calculator entry opens a `gnome-calculator`
+  window, Settings opens on a panel and exposes its label, and the file manager's
+  window closes through the close button the tree exposes; run `41528142670` on
+  both images. A sidebar click and lock/unlock remain designed
+  ([session-e2e.md](design/session-e2e.md)).
 - **RHEL 10.2, built and booted (historical).** Image `0e65bf4b` on base
   `d13af792…`; lint passed with the three warnings; all 75 layers scanned free of
   RHSM paths, entitlement serial, consumer UUID and hostname; `bootcheck.py` and
