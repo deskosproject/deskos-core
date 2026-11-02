@@ -83,9 +83,11 @@ and an audit, not a flag.
 The matrix above is the support statement. It is **not an LTS promise**, and a
 vendor's lifecycle dates do not become DeskOS dates.
 
-- **Maintained artifacts today:** CentOS Stream 10, published as a Core image;
-  RHEL 10, built privately under an entitlement; Ubuntu 26.04, in its own repo;
-  the examples are built in CI, not supported.
+- **Maintained artifacts today:** CentOS Stream 10, Fedora 45 and AlmaLinux 10,
+  each published as a Core image (only CentOS has a Core installer); RHEL 10,
+  built privately under an entitlement; Ubuntu 26.04, in its own repo. Only
+  `examples/layers/` is built in CI, to exercise its repositories; the other
+  examples validate and are not supported.
 - **Security maintenance** is a re-pin of the vendor base, then build, scan and
   boot checks. DeskOS does not backport fixes to older digests; a clean scan does
   not mean an image is secure

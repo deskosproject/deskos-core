@@ -150,9 +150,9 @@ func viewOf(p *plan.Plan) coreView {
 // where they differ — see TestFedoraDeclaresASystemFlatpakChannel and the mask
 // and group assertions below.
 //
-// The examples (AlmaLinux and Fedora) are not part of this shipped-platform
-// comparison; they have their own roots and golden renders. Ubuntu is not
-// compared: its package manager is deb.
+// The Fedora and AlmaLinux workstations have their own roots and golden
+// renders; this comparison is the EL-family shape, and Ubuntu is not compared
+// because its package manager is deb.
 func TestCoreComposesIdenticallyOnTheRpmPlatforms(t *testing.T) {
 	ws := func(name, platform string) string {
 		return "apiVersion: core.deskos.org/v1alpha1\nkind: Workstation\nmetadata:\n  name: " + name + "\nspec:\n  platformRef: " + platform + "\n  profiles: [deskos-core, deskos-gnome, deskos-dock]\n"

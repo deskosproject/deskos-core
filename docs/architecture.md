@@ -312,12 +312,16 @@ Everything after boot is in [runtime.md](runtime.md).
 
 The **OCI image is the primary artifact**; QCOW2 and ISO derive from it.
 
-- **One repository per shipped platform**, `quay.io/deskos/deskos-core-centos-stream-10`
-  today, with `:stable` at the digest in [Validation
-  status](#validation-status). The weekly build publishes by itself: it builds,
-  scans and boots, then pushes and signs `:<commit>`, `:latest` and `:candidate` by
-  digest; `promotion.yml` verifies the signature and the stored records and moves
-  `:stable` with a recorded approval. Not every green `main` publishes; pin a
+- **One repository per shipped platform**, `quay.io/deskos/deskos-core-centos-stream-10`,
+  `quay.io/deskos/deskos-core-fedora-45` and
+  `quay.io/deskos/deskos-core-almalinux-10`, with `:stable` at the digest in
+  [Validation status](#validation-status) where promotion has run. The weekly
+  build publishes by itself: it builds, scans and boots, then pushes and signs
+  `:<commit>`, `:latest` and `:candidate` by digest; `promotion.yml` verifies the
+  signature and the stored records and moves `:stable` with a recorded approval.
+  Automatic promotion is CentOS-only today; Fedora and AlmaLinux stay on
+  `:latest`/`:candidate` unless a person dispatches a promotion for their
+  repository. Not every green `main` publishes; pin a
   digest in production.
 - **A CentOS Stream 10 preview ISO** is at <https://download.deskos.org/>.
   `installer-build.yml` builds it from the published digest after verifying the image's

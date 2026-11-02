@@ -18,7 +18,7 @@ For a pinned compiler-to-rollback exercise, follow
 [WALKTHROUGH.md](WALKTHROUGH.md).
 
 Minimal examples live in the sibling directories (`centos-stream-10/`,
-`almalinux-10/`, `rhel-10/`); this one shows composition.
+`rhel-10/`, `vanilla-gnome/`); this one shows composition.
 
 ## A desktop tool the platform does not supply
 

@@ -81,7 +81,7 @@ in the same families as CentOS Stream 10.
 | | |
 |---|---|
 | Composes and renders | validated by the compiler tests and `checks.yml` |
-| Image built | CI, every pull request |
+| Image built | CI, pull requests that change the platform, its Core resources or the workflow |
 | Booted and checked | CI: GNOME, session check |
 | Published image | **published** (`quay.io/deskos/deskos-core-fedora-45`); Core publishes no installer for it |
 | System Flatpak | preinstall |
