@@ -7,13 +7,13 @@ spec:
   displayName: Example DevOps Workstation
   platformRef: centos-stream-10
   profiles:
-    - deskos-core
-    - deskos-gnome
     - deskos-adwaita
-    - rhel-family
-    - deskos-look
-    - example-organization
-    - example-devops
-    - firefox
+    - deskos-core
     - deskos-dock
+    - deskos-gnome
+    - deskos-look
     - deskos-reference-apps
+    - example-devops
+    - example-organization
+    - firefox
+    - rhel-family

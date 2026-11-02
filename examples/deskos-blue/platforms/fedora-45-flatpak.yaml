@@ -1,0 +1,111 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Platform
+metadata:
+  name: fedora-45-flatpak
+spec:
+  displayName: Fedora 45 (Flatpak desktop)
+  # An example platform: the shipped Fedora 45 pin, with the GNOME applications
+  # removed from the RPM set so a Flatpak set can own them. Shell, GDM, Nautilus
+  # and Settings stay RPMs, as they do on the image this experiment follows.
+  family: fedora
+  release: "45"
+  architectures: [x86_64]
+  packageManager: rpm
+  bootc:
+    image: quay.io/deskos/fedora-silverblue:45
+    digest: sha256:900e1adffe4824472c02b129cacb8c97a35718d14d2abb876500b05d86172dd2
+  distribution:
+    redistributable: true
+    requiresSubscription: false
+  imageOwnedDirs: [/opt, /usr/local]
+  packageGroups:
+    - name: workstation
+      rpmGroups: [workstation-product-environment]
+      graphical: true
+  repoConfigDirs: [/usr/share/dnf5/repos.d]
+  # The applications the Flatpak set replaces. Shell, GDM, Nautilus, Settings,
+  # Disks and the remote-desktop service stay RPMs.
+  removePackages:
+    - baobab
+    - decibels
+    - firefox
+    - firefox-langpacks
+    - gnome-boxes
+    - gnome-calculator
+    - gnome-calendar
+    - gnome-characters
+    - gnome-clocks
+    - gnome-connections
+    - gnome-contacts
+    - gnome-font-viewer
+    - gnome-logs
+    - gnome-maps
+    - gnome-software
+    - gnome-software-rpm-ostree
+    - gnome-system-monitor
+    - gnome-text-editor
+    - gnome-weather
+    - loupe
+    - papers
+    - showtime
+    - simple-scan
+    - snapshot
+    - yelp
+  displayManager: gdm.service
+  gnome:
+    dconfDatabase: distro
+    loginScreen: true
+    loginScreenDatabase: gdm
+    enabledExtensions: [background-logo@fedorahosted.org]
+    extensions:
+      - name: dash-to-dock
+        uuid: dash-to-dock@micxgx.gmail.com
+        source:
+          version: "110"
+          url: https://github.com/micheleg/dash-to-dock/releases/download/extensions.gnome.org-v110/dash-to-dock%40micxgx.gmail.com.zip
+          sha256: 3e60680fe7217b905aac4f10deb042e39fcf49168c9b8fdcc5a711bdd49bd3d2
+      - name: appindicator
+        uuid: appindicatorsupport@rgcjonas.gmail.com
+        source:
+          version: "66"
+          url: https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip
+          sha256: f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730
+      # Not in the shipped catalog: this example adds it so a profile can enable
+      # it. v77 declares GNOME Shell 51, the version on this pin.
+      - name: blur-my-shell
+        uuid: blur-my-shell@aunetx
+        source:
+          version: "77"
+          url: https://github.com/aunetx/blur-my-shell/releases/download/v77/blur-my-shell%40aunetx.shell-extension.zip
+          sha256: 91dfb9c0be2dd3819890ddf3798002147d4075bc14d39e724303199fd2bd8ddb
+    appFolders: true
+    appLauncher:
+      package: gtk3
+      command: /usr/bin/gtk-launch
+    terminal:
+      package: ptyxis
+      dconfPath: /org/gnome/Ptyxis/
+      fontKey: font-name
+      useSystemFontKey: use-system-font
+  boot:
+    splashKernelArgument: rhgb
+    quietKernelArgument: quiet
+    plymouthPackages: [plymouth, plymouth-scripts, plymouth-system-theme]
+    plymouthDracutModule: plymouth
+    spinnerFrames:
+      package: plymouth-theme-spinner
+      imageDir: /usr/share/plymouth/themes/spinner
+  updates:
+    imageUpdateUnits: [bootc-fetch-apply-updates.timer, bootc-fetch-apply-updates.service, rpm-ostreed-automatic.timer, rpm-ostreed-automatic.service]
+  flatpak:
+    package: flatpak
+    preinstall: true
+  trust:
+    anchorsDir: /etc/pki/ca-trust/source/anchors
+    blocklistDir: /etc/pki/ca-trust/source/blocklist
+    updateCommand: update-ca-trust
+  iconCache:
+    package: gtk-update-icon-cache
+    command: gtk-update-icon-cache --force --quiet
+  downloads:
+    baseFetches: true

@@ -6,11 +6,11 @@ spec:
   displayName: Example identity-managed workstation (CentOS Stream 10)
   platformRef: centos-stream-10
   profiles:
-    - deskos-core
-    - deskos-gnome
     - deskos-adwaita
-    - rhel-family
-    - deskos-look
-    - firefox
+    - deskos-core
     - deskos-dock
+    - deskos-gnome
+    - deskos-look
     - example-identity
+    - firefox
+    - rhel-family

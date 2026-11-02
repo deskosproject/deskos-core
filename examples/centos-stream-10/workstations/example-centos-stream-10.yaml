@@ -7,9 +7,9 @@ spec:
   platformRef: centos-stream-10
   profiles:
     - deskos-core
-    - deskos-gnome
-    - rhel-family
-    - deskos-look
-    - firefox
     - deskos-dock
+    - deskos-gnome
+    - deskos-look
     - deskos-reference-apps
+    - firefox
+    - rhel-family

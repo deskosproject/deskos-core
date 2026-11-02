@@ -8,8 +8,8 @@ spec:
   profiles:
     - deskos-core
     - deskos-gnome
-    - rhel-family
     - firefox
+    - rhel-family
     # No deskos-dock: this is the one axis the example removes. GNOME's own
     # dash stays, and the platform's dash-to-dock artifact is not installed
     # or enabled.

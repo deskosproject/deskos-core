@@ -1,0 +1,23 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: tailscale-stable
+spec:
+  id: tailscale-stable
+  displayName: Tailscale stable
+  baseURL: https://pkgs.tailscale.com/stable/fedora/$basearch
+  gpgKeyFiles:
+    - ../assets/rpm-keys/tailscale.gpg
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: deskos-blue-vpn
+spec:
+  # The one system daemon in the set: a VPN client is not a userland app.
+  packages:
+    - tailscale
+  repositories:
+    - tailscale-stable
+  enableUnits:
+    - tailscaled.service

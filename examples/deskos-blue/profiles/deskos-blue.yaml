@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: deskos-blue
+spec:
+  layer: organization
+  description: A Flatpak-first desktop; the applications the platform does not carry as RPMs.
+  resources:
+    - kind: PackageSet
+      name: deskos-blue-vpn
+    - kind: FlatpakSet
+      name: deskos-blue-apps
+    - kind: GnomeProfile
+      name: deskos-blue-desktop
