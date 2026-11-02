@@ -1001,6 +1001,27 @@ def windows(app):
     return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
 
 
+def action_count(node):
+    try:
+        return node.queryAction().nActions
+    except Exception:
+        return 0
+
+
+def run_action(node):
+    try:
+        action = node.queryAction()
+        for i in range(action.nActions):
+            try:
+                if action.doAction(i):
+                    return True
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return False
+
+
 def named(root, name, roles=None):
     for node in walk(root):
         try:
@@ -1047,17 +1068,14 @@ if opened is not None:
     if row is None:
         for node in walk(app):
             try:
-                if (node.name or "") == "About" and node.getActionCount() > 0:
+                if (node.name or "") == "About" and action_count(node) > 0:
                     row = node
                     break
             except Exception:
                 pass
     acted = False
     if row is not None:
-        try:
-            acted = row.doAction(0)
-        except Exception:
-            acted = False
+        acted = run_action(row)
     marker = None
     deadline = time.time() + 20
     while time.time() < deadline:
@@ -1127,6 +1145,27 @@ def windows(app):
     return [n for n in walk(app) if n.getRole() in WINDOW_ROLES]
 
 
+def action_count(node):
+    try:
+        return node.queryAction().nActions
+    except Exception:
+        return 0
+
+
+def run_action(node):
+    try:
+        action = node.queryAction()
+        for i in range(action.nActions):
+            try:
+                if action.doAction(i):
+                    return True
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return False
+
+
 def launch(entry):
     for root in ("/usr/share/applications", "/usr/local/share/applications",
                  "/var/lib/flatpak/exports/share/applications",
@@ -1169,9 +1208,7 @@ if opened is not None:
         except Exception:
             pass
     if button is not None:
-        try:
-            button.doAction(0)
-        except Exception:
+        if not run_action(button):
             reason = "action-failed"
     else:
         reason = "no-close-button"
