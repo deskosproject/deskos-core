@@ -272,15 +272,15 @@ or boots RHEL, though composition and rendering stay covered by tests.
 - **AlmaLinux 10, published (2026-11-02).** Run `41341412399` on `ba9e4ae`
   built `deskos-core-almalinux-10` from base `0a036afe…`, scanned it, and passed
   the boot, session and first-boot checks with `publish=false`. The green gate
-  `41357644674` on `5133889` published `sha256:f83dc65a…`; `:latest`,
-  `:candidate` and the commit tag serve it, and `cosign verify` plus the SLSA,
-  SBOM and exception attestations pass. An earlier gate published
-  `sha256:d46f4f77…`; this page names the current one. `:stable` stays where the
-  promotion workflow puts it.
+  `41367946272` on `7ffef1c` published `sha256:f62afd68…`; `:latest`,
+  `:candidate` and the commit tag serve it, `cosign verify` plus the SLSA, SBOM
+  and exception attestations pass, and `evidence.deskos.org` serves the durable
+  records. `:stable` stays where the promotion workflow puts it.
 - **Fedora 45, published after the base move (2026-11-02).** The same gate
   rebuilt Fedora on `45.20261101.0` (`sha256:900e1adf…`) and published
-  `sha256:fa02f94c…`; the earlier pin's `firefox` 158.0.1 and `ImageMagick`
-  7.1.2.32 Criticals are gone, and the signature verifies.
+  `sha256:cad8c581…`; the earlier pin's `firefox` 158.0.1 and `ImageMagick`
+  7.1.2.32 Criticals are gone, the signature verifies, and its durable records
+  are in `evidence.deskos.org`.
 - **Flatpak preinstall (RHEL).** A private RHEL 10.2 workstation with four
   Flathub apps installed all four from `/usr/share/flatpak/preinstall.d` with
   `flatpak preinstall --system` (no session bus).
