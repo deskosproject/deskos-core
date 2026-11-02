@@ -1,0 +1,96 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "operating-system",
+      "name": "layered-rhel-ws",
+      "version": "10",
+      "properties": [
+        {
+          "name": "deskos:platform",
+          "value": "rhel-10"
+        },
+        {
+          "name": "deskos:baseImage",
+          "value": "registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "application",
+      "name": "deskos",
+      "version": "0.19.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "cf605efd754229ac2b04378f91d223f6578d59afbd140cc8b2203f6d500e3085"
+        }
+      ],
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "binary"
+        },
+        {
+          "name": "deskos:destination",
+          "value": "/usr/bin/deskos"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "flatpak",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "git",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "vim-enhanced",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "wget",
+      "properties": [
+        {
+          "name": "deskos:source",
+          "value": "rpm"
+        }
+      ]
+    },
+    {
+      "type": "operating-system",
+      "name": "registry.redhat.io/rhel10/rhel-bootc:10.2",
+      "version": "sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee"
+        }
+      ]
+    }
+  ]
+}
