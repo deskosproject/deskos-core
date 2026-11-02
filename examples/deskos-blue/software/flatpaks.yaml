@@ -42,8 +42,6 @@ spec:
     - {id: org.gnome.baobab, branch: stable}
     - {id: org.gnome.clocks, branch: stable}
     - {id: org.gnome.font-viewer, branch: stable}
-    - {id: org.gtk.Gtk3theme.adw-gtk3, branch: stable}
-    - {id: org.gtk.Gtk3theme.adw-gtk3-dark, branch: stable}
     - {id: org.mozilla.firefox, branch: stable}
     - {id: org.mozilla.thunderbird, branch: stable}
     - {id: org.virt_manager.virt-manager, branch: stable}
