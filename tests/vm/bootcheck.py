@@ -218,8 +218,14 @@ def vnc_type(path, text, timeout=15):
         for ch in text:
             key(ord(ch), True)
             key(ord(ch), False)
+            time.sleep(0.02)
+        # The guest has to read the submit before the socket closes; a close
+        # right after the write dropped it on the tested image.
+        time.sleep(0.3)
         key(0xFF0D, True)
+        time.sleep(0.1)
         key(0xFF0D, False)
+        time.sleep(1.0)
     finally:
         sock.close()
 

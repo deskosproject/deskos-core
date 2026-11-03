@@ -794,6 +794,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
 {seed}{launch}sleep 20
 out={RESULTS}
 {{
+echo "qa_password_unit=$(systemctl show deskos-qa-password.service -p ActiveState -p Result -p ExecMainStatus --value 2>/dev/null | paste -sd/ -)"
 echo "session_type=$XDG_SESSION_TYPE"
 echo "session_user=$(id -un)"
 echo "session_uid=$(id -u)"
@@ -2048,7 +2049,8 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         check("the session locks and unlocks", values.get("e2e_lock_ok") == "yes",
               f"e2e_lock_ok={values.get('e2e_lock_ok')} "
               f"e2e_lock_locked={values.get('e2e_lock_locked')} "
-              f"e2e_lock_error={values.get('e2e_lock_error') or 'none'}")
+              f"e2e_lock_error={values.get('e2e_lock_error') or 'none'} "
+              f"password_unit={values.get('qa_password_unit') or 'missing'}")
     if join_user:
         check("domain join completed", values.get("join_ok") == "yes",
               f"join_ok={values.get('join_ok')}")
