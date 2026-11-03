@@ -60,6 +60,10 @@ type PlatformSpec struct {
 	// (docs/adr/0022). They are not group exclusions: a group exclusion only
 	// changes what that transaction installs.
 	RemovePackages []string `json:"removePackages,omitempty"`
+	// MaskedUnits are units the platform's base ships that the image must
+	// disable: they describe the base, not an organization, and masking them is
+	// a platform fact (for example systemd-remount-fs on a composefs root).
+	MaskedUnits []string `json:"maskedUnits,omitempty"`
 	// UnavailablePackages records known packages the platform does not
 	// provide from a supported repository, so requests fail at compile time.
 	UnavailablePackages []UnavailablePackage `json:"unavailablePackages,omitempty"`
@@ -564,6 +568,13 @@ func (platformProvider) Decode(res *model.Resource) error {
 			}
 			seen[unit] = true
 		}
+	}
+	seenMask := map[string]bool{}
+	for _, unit := range s.MaskedUnits {
+		if !updateUnitRE.MatchString(unit) || seenMask[unit] {
+			errs.Add(model.Errorf(res, "maskedUnits: %q must be a unique .service or .timer unit", unit))
+		}
+		seenMask[unit] = true
 	}
 	if s.Flatpak.Preinstall && !pkgRE.MatchString(s.Flatpak.Package) {
 		errs.Add(model.Errorf(res, "flatpak.package is required when flatpak.preinstall is true"))
