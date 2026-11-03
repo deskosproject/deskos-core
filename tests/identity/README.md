@@ -120,14 +120,57 @@ it to AD is a schema conflict. The checks never share a VM, disk, workspace or
 tag: `identity-freeipa.yml` uses `/mnt/deskos-ipa-work`, `identity-ad.yml`
 `/mnt/deskos-ad-work`.
 
-## The daily check
+## FreeIPA trust with AD
 
-It runs daily and on demand, never on a pull request: it starts the pinned
+`identity-ad-trust.yml` runs both directories at once and proves the indirect
+login: the client is enrolled in FreeIPA, not joined to AD, and an AD account
+authenticates through the trust.
+
+```bash
+# AD first, on its own loopback ports, then FreeIPA on the default ones.
+export AD_BIND=127.0.0.2 AD_SERVER_HOSTNAME=dc.adtrust.test
+export AD_REALM=ADTRUST.TEST AD_DOMAIN=ADTRUST
+export AD_IMAGE=localhost/deskos-ad:test ADMIN_PASSWORD='…'
+sudo -E tests/identity/samba-ad.sh start
+sudo tests/identity/samba-ad.sh status
+
+ip="$(sudo podman inspect deskos-ad \
+  --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+export FREEIPA_IMAGE='freeipa/freeipa-server@sha256:…'
+export FREEIPA_PASSWORD='…'
+sudo -E tests/identity/freeipa.sh start
+sudo tests/identity/freeipa.sh status
+
+ipa_ip="$(sudo podman inspect deskos-freeipa \
+  --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+export AD_DNS_FORWARDER="$ipa_ip"
+sudo -E tests/identity/samba-ad.sh forwarder
+
+export AD_USER=qa AD_USER_PASSWORD='…'
+sudo -E tests/identity/samba-ad.sh user
+export AD_DOMAIN=adtrust.test AD_SERVER_IP="$ip" AD_ADMIN_PASSWORD="$ADMIN_PASSWORD"
+sudo -E tests/identity/freeipa.sh trust
+
+# Only after the trust: the guest reaches the published loopback at 10.0.2.2,
+# while the DC needed the IPA container address during validation.
+export IPA_PUBLIC_IP=10.0.2.2
+sudo -E tests/identity/freeipa.sh dns
+```
+
+The trust command adds a conditional forward zone for `adtrust.test`, installs
+the trust component, runs `ipa trust-add` as `Administrator`, and waits until
+the IPA server resolves `qa@adtrust.test` and `sssctl domain-status` says
+`Online`. The guest then joins FreeIPA with `--join-user qa@adtrust.test`; the
+AD user is not a local account and the AD DC is not reachable from the guest.
+
+## The daily checks
+
+They run daily and on demand, never on a pull request: each starts the pinned
 server, builds the image and disk, boots the VM and runs the instrumented
 session. The join unit runs before GDM, and the session asserts the join, SSSD
 and the directory user. Verified 2026-10-27: `join_ok=yes`, `join_sssd=active`,
-`session_user=qa`, `oddjobd=active`. The login is **autologin**: PAM's session
-phase, the greeter and the home policy run, but no password is typed.
+`session_user=qa`, `oddjobd=active`. The login types the directory password at
+GDM; it is not autologin.
 
 Three details that cost runs:
 - `ipa-server-install` rejects a single-label domain and needs `-U` on a detached
@@ -139,6 +182,8 @@ Three details that cost runs:
 
 ## Still unproven
 
-- An interactive GDM login, with a person typing the directory password.
-- A FreeIPA realm with integrated DNS; only the AD check has one.
-- A production directory: the throwaway realm covers none.
+- A production directory or a multi-forest trust: the fixtures cover one DC,
+  one account and a throwaway realm.
+- A trust with DNS delegation. The fixture uses a conditional forward zone,
+  which is the documented shape when the two zones are not children of one
+  another; delegation adds parent-side NS and glue records.

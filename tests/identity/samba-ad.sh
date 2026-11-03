@@ -49,6 +49,20 @@ case "${1:-}" in
     # nothing about the throwaway zone.
     podman exec "$name" host -t SRV "_ldap._tcp.$dnsdomain" 127.0.0.1
     ;;
+  forwarder)
+    # A trust is validated from both sides. The IPA server reaches the DC
+    # directly on the podman network, and the DC reaches the IPA server through
+    # this forwarder. The two zones are siblings, so neither can rely on the
+    # other being a parent.
+    : "${AD_DNS_FORWARDER:?set AD_DNS_FORWARDER to the IPA server on the podman network}"
+    podman exec -e AD_DNS_FORWARDER="$AD_DNS_FORWARDER" "$name" sh -c \
+      'sed -i "s|^[[:space:]]*dns forwarder =.*|dns forwarder = $AD_DNS_FORWARDER 1.1.1.1|" /etc/samba/smb.conf
+       grep -qE "^[[:space:]]*dns forwarder =" /etc/samba/smb.conf ||
+         echo "dns forwarder = $AD_DNS_FORWARDER 1.1.1.1" >> /etc/samba/smb.conf'
+    podman exec "$name" grep -n 'dns forwarder' /etc/samba/smb.conf
+    podman restart "$name" >/dev/null
+    echo "restarted with forwarder $AD_DNS_FORWARDER"
+    ;;
   user)
     : "${AD_USER:?set AD_USER}"
     : "${AD_USER_PASSWORD:?set AD_USER_PASSWORD}"

@@ -108,6 +108,7 @@ passes:
 | First boot | the GNOME Initial Setup wizard is the session that comes up, and no account exists yet | `tests/vm/firstbootcheck.py` |
 | Update and rollback | a machine moves A to B and back, including a candidate that cannot boot | [lifecycle-test.yml](.github/workflows/lifecycle-test.yml) |
 | Domain login | a throwaway FreeIPA realm and a Samba AD domain, joined at first boot, with a session as the directory user | [identity-freeipa.yml](.github/workflows/identity-freeipa.yml) |
+| AD trust | a FreeIPA client logs in as an AD user through a one-way trust, with the DC reachable only from the IPA server | [identity-ad-trust.yml](.github/workflows/identity-ad-trust.yml) |
 | Supply chain | installed SBOM, CVE scan, keyless signature and provenance on the digest | [supply-chain.md](docs/supply-chain.md) |
 
 The results of each published digest are in `evidence.deskos.org`, keyed by

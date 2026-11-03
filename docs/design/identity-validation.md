@@ -1,6 +1,6 @@
 # Validating identity the way a fleet needs it
 
-**Status:** design note, 2026-10-27. The FreeIPA check landed in
+**Status:** design note, updated 2026-11-03. The FreeIPA check landed in
 [#236](https://github.com/deskosproject/deskos-core/pull/236), the GDM login in
 [#237](https://github.com/deskosproject/deskos-core/pull/237) and the Samba AD
 check in [#238](https://github.com/deskosproject/deskos-core/pull/238). The
@@ -8,7 +8,8 @@ interactive login that replaced autologin landed in
 [#396](https://github.com/deskosproject/deskos-core/pull/396), and the realm's
 own DNS in [#397](https://github.com/deskosproject/deskos-core/pull/397);
 FreeIPA run `41631837345` and AD run `41631837362` (2026-11-03) are the runs
-quoted below.
+quoted below. The AD trust test is implemented in `identity-ad-trust.yml`; the
+first run is pending.
 
 This is a test rig, not a product capability: it proves a machine can join a
 directory automatically and repeatedly. DeskOS does not enrol machines.
@@ -35,10 +36,12 @@ Two workflows, one per realm, never one for both:
 |---|---|---|
 | `identity-freeipa.yml` | FreeIPA (`lab.test`) | daily 04:23 UTC, dispatch, identity-only paths |
 | `identity-ad.yml` | Samba AD (`ad.lab.test`) | daily 04:47 UTC, dispatch, identity-only paths |
+| `identity-ad-trust.yml` | FreeIPA trusting AD (`lab.test` trusts `adtrust.test`) | daily 05:13 UTC, dispatch, identity-only paths |
 
-Neither is a pull-request check: each builds a container, a bootc image and a
+None is a pull-request check: each builds a container, a bootc image and a
 QCOW2, and boots a VM; a newer push cancels the run in flight. Each owns its
-workspace, image tag and disk (`/mnt/deskos-ipa-work`, `/mnt/deskos-ad-work`).
+workspace, image tag and disk (`/mnt/deskos-ipa-work`, `/mnt/deskos-ad-work`,
+`/mnt/deskos-ad-trust-work`).
 
 A disk that joined one realm keeps `krb5.conf`, `sssd.conf`, the machine keytab,
 the default realm and `authselect` state, so a second realm is a schema conflict;
@@ -123,16 +126,22 @@ runner's resolver for the zone.
 ## What this does not prove
 
 - **Not Windows AD.** Joining the Samba DC runs the same Kerberos, LDAP, DNS and
-  `sssd-ad` path as a Microsoft Windows AD domain for the client. It is not the
-  same product (no Group Policy, no Windows replication) and is a stand-in **for
+  `sssd-ad` path as a Microsoft Windows AD domain for the client. The trust test
+  uses the same Samba DC as the AD side of a FreeIPA trust. It is not the same
+  product (no Group Policy, no Windows replication) and is a stand-in **for
   testing only**.
 - **A check, not a recommendation.** Which directory a fleet runs is the
   organization's decision. FreeIPA fits Linux better because it models Unix
   identity, host-based access and `sudo` policy natively; AD is supported because
   organizations already have it.
-- **Not a trust yet.** FreeIPA and AD each serve their own DNS now, but a trust
-  needs both realms reachable at once, with DNS delegation; that is the next
-  step.
+- **A trust, not a production trust.** `identity-ad-trust.yml` runs both
+  directories at once. The IPA server gets a conditional forward zone for
+  `adtrust.test` pointing at the DC on the podman network, `ipa-adtrust-install`
+  enables the trust components, and `ipa trust-add` creates a one-way trust
+  with the AD administrator's credentials. The client is enrolled in FreeIPA
+  and logs in as `qa@adtrust.test` through the trust. It proves the indirect
+  login path, not a supported multi-forest deployment: one DC, one account, a
+  throwaway realm and no replication.
 - **Not a real user's password.** The fixture generates one per run, and the
   disposable DC turns off its complexity rule so the keyboard path stays
   lowercase; it is a test credential, not a directory policy.

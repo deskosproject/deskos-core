@@ -109,8 +109,13 @@ the harness types there through the hypervisor's VNC keyboard.
   (2026-11-03) pass.
 - **A realm with its own DNS.** FreeIPA runs integrated DNS and the client
   discovers it through SRV records; FreeIPA run `41631837345` (2026-11-03)
-  passes. **Next:** an AD trust with DNS delegation
-  ([identity-validation.md](design/identity-validation.md)).
+  passes.
+- **An AD trust.** `identity-ad-trust.yml` starts a disposable AD DC and a
+  FreeIPA server, adds a conditional forward zone for the AD domain, establishes
+  a one-way trust with `ipa trust-add`, and logs in at GDM as the AD user on a
+  client enrolled in FreeIPA. It is the evidence for the indirect-login path in
+  [network-authentication.md](design/network-authentication.md), not a
+  production trust; the first run is pending.
 - **Corporate dconf lockdown.** `GnomeProfile.spec.locks` renders locks and the
   `lockdown` block models `org.gnome.desktop.lockdown.*`. The session check proves
   a locked key cannot change, `deskos report` lists the locks, and
