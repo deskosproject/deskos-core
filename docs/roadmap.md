@@ -103,8 +103,11 @@ the harness types there through the hypervisor's VNC keyboard.
   then logs in at GDM with a home from `oddjob-mkhomedir` (2026-10-27).
 - **AD membership.** `tests/identity/samba/` and `identity-ad.yml` join through
   the realm's own DNS and log in as `qa@ad.lab.test`; an AD trust is a later step.
-- **Next:** an interactive GDM login with a typed password, and a realm with its
-  own DNS ([identity-validation.md](design/identity-validation.md)).
+- **Interactive GDM login.** The greeter asks for a name, the harness types the
+  directory user and its generated password on the VNC keyboard, and the session
+  starts as that user; FreeIPA run `41579749802` and AD run `41579749764`
+  (2026-11-03) pass. **Next:** a realm with its own DNS
+  ([identity-validation.md](design/identity-validation.md)).
 - **Corporate dconf lockdown.** `GnomeProfile.spec.locks` renders locks and the
   `lockdown` block models `org.gnome.desktop.lockdown.*`. The session check proves
   a locked key cannot change, `deskos report` lists the locks, and
