@@ -127,8 +127,9 @@ dracut-ng `main`) loads those drivers unconditionally. *Unresolved*.
 
 ## VM QA
 
-Implemented in `tests/vm/` (CS10 in CI; AlmaLinux and Fedora in the publish gate; Ubuntu in its
-own repository; RHEL on the retired factory host): Tier A (`bootcheck.py`, no
+Implemented in `tests/vm/` (CS10 and Fedora in `image-bootcheck`; AlmaLinux in the publish
+gate; Ubuntu in its own repository; RHEL through the entitled factory on demand):
+Tier A (`bootcheck.py`, no
 reference matching) and a Tier B subset (`sessioncheck.py`, SMBIOS credentials,
 serial report). See
 [`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)
@@ -150,3 +151,8 @@ QCOW2 SHA-256, harness and test-suite commits and the runner image digest;
   splash, dconf defaults and locks.
 - **Tier C, lifecycle.** bootc upgrade, reboot, rollback; kargs and initramfs
   follow the deployment.
+
+The frames Tier A and B capture on every image-changing merge to `main` are
+published at [Automated QA and screenshots](../qa.md). The page is refreshed
+from the latest successful `image-bootcheck` run; the images are records, not a
+reference-matching test.

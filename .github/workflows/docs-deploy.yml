@@ -23,10 +23,19 @@ on:
       - docs/**
       - website/**
       - .github/workflows/docs-deploy.yml
+  # A successful image boot check refreshes the screenshots on the QA page.
+  # A failed run changes nothing: the last good images stay up, and the red
+  # badge on the page points at the run that failed.
+  workflow_run:
+    workflows: [image-bootcheck]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  # The QA step downloads the artifacts of the run that triggered this one.
+  actions: read
 
 concurrency:
   group: docs-deploy-${{ github.ref }}
@@ -35,6 +44,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    # A failed image boot check has no frames worth showing; leave the site as
+    # it is and let the next good run or a docs change deploy.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -57,6 +69,39 @@ jobs:
 
       - name: Build the site
         run: npm run build --prefix website
+
+      - name: Find the latest successful image boot check
+        # A docs-only merge must not roll the gallery back to the images that
+        # happen to be committed. Every build refreshes from the last successful
+        # run; the workflow_run trigger only makes that happen immediately after
+        # the run, instead of waiting for the next docs change.
+        id: qa
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          id="$(gh run list --repo "$GITHUB_REPOSITORY" \
+            --workflow image-bootcheck.yml --branch main --status success \
+            --limit 1 --json databaseId --jq '.[0].databaseId // ""' || true)"
+          echo "run-id=$id" >> "$GITHUB_OUTPUT"
+
+      - name: Download the QA frames
+        id: frames
+        if: steps.qa.outputs.run-id != ''
+        # Artifacts expire after 14 days. An old but successful run then has
+        # nothing to download; the committed fallback is better than a failed
+        # docs deploy, and the next image-changing merge refreshes the gallery.
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          run-id: ${{ steps.qa.outputs.run-id }}
+          pattern: vm-evidence-*-attempt-*
+          path: qa-artifacts
+          github-token: ${{ github.token }}
+
+      - name: Put the latest screenshots on the QA page
+        if: steps.frames.outcome == 'success'
+        run: python3 tests/vm/gallery.py --artifacts qa-artifacts --out website/build/qa/latest
 
       # The Pages artifact is the built site. A pull request stops here: the
       # build is the check, and nothing is published from a branch.
