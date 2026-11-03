@@ -261,6 +261,10 @@ def vnc_type(path, text, select_first=False, timeout=15):
         key(0xFFE1, False)
         time.sleep(2.0)
         if select_first:
+            # The greeter can draw the username field before it owns keyboard
+            # focus; the ready marker comes from the shell process, not the
+            # dialog. Give the dialog time to take the seat.
+            time.sleep(5.0)
             key(0xFFE3, True)       # Control_L
             key(ord("a"), True)
             key(ord("a"), False)
