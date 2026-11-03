@@ -3,64 +3,9 @@
   "review": "2026-12-10",
   "base": {
     "image": "quay.io/almalinuxorg/almalinux-bootc:10",
-    "digest": "sha256:0a036afe9ddfb987f2b5c428242ebeaf5c74d4279122f4ccf45dc7c38fe55c73"
+    "digest": "sha256:5ef1b06e03479c7d77e98b6f70dd0f5a36fce900ed24d6ece0d4f3a9b04b323d"
   },
   "exceptions": [
-    {
-      "id": "CVE-2026-98432",
-      "kind": "accepted-risk-upstream-package",
-      "reason": "Accepted by the owner on 2026-11-01. Not a false positive: the Linux kernel shipped by the AlmaLinux 10 bootc base has a TCP use-after-free (CVE-2026-98432). Grype reports fix state not-fixed for the 2026-10-31 base when it was checked on 2026-11-01. DeskOS neither builds nor patches the vendor kernel, so the fix is AlmaLinux's rebuild. This record makes the acceptance explicit and expires on the review date below.",
-      "matches": [
-        {
-          "package": "kernel",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-core",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-modules",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-modules-core",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-modules-extra",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-tools",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "kernel-tools-libs",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        },
-        {
-          "package": "python3-perf",
-          "type": "rpm",
-          "version": "6.12.0-211.69.1.el10_2",
-          "path": "/usr/share/rpm/rpmdb.sqlite"
-        }
-      ]
-    },
     {
       "id": "GHSA-p77j-4mvh-x3m3",
       "kind": "accepted-risk-upstream-binary",

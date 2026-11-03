@@ -16,14 +16,12 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/almalinuxorg/almalinux-bootc:10
-    # x86_64 manifest of the :10 index, 2026-10-31 (the base as served that day).
-    # Moved from the 2026-10-22 manifest after the vulnerability gate found a
-    # Critical in ca-certificates, which this base fixes, and Criticals in Go
-    # modules compiled into binaries the base ships (podman, skopeo, toolbox,
-    # ipp-usb), which it does not. A newer base is the fix that accepts nothing;
-    # what remains is recorded, with a reason, in
+    # Index of the :10 tag, 2026-11-03 (the base as served that day). The group
+    # install resolves to the same 1316 package names; the base moves for its
+    # own packages, and the publish pipeline rescans the result. What remains
+    # accepted is recorded, with a reason, in
     # tests/supply-chain/exceptions-almalinux-10.json.
-    digest: sha256:0a036afe9ddfb987f2b5c428242ebeaf5c74d4279122f4ccf45dc7c38fe55c73
+    digest: sha256:5ef1b06e03479c7d77e98b6f70dd0f5a36fce900ed24d6ece0d4f3a9b04b323d
   # ADR 0028: the installed package set the group must resolve to. Measured on
   # this base digest by the first publish leg.
   packageManifest: manifests/almalinux-10.txt
