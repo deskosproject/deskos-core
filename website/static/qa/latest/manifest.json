@@ -1,0 +1,47 @@
+{
+  "schema": "deskos.qa-gallery/v1",
+  "platforms": {
+    "fedora-45": {
+      "artifact": "vm-evidence-core-fedora-45-attempt-1",
+      "run_id": "41656797386",
+      "commit": "b659340dcf9019a07fc7ea7ec4877c9ae4ce1874",
+      "workstation": "deskos-core-fedora-45",
+      "image_id": "0573773a5986151bbf393c240d0120e2ea0a015a0348bb723c3e189caef7fe8a",
+      "frames": {
+        "splash": {
+          "file": "fedora-45-splash.png",
+          "source": "frames/boot-0007.1-splash.png",
+          "t": 7.1,
+          "class": "splash"
+        },
+        "session": {
+          "file": "fedora-45-session.png",
+          "source": "frames/boot-0060.7-graphical.png",
+          "t": 60.7,
+          "class": "graphical"
+        }
+      }
+    },
+    "centos-stream-10": {
+      "artifact": "vm-evidence-core-centos-stream-10-attempt-1",
+      "run_id": "41656797386",
+      "commit": "b659340dcf9019a07fc7ea7ec4877c9ae4ce1874",
+      "workstation": "deskos-core-centos-stream-10",
+      "image_id": "a68ca4e4e5d04025af2e285f6f204c1319ea0083f1c636f804626574c9419314",
+      "frames": {
+        "splash": {
+          "file": "centos-stream-10-splash.png",
+          "source": "frames/boot-0012.5-splash.png",
+          "t": 12.5,
+          "class": "splash"
+        },
+        "session": {
+          "file": "centos-stream-10-session.png",
+          "source": "frames/boot-0063.7-graphical.png",
+          "t": 63.7,
+          "class": "graphical"
+        }
+      }
+    }
+  }
+}

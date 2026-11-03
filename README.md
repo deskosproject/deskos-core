@@ -113,6 +113,13 @@ passes:
 The results of each published digest are in `evidence.deskos.org`, keyed by
 digest, and summarised at [deskos.org/evidence](https://deskos.org/evidence/).
 
+The boot, session and first-boot checks also run on every merge to `main` that
+can change an image, in
+[image-bootcheck.yml](.github/workflows/image-bootcheck.yml). The screenshots
+they capture are on
+[Automated QA and screenshots](docs/qa.md); the page is refreshed from the
+latest successful run, and a failure leaves the last good images up.
+
 ## Platforms
 
 | Platform | Today |

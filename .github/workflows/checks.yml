@@ -34,6 +34,9 @@ jobs:
         run: go test ./...
       - name: VM boot check harness unit tests
         run: python3 -m unittest discover -s tests/vm
+      - name: QA gallery unit tests
+        # The gallery reads the VM artifacts; it does not build or boot an image.
+        run: python3 -m unittest discover -s tests/qa
       - name: lifecycle harness unit tests
         run: python3 -m unittest discover -s tests/lifecycle
       - name: supply-chain harness unit tests
