@@ -21,6 +21,7 @@ Required status checks are a GitHub setting outside the repository.
 | `renovate.yml` | daily; dispatch | opens pin-update pull requests; it never merges | pull requests |
 | `identity-freeipa.yml` | daily 04:23 UTC; dispatch; pull request when the identity fixture or the session harness changes | a client image joins a disposable FreeIPA realm and the session proves the login | summary, frames |
 | `identity-ad.yml` | daily 04:47 UTC; dispatch; pull request when the identity fixture or the session harness changes | the same, against a disposable Samba AD domain controller | summary, frames |
+| `identity-ad-trust.yml` | daily 05:13 UTC; dispatch; pull request when the identity fixture, the trust fixture or the session harness changes | a FreeIPA client resolves and logs in as an AD user through a one-way IPA-to-AD trust, with the DC reachable only from the IPA server | summary, frames, trust and domain status |
 | `track.yml` | Mondays 05:17 UTC; dispatch | every checksum-pinned resource still resolves, and moves the ones the curated list covers, as a pull request | pull request |
 | `evidence-maintenance.yml` | dispatch | repairs or prunes the digest-keyed record store; a prefix with an index is refused without `force` | job log |
 
