@@ -101,7 +101,7 @@ jobs:
 
       - name: Put the latest screenshots on the QA page
         if: steps.frames.outcome == 'success'
-        run: python3 tests/vm/gallery.py --artifacts qa-artifacts --out website/build/qa/latest
+        run: python3 tests/qa/gallery.py --artifacts qa-artifacts --out website/build/qa/latest
 
       # The Pages artifact is the built site. A pull request stops here: the
       # build is the check, and nothing is published from a branch.

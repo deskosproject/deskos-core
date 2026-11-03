@@ -33,9 +33,6 @@ on:
       - "schemas/**"
       - "go.mod"
       - "tests/vm/*.py"
-      # These read artifacts and write images; they build and boot nothing.
-      - "!tests/vm/gallery.py"
-      - "!tests/vm/test_gallery.py"
       - "tests/vm/config.toml"
       - ".github/workflows/image-bootcheck.yml"
   push:
@@ -48,9 +45,6 @@ on:
       - "schemas/**"
       - "go.mod"
       - "tests/vm/*.py"
-      # These read artifacts and write images; they build and boot nothing.
-      - "!tests/vm/gallery.py"
-      - "!tests/vm/test_gallery.py"
       - "tests/vm/config.toml"
       - ".github/workflows/image-bootcheck.yml"
 
