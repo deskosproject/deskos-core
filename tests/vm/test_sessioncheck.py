@@ -151,6 +151,48 @@ class TmpfilesTest(unittest.TestCase):
         self.assertIn("StandardError=journal+console", unit)
         self.assertIn("Wants=deskos-qa-report.service", c["systemd.unit-dropin.graphical.target"])
 
+    def test_the_lock_probe_reports_both_states(self):
+        script = sc.e2e_lock()
+        self.assertIn('call("Lock")', script)
+        self.assertIn('call("GetActive")', script)
+        # The session user cannot write the console; the trigger is its only
+        # output to the root side.
+        self.assertIn(sc.LOCK_TRIGGER_PATH, script)
+        self.assertIn("e2e_lock_ok=yes", script)
+        self.assertIn("e2e_lock_ok=no", script)
+
+    def test_the_lock_signal_prints_the_marker_on_the_serial_port(self):
+        script = sc.lock_signal()
+        self.assertIn(sc.LOCK_TRIGGER_PATH, script)
+        self.assertIn("echo DESKOS_QA_LOCKED > /dev/ttyS0", script)
+
+    def test_session_credentials_set_the_lock_password_before_gdm(self):
+        # The host types this password through the hypervisor; the test user
+        # comes from sysusers, which sets none.
+        c = sc.credentials("session")
+        unit = c["systemd.extra-unit.deskos-qa-password.service"]
+        self.assertIn("Before=gdm.service", unit)
+        self.assertIn(f"echo deskos-qa:{sc.LOCK_PASSWORD} | /usr/sbin/chpasswd", unit)
+        self.assertIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        signal = c["systemd.extra-unit.deskos-qa-lock-signal.service"]
+        self.assertIn(f"ExecStart=/bin/bash {sc.LOCK_SIGNAL_PATH}", signal)
+        self.assertIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
+
+    def test_a_directory_login_has_no_lock_password(self):
+        # The lock probe is skipped for directory users, so their image carries
+        # neither the probe nor a password it does not use.
+        c = sc.credentials("session", gdm_user="labuser")
+        self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
+        self.assertNotIn(sc.LOCK_PROBE_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertNotIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
+
+    def test_journal_credentials_add_no_lock_password(self):
+        c = sc.credentials("journal")
+        self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
+
     def test_journal_credentials_add_no_user(self):
         c = sc.credentials("journal")
         self.assertNotIn("sysusers.extra", c)
@@ -394,6 +436,25 @@ class ParseEvaluateTest(unittest.TestCase):
         bad = dict(GOOD, e2e_close_ok="no", e2e_close_reason="no-close-button")
         failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
         self.assertEqual(failed, {"a file manager window closes through the tree"})
+
+    def test_a_session_that_does_not_unlock_fails(self):
+        bad = dict(GOOD, e2e_lock_ok="no", e2e_lock_locked="yes")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"the session locks and unlocks"})
+
+    def test_a_lock_that_did_not_happen_fails(self):
+        bad = dict(GOOD, e2e_lock_ok="no", e2e_lock_locked="no")
+        failed = {c["check"] for c in sc.evaluate(bad, PLAN) if not c["pass"]}
+        self.assertEqual(failed, {"the session locks and unlocks"})
+
+    def test_a_session_without_the_lock_probe_does_not_claim_it(self):
+        names = {c["check"] for c in sc.evaluate(GOOD, PLAN)}
+        self.assertNotIn("the session locks and unlocks", names)
+        values = dict(GOOD, e2e_lock_ok="yes", e2e_lock_locked="yes")
+        c = next(c for c in sc.evaluate(values, PLAN)
+                 if c["check"] == "the session locks and unlocks")
+        self.assertTrue(c["pass"])
+        self.assertIn("e2e_lock_locked=yes", c["detail"])
 
     def test_a_session_that_did_not_report_the_launch_fails(self):
         values = {k: v for k, v in GOOD.items() if not k.startswith("e2e_launch_")}
@@ -1166,6 +1227,16 @@ class JoinTest(unittest.TestCase):
         # It must not overwrite a real report, and it must say what stalled.
         self.assertIn("session_results=missing", sc.WATCHDOG_SCRIPT)
         self.assertIn("join.status", sc.WATCHDOG_SCRIPT)
+
+    def test_a_join_boot_carries_no_lock_probe(self):
+        # A joined session is about the realm, not the lock screen, and the
+        # probe would run before the directory user can log in.
+        c = sc.credentials("session", join=JOIN)
+        self.assertNotIn(sc.LOCK_PROBE_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)
+        self.assertNotIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
+        self.assertNotIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
+        self.assertNotIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
 
     def test_credentials_install_the_join_before_gdm(self):
         c = sc.credentials("session", join=JOIN)

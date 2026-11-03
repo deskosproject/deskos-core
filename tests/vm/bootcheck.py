@@ -9,7 +9,10 @@ appear, or when ACPI shutdown does not power the machine off in time.
 
 The harness only classifies screen pixels (blank, text, splash, graphical).
 It does not identify which graphical screen appears (GNOME Initial Setup,
-GDM or a desktop) and does not test applications.
+GDM or a desktop) and does not test applications. A caller may pass
+`keys_on_marker`: when the serial log shows a text marker, the harness types
+the paired keys on a Unix-socket VNC keyboard, the input path a lock screen
+accepts.
 
 It needs Linux with KVM (/dev/kvm), QEMU, qemu-img, OVMF firmware and
 Python 3; it uses only the Python standard library.
@@ -160,6 +163,73 @@ class QMP:
         return reply.get("return")
 
 
+# ---------------------------------------------------------------- input
+
+def vnc_type(path, text, timeout=15):
+    """Type `text` and Return into a QEMU VNC server on a Unix socket.
+
+    The lock screen refuses remote-desktop portal input: Mutter tears the
+    remote session down when the screen locks. The hypervisor's own keyboard
+    does reach it, and a Unix-socket VNC server keeps that input on the host.
+    The client is the RFB 3.8 handshake and key events only; it does not read
+    the framebuffer.
+
+    The first keysym is Shift, which raises the lock screen's curtain without
+    typing anything, so the password is not swallowed by the animation. The
+    delay after it covers the curtain; Shift is harmless when the password
+    field already has focus.
+    """
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect(path)
+
+        def recv(n):
+            out = b""
+            while len(out) < n:
+                chunk = sock.recv(n - len(out))
+                if not chunk:
+                    raise HarnessError("VNC connection closed during the handshake")
+                out += chunk
+            return out
+
+        recv(12)
+        sock.sendall(b"RFB 003.008\n")
+        count = recv(1)[0]
+        offered = set(recv(count))
+        if 1 not in offered:
+            raise HarnessError(f"VNC security types {sorted(offered)} do not include None")
+        sock.sendall(b"\x01")
+        result = struct.unpack(">I", recv(4))[0]
+        if result != 0:
+            raise HarnessError(f"VNC security failed with status {result}")
+        sock.sendall(b"\x01")
+        head = recv(24)
+        name_len = struct.unpack(">I", head[20:24])[0]
+        recv(name_len)
+
+        def key(sym, down):
+            sock.sendall(struct.pack(">BBHI", 4, 1 if down else 0, 0, sym))
+
+        # Shift_L raises the curtain; Return on an empty field would submit.
+        key(0xFFE1, True)
+        key(0xFFE1, False)
+        time.sleep(2.0)
+        for ch in text:
+            key(ord(ch), True)
+            key(ord(ch), False)
+            time.sleep(0.02)
+        # The guest has to read the submit before the socket closes; a close
+        # right after the write dropped it on the tested image.
+        time.sleep(0.3)
+        key(0xFF0D, True)
+        time.sleep(0.1)
+        key(0xFF0D, False)
+        time.sleep(1.0)
+    finally:
+        sock.close()
+
+
 # ---------------------------------------------------------------- run
 
 def find_qemu(explicit):
@@ -235,6 +305,8 @@ def run(args):
     vars_copy = os.path.join(out, "OVMF_VARS.fd")
     shutil.copyfile(vars_template, vars_copy)
     qmp_path = os.path.join(out, "qmp.sock")
+    keys_on_marker = list(getattr(args, "keys_on_marker", None) or [])
+    vnc_path = os.path.join(out, "vnc.sock")
 
     cmd = [
         qemu, "-machine", "q35,accel=kvm", "-cpu", "host",
@@ -247,7 +319,7 @@ def run(args):
         "-device", "virtio-rng-pci",
         "-serial", f"file:{os.path.join(out, 'serial.log')}",
         "-qmp", f"unix:{qmp_path},server=on,wait=off",
-    ] + list(getattr(args, "extra_qemu", None) or [])
+    ] + (["-vnc", f"unix:{vnc_path}"] if keys_on_marker else []) + list(getattr(args, "extra_qemu", None) or [])
     serial_path = os.path.join(out, "serial.log")
     marker = getattr(args, "until_serial", None)
     ready_marker = getattr(args, "until_serial_ready", None)
@@ -268,6 +340,7 @@ def run(args):
         t0 = time.monotonic()
         last_digest, stable, graphical_at, splash_at, stable_digest = None, 0, None, None, None
         marker_at, ready_at, ready_failed = None, None, False
+        keys_sent = set()
 
         def serial_text():
             try:
@@ -329,6 +402,16 @@ def run(args):
                         + serial_hint(serial_text()))
                     ready_failed = True
                     break
+            for i, (marker_text, keys) in enumerate(keys_on_marker):
+                if i in keys_sent or marker_text.encode() not in serial_text():
+                    continue
+                try:
+                    vnc_type(vnc_path, keys)
+                    summary.setdefault("keys_sent", []).append(
+                        {"marker": marker_text, "t": round(time.monotonic() - t0, 1)})
+                except (HarnessError, OSError) as exc:
+                    summary["failures"].append(f"typing on VNC after {marker_text!r}: {exc}")
+                keys_sent.add(i)
             if marker and marker_seen():
                 marker_at = round(time.monotonic() - t0, 1)
                 capture("boot")
@@ -390,7 +473,8 @@ def run(args):
                 proc.kill()
                 proc.wait()
         log.close()
-        for p in (qmp_path, overlay if not args.keep_overlay else None):
+        for p in (qmp_path, vnc_path if keys_on_marker else None,
+                  overlay if not args.keep_overlay else None):
             if p and os.path.exists(p):
                 os.remove(p)
         write_summary(out, summary)

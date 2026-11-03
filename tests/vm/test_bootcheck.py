@@ -86,5 +86,64 @@ class NetworkTest(unittest.TestCase):
                          ["-nic", "none"])
 
 
+class VncTypeTest(unittest.TestCase):
+    """The hypervisor keyboard the lock screen accepts, against a fake RFB server."""
+
+    def fake_server(self, path, events):
+        import socket
+        import struct
+
+        srv = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        srv.bind(path)
+        srv.listen(1)
+
+        def recv(conn, n):
+            out = b""
+            while len(out) < n:
+                chunk = conn.recv(n - len(out))
+                if not chunk:
+                    raise AssertionError("client closed early")
+                out += chunk
+            return out
+
+        def serve():
+            conn, _ = srv.accept()
+            try:
+                conn.sendall(b"RFB 003.008\n")
+                recv(conn, 12)
+                conn.sendall(b"\x01\x01")  # one security type: None
+                recv(conn, 1)
+                conn.sendall(struct.pack(">I", 0))
+                recv(conn, 1)  # ClientInit
+                conn.sendall(struct.pack(">HH", 640, 480) + b"\x00" * 16 + struct.pack(">I", 0))
+                while True:
+                    head = recv(conn, 8)
+                    events.append((head[0], head[1], struct.unpack(">I", head[4:8])[0]))
+                    if len(events) >= 2 and events[-1] == (4, 0, 0xFF0D) and events[-2][2] == 0xFF0D:
+                        break
+            finally:
+                conn.close()
+                srv.close()
+
+        import threading
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        return thread
+
+    def test_it_raises_the_curtain_then_types_the_password(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "vnc.sock")
+            events = []
+            thread = self.fake_server(path, events)
+            bootcheck.vnc_type(path, "redhat")
+            thread.join(5)
+        # Shift first, so the animation does not swallow the password; then each
+        # character and Return, each as a press and a release.
+        self.assertEqual(events[0], (4, 1, 0xFFE1))
+        self.assertEqual(events[1], (4, 0, 0xFFE1))
+        typed = [sym for kind, down, sym in events[2:] if down]
+        self.assertEqual(typed, [ord(ch) for ch in "redhat"] + [0xFF0D])
+
+
 if __name__ == "__main__":
     unittest.main()

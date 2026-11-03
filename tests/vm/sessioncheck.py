@@ -34,6 +34,10 @@ import bootcheck
 
 USER, UID = "deskos-qa", 1500
 HOME = f"/var/home/{USER}"
+# The lock probe's password is typed by the harness. It is deliberately not
+# based on the account name: pam_pwquality rejects a password that is. It
+# stays lowercase and digits so every keysym is unshifted on a raw VNC client.
+LOCK_PASSWORD = "ridge42lantern"
 RESULTS = "/var/tmp/deskos-qa/results.txt"
 MARK_BEGIN, MARK_JOURNAL, MARK_END = "DESKOS-QA-BEGIN", "DESKOS-QA-JOURNAL-BEGIN", "DESKOS-QA-END"
 # The page the guest's browser must fetch from the host side of QEMU's user
@@ -90,6 +94,9 @@ QA_READS_PATH = "/var/lib/deskos-qa/deskos-qa-reads.sh"
 E2E_PROBE_PATH = "/var/lib/deskos-qa/e2e-apps.py"
 E2E_SETTINGS_PATH = "/var/lib/deskos-qa/e2e-settings.py"
 E2E_CLOSE_PATH = "/var/lib/deskos-qa/e2e-close.py"
+LOCK_PROBE_PATH = "/var/lib/deskos-qa/e2e-lock.py"
+LOCK_TRIGGER_PATH = "/var/tmp/deskos-qa/locked"
+LOCK_SIGNAL_PATH = "/var/lib/deskos-qa/lock-signal.sh"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
 AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
@@ -723,7 +730,8 @@ def session_reads(dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensio
 
 
 def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vendor_keys=(), enabled_extensions=(),
-                   binaries=(), dconf_locks=(), join=None, font_families=(), network_profiles=(), reads=False):
+                   binaries=(), dconf_locks=(), join=None, font_families=(), network_profiles=(), gdm_user=None,
+                   reads=False):
     """The script the desktop autostart runs inside the GNOME session.
 
     It records the session state. With seed_skel it copies /etc/skel into the
@@ -761,6 +769,9 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
             'else echo "skelseed_$i=missing"; fi\n'
             "done\n"
         )
+    lock_probe = ""
+    if join is None and gdm_user is None:
+        lock_probe = f'python3 {LOCK_PROBE_PATH} 2>&1 || echo "e2e_lock_error=exit:$?"\n'
     appcheck = ""
     if app:
         name = os.path.basename(app.split()[0])
@@ -783,6 +794,7 @@ def session_script(seed_skel, app, skel_rels, dconf_keys=(), dconf_db=None, vend
 {seed}{launch}sleep 20
 out={RESULTS}
 {{
+echo "qa_password_unit=$(systemctl show deskos-qa-password.service -p ActiveState -p Result -p ExecMainStatus --value 2>/dev/null | paste -sd/ -)"
 echo "session_type=$XDG_SESSION_TYPE"
 echo "session_user=$(id -un)"
 echo "session_uid=$(id -u)"
@@ -798,6 +810,7 @@ echo "picture_uri=$(gsettings get org.gnome.desktop.background picture-uri)"
 {reads}{locks}{skel}{appcheck}python3 {E2E_PROBE_PATH} 2>&1 || echo "e2e_error=exit:$?"
 python3 {E2E_SETTINGS_PATH} 2>&1 || echo "e2e_settings_error=exit:$?"
 python3 {E2E_CLOSE_PATH} 2>&1 || echo "e2e_close_error=exit:$?"
+{lock_probe}
 echo "firefox_present=$(command -v firefox >/dev/null 2>&1 && echo yes || echo no)"
 timeout 120 firefox --headless --screenshot /var/tmp/deskos-qa/firefox.png about:blank >/dev/null 2>&1
 echo "firefox_headless_exit=$?"
@@ -1219,6 +1232,69 @@ if not close_ok:
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 """
 
+
+def e2e_lock():
+    """Scenario 3: lock the session and wait for the host to type the password.
+
+    Mutter tears a remote-desktop session down when the screen locks, and
+    creating one while locked is inhibited, so the portal cannot type here. The
+    guest locks, prints a marker, and waits; the host types through the
+    hypervisor's VNC keyboard, the keyboard the machine itself has.
+    """
+    return r"""#!/usr/bin/python3
+import subprocess
+import time
+
+
+def call(method):
+    try:
+        out = subprocess.run(
+            ["gdbus", "call", "--session", "--dest", "org.gnome.ScreenSaver",
+             "--object-path", "/org/gnome/ScreenSaver",
+             "--method", "org.gnome.ScreenSaver." + method],
+            capture_output=True, text=True, timeout=10).stdout
+    except Exception:
+        return ""
+    return out
+
+
+call("Lock")
+time.sleep(2)
+locked = "true" in call("GetActive")
+print("e2e_lock_locked=" + ("yes" if locked else "no"), flush=True)
+if locked:
+    # The session cannot write the serial console, so a root unit watches this
+    # trigger and prints the marker the host reads.
+    open("/var/tmp/deskos-qa/locked", "w").close()
+    deadline = time.time() + 30
+    while time.time() < deadline:
+        if "false" in call("GetActive"):
+            print("e2e_lock_ok=yes", flush=True)
+            break
+        time.sleep(1)
+    else:
+        print("e2e_lock_ok=no", flush=True)
+else:
+    print("e2e_lock_ok=no", flush=True)
+"""
+
+
+def lock_signal():
+    """The root side of scenario 3: announce the lock on the serial port.
+
+    The session runs as the test user and cannot write /dev/ttyS0. This unit
+    waits for the probe's trigger, then prints the marker the host watches for.
+    """
+    return f"""#!/bin/bash
+for i in $(seq 1 900); do
+  test -e {LOCK_TRIGGER_PATH} && break
+  sleep 1
+done
+stty -F /dev/ttyS0 115200 2>/dev/null
+echo DESKOS_QA_LOCKED > /dev/ttyS0 2>&1
+"""
+
+
 def gdm_conf(user):
     return f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={user}\n"
 
@@ -1346,7 +1422,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
         if reads:
             tmpfiles.append(f"f {QA_READS_PATH} 0644 root root - {tmpfiles_arg(reads)}")
         script = session_script(seed_skel, app, skel_rels, dconf_keys, dconf_db, vendor_keys, enabled_extensions,
-                                binaries, locks, join, font_families, network_profiles, reads=bool(reads))
+                                binaries, locks, join, font_families, network_profiles,
+                                gdm_user=gdm_user, reads=bool(reads))
         creds["sysusers.extra"] = f'u {USER} {UID} "DeskOS QA" {HOME} /bin/bash\n'
         tmpfiles += [
             "d /var/tmp/deskos-qa 1777 root root -",
@@ -1363,6 +1440,9 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             f"f {E2E_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_probe())}",
             f"f {E2E_SETTINGS_PATH} 0755 root root - {tmpfiles_arg(e2e_settings())}",
             f"f {E2E_CLOSE_PATH} 0755 root root - {tmpfiles_arg(e2e_close())}",
+            *([f"f {LOCK_PROBE_PATH} 0755 root root - {tmpfiles_arg(e2e_lock())}",
+                f"f {LOCK_SIGNAL_PATH} 0755 root root - {tmpfiles_arg(lock_signal())}"]
+              if not gdm_user and join is None else []),
             f"f {QA_BROWSER_PATH} 0755 root root - {tmpfiles_arg(session_browser_probe(browser_url))}",
             # GDM's configuration path is the distribution's: /etc/gdm on the EL
             # family and Fedora, /etc/gdm3 on Debian and Ubuntu. The harness writes
@@ -1449,6 +1529,22 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 f"EnvironmentFile={JOIN_ENV_PATH}\nExecStart=/bin/bash {JOIN_SCRIPT_PATH}\n"
                 "StandardOutput=journal+console\nStandardError=journal+console\n"
             )
+    if mode == "session" and not gdm_user and join is None:
+        # The lock probe needs a password the host can type. The test user comes
+        # from sysusers, which does not set one; a oneshot before GDM does.
+        creds["systemd.extra-unit.deskos-qa-lock-signal.service"] = (
+            "[Unit]\nDescription=Print the DeskOS QA lock marker on the serial port\n"
+            "After=graphical.target\n\n"
+            "[Service]\nType=oneshot\nTimeoutStartSec=960\n"
+            "StandardOutput=journal+console\nStandardError=journal+console\n"
+            f"ExecStart=/bin/bash {LOCK_SIGNAL_PATH}\n"
+        )
+        creds["systemd.extra-unit.deskos-qa-password.service"] = (
+            "[Unit]\nDescription=Set the DeskOS QA password for the lock probe\n"
+            "After=systemd-sysusers.service\nBefore=gdm.service\n\n"
+            "[Service]\nType=oneshot\n"
+            f"ExecStart=/bin/sh -c 'echo {USER}:{LOCK_PASSWORD} | /usr/sbin/chpasswd'\n"
+        )
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
         f"ConditionPathExists=!/etc/initrd-release\nAfter={target}\n\n"
@@ -1482,6 +1578,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
     wants = "deskos-qa-report.service"
     if join:
         wants += " deskos-qa-join.service"
+    if mode == "session" and not gdm_user and join is None:
+        wants += " deskos-qa-password.service deskos-qa-lock-signal.service"
     creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     return creds
@@ -1947,6 +2045,12 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
           f"e2e_close_ok={values.get('e2e_close_ok') or 'unread'} "
           f"e2e_close_app={values.get('e2e_close_app') or 'unread'} "
           f"e2e_close_reason={values.get('e2e_close_reason') or 'none'}")
+    if values.get("e2e_lock_ok") is not None:
+        check("the session locks and unlocks", values.get("e2e_lock_ok") == "yes",
+              f"e2e_lock_ok={values.get('e2e_lock_ok')} "
+              f"e2e_lock_locked={values.get('e2e_lock_locked')} "
+              f"e2e_lock_error={values.get('e2e_lock_error') or 'none'} "
+              f"password_unit={values.get('qa_password_unit') or 'missing'}")
     if join_user:
         check("domain join completed", values.get("join_ok") == "yes",
               f"join_ok={values.get('join_ok')}")
@@ -2347,6 +2451,7 @@ def main():
                                            font_families=[f["family"] for f in plan_font_families(plan)],
                                            network_profiles=plan_network_profiles(plan))),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
+        keys_on_marker=[("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user and join is None else [],
     )
     try:
         summary = bootcheck.run(run_args)

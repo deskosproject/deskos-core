@@ -1,9 +1,10 @@
 # Session E2E through accessibility
 
-**Status: scenarios 1, 2 and 4 implemented and verified by the VM harness
-(scenario 1 run `40795106343`, 2026-10-29; 2 and 4 run `41528142670`,
-2026-11-02); scenario 3 waits on keyboard injection.** Drive a GNOME session the way a person does, and fail the VM check
-where a user would be stuck.
+**Status: scenarios 1, 2, 3 and 4 implemented and verified by the VM harness
+(scenario 1 run `40795106343`, 2026-10-29; 2 and 4 run `41528142670`, 2026-11-02;
+3 run `41551588828`, 2026-11-03, on all three bootcheck legs and the offline
+boot).** Drive a GNOME session the way a person does, and fail the VM check where
+a user would be stuck.
 
 ## What exists, and what it does not prove
 
@@ -52,21 +53,26 @@ not on pixels:
    run asserts that a **new** application with at least one toplevel appears.
    Implemented 2026-10-29 with `org.gnome.Calculator.desktop`.
 
-   *Keyboard injection is deferred.* Mutter on Wayland rejects synthetic key
-   events from an ordinary client, and a root helper writing to `/dev/uinput`
-   would go around the desktop, the **wrong shape**. The supported route is the
-   **remote-desktop portal**, which a session-side helper uses to send input.
-   Whether that helper is packaged for EL10 is open, and it is not a prerequisite
-   for this assertion.
+   *Keyboard injection is deferred for application interaction.* Mutter on
+   Wayland rejects synthetic key events from an ordinary client, and a root
+   helper writing to `/dev/uinput` would go around the desktop, the **wrong
+   shape**. The **remote-desktop portal** is the supported route while the
+   session is unlocked; it cannot type at the lock screen (scenario 3), where the
+   harness uses the hypervisor's own VNC keyboard instead.
 2. **Reach a page in Settings.** Open Settings, navigate to a known panel, assert
    the panel's title is exposed. A shell that launches apps but cannot navigate is
    still broken. Implemented 2026-11-02: launch Settings and wait for a panel
    label in the accessibility tree. The sidebar row exposes no clickable action
    on the tested images, so this check does not claim a sidebar click; a click is
    the next step when the tree carries one.
-3. **Lock and unlock.** Lock from the shell, assert the lock screen is up, type the
-   password, assert the session returns. This exercises PAM and the lock screen
-   without the greeter's separate session.
+3. **Lock and unlock.** Lock from the session, assert the lock screen is up, type
+   the password, assert the session returns. This exercises PAM and the lock
+   screen without the greeter's separate session. Implemented 2026-11-03: the
+   guest locks and prints a marker from a root unit, and the host types the test
+   user's password on a Unix-socket VNC keyboard. The remote-desktop portal
+   cannot do this: Mutter tears the remote session down when the screen locks and
+   inhibits creating one while locked. The harness sets a disposable password
+   before GDM and skips the probe for directory logins.
 4. **Open a file manager window and close it.** Assert the window appears and that
    closing it returns to the previous state, a basic window-lifecycle check the
    session check cannot see. Implemented 2026-11-02: click the close button the
@@ -100,6 +106,7 @@ assert on a window rather than on the application's presence.
 - Not an accessibility conformance test: it drives through AT-SPI, and says
   nothing about whether an app is usable with a screen reader.
 - Not every application: four scenarios, extended when a real defect escapes.
+- Not a user's real password: scenario 3 sets a disposable one for the test user.
 - Not a substitute for the organization's field validation on hardware.
 
 ## What adopting it changes
@@ -121,6 +128,6 @@ milestone's second line, and the first line comes first.
       it. The close *through the tree* stays scenario 4.
 - [x] Scenario 2, Settings opens and exposes a panel label, implemented and run 2026-11-02.
 - [x] Scenario 4, window closed through the tree, implemented and run 2026-11-02.
-- [ ] Scenario 3, lock and unlock, waits on keyboard injection through the
-      remote-desktop portal; locking alone is not the scenario.
+- [x] Scenario 3, lock and unlock, typed through the hypervisor's VNC keyboard;
+      run `41551588828` on the three bootcheck legs and the offline boot.
 - [ ] Wire 2 and 4 into promotion.
