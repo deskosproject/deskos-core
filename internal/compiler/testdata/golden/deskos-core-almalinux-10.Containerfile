@@ -3,7 +3,7 @@
 # Workstation: deskos-core-almalinux-10
 # Platform:    almalinux-10 (AlmaLinux 10)
 
-FROM quay.io/almalinuxorg/almalinux-bootc:10@sha256:0a036afe9ddfb987f2b5c428242ebeaf5c74d4279122f4ccf45dc7c38fe55c73
+FROM quay.io/almalinuxorg/almalinux-bootc:10@sha256:5ef1b06e03479c7d77e98b6f70dd0f5a36fce900ed24d6ece0d4f3a9b04b323d
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
