@@ -72,6 +72,10 @@ case "${1:-}" in
     fi
     printf '%s\n%s\n' "$FREEIPA_USER_PASSWORD" "$FREEIPA_USER_PASSWORD" \
       | podman exec -i "$name" ipa passwd "$FREEIPA_USER"
+    # An administrator-set password is expired by policy: the greeter would
+    # authenticate and then demand a change. This check types the password and
+    # expects a session, so move the expiry past the run.
+    podman exec "$name" ipa user-mod "$FREEIPA_USER" --password-expiration=20301231000000Z
     ;;
   *)
     usage

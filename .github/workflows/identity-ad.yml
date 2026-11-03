@@ -174,7 +174,9 @@ jobs:
         run: |
           set -euo pipefail
           export AD_USER=qa
-          user_password="$(openssl rand -hex 12)"
+          # Mixed classes: the realm's password policy rejects lowercase hex,
+          # and the VNC client types uppercase as Shift plus the base key.
+          user_password="$(openssl rand -base64 24 | tr -d '\n/+=' | head -c 20)"
           echo "::add-mask::$user_password"
           echo "AD_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
           export AD_USER_PASSWORD="$user_password"
