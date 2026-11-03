@@ -1,0 +1,32 @@
+[
+  {
+    "token": "centos-stream-10",
+    "workstation": "deskos-core-centos-stream-10",
+    "exceptions": "tests/supply-chain/exceptions.json",
+    "disk": "bib",
+    "diskfile": "output/qcow2/disk.qcow2",
+    "rootfs": "xfs",
+    "config": "tests/vm/config.toml",
+    "splash": true
+  },
+  {
+    "token": "fedora-45",
+    "workstation": "deskos-core-fedora-45",
+    "exceptions": "tests/supply-chain/exceptions-fedora-45.json",
+    "disk": "bib",
+    "diskfile": "output/qcow2/disk.qcow2",
+    "rootfs": "btrfs",
+    "config": "tests/vm/config-btrfs.toml",
+    "splash": true
+  },
+  {
+    "token": "almalinux-10",
+    "workstation": "deskos-core-almalinux-10",
+    "exceptions": "tests/supply-chain/exceptions-almalinux-10.json",
+    "disk": "bib",
+    "diskfile": "output/qcow2/disk.qcow2",
+    "rootfs": "xfs",
+    "config": "tests/vm/config.toml",
+    "splash": true
+  }
+]
