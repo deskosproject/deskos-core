@@ -6,12 +6,14 @@
 set -euo pipefail
 
 : "${IPA_DOMAIN:?}" "${IPA_REALM:?}" "${IPA_SERVER:?}" "${IPA_PRINCIPAL:?}" "${IPA_PASSWORD:?}"
-# QEMU user networking exposes the host as 10.0.2.2. The server certificate names
-# the host, so the guest resolves that name to the host and not to a public DNS.
-if ! grep -qE "[[:space:]]${IPA_SERVER//./\\.}([[:space:]]|$)" /etc/hosts; then
-  printf '10.0.2.2 %s\n' "$IPA_SERVER" >> /etc/hosts
-fi
+# The realm serves its own DNS, reached through the guest's resolver set before
+# this script. Check that the name resolves before the client tries SRV
+# discovery; a host entry would hide a broken realm DNS.
+getent hosts "$IPA_SERVER" >/dev/null 2>&1 || {
+  echo "the realm DNS does not resolve $IPA_SERVER" >&2
+  exit 1
+}
 ipa-client-install --unattended --force --hostname="${IPA_JOIN_HOSTNAME:-deskos-qa.$IPA_DOMAIN}" \
-  --domain="$IPA_DOMAIN" --realm="$IPA_REALM" --server="$IPA_SERVER" \
+  --domain="$IPA_DOMAIN" --realm="$IPA_REALM" \
   --principal="$IPA_PRINCIPAL" --password="$IPA_PASSWORD" \
   --mkhomedir --no-ntp --force-join
