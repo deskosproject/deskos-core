@@ -28,6 +28,11 @@ on:
         description: Push the scanned and boot-checked image to quay.io and sign it (main only)
         type: boolean
         default: false
+      platform:
+        description: One platform, or all of them
+        type: choice
+        options: [all, centos-stream-10, fedora-45, almalinux-10]
+        default: all
 
 permissions:
   contents: read
@@ -53,7 +58,31 @@ env:
   WORK: /mnt/deskos-work
 
 jobs:
+  prepare:
+    # The matrix is data, so a dispatch can select one platform without
+    # duplicating the fields or starting the other builds. A scheduled run has
+    # no inputs and builds all of them.
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Select the platforms this run builds
+        id: matrix
+        env:
+          PLATFORM: ${{ inputs.platform || 'all' }}
+        run: |
+          set -euo pipefail
+          jq -c --arg platform "$PLATFORM" '
+            if $platform == "all" then .
+            else map(select(.token == $platform))
+            end
+          ' .github/matrices/image-publish.json > matrix.json
+          test "$(jq 'length' matrix.json)" -gt 0
+          echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
+
   publish:
+    needs: prepare
     # One switch stops publication: set the repository variable PUBLISH_FREEZE
     # (with a sentence saying why) and the gate does not publish, the installer
     # does not run and there is nothing to promote. Freezing used to mean editing
@@ -70,49 +99,11 @@ jobs:
       fail-fast: false
       matrix:
         # One repository per platform, so :latest never changes distro or
-        # release. RHEL is never published. AlmaLinux is a shipped platform; its
-        # leg has no installer because Core publishes images only for it.
-        #
-        # Adding a leg with `disk: bib` here needs a matching `iso:` call at the
-        # bottom of this file, which is where its installer is built.
-        #
-        # `disk` says how that platform's disk is written and `diskfile` where it
-        # lands, because they differ: the EL platforms go through
-        # bootc-image-builder, and Ubuntu has no Anaconda path, so it writes with
-        # `bootc install to-disk`. `splash` says whether a DeskOS splash is
-        # expected. Declared per leg on purpose: a gate that assumes one
-        # platform's disk is not a gate, and a new platform must not be able to
-        # silently inherit another's disk path and skip its own boot check.
-        include:
-          - token: centos-stream-10
-            workstation: deskos-core-centos-stream-10
-            exceptions: tests/supply-chain/exceptions.json
-            disk: bib
-            diskfile: output/qcow2/disk.qcow2
-            rootfs: xfs
-            config: tests/vm/config.toml
-            splash: true
-          # Fedora's disk is btrfs, the filesystem its base is built for: bootc
-          # cannot infer a default for Silverblue and bib stops with "missing
-          # required info: DefaultRootFs" without --rootfs. The exceptions record
-          # is per platform because it names the base the risk was reviewed
-          # against (docs/supply-chain.md, ADR 0012).
-          - token: fedora-45
-            workstation: deskos-core-fedora-45
-            exceptions: tests/supply-chain/exceptions-fedora-45.json
-            disk: bib
-            diskfile: output/qcow2/disk.qcow2
-            rootfs: btrfs
-            config: tests/vm/config-btrfs.toml
-            splash: true
-          - token: almalinux-10
-            workstation: deskos-core-almalinux-10
-            exceptions: tests/supply-chain/exceptions-almalinux-10.json
-            disk: bib
-            diskfile: output/qcow2/disk.qcow2
-            rootfs: xfs
-            config: tests/vm/config.toml
-            splash: true
+        # release. RHEL is never published. The fields and the per-platform
+        # comments live in .github/matrices/image-publish.json; adding a leg
+        # with `disk: bib` there needs a matching `iso:` call at the bottom of
+        # this file, which is where its installer is built.
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       IMAGE: localhost/${{ matrix.workstation }}:ci
       # Declared once, at the job level, so the assertion step and the boot check
@@ -682,7 +673,7 @@ jobs:
           if-no-files-found: warn
 
   evidence:
-    needs: publish
+    needs: [publish, prepare]
     # Run even when one publish leg failed: a successful leg still has a
     # signed digest and its evidence should outlive the 14-day Actions artifact.
     if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
@@ -693,13 +684,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - token: centos-stream-10
-            workstation: deskos-core-centos-stream-10
-          - token: fedora-45
-            workstation: deskos-core-fedora-45
-          - token: almalinux-10
-            workstation: deskos-core-almalinux-10
+        # The same platforms this run built, so a one-platform dispatch does
+        # not wait on artifacts that were never produced.
+        include: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -746,7 +733,7 @@ jobs:
     # Each leg resolves its own image: a platform whose publish leg failed has no
     # image, so its installer skips. Without `always()` a failed publish leg
     # would cancel the installer.
-    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main'
+    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.platform == 'all' || inputs.platform == 'centos-stream-10')
     strategy:
       # Keep a future leg from hiding another; one failing installer is a
       # failure of its own leg.

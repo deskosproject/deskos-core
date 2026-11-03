@@ -86,11 +86,14 @@ Compilation makes no network request; everything above is checked in CI.
 
 `.github/workflows/image-publish.yml` runs weekly and on `workflow_dispatch`. The
 weekly run publishes; a dispatch publishes only with `publish=true` on `main`,
-and otherwise is a dry look at a base bump.
+and otherwise is a dry look at a base bump. A dispatch also selects `platform`:
+`all` for the weekly matrix, or one token (`centos-stream-10`, `fedora-45`,
+`almalinux-10`) to build and publish only that image. The platform list and its
+fields live in `.github/matrices/image-publish.json`.
 
-It builds one image per platform from a checkout, one matrix leg per publishable
-workstation reference, each with its own exceptions record and destination
-repository. Each leg writes the declared SBOM, produces `installed.sbom.cdx.json`
+It builds one image per selected platform from a checkout, one matrix leg per
+publishable workstation reference, each with its own exceptions record and
+destination repository. Each leg writes the declared SBOM, produces `installed.sbom.cdx.json`
 with Syft and `cves.json` with Grype, checks the exceptions record, generates the
 check configuration from it, fails on the chosen severity, compares the two bills
 with `tests/supply-chain/compare.py`, and uploads everything. Both scan passes use
@@ -359,7 +362,7 @@ CentOS Stream 10 automatically after a green gate, while Fedora 45 and AlmaLinux
 10 stay on `:latest`/`:candidate` unless a person dispatches a promotion for
 their repository. A red leg means that platform did not publish; it does not
 retract a platform that already did. A `publish=true` dispatch has built, scanned,
-booted, pushed and signed one digest per platform, listed in
+booted, pushed and signed one digest per selected platform, listed in
 [architecture.md](architecture.md#validation-status) with its run.
 
 ## Before accepting a risk, check whether the base moved
