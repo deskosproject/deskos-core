@@ -92,7 +92,7 @@ jobs:
           fi
           changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")"
           # Shared code, shared Core resources, or the harness itself: every leg.
-          if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/image-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/profiles/deskos-|resources/software/deskos-)'; then
+          if printf '%s\n' "$changed" | grep -qE '^(internal/|cmd/|schemas/|tests/vm/|go\.mod$|\.github/workflows/image-bootcheck\.yml$|resources/(desktop|system|assets)/|resources/platforms/(centos-stream-10|almalinux-10|fedora-45)\.yaml$|resources/profiles/deskos-|resources/software/deskos-)'; then
             all; exit 0
           fi
           printf '%s\n' "$changed" | grep -qE '^(resources/platforms/centos-stream-10\.yaml|resources/workstations/deskos-core-centos-stream-10\.yaml|resources/profiles/centos|resources/software/centos|examples/layers/)' && echo "centos=true" >> "$GITHUB_OUTPUT" || echo "centos=false" >> "$GITHUB_OUTPUT"
