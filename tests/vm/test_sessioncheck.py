@@ -189,6 +189,36 @@ class TmpfilesTest(unittest.TestCase):
         self.assertNotIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
         self.assertNotIn("deskos-qa-lock-signal.service", c["systemd.unit-dropin.graphical.target"])
 
+    def test_an_interactive_login_turns_the_user_list_into_a_prompt(self):
+        # The greeter must ask for a name, not show the local test user, and
+        # the database has to be compiled before GDM reads it.
+        c = sc.credentials("session", gdm_user="qa", gdm_login=True)
+        lines = c["tmpfiles.extra"]
+        self.assertIn(sc.GDM_DCONF_PATH, lines)
+        self.assertIn(sc.GDM_CONFIG_PATH, lines)
+        self.assertIn(sc.GDM_READY_PATH, lines)
+        self.assertNotIn("AutomaticLogin=", lines)
+        self.assertIn("AutomaticLoginEnable=False", lines)
+        self.assertIn("disable-user-list=true", lines)
+        config = c["systemd.extra-unit.deskos-qa-gdm-config.service"]
+        self.assertIn("Before=gdm.service", config)
+        self.assertIn(f"ExecStart=/bin/bash {sc.GDM_CONFIG_PATH}", config)
+        ready = c["systemd.extra-unit.deskos-qa-gdm-ready.service"]
+        self.assertIn("After=gdm.service", ready)
+        self.assertIn(f"ExecStart=/bin/bash {sc.GDM_READY_PATH}", ready)
+        self.assertIn("deskos-qa-gdm-ready.service", c["systemd.unit-dropin.graphical.target"])
+
+    def test_the_greeter_script_announces_the_ready_marker(self):
+        self.assertIn(sc.GDM_READY_MARKER, sc.gdm_ready())
+        self.assertIn("/dev/ttyS0", sc.gdm_ready())
+        self.assertIn("disable-user-list=true", sc.gdm_dconf())
+        self.assertIn("dconf update", sc.gdm_config())
+
+    def test_an_autologin_keeps_the_automatic_login(self):
+        c = sc.credentials("session", gdm_user="qa")
+        self.assertIn("AutomaticLogin=qa", c["tmpfiles.extra"])
+        self.assertNotIn(sc.GDM_DCONF_PATH, c["tmpfiles.extra"])
+
     def test_journal_credentials_add_no_lock_password(self):
         c = sc.credentials("journal")
         self.assertNotIn("systemd.extra-unit.deskos-qa-password.service", c)

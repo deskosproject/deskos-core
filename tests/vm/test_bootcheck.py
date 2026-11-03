@@ -86,6 +86,19 @@ class NetworkTest(unittest.TestCase):
                          ["-nic", "none"])
 
 
+class KeysymTest(unittest.TestCase):
+    def test_lowercase_and_digits_need_no_shift(self):
+        self.assertEqual(bootcheck.keysym("a"), (False, ord("a")))
+        self.assertEqual(bootcheck.keysym("7"), (False, ord("7")))
+
+    def test_uppercase_is_shift_plus_the_lowercase_key(self):
+        self.assertEqual(bootcheck.keysym("A"), (True, ord("a")))
+
+    def test_a_shifted_symbol_uses_its_base_key(self):
+        self.assertEqual(bootcheck.keysym("@"), (True, ord("2")))
+        self.assertEqual(bootcheck.keysym("_"), (True, ord("-")))
+
+
 class VncTypeTest(unittest.TestCase):
     """The hypervisor keyboard the lock screen accepts, against a fake RFB server."""
 
