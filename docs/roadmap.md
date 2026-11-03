@@ -106,7 +106,10 @@ the harness types there through the hypervisor's VNC keyboard.
 - **Interactive GDM login.** The greeter asks for a name, the harness types the
   directory user and its generated password on the VNC keyboard, and the session
   starts as that user; FreeIPA run `41579749802` and AD run `41579749764`
-  (2026-11-03) pass. **Next:** a realm with its own DNS
+  (2026-11-03) pass.
+- **A realm with its own DNS.** FreeIPA runs integrated DNS and the client
+  discovers it through SRV records; FreeIPA run `41631837345` (2026-11-03)
+  passes. **Next:** an AD trust with DNS delegation
   ([identity-validation.md](design/identity-validation.md)).
 - **Corporate dconf lockdown.** `GnomeProfile.spec.locks` renders locks and the
   `lockdown` block models `org.gnome.desktop.lockdown.*`. The session check proves
