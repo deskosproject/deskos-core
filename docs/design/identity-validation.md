@@ -5,8 +5,10 @@
 [#237](https://github.com/deskosproject/deskos-core/pull/237) and the Samba AD
 check in [#238](https://github.com/deskosproject/deskos-core/pull/238). The
 interactive login that replaced autologin landed in
-[#396](https://github.com/deskosproject/deskos-core/pull/396); FreeIPA run
-`41579749802` and AD run `41579749764` (2026-11-03) are the runs quoted below.
+[#396](https://github.com/deskosproject/deskos-core/pull/396), and the realm's
+own DNS in [#397](https://github.com/deskosproject/deskos-core/pull/397);
+FreeIPA run `41631837345` and AD run `41631837362` (2026-11-03) are the runs
+quoted below.
 
 This is a test rig, not a product capability: it proves a machine can join a
 directory automatically and repeatedly. DeskOS does not enrol machines.
@@ -88,7 +90,7 @@ results and the journal to the serial port:
   owned by the uid the directory resolved afterwards, through `oddjob-mkhomedir`;
 - `oddjobd` is active.
 
-FreeIPA run `41579749802` and AD run `41579749764` report exactly that, with a
+FreeIPA run `41631837345` and AD run `41631837362` report exactly that, with a
 password typed at the greeter. The AD run also shows `sssctl domain-status`
 online with `dc.ad.lab.test` as domain controller and global catalog, and the
 `DESKOS-QA$` and `host/DESKOS-QA` principals in the keytab.
@@ -115,7 +117,8 @@ compiles a baseline and never runs shell, so none is shown or recommended here.
 A real enrolment needs a **credential for that machine alone** (never a shared
 secret in an image or ISO), a **name with forward and reverse DNS**, and a place
 to run the join. The fixture uses a throwaway realm, a job-generated admin
-password and `--force`, because its FreeIPA has no DNS.
+password and `--force`; the realm serves its own DNS, so no test depends on the
+runner's resolver for the zone.
 
 ## What this does not prove
 
@@ -127,8 +130,9 @@ password and `--force`, because its FreeIPA has no DNS.
   organization's decision. FreeIPA fits Linux better because it models Unix
   identity, host-based access and `sudo` policy natively; AD is supported because
   organizations already have it.
-- **Not a trust yet.** FreeIPA and AD need both realms reachable at once, with
-  DNS delegation; that is the next step.
+- **Not a trust yet.** FreeIPA and AD each serve their own DNS now, but a trust
+  needs both realms reachable at once, with DNS delegation; that is the next
+  step.
 - **Not a real user's password.** The fixture generates one per run, and the
   disposable DC turns off its complexity rule so the keyboard path stays
   lowercase; it is a test credential, not a directory policy.

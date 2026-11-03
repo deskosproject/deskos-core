@@ -26,19 +26,24 @@ case "${1:-}" in
     : "${FREEIPA_IMAGE:?set FREEIPA_IMAGE to a pinned server image}"
     : "${FREEIPA_PASSWORD:?set FREEIPA_PASSWORD for the throwaway Directory Manager}"
     # -U is required: without it ipa-server-install prompts for the DNS and
-    # domain questions, reads EOF from a detached container and fails. No
-    # integrated DNS: the fixture realm is reached through /etc/hosts, and port
-    # 53 on the host belongs to the host resolver. The log driver keeps the
-    # whole install log, which is the evidence when the install fails.
-    opts="-U -r $realm -n $domain --no-ntp --skip-mem-check"
+    # domain questions, reads EOF from a detached container and fails. The
+    # realm serves its own DNS, so the client discovers the server through SRV
+    # records instead of a host entry. No forwarders: the guest only needs this
+    # zone, and a forwarder would make the fixture depend on the runner's
+    # resolver. The log driver keeps the whole install log, the evidence when
+    # the install fails.
+    opts="-U -r $realm -n $domain --setup-dns --no-forwarders --no-ntp --skip-mem-check"
     # The upstream image is documented for a plain (bridge) container, not for
     # host networking or privileged mode: privileged setup is explicitly not
     # supported. On the bridge the container resolves its own name to its own
     # address rather than to loopback, which is what the installer expects. The
     # guest reaches every published port through the host at 10.0.2.2, and the
     # server certificate still names the host.
-    ports=(-p 80:80 -p 443:443 -p 389:389 -p 636:636
-           -p 88:88 -p 88:88/udp -p 464:464 -p 464:464/udp)
+    ports=(-p 127.0.0.1:53:53/udp -p 127.0.0.1:53:53/tcp
+           -p 127.0.0.1:80:80 -p 127.0.0.1:443:443
+           -p 127.0.0.1:389:389 -p 127.0.0.1:636:636
+           -p 127.0.0.1:88:88 -p 127.0.0.1:88:88/udp
+           -p 127.0.0.1:464:464 -p 127.0.0.1:464:464/udp)
     podman run -d --name "$name" --hostname "$hostname" --systemd=always \
       --log-driver=k8s-file --log-opt=max-size=50mb \
       "${ports[@]}" \
@@ -61,6 +66,8 @@ case "${1:-}" in
       exit 1
     fi
     podman exec "$name" ipactl status
+    # The realm's own DNS must answer, not the host resolver.
+    podman exec "$name" host -t SRV "_ldap._tcp.$domain" "$hostname"
     ;;
   user)
     : "${FREEIPA_USER:?set FREEIPA_USER}"
