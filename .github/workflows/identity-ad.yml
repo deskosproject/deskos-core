@@ -174,7 +174,9 @@ jobs:
         run: |
           set -euo pipefail
           export AD_USER=qa
-          user_password="$(openssl rand -base64 24 | tr -d '\n/+=' | head -c 20)"
+          # The fixture turns complexity off, so the login path can stay
+          # lowercase and the VNC keyboard never meets a Caps Lock state.
+          user_password="$(openssl rand -hex 16)"
           echo "::add-mask::$user_password"
           echo "AD_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
           export AD_USER_PASSWORD="$user_password"
@@ -200,7 +202,7 @@ jobs:
             --join-kind ad --join-domain ad.lab.test --join-realm AD.LAB.TEST \
             --join-server "$AD_SERVER_HOSTNAME" --join-dns 10.0.2.2 \
             --join-principal Administrator --join-password "$ADMIN_PASSWORD" \
-            --join-user qa@ad.lab.test --join-gdm
+            --join-user qa@ad.lab.test --gdm-login --gdm-password "$AD_USER_PASSWORD"
 
       - name: Collect evidence
         if: always()

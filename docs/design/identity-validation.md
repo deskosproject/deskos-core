@@ -3,8 +3,10 @@
 **Status:** design note, 2026-10-27. The FreeIPA check landed in
 [#236](https://github.com/deskosproject/deskos-core/pull/236), the GDM login in
 [#237](https://github.com/deskosproject/deskos-core/pull/237) and the Samba AD
-check in [#238](https://github.com/deskosproject/deskos-core/pull/238). FreeIPA
-run `40450471210` and AD run `40539508281` are the runs quoted below.
+check in [#238](https://github.com/deskosproject/deskos-core/pull/238). The
+interactive login that replaced autologin landed in
+[#396](https://github.com/deskosproject/deskos-core/pull/396); FreeIPA run
+`41579749802` and AD run `41579749764` (2026-11-03) are the runs quoted below.
 
 This is a test rig, not a product capability: it proves a machine can join a
 directory automatically and repeatedly. DeskOS does not enrol machines.
@@ -72,19 +74,24 @@ check restarts it once realm DNS is in place, pins `ad_server`, and waits for
 
 ## What is asserted, and how
 
-The session runs a system-wide autostart probe as whoever logged in, and a root
-unit copies its results and the journal to the serial port:
+The greeter asks for a username (the user list is disabled), a root unit says it
+is up on the serial port, and the harness types the directory user and its
+generated password on the hypervisor's VNC keyboard. The session then runs a
+system-wide autostart probe as whoever logged in, and a root unit copies its
+results and the journal to the serial port:
 
+- the typed password reaches PAM: this is the **auth** phase, not only the
+  session phase;
 - `join_ok=yes`, `join_sssd=active`, and the user appears in `getent passwd`;
 - `session_user` **is the directory user**, for AD `qa@ad.lab.test`;
 - the home did not exist before the login (`join_home_before=missing`) and is
   owned by the uid the directory resolved afterwards, through `oddjob-mkhomedir`;
 - `oddjobd` is active.
 
-FreeIPA run `40450471210` and AD run `40539508281` report exactly that. The AD
-run also shows `sssctl domain-status` online with `dc.ad.lab.test` as domain
-controller and global catalog, and the `DESKOS-QA$` and `host/DESKOS-QA`
-principals in the keytab.
+FreeIPA run `41579749802` and AD run `41579749764` report exactly that, with a
+password typed at the greeter. The AD run also shows `sssctl domain-status`
+online with `dc.ad.lab.test` as domain controller and global catalog, and the
+`DESKOS-QA$` and `host/DESKOS-QA` principals in the keytab.
 
 A watchdog timer writes the join status, the state of `gdm` and the join unit,
 and the failed units to the serial before powering off when no session appears.
@@ -122,8 +129,9 @@ password and `--force`, because its FreeIPA has no DNS.
   organizations already have it.
 - **Not a trust yet.** FreeIPA and AD need both realms reachable at once, with
   DNS delegation; that is the next step.
-- **Not an interactive password login.** The check autologs the directory user,
-  which exercises PAM's session phase and the home policy; no password is typed.
+- **Not a real user's password.** The fixture generates one per run, and the
+  disposable DC turns off its complexity rule so the keyboard path stays
+  lowercase; it is a test credential, not a directory policy.
 - **Not a production directory.** Throwaway realm, one account, no hardening.
 
 ## Reusing the pattern

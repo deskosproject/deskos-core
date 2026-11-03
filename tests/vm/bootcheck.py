@@ -165,7 +165,29 @@ class QMP:
 
 # ---------------------------------------------------------------- input
 
-def vnc_type(path, text, timeout=15):
+# The unshifted key for a shifted symbol on the US layout. QEMU maps the
+# direct keysym for "@" to the "2" key without Shift, so these need the chord.
+SHIFTED = {
+    "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7",
+    "*": "8", "(": "9", ")": "0", "_": "-", "+": "=", "{": "[", "}": "]",
+    "|": "\\", ":": ";", "\"": "'", "<": ",", ">": ".", "?": "/", "~": "`",
+}
+
+
+def keysym(ch):
+    """The X11 keysym for `ch`, and whether Shift is needed.
+
+    Uppercase letters go as their own keysym: QEMU maps them with a Caps Lock
+    toggle, which is correct while Caps Lock starts off. Sending Shift plus the
+    lower key instead toggled Caps Lock on the tested image. Shifted symbols
+    have no such mapping and use the chord.
+    """
+    if ch in SHIFTED:
+        return True, ord(SHIFTED[ch])
+    return False, ord(ch)
+
+
+def vnc_type(path, text, select_first=False, timeout=15):
     """Type `text` and Return into a QEMU VNC server on a Unix socket.
 
     The lock screen refuses remote-desktop portal input: Mutter tears the
@@ -178,6 +200,10 @@ def vnc_type(path, text, timeout=15):
     typing anything, so the password is not swallowed by the animation. The
     delay after it covers the curtain; Shift is harmless when the password
     field already has focus.
+
+    A list types a login: each part gets Return, with a pause between parts for
+    the greeter to draw the next field. `select_first` sends Ctrl+A before the
+    first part, so a remembered username is replaced instead of appended to.
     """
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(timeout)
@@ -211,21 +237,45 @@ def vnc_type(path, text, timeout=15):
         def key(sym, down):
             sock.sendall(struct.pack(">BBHI", 4, 1 if down else 0, 0, sym))
 
+        def type_part(part):
+            for ch in part:
+                shift, sym = keysym(ch)
+                if shift:
+                    key(0xFFE1, True)
+                key(sym, True)
+                key(sym, False)
+                if shift:
+                    key(0xFFE1, False)
+                time.sleep(0.02)
+            # The guest has to read the submit before the socket closes; a
+            # close right after the write dropped it on the tested image.
+            time.sleep(0.3)
+            key(0xFF0D, True)
+            time.sleep(0.1)
+            key(0xFF0D, False)
+            time.sleep(1.0)
+
+        parts = list(text) if isinstance(text, (list, tuple)) else [text]
         # Shift_L raises the curtain; Return on an empty field would submit.
         key(0xFFE1, True)
         key(0xFFE1, False)
         time.sleep(2.0)
-        for ch in text:
-            key(ord(ch), True)
-            key(ord(ch), False)
-            time.sleep(0.02)
-        # The guest has to read the submit before the socket closes; a close
-        # right after the write dropped it on the tested image.
-        time.sleep(0.3)
-        key(0xFF0D, True)
-        time.sleep(0.1)
-        key(0xFF0D, False)
-        time.sleep(1.0)
+        if select_first:
+            # The greeter can draw the username field before it owns keyboard
+            # focus; the ready marker comes from the shell process, not the
+            # dialog. Give the dialog time to take the seat.
+            time.sleep(5.0)
+            key(0xFFE3, True)       # Control_L
+            key(ord("a"), True)
+            key(ord("a"), False)
+            key(0xFFE3, False)
+            time.sleep(0.1)
+        for i, part in enumerate(parts):
+            type_part(part)
+            if i + 1 < len(parts):
+                # The first directory lookup can take a few seconds; the
+                # password page follows it, not the Return.
+                time.sleep(5.0)
     finally:
         sock.close()
 
@@ -406,7 +456,7 @@ def run(args):
                 if i in keys_sent or marker_text.encode() not in serial_text():
                     continue
                 try:
-                    vnc_type(vnc_path, keys)
+                    vnc_type(vnc_path, keys, select_first=isinstance(keys, (list, tuple)))
                     summary.setdefault("keys_sent", []).append(
                         {"marker": marker_text, "t": round(time.monotonic() - t0, 1)})
                 except (HarnessError, OSError) as exc:

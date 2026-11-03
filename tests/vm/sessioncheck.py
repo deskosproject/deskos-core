@@ -97,6 +97,10 @@ E2E_CLOSE_PATH = "/var/lib/deskos-qa/e2e-close.py"
 LOCK_PROBE_PATH = "/var/lib/deskos-qa/e2e-lock.py"
 LOCK_TRIGGER_PATH = "/var/tmp/deskos-qa/locked"
 LOCK_SIGNAL_PATH = "/var/lib/deskos-qa/lock-signal.sh"
+GDM_DCONF_PATH = "/etc/dconf/db/gdm.d/00-deskos-qa"
+GDM_CONFIG_PATH = "/var/lib/deskos-qa/gdm-config.sh"
+GDM_READY_PATH = "/var/lib/deskos-qa/gdm-ready.sh"
+GDM_READY_MARKER = "DESKOS_QA_GDM_READY"
 QA_PROBE_PATH = "/var/lib/deskos-qa/deskos-qa-probe.sh"
 QA_BROWSER_PATH = "/var/lib/deskos-qa/deskos-qa-browser.sh"
 AUTOSTART_PATH = "/etc/xdg/autostart/deskos-qa-check.desktop"
@@ -1295,8 +1299,43 @@ echo DESKOS_QA_LOCKED > /dev/ttyS0 2>&1
 """
 
 
-def gdm_conf(user):
+def gdm_conf(user, autologin=True):
+    if not autologin:
+        return "[daemon]\nAutomaticLoginEnable=False\n"
     return f"[daemon]\nAutomaticLoginEnable=True\nAutomaticLogin={user}\n"
+
+
+def gdm_dconf():
+    """The greeter database that turns the user list into a username prompt."""
+    return "[org/gnome/login-screen]\ndisable-user-list=true\n"
+
+
+def gdm_config():
+    """Compile the greeter database before GDM reads it."""
+    return """#!/bin/bash
+set -eu
+if [ ! -e /etc/dconf/profile/gdm ]; then
+  printf 'user-db:user\nsystem-db:gdm\nfile-db:/usr/share/gdm/greeter-dconf-defaults\n' > /etc/dconf/profile/gdm
+fi
+/usr/bin/dconf update
+"""
+
+
+def gdm_ready():
+    """The root side of the interactive login: announce the greeter.
+
+    The greeter owns a separate session and bus; the serial console is the one
+    channel the harness can watch without a package in the image.
+    """
+    return f"""#!/bin/bash
+for i in $(seq 1 120); do
+  pgrep -u gdm -f gnome-shell >/dev/null 2>&1 && break
+  sleep 1
+done
+sleep 8
+stty -F /dev/ttyS0 115200 2>/dev/null
+echo {GDM_READY_MARKER} > /dev/ttyS0 2>&1
+"""
 
 AUTOSTART = f"""[Desktop Entry]
 Type=Application
@@ -1409,7 +1448,7 @@ def tmpfiles_arg(text):
 
 def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dconf_db=None, vendor_keys=(),
                 enabled_extensions=(), binaries=(), browser_url="", locks=(), join=None, gdm_user=None,
-                font_families=(), network_profiles=()):
+                gdm_login=False, font_families=(), network_profiles=()):
     report = REPORT_SESSION if mode == "session" else REPORT_JOURNAL
     target = "graphical.target" if mode == "session" else "multi-user.target"
     tmpfiles = [
@@ -1449,10 +1488,19 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             # the autologin to both and creates each directory, so the check does
             # not hardcode one distribution's layout; the guest's GDM reads its own.
             "d /etc/gdm 0755 root root -",
-            f"f+ /etc/gdm/custom.conf 0644 root root - {tmpfiles_arg(gdm_conf(gdm_user or USER))}",
+            f"f+ /etc/gdm/custom.conf 0644 root root - "
+            f"{tmpfiles_arg(gdm_conf(gdm_user or USER, autologin=not gdm_login))}",
             "d /etc/gdm3 0755 root root -",
-            f"f+ /etc/gdm3/custom.conf 0644 root root - {tmpfiles_arg(gdm_conf(gdm_user or USER))}",
+            f"f+ /etc/gdm3/custom.conf 0644 root root - "
+            f"{tmpfiles_arg(gdm_conf(gdm_user or USER, autologin=not gdm_login))}",
         ]
+        if gdm_login:
+            tmpfiles += [
+                "d /etc/dconf/db/gdm.d 0755 root root -",
+                f"f {GDM_DCONF_PATH} 0644 root root - {tmpfiles_arg(gdm_dconf())}",
+                f"f {GDM_CONFIG_PATH} 0755 root root - {tmpfiles_arg(gdm_config())}",
+                f"f {GDM_READY_PATH} 0755 root root - {tmpfiles_arg(gdm_ready())}",
+            ]
         if gdm_user:
             # A directory user's home is created at its first login. The marker
             # that stops the initial-setup wizard has to come with the skeleton,
@@ -1545,6 +1593,20 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             "[Service]\nType=oneshot\n"
             f"ExecStart=/bin/sh -c 'echo {USER}:{LOCK_PASSWORD} | /usr/sbin/chpasswd'\n"
         )
+    if mode == "session" and gdm_login:
+        creds["systemd.extra-unit.deskos-qa-gdm-config.service"] = (
+            "[Unit]\nDescription=Compile the DeskOS QA greeter database\n"
+            "After=local-fs.target systemd-tmpfiles-setup.service\nBefore=gdm.service\n\n"
+            "[Service]\nType=oneshot\n"
+            f"ExecStart=/bin/bash {GDM_CONFIG_PATH}\n"
+        )
+        creds["systemd.extra-unit.deskos-qa-gdm-ready.service"] = (
+            "[Unit]\nDescription=Announce the DeskOS QA greeter\n"
+            "After=gdm.service\n\n"
+            "[Service]\nType=oneshot\nTimeoutStartSec=180\n"
+            "StandardOutput=journal+console\nStandardError=journal+console\n"
+            f"ExecStart=/bin/bash {GDM_READY_PATH}\n"
+        )
     creds["systemd.extra-unit.deskos-qa-report.service"] = (
         "[Unit]\nDescription=DeskOS QA report to the serial port\n"
         f"ConditionPathExists=!/etc/initrd-release\nAfter={target}\n\n"
@@ -1580,6 +1642,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
         wants += " deskos-qa-join.service"
     if mode == "session" and not gdm_user and join is None:
         wants += " deskos-qa-password.service deskos-qa-lock-signal.service"
+    if mode == "session" and gdm_login:
+        wants += " deskos-qa-gdm-config.service deskos-qa-gdm-ready.service"
     creds[f"systemd.unit-dropin.{target}"] = f"[Unit]\nWants={wants}\n"
     creds["tmpfiles.extra"] = "\n".join(tmpfiles) + "\n"
     return creds
@@ -2382,7 +2446,11 @@ def main():
     p.add_argument("--join-password", help="password of the join principal; runtime only")
     p.add_argument("--join-user", help="directory user the join must make resolvable")
     p.add_argument("--join-gdm", action="store_true",
-                   help="log in at GDM as the directory user and check that session")
+                   help="autologin at GDM as the directory user and check that session")
+    p.add_argument("--gdm-login", action="store_true",
+                   help="log in at GDM by typing the user and password instead of autologin")
+    p.add_argument("--gdm-password",
+                   help="password the interactive GDM login types; runtime only")
     p.add_argument("--join-kind", choices=("ipa", "ad"), default="ipa",
                    help="which client to run: ipa-client-install or realm/adcli")
     p.add_argument("--join-dns",
@@ -2416,7 +2484,13 @@ def main():
         }
     if a.join_gdm and not join:
         p.error("--join-gdm needs the --join-* values")
-    gdm_user = join["user"] if (join and a.join_gdm) else None
+    if a.gdm_login and not a.gdm_password:
+        p.error("--gdm-login needs --gdm-password")
+    if a.gdm_login and a.join_gdm:
+        p.error("--gdm-login and --join-gdm are alternatives")
+    if a.gdm_password and ("\n" in a.gdm_password or "\r" in a.gdm_password):
+        p.error("--gdm-password contains a newline")
+    gdm_user = join["user"] if (join and (a.join_gdm or a.gdm_login)) else (USER if a.gdm_login else None)
     plan = json.load(open(a.plan)) if a.plan else {}
     skel_rels = []
     if a.seed_skel:
@@ -2447,11 +2521,14 @@ def main():
                                            plan.get("artifact", {}).get("enabledExtensions") or [],
                                            [b["destination"] for b in plan_binaries(plan)],
                                            browser_url, locks=[l["key"] for l in locks], join=join,
-                                           gdm_user=gdm_user,
+                                           gdm_user=gdm_user, gdm_login=a.gdm_login,
                                            font_families=[f["family"] for f in plan_font_families(plan)],
                                            network_profiles=plan_network_profiles(plan))),
         until_serial=MARK_END, guest_powers_off=True, network=not a.offline,
-        keys_on_marker=[("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user and join is None else [],
+        keys_on_marker=(
+            [(GDM_READY_MARKER, [gdm_user, a.gdm_password])] if a.gdm_login
+            else [("DESKOS_QA_LOCKED", LOCK_PASSWORD)] if not gdm_user and join is None
+            else []),
     )
     try:
         summary = bootcheck.run(run_args)

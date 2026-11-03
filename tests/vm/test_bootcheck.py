@@ -86,6 +86,18 @@ class NetworkTest(unittest.TestCase):
                          ["-nic", "none"])
 
 
+class KeysymTest(unittest.TestCase):
+    def test_lowercase_digits_and_uppercase_are_direct_keysyms(self):
+        # Shift plus the lower key made the guest toggle Caps Lock; QEMU maps
+        # the uppercase keysym itself while Caps Lock starts off.
+        for ch in ("a", "A", "7"):
+            self.assertEqual(bootcheck.keysym(ch), (False, ord(ch)))
+
+    def test_a_shifted_symbol_uses_its_base_key(self):
+        self.assertEqual(bootcheck.keysym("@"), (True, ord("2")))
+        self.assertEqual(bootcheck.keysym("_"), (True, ord("-")))
+
+
 class VncTypeTest(unittest.TestCase):
     """The hypervisor keyboard the lock screen accepts, against a fake RFB server."""
 
@@ -135,14 +147,14 @@ class VncTypeTest(unittest.TestCase):
             path = os.path.join(d, "vnc.sock")
             events = []
             thread = self.fake_server(path, events)
-            bootcheck.vnc_type(path, "redhat")
+            bootcheck.vnc_type(path, "redHat")
             thread.join(5)
         # Shift first, so the animation does not swallow the password; then each
         # character and Return, each as a press and a release.
         self.assertEqual(events[0], (4, 1, 0xFFE1))
         self.assertEqual(events[1], (4, 0, 0xFFE1))
         typed = [sym for kind, down, sym in events[2:] if down]
-        self.assertEqual(typed, [ord(ch) for ch in "redhat"] + [0xFF0D])
+        self.assertEqual(typed, [ord(ch) for ch in "redHat"] + [0xFF0D])
 
 
 if __name__ == "__main__":
