@@ -187,7 +187,7 @@ def keysym(ch):
     return False, ord(ch)
 
 
-def vnc_type(path, text, select_first=False, timeout=15):
+def vnc_type(path, text, select_first=False, click=None, timeout=15):
     """Type `text` and Return into a QEMU VNC server on a Unix socket.
 
     The lock screen refuses remote-desktop portal input: Mutter tears the
@@ -204,6 +204,8 @@ def vnc_type(path, text, select_first=False, timeout=15):
     A list types a login: each part gets Return, with a pause between parts for
     the greeter to draw the next field. `select_first` sends Ctrl+A before the
     first part, so a remembered username is replaced instead of appended to.
+    `click` is a framebuffer coordinate to press first; a drawn entry does not
+    always own keyboard focus, and the click gives it to the field.
     """
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(timeout)
@@ -236,6 +238,9 @@ def vnc_type(path, text, select_first=False, timeout=15):
 
         def key(sym, down):
             sock.sendall(struct.pack(">BBHI", 4, 1 if down else 0, 0, sym))
+
+        def pointer(x, y, down):
+            sock.sendall(struct.pack(">BBHH", 5, 1 if down else 0, x, y))
 
         def type_part(part):
             for ch in part:
@@ -456,7 +461,8 @@ def run(args):
                 if i in keys_sent or marker_text.encode() not in serial_text():
                     continue
                 try:
-                    vnc_type(vnc_path, keys, select_first=isinstance(keys, (list, tuple)))
+                    vnc_type(vnc_path, keys, select_first=isinstance(keys, (list, tuple)),
+                             click=(640, 478) if isinstance(keys, (list, tuple)) else None)
                     summary.setdefault("keys_sent", []).append(
                         {"marker": marker_text, "t": round(time.monotonic() - t0, 1)})
                 except (HarnessError, OSError) as exc:
