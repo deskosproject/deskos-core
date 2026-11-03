@@ -87,12 +87,13 @@ Design: [session-e2e.md](design/session-e2e.md); prior art and what we take:
 | Session exposes its applications through AT-SPI | **done** 2026-10-29, run `40795106343` |
 | Launch an application and see its window | **done** 2026-10-29, same run |
 | Reach a Settings page | verified 2026-11-02 (run `41528142670`); the default panel label is asserted, the sidebar click is not |
-| Lock and unlock | designed; waits on keyboard injection |
+| Lock and unlock | **done** 2026-11-03, run `41551588828` |
 | Open and close a window through the tree | verified 2026-11-02 (run `41528142670`) |
 | Promotion waits for E2E | not before the steps above exist |
 
-Keyboard injection is deferred: Wayland needs the remote-desktop portal, not a
-root helper, delivered without adding a package to the artifact.
+Keyboard injection for application interaction is deferred: Wayland needs the
+remote-desktop portal, not a root helper. The lock screen is the exception, and
+the harness types there through the hypervisor's VNC keyboard.
 
 ## Milestone 5: identity and provisioning
 
