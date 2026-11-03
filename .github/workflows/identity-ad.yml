@@ -174,9 +174,9 @@ jobs:
         run: |
           set -euo pipefail
           export AD_USER=qa
-          # Mixed classes: the realm's password policy rejects lowercase hex,
-          # and the VNC client types uppercase as Shift plus the base key.
-          user_password="$(openssl rand -base64 24 | tr -d '\n/+=' | head -c 20)"
+          # The fixture turns complexity off, so the login path can stay
+          # lowercase and the VNC keyboard never meets a Caps Lock state.
+          user_password="$(openssl rand -hex 16)"
           echo "::add-mask::$user_password"
           echo "AD_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
           export AD_USER_PASSWORD="$user_password"

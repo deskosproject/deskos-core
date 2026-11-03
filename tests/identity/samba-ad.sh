@@ -54,6 +54,11 @@ case "${1:-}" in
     : "${AD_USER_PASSWORD:?set AD_USER_PASSWORD}"
     uid=${AD_USER_UID:-10000}
     gid=${AD_USER_GID:-10000}
+    # The DC is a throwaway fixture with one generated password. Its default
+    # complexity rule is for a real directory; turning it off lets the login
+    # path use a lowercase password, which the VNC keyboard types without a
+    # Caps Lock state.
+    podman exec "$name" samba-tool domain passwordsettings set --complexity=off
     # The password goes in on stdin, never on the container's command line.
     if ! printf '%s\n%s\n' "$AD_USER_PASSWORD" "$AD_USER_PASSWORD" |
         podman exec -i "$name" samba-tool user add "$AD_USER" \

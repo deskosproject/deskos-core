@@ -165,9 +165,8 @@ class QMP:
 
 # ---------------------------------------------------------------- input
 
-# The shifted key for an unshifted one on the US layout. A raw VNC key event
-# carries a keysym, not a character, so an uppercase letter or "@" has to be
-# typed as Shift plus the base key.
+# The unshifted key for a shifted symbol on the US layout. QEMU maps the
+# direct keysym for "@" to the "2" key without Shift, so these need the chord.
 SHIFTED = {
     "!": "1", "@": "2", "#": "3", "$": "4", "%": "5", "^": "6", "&": "7",
     "*": "8", "(": "9", ")": "0", "_": "-", "+": "=", "{": "[", "}": "]",
@@ -176,9 +175,13 @@ SHIFTED = {
 
 
 def keysym(ch):
-    """The US-layout keysym for `ch`, and whether Shift is needed."""
-    if ch.isalpha():
-        return (True, ord(ch.lower())) if ch.isupper() else (False, ord(ch))
+    """The X11 keysym for `ch`, and whether Shift is needed.
+
+    Uppercase letters go as their own keysym: QEMU maps them with a Caps Lock
+    toggle, which is correct while Caps Lock starts off. Sending Shift plus the
+    lower key instead toggled Caps Lock on the tested image. Shifted symbols
+    have no such mapping and use the chord.
+    """
     if ch in SHIFTED:
         return True, ord(SHIFTED[ch])
     return False, ord(ch)
