@@ -80,6 +80,7 @@ alive.*
 The documentation deploy downloads the artifacts of the successful run, selects
 the first boot splash and the last graphical session frame for each platform,
 and writes them to `/qa/latest/` on `docs.deskos.org`. It also writes
+
 <a href="https://docs.deskos.org/qa/latest/manifest.json"><code>manifest.json</code></a> with the run id, the commit, the
 workstation, the image id and the frame each image came from. The committed
 copies under `website/static/qa/latest/` are the fallback for a docs-only change,

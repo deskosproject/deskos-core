@@ -29,14 +29,11 @@ Ubuntu 26.04 is not a row here: no vendor publishes a bootc base for it, so the
 project owns one, and its build, boot and publication live in
 [`deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu) (ADR 0020).
 
-AlmaLinux 10 moved into the matrix in 2026-11-01. Its base is the vendor's
-bootc image, which the vendor still labels experimental; the pin is in
-`resources/platforms/almalinux-10.yaml`. Core publishes an image and no
-installer for it.
-The desktop itself is the same on every flavor; what each platform contributes is in
-[desktop parity](desktop-parity.md).
-Fedora 45 moved into the matrix in 2026-10-30; its base, mirror and pin are in
-[Fedora 45](fedora.md).
+AlmaLinux 10 and Fedora 45 joined the matrix on 2026-10-30. AlmaLinux's base
+is still labelled experimental by its vendor. Core publishes an image and no
+installer for either; their pins live in `resources/platforms/`, and Fedora's
+mirror is described in [fedora.md](fedora.md). The desktop is the same on every
+flavor; [desktop parity](desktop-parity.md) lists what each platform adds.
 
 ## How to get a machine today
 
@@ -58,25 +55,26 @@ and keeps it inside the organization; the RHEL EULA forbids redistributing it.
 ### Ubuntu 26.04: built and published in its own repository
 
 Ubuntu has no bootc base from its vendor, so the project owns one: base and
-workstation live in
-[`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu)
-on `deskosproject/deskos-ubuntu-bootc`. It documents the build, a disk written
-with `bootc install to-disk` (no Anaconda path), and what is worth testing
-([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
+workstation live in [`deskosproject/deskos-
+ubuntu`](https://github.com/deskosproject/deskos-ubuntu) on
+`deskosproject/deskos-ubuntu-bootc`. It documents the build, a disk written with
+`bootc install to-disk` (no Anaconda path), and what is worth testing ([ADR
+0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
 This repository still **composes and renders** a Debian-family workstation, and
 its tests cover that. It no longer builds, boots or publishes one.
 
 ## Why GNOME
 
-A desktop is adopted here on
+A desktop is adopted on
 [seven criteria](adr/0024-what-a-desktop-platform-must-expose.md): file-based
-configuration with precedence, a lock layer, a greeter database, a first-boot setup
-that can be skipped or preconfigured, an extension policy the image decides, an
-offline expression, and state a check can read. Popularity is not one of them.
-GNOME on EL10 meets all seven, and [the audit](gnome-coverage.md) records it:
-nineteen guide items modelled exactly, one partially, the refusals named. Another desktop needs a kind, an ADR
-and an audit, not a flag.
+configuration with precedence, a lock layer, a greeter database, a first-boot
+setup that can be skipped, an extension policy the image decides, an offline
+expression, and state a check can read. Popularity is not one of them.
+
+GNOME on EL10 meets all seven. [The audit](gnome-coverage.md) records nineteen
+guide items modelled exactly, one partially, and the refusals. Another desktop
+needs a kind, an ADR and an audit, not a flag.
 
 ## Support and retirement
 
