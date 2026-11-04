@@ -4,12 +4,18 @@
 
 ## Context
 
-DeskOS writes its GNOME defaults to one system dconf database (`gnome.dconfDatabase`), which works only if the
-platform's session reads it: measured for the EL10 family and Fedora, **assumed** for Ubuntu, which declared
-`dconfDatabase: distro`. The 2026-10-18 measurement (`quay.io/deskos/deskos-ubuntu-base:26.04`) found no
-`/etc/dconf/profile/user` and no package providing it, so `dconf read` on a key compiled into `distro` returned
-nothing, and GDM's `user-db:user` plus `file-db` profile made `loginScreen: true` false. Five GNOME defaults reached
-nobody while the plan said the image carried them; `windows.buttons` also added `appmenu:close` unasked.
+DeskOS writes its GNOME defaults to one system dconf database
+(`gnome.dconfDatabase`), which works only if the platform's session reads it:
+measured for the EL10 family and Fedora, **assumed** for Ubuntu, which declared
+`dconfDatabase: distro`.
+
+The 2026-10-18 measurement (`quay.io/deskos/deskos-ubuntu-base:26.04`) found no
+`/etc/dconf/profile/user` and no package providing it, so `dconf read` on a key
+compiled into `distro` returned nothing, and GDM's `user-db:user` plus `file-db`
+profile made `loginScreen: true` false.
+
+Five GNOME defaults reached nobody while the plan said the image carried them;
+`windows.buttons` also added `appmenu:close` unasked.
 
 ## Decision
 

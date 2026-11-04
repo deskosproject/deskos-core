@@ -42,12 +42,15 @@ certificates out.
 
 ### Decision
 
-`TrustAnchor.spec` gains an optional `blocklist[]` with the same `name`/`file` shape, keying and asset rules as
-`anchors[]`. A certificate is either anchored or distrusted, never both: one `name` appears in only one list. A
-platform supplies `trust.blocklistDir`, and one without it fails composition rather than dropping the entry. Lowering
-copies each certificate to `<blocklistDir>/<name>.crt` and runs the same single `trust.updateCommand` after `COPY
-rootfs/`; the Plan carries `trustBlocklist` next to `trustAnchors`, and the SBOM records
-`deskos:source=trust-blocklist`.
+`TrustAnchor.spec` gains an optional `blocklist[]` with the same `name`/`file`
+shape, keying and asset rules as `anchors[]`. A certificate is either anchored
+or distrusted, never both: one `name` appears in only one list.
+
+A platform supplies `trust.blocklistDir`, and one without it fails composition
+rather than dropping the entry. Lowering copies each certificate to
+`<blocklistDir>/<name>.crt` and runs the same single `trust.updateCommand` after
+`COPY rootfs/`; the Plan carries `trustBlocklist` next to `trustAnchors`, and
+the SBOM records `deskos:source=trust-blocklist`.
 
 The field is a **profile resource like any other**, so any layer may declare a distrusted certificate; Core ships
 `deskos-trust` with the eMudhra roots, and the kind count does not change. It is not a lock: an administrator may still

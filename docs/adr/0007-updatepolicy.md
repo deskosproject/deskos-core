@@ -7,6 +7,7 @@
 Both supported bases enable `bootc-fetch-apply-updates.timer` from an unowned symlink in
 `/usr/lib/systemd/system/default.target.wants/`. Its service runs `bootc upgrade --apply --quiet`, and `--apply`
 "currently always reboots the system" (checked on `centos-bootc:stream10`, bootc 1.16.13, and `rhel-bootc:10.2`, bootc
+
 1.16.4), one hour after boot and every 8 hours with a 2-hour random delay. `systemctl disable` does not remove a
 `/usr/lib` wants symlink; only a mask stops it. None of the ten kinds can hold the policy: it is not GNOME, boot or
 platform configuration, and `Workstation` has no layering.

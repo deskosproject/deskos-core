@@ -4,12 +4,16 @@
 
 ## Context
 
-ADR 0004 requires each workstation to compile Core onto its platform's **official** bootc base, so a RHEL workstation
-is RHEL, not a derivative. That rule has no answer for a platform whose vendor publishes **no** bootc base: Canonical
-publishes `ubuntu` OCI container images, not bootc operating systems, and the only available bases are community
-recipes. The one exercised in the 2026-10-15 spike failed to build at HEAD, destroyed the `/var` skeleton `snapd` and
-`apparmor` install into, and shipped Flatpak 1.16.6 without `flatpak preinstall`. Read strictly, ADR 0004 says Ubuntu
-is unsupported; an organization may still own the base.
+ADR 0004 requires each workstation to compile Core onto its platform's
+**official** bootc base, so a RHEL workstation is RHEL, not a derivative. That
+rule has no answer for a platform whose vendor publishes **no** bootc base:
+Canonical publishes `ubuntu` OCI container images, not bootc operating systems,
+and the only available bases are community recipes.
+
+The one exercised in the 2026-10-15 spike failed to build at HEAD, destroyed the
+`/var` skeleton `snapd` and `apparmor` install into, and shipped Flatpak 1.16.6
+without `flatpak preinstall`. Read strictly, ADR 0004 says Ubuntu is
+unsupported; an organization may still own the base.
 
 ## Decision
 
