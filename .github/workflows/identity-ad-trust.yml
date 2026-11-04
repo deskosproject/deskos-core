@@ -91,6 +91,14 @@ jobs:
         run: |
           sudo podman network create "$AD_NETWORK" || true
           sudo podman network inspect "$AD_NETWORK" | jq '.[0] | {subnets, dns_enabled, internal, isolate}'
+          # The runner's FORWARD policy is DROP and netavark's same-subnet
+          # accept is not reached: every DC port timed out from the IPA
+          # container, and the subnet accept counter stayed at zero (run
+          # 41755258106). Accept the network's own traffic explicitly. This
+          # is a fixture workaround for the runner, not a product rule.
+          subnet="$(sudo podman network inspect "$AD_NETWORK" | jq -r '.[0].subnets[0].subnet')"
+          sudo iptables -I FORWARD -s "$subnet" -d "$subnet" -j ACCEPT
+          sudo iptables -S FORWARD | head
 
       - name: Enable KVM for the runner user
         run: |
