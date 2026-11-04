@@ -4,12 +4,16 @@
 
 ## Context
 
-A `BinaryArtifact` is downloaded at build time and verified against its declared `sha256`, and `RpmFile` is the same
-shape for an RPM taken from a URL; the Containerfile backend fetches both with `curl`. That makes `curl` an assumption
-about a base, and it was wrong once: the Ubuntu base ships none, so the build died with `/bin/sh: 1: curl: not found`
-minutes in, naming no resource. Invariant 9 asks the opposite, and this is a platform fact because which bases carry a
-fetcher varies by vendor, and the package name is the platform's, not Core's. Core knows neither `curl` nor
-`ca-certificates` (ADR 0004, the shape of `iconCache.package`).
+A `BinaryArtifact` is downloaded at build time and verified against its declared
+`sha256`, and `RpmFile` is the same shape for an RPM taken from a URL; the
+Containerfile backend fetches both with `curl`. That makes `curl` an assumption
+about a base, and it was wrong once: the Ubuntu base ships none, so the build
+died with `/bin/sh: 1: curl: not found` minutes in, naming no resource.
+
+Invariant 9 asks the opposite, and this is a platform fact because which bases
+carry a fetcher varies by vendor, and the package name is the platform's, not
+Core's. Core knows neither `curl` nor `ca-certificates` (ADR 0004, the shape of
+`iconCache.package`).
 
 ## Decision
 
