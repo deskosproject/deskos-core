@@ -360,3 +360,19 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Records on the site:** `deskos.org/evidence/` comes from the public index,
   follows `:stable` and describes today's download digest; a private
   organization's records never appear.
+
+## Release contract (planned)
+
+Core and the DayTwo organization already share the shape: build one digest,
+scan it with a reviewed exception record, boot it, sign it, publish it under an
+immutable `:<commit>`, move `:candidate`, and promote `:stable` by digest with an
+approval record. The installers follow the image digest.
+
+- **Done 2026-11-04:** the installer repository ends in `-installer` in both
+  projects; it used to be `-iso`.
+- **Planned:** a Core RHEL leg that builds and gates but never publishes, so the
+  platform is exercised where its resources live.
+- **Planned:** a shared `design/release-contract.md` and a `release.json` every
+  release emits, with the digest, Plan and SBOM hashes, check results, scan and
+  exceptions, signature identity, channels and evidence index. The fields are
+  shared; the workflows are not.
