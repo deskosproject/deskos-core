@@ -89,7 +89,7 @@ jobs:
 
       - name: Create the identity network
         run: |
-          sudo podman network create "$AD_NETWORK" || true
+          sudo podman network create --opt isolate=false "$AD_NETWORK" || true
           sudo podman network inspect "$AD_NETWORK" | jq '.[0] | {subnets, dns_enabled, internal, isolate}'
           # The runner's FORWARD policy is DROP and netavark's same-subnet
           # accept is not reached: every DC port timed out from the IPA
@@ -99,6 +99,10 @@ jobs:
           subnet="$(sudo podman network inspect "$AD_NETWORK" | jq -r '.[0].subnets[0].subnet')"
           sudo iptables -I FORWARD -s "$subnet" -d "$subnet" -j ACCEPT
           sudo iptables -S FORWARD | head
+          # The accept did not change the result, so check the layer below:
+          # a bridge port marked isolated drops the frame before IP forwarding.
+          sudo bridge link show || true
+          sudo nft list tables || true
 
       - name: Enable KVM for the runner user
         run: |
@@ -230,6 +234,7 @@ jobs:
           # Whether the failure is DNS-specific or all traffic: try the DC's
           # other ports too, and record how podman wires the network.
           echo "=== the DC's ports, from the IPA container" >&2
+          sudo podman exec deskos-freeipa ping -c1 -W1 "$AD_SERVER_IP" || true
           sudo podman exec -i deskos-freeipa bash -s <<EOF || true
           for p in 53 88 389 445; do
             if timeout 2 bash -c "echo >/dev/tcp/$AD_SERVER_IP/\$p" 2>/dev/null; then
