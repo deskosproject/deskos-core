@@ -6,7 +6,7 @@ configuration management is outside every milestone.
 | Today | State |
 |---|---|
 | Compiler | `v0.20.0` (2026-11-04): `Platform.maskedUnits` and the update-unit retry |
-| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`; RHEL awaits a fixed vendor base |
+| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`; RHEL's vendor fix is published (RHSA-2026:93413), the base pin move is pending |
 | Open | AD trust fixture (#406), `/var/home` label (#409), CVE-2026-114406 decision (#411), and the image scan and build disk limits tracked in the organization repository |
 
 ## Milestone 0: resource model (done)
