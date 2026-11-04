@@ -1,0 +1,315 @@
+{
+  "disk": "/mnt/deskos-work/output/qcow2/disk.qcow2",
+  "disk_sha256": "cb0e36870cdc32a15aa71e4ee76a8d87c7468bef207a71d22ddc00bbb8c3d076",
+  "qemu": "/usr/bin/qemu-system-x86_64",
+  "ovmf_code": "/usr/share/OVMF/OVMF_CODE_4M.fd",
+  "memory_mib": 4096,
+  "cpus": 4,
+  "boot_timeout_s": 900,
+  "shutdown_timeout_s": 120,
+  "expect_splash": false,
+  "until_serial": "DESKOS-QA-END",
+  "until_serial_ready": null,
+  "ready_timeout_s": null,
+  "frames": [
+    {
+      "t": 0.0,
+      "phase": "boot",
+      "class": "text",
+      "size": "640x480",
+      "digest": "d2467d044dd69a10",
+      "dark": 0.9981,
+      "lit": 0.0019,
+      "bbox": [
+        200,
+        226,
+        428,
+        238
+      ],
+      "file": "frames/boot-0000.0-text.png"
+    },
+    {
+      "t": 3.0,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "5af9bd208744e8cc",
+      "dark": 0.9987,
+      "lit": 0.0013,
+      "bbox": [
+        240,
+        106,
+        636,
+        160
+      ],
+      "file": "frames/boot-0003.0-text.png"
+    },
+    {
+      "t": 6.1,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "2f9733a79767ad6e",
+      "dark": 0.9937,
+      "lit": 0.0063,
+      "bbox": [
+        0,
+        2,
+        566,
+        94
+      ],
+      "file": "frames/boot-0006.1-text.png"
+    },
+    {
+      "t": 9.1,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "a0312373375ccd29",
+      "dark": 0.9951,
+      "lit": 0.0046,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/boot-0009.1-splash.png"
+    },
+    {
+      "t": 12.2,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "445d26b07586037e",
+      "dark": 0.9951,
+      "lit": 0.0047,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/boot-0012.2-splash.png"
+    },
+    {
+      "t": 15.3,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271,
+      "file": "frames/boot-0015.3-graphical.png"
+    },
+    {
+      "t": 18.5,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 21.5,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 24.6,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 27.6,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 30.7,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 33.7,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "d07d98da8394d81c",
+      "dark": 0.5632,
+      "lit": 0.0271
+    },
+    {
+      "t": 36.8,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "efa92750e2892269",
+      "dark": 0.5632,
+      "lit": 0.0271,
+      "file": "frames/boot-0036.8-graphical.png"
+    },
+    {
+      "t": 39.9,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ],
+      "file": "frames/boot-0039.9-text.png"
+    },
+    {
+      "t": 43.0,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 46.0,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 49.1,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 52.1,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 55.2,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 58.2,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 61.3,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    },
+    {
+      "t": 64.3,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ]
+    }
+  ],
+  "result": "pass",
+  "failures": [],
+  "splash_first_s": 9.1,
+  "graphical_first_s": 15.3,
+  "ready_serial_s": null,
+  "serial_marker_s": 67.4,
+  "text_frames_between_splash_and_graphical": 0,
+  "shutdown_s": 0.0,
+  "shutdown_text_frames": 0
+}
