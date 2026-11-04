@@ -12,8 +12,8 @@ KVM for the virtual machine.
 | Platform | Image |
 |---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10:latest` |
-| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:latest` |
 | AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10:latest` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:latest` |
 
 `:latest` is the newest image that passed the weekly build; `:candidate` is the
 digest that build published and signed. Outside a lab, pin the digest you

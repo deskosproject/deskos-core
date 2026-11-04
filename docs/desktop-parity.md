@@ -8,9 +8,9 @@ contributes its stack and, on one flavor, its families; it does not contribute
 the look.
 
 The reference workstations are [CentOS Stream
-10](../resources/workstations/deskos-core-centos-stream-10.yaml), [Fedora
-45](../resources/workstations/deskos-core-fedora-45.yaml) and [AlmaLinux
-10](../resources/workstations/deskos-core-almalinux-10.yaml); the RHEL fleet is
+10](../resources/workstations/deskos-core-centos-stream-10.yaml), [AlmaLinux
+10](../resources/workstations/deskos-core-almalinux-10.yaml) and [Fedora
+45](../resources/workstations/deskos-core-fedora-45.yaml); the RHEL fleet is
 built by the organization ([example platforms](example-platforms.md)).
 
 ## What every flavor shares
@@ -44,15 +44,15 @@ Stream 10 `0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `900e1adf`. The CentOS
 pin moved to `f43c24c5` on 2026-11-03; re-measure before relying on a version
 tie.
 
-| | CentOS Stream 10 | Fedora 45 | AlmaLinux 10 | RHEL 10.2 |
+| | CentOS Stream 10 | AlmaLinux 10 | Fedora 45 | RHEL 10.2 |
 |---|---|---|---|---|
-| GNOME Shell | 49.5-18 | **51.1-1** | 49.4-9 | 49.4-9* |
-| GDM | 47.0-32 | **51.0-1** | 47.0-24 | 47.0* |
-| Ptyxis | 47.13-1 | **50.1-6** | 47.13-1 | 47.13* |
-| Flatpak | **1.18.0-2** | 1.18.4 | 1.16.0-9 | 1.16.0-9† |
-| Mesa | 26.1.1-2 | 26.2.3-1 | 25.2.7-4 | 25.2.7* |
-| PipeWire | 1.6.9-1 | 1.6.9-1 | 1.4.11-1 | 1.4.11* |
-| Firefox | 140.17.0-1 | **159.0-1** | 153.5.0-1 | 140.16.0-1† |
+| GNOME Shell | 49.5-18 | 49.4-9 | **51.1-1** | 49.4-9* |
+| GDM | 47.0-32 | 47.0-24 | **51.0-1** | 47.0* |
+| Ptyxis | 47.13-1 | 47.13-1 | **50.1-6** | 47.13* |
+| Flatpak | **1.18.0-2** | 1.16.0-9 | 1.18.4 | 1.16.0-9† |
+| Mesa | 26.1.1-2 | 25.2.7-4 | 26.2.3-1 | 25.2.7* |
+| PipeWire | 1.6.9-1 | 1.4.11-1 | 1.6.9-1 | 1.4.11* |
+| Firefox | 140.17.0-1 | 153.5.0-1 | **159.0-1** | 140.16.0-1† |
 
 `*` RHEL 10.2 publishes the version AlmaLinux rebuilds: the `el10_2` NEVRA without
 the `.alma` suffix. `†` recorded in this repository
