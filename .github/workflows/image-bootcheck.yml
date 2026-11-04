@@ -164,6 +164,18 @@ jobs:
           fi
           sha256sum ctx/plan.json ctx/generated-manifest.json
 
+      - name: Free disk space
+        # The runner image ships ~59G used of a 72G disk. The CentOS build with
+        # the 2026-11-03 base and Firefox needs more than the 13G left, and it
+        # died writing libxul.so (run 41764110215). Free what the image carries
+        # for other languages before the build, as the publish jobs do.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache /usr/local/share/boost /usr/share/swift \
+            /usr/local/.ghcup /opt/az /usr/local/share/powershell \
+            /usr/share/miniconda 2>/dev/null || true
+          df -h /
+
       - name: Put container storage and outputs on /mnt
         # The root disk is small; the same layout as bootc-image-builder's own CI.
         run: |
