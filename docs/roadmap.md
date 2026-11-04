@@ -368,11 +368,12 @@ scan it with a reviewed exception record, boot it, sign it, publish it under an
 immutable `:<commit>`, move `:candidate`, and promote `:stable` by digest with an
 approval record. The installers follow the image digest.
 
-- **Blocked 2026-11-04:** the installer repository should end in `-installer`,
-  the same suffix DayTwo already uses. The first push to
-  `deskos-core-centos-stream-10-installer` returned 401 because the Quay robot
-  account cannot create or write that repository; the rename waits for the
-  repository and its robot permission.
+- **Decided 2026-11-04:** the shared suffix is `-iso`, the name the Quay
+  organization already uses (`deskos-core-centos-stream-10-iso`). A new
+  `-installer` repository would need a new Quay repository and a robot grant;
+  the rename was reverted. DayTwo publishes `-installer` in its own registry;
+  it keeps that name until its fetch script and docs move, and a `-iso` alias
+  can follow.
 - **Planned:** a Core RHEL leg that builds and gates but never publishes, so the
   platform is exercised where its resources live.
 - **Planned:** a shared `design/release-contract.md` and a `release.json` every
