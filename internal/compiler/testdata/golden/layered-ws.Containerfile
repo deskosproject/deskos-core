@@ -3,7 +3,7 @@
 # Workstation: layered-ws
 # Platform:    centos-stream-10 (CentOS Stream 10)
 
-FROM quay.io/centos-bootc/centos-bootc:stream10@sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11
+FROM quay.io/centos-bootc/centos-bootc:stream10@sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
