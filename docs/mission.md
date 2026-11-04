@@ -20,9 +20,9 @@ and update policy. Compilation is deterministic, with no model and no network.
 | one definition for a team, an organization or one person | a fleet manager, a policy server or a home-directory manager |
 | evidence bound to a digest | a support contract or a hardware promise |
 
-The supported platforms are CentOS Stream 10, RHEL 10, Fedora 45 and AlmaLinux
+The supported platforms are CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora
 
-10 ([Platforms](platforms.md)). Core never publishes RHEL images: an organization
+45 ([Platforms](platforms.md)). Core never publishes RHEL images: an organization
 builds them with its own subscription.
 
 ## Start here

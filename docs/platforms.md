@@ -15,8 +15,8 @@ in [`deskosproject/deskos-ubuntu`](https://github.com/deskosproject/deskos-ubunt
 |---|---|---|---|---|---|---|---|
 | CentOS Stream 10 | `quay.io/centos-bootc/centos-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-centos-stream-10`) | Flatpak preinstall |
 | RHEL 10 | `registry.redhat.io/rhel10/rhel-bootc` (vendor, entitled) | x86_64 manifest, by digest | **validated** (test) | built by the organization | built by the organization | **never** | Flatpak preinstall |
-| Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-fedora-45`) | Flatpak preinstall |
 | AlmaLinux 10 | `quay.io/almalinuxorg/almalinux-bootc` (vendor) | x86_64 manifest, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-almalinux-10`) | Flatpak preinstall |
+| Fedora 45 | `quay.io/deskos/fedora-silverblue` (vendor, mirrored) | x86_64 index, by digest | **validated** (test, CI) | **CI** | **CI**: GNOME; session check | **published** (`quay.io/deskos/deskos-core-fedora-45`) | Flatpak preinstall |
 
 `(vendor)` means the platform's own supplier: Red Hat for RHEL, the CentOS
 project for CentOS Stream. A session starts with the vendor's desktop where
@@ -81,7 +81,7 @@ needs a kind, an ADR and an audit, not a flag.
 The matrix above is the support statement. It is **not an LTS promise**, and a
 vendor's lifecycle dates do not become DeskOS dates.
 
-- **Maintained artifacts today:** CentOS Stream 10, Fedora 45 and AlmaLinux 10,
+- **Maintained artifacts today:** CentOS Stream 10, AlmaLinux 10 and Fedora 45,
   each published as a Core image (only CentOS has a Core installer); RHEL 10,
   built privately under an entitlement; Ubuntu 26.04, in its own repo. Only
   `examples/layers/` is built in CI, to exercise its repositories; the other

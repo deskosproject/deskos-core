@@ -6,7 +6,7 @@ configuration management is outside every milestone.
 | Today | State |
 |---|---|
 | Compiler | `v0.20.0` (2026-11-04): `Platform.maskedUnits` and the update-unit retry |
-| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), Fedora 45 `45.20261103.0`, AlmaLinux 10 `5ef1b06e`; RHEL awaits a fixed vendor base |
+| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`; RHEL awaits a fixed vendor base |
 | Open | AD trust fixture (#406), `/var/home` label (#409), CVE-2026-114406 decision (#411), and the image scan and build disk limits tracked in the organization repository |
 
 ## Milestone 0: resource model (done)
@@ -346,7 +346,7 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).
 - **Shipped platforms:** the weekly gate publishes the CentOS Stream 10,
-  Fedora 45 and AlmaLinux 10 images; installers are Core's only for CentOS.
+  AlmaLinux 10 and Fedora 45 images; installers are Core's only for CentOS.
 - The **splash race**: one disk booted to text for a whole boot and drew the
   splash on the next; the retry absorbs it but not always. Cause unexplained.
 - RHEL's Red Hat logo in the Activities button: replacing `fedora-logo-icon`
