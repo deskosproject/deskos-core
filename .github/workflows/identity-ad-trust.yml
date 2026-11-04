@@ -199,10 +199,17 @@ jobs:
           set -euo pipefail
           ok=0
           for _ in $(seq 1 60); do
-            if sudo -E tests/identity/samba-ad.sh status; then
+            # Local answers are not enough: trust-add asks the IPA server for
+            # the AD zone, and the IPA server forwards to the DC's DNS on the
+            # podman network. Samba answers locally seconds before it answers
+            # there, which is what made the first trust attempt time out
+            # (run 41745859977).
+            if sudo -E tests/identity/samba-ad.sh status &&
+               sudo podman exec deskos-freeipa \
+                 dig +short SOA adtrust.test "@$AD_SERVER_IP" >/dev/null; then
               ok=$((ok + 1))
               if [ "$ok" -ge 2 ]; then
-                echo "the DC answered twice after the restart"
+                echo "the DC answered twice, locally and from the IPA server"
                 exit 0
               fi
               sleep 10
@@ -212,6 +219,12 @@ jobs:
             sleep 5
           done
           echo "the DC did not answer twice after the restart" >&2
+          echo "=== the DC's DNS listeners" >&2
+          sudo podman exec deskos-ad ss -lunpt 2>/dev/null | grep ':53' >&2 || true
+          echo "=== the IPA server asking the DC" >&2
+          sudo podman exec deskos-freeipa dig +short SOA adtrust.test "@$AD_SERVER_IP" >&2 || true
+          sudo podman exec deskos-freeipa \
+            dig +short SRV "_ldap._tcp.adtrust.test" "@$AD_SERVER_IP" >&2 || true
           sudo podman logs deskos-ad 2>&1 | tail -80 || true
           exit 1
 
