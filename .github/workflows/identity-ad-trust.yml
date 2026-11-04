@@ -44,6 +44,12 @@ env:
   # the IPA container on the podman network, never from the guest.
   AD_BIND: 127.0.0.2
   AD_SERVER_HOSTNAME: dc.adtrust.test
+  # Both directories share a network of their own. The default podman network
+  # isolates containers on newer versions, and the trust needs the IPA server
+  # to reach the DC's DNS directly (run 41750681799: the DC listened on
+  # 0.0.0.0:53 and the IPA server still timed out).
+  AD_NETWORK: deskos-identity
+  IPA_NETWORK: deskos-identity
   # Not a subdomain of lab.test: a cross-forest trust needs two realms that are
   # not parent and child, and FreeIPA documents a different DNS shape for that
   # case. lab.test and adtrust.test are siblings under the reserved .test TLD.
@@ -80,6 +86,11 @@ jobs:
           printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
           sudo chown "$(id -u):$(id -g)" "$WORK"
           sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Create the identity network
+        run: |
+          sudo podman network create "$AD_NETWORK" || true
+          sudo podman network inspect "$AD_NETWORK" | jq '.[0] | {subnets, dns_enabled, internal, isolate}'
 
       - name: Enable KVM for the runner user
         run: |
