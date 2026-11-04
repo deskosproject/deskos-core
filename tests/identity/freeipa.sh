@@ -130,8 +130,11 @@ case "${1:-}" in
         --forwarder="$AD_SERVER_IP" --forward-policy=only
     fi
     podman exec "$name" dig +short SRV "_ldap._tcp.$AD_DOMAIN" @127.0.0.1
-    podman exec "$name" ipa trust-add "$AD_DOMAIN" --type=ad \
-      --admin Administrator --password="$AD_ADMIN_PASSWORD" \
+    # `--password` is a prompt, not an option with a value: passing
+    # --password=... makes ipa exit with "--password option does not take a
+    # value" (run 41742726895). Feed the prompt on stdin instead.
+    printf '%s\n' "$AD_ADMIN_PASSWORD" | podman exec -i "$name" ipa trust-add "$AD_DOMAIN" --type=ad \
+      --admin Administrator --password \
       --range-type=ipa-ad-trust
     podman exec "$name" ipa trust-show "$AD_DOMAIN"
     podman exec "$name" ipa idrange-find
