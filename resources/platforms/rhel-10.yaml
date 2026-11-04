@@ -98,6 +98,11 @@ spec:
     spinnerFrames:
       package: plymouth-theme-spinner
       imageDir: /usr/share/plymouth/themes/spinner
+  # A composefs root cannot be remounted; the base ships this unit and it
+  # fails on every boot. Masking it is a platform fact, not an organization
+  # choice, and the mask travels into the installer disk with the image.
+  maskedUnits: [systemd-remount-fs.service]
+
   updates:
     # bootc-fetch-apply-updates is enabled by the base image (default.target.wants) and
     # runs bootc upgrade --apply, which reboots. rpm-ostreed-automatic is the ostree
