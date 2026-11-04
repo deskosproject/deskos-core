@@ -93,7 +93,10 @@ jobs:
           fi
           printf '%s' "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$' \
             || { echo "::error::commit must be a hex commit"; exit 1; }
-          echo "ISO_REPO=${IMAGE}-iso" >> "$GITHUB_ENV"
+          # The ISO repository carries the same suffix in every DeskOS release.
+          # It used to be -iso; -installer says what the artifact is and matches
+          # the DayTwo organization's artifacts.
+          echo "ISO_REPO=${IMAGE}-installer" >> "$GITHUB_ENV"
 
       - name: Is there an image to install?
         id: presence
