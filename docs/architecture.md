@@ -10,7 +10,7 @@ published image.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="/images/deskos-flow-dark.svg">
-    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers (workstation, role, organization and foundation, where the higher layer wins rather than file order), then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, Fedora 45 and AlmaLinux 10, which are published, and RHEL 10, built privately with a subscription and not published. bootc-image-builder writes a QCOW2 disk from any of them; only CentOS Stream 10 also has an installer ISO" src="/images/deskos-flow-light.svg" width="900">
+    <img alt="DeskOS flow: organizational intent as a Workstation and Profiles in layers (workstation, role, organization and foundation, where the higher layer wins rather than file order), then deskosctl validating, composing, planning a typed IR and rendering a build context deterministically, with no shell during planning; podman builds one bootc OCI image per platform: CentOS Stream 10, AlmaLinux 10 and Fedora 45, which are published, and RHEL 10, built privately with a subscription and not published. bootc-image-builder writes a QCOW2 disk from any of them; only CentOS Stream 10 also has an installer ISO" src="/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -61,7 +61,7 @@ dock` for the dock. A RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, never from the CentOS-based DeskOS
 image.
 
-Fedora and AlmaLinux are shipped platforms with their own roots; Ubuntu lives in
+AlmaLinux and Fedora are shipped platforms with their own roots; Ubuntu lives in
 its own repository ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 
 ## Composition
@@ -210,8 +210,8 @@ moves.
 | Platform | Last known | Where |
 |---|---|---|
 | CentOS Stream 10 | built, booted and session-checked on the 2026-11-03 base (run `41766072582`) | `image-bootcheck.yml`, `tests/vm` |
-| Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
 | AlmaLinux 10 | published by the weekly build; boot and session checks run in the publish leg | `image-publish.yml` |
+| Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
 | RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [ADR 0014](adr/0014-platform-base-ownership.md) |
 
 The session check reads every dconf default, extension, favorite, wallpaper and
@@ -250,7 +250,7 @@ repository per shipped platform.
 A weekly build publishes `:<commit>`, `:latest` and `:candidate` by digest,
 after building, scanning and booting. `:stable` moves only through
 [promotion.yml](design/promotion.md), which verifies the signature and the
-records. Automatic promotion runs for CentOS Stream 10; Fedora and AlmaLinux
+records. Automatic promotion runs for CentOS Stream 10; AlmaLinux and Fedora
 stay on `:latest`/`:candidate` unless a person dispatches one.
 
 Pin a digest in production.

@@ -5,7 +5,7 @@ your image, your desktop, your ISO.
 
 | Way | What you do | Use it when |
 |---|---|---|
-| Install the published image | pull, write a disk or ISO, boot | evaluation; CentOS has a Core ISO, Fedora and Alma a disk image |
+| Install the published image | pull, write a disk or ISO, boot | evaluation; CentOS has a Core ISO, Alma and Fedora a disk image |
 | Build your own, then install it | author a `Workstation`, render, build, install | your packages and policy; RHEL needs an entitlement |
 
 Two templates do the second way for you:
@@ -31,14 +31,14 @@ spare disk.
 | Platform | Image | Tags |
 |---|---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
-| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
 | AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:latest`, `:candidate`, `:<commit>` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
 
 `:latest` is the newest image that passed the weekly build. `:stable` is the
 digest a promotion accepted. Outside a lab, pin the digest:
 [validation status](architecture.md#validation-status) names the current one.
 
-The commands use CentOS Stream 10. For Fedora 45 or AlmaLinux 10, replace the
+The commands use CentOS Stream 10. For AlmaLinux 10 or Fedora 45, replace the
 reference. Fedora also needs `--rootfs btrfs` when writing the disk, and Core
 publishes no ISO for either.
 
