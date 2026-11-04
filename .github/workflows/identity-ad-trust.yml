@@ -231,6 +231,19 @@ jobs:
             || true
           sudo podman exec deskos-freeipa \
             dig +time=2 +tries=1 SOA adtrust.test "@$AD_SERVER_IP" || true
+          # The IPA container runs its own firewalld. It may drop the replies
+          # to the connections the server opens to the DC, which is what the
+          # timeout on every port looks like. Record its state and whether the
+          # DC can reach it, then stop it: the disposable container sits on a
+          # private network and the host publishes its ports.
+          echo "=== the IPA server's firewall" >&2
+          sudo podman exec deskos-freeipa firewall-cmd --state || true
+          sudo podman exec deskos-freeipa firewall-cmd --list-all || true
+          sudo podman exec deskos-ad ping -c1 -W1 "$IPA_SERVER_IP" || true
+          sudo podman exec deskos-ad bash -c \
+            "timeout 2 bash -c 'echo >/dev/tcp/$IPA_SERVER_IP/389'" \
+            && echo "dc->ipa 389 open" || echo "dc->ipa 389 blocked"
+          sudo podman exec deskos-freeipa systemctl stop firewalld || true
           # Whether the failure is DNS-specific or all traffic: try the DC's
           # other ports too, and record how podman wires the network.
           echo "=== the DC's ports, from the IPA container" >&2
