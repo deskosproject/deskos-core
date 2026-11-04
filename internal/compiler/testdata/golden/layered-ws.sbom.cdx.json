@@ -44,11 +44,11 @@
     {
       "type": "application",
       "name": "deskos",
-      "version": "0.19.0",
+      "version": "0.20.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "cf605efd754229ac2b04378f91d223f6578d59afbd140cc8b2203f6d500e3085"
+          "content": "f92828cbcddbd4922474db2f1404f98be0ce6a5dbdf93b07cdb0776ceb96a7eb"
         }
       ],
       "properties": [
