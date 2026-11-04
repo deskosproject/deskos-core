@@ -31,7 +31,9 @@ case "${1:-}" in
     # SYS_ADMIN is what lets provisioning store the SYSVOL ACL: `security.NTACL`
     # is a security-namespace xattr, and the default rootful capability set does
     # not include SYS_ADMIN. Without it the provision dies with ACCESS_DENIED.
+    network=${AD_NETWORK:-podman}
     podman run -d --name "$name" --hostname "$hostname" --cap-add=SYS_ADMIN \
+      --network "$network" \
       -p "$bind:53:53/udp" -p "$bind:53:53/tcp" \
       -p "$bind:88:88/tcp" -p "$bind:88:88/udp" \
       -p "$bind:389:389/tcp" -p "$bind:445:445/tcp" \

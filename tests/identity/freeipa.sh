@@ -46,7 +46,9 @@ case "${1:-}" in
            -p "$bind:389:389" -p "$bind:636:636"
            -p "$bind:88:88" -p "$bind:88:88/udp"
            -p "$bind:464:464" -p "$bind:464:464/udp")
+    network=${IPA_NETWORK:-podman}
     podman run -d --name "$name" --hostname "$hostname" --systemd=always \
+      --network "$network" \
       --log-driver=k8s-file --log-opt=max-size=50mb \
       "${ports[@]}" \
       -e PASSWORD="$FREEIPA_PASSWORD" \
