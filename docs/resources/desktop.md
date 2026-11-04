@@ -98,20 +98,23 @@ profile names each one:
 `/etc/fonts/conf.d/60-deskos-fonts.conf`, which fontconfig applies to every
 application; mirror the same choice into the interface keys GNOME 47 reads
 (`font-antialiasing`, `font-hinting`, `font-rgba-order`, and `font-rendering:
-manual`, without which GNOME ignores the other three); and into the Xsettings keys
-X11 applications read. Declare only what you mean: an image that declares nothing
-keeps the distribution's choices. RGB and BGR depend on the panel, so Core picks
-neither.
+manual`, without which GNOME ignores the other three); and into the Xsettings
+keys X11 applications read.
+
+Declare only what you mean: an image that declares nothing keeps the
+distribution's choices. RGB and BGR depend on the panel, so Core picks neither.
 
 The families are separate from the rendering, and they are the workstation's
 choice ([ADR 0026](../adr/0026-the-families-are-the-workstations-choice.md)).
-`deskos-gnome` installs the families every workstation needs: Liberation, Carlito,
-Caladea, DejaVu, Noto, the URW base 35, and Gelasio and Overpass as pinned
-artifacts because EL10 packages neither. `deskos-adwaita` adds GNOME's own:
-Adwaita Sans for the interface and documents, Adwaita Mono for monospace, which is
-what GNOME OS ships. A workstation that lists it draws GNOME's look; one that does
-not keeps the platform's families, which on EL10 is Red Hat Text and Red Hat Mono.
-The terminal follows the monospace family unless a profile names one.
+`deskos-gnome` installs the families every workstation needs: Liberation,
+Carlito, Caladea, DejaVu, Noto, the URW base 35, and Gelasio and Overpass as
+pinned artifacts because EL10 packages neither. `deskos-adwaita` adds GNOME's
+own: Adwaita Sans for the interface and documents, Adwaita Mono for monospace,
+which is what GNOME OS ships.
+
+A workstation that lists it draws GNOME's look; one that does not keeps the
+platform's families, which on EL10 is Red Hat Text and Red Hat Mono. The
+terminal follows the monospace family unless a profile names one.
 
 **Search and notifications.** `search.external: false` stops third-party search
 providers from answering, and `search.disabled` names the providers that do not
@@ -124,9 +127,9 @@ subject line on a locked screen is visible to anyone walking past.
 `.after` is when: `blank`, `suspend`, `shutdown`, `hibernate`, `interactive`,
 `nothing` or `logout`, with the same pair on battery in `.batteryAction` and
 `.batteryAfter`. They are declared together, because a timeout without an action
-or an action without a timeout is a policy that does nothing, and `never` is only
-valid with `nothing`. `blankAfter` and the dim fields are the screen, not the
-machine: the screen can blank long before the machine suspends.
+or an action without a timeout is a policy that does nothing, and `never` is
+only valid with `nothing`. `blankAfter` and the dim fields are the screen, not
+the machine: the screen can blank long before the machine suspends.
 
 **Proxy.** `network.proxy` is the system proxy GNOME and the apps that read it
 use: `none` ignores everything, `auto` reads the PAC file in `autoconfigUrl`, and
