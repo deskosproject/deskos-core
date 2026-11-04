@@ -185,12 +185,12 @@
     {
       "id": "CVE-2026-114406",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Accepted by the owner on 2026-10-23 and re-reviewed on 2026-10-26 for the Stream 10 base move. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base now carries 2026.2.92_v9.0.319-100.1, which no longer ships the two roots DeskOS blocklisted (verified in the base bundle), so the deskos-trust profile is no longer selected by this workstation; the remaining roots are what the fixed 2026.2.92_v9.0.319-100.3 build removes. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when the compose serves ca-certificates-2026.2.92_v9.0.319-100.3.",
+      "reason": "Re-accepted by the owner on 2026-11-04 for the 2026-11-03 CentOS Stream 10 base. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base serves 2026.2.92_v9.0.319-100.3: its changelog removes emSign Root CA - C1 (100.0), AAA Certificate Services and emSign ECC Root CA - G3 (100.1), and emSign Root CS CA - G3 (100.2), and the extracted bundle has no eMudhra root. Grype still matches this CVE against 100.3 because its database has not caught up; this entry documents that false positive until it does. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when a scan stops reporting the CVE.",
       "matches": [
         {
           "package": "ca-certificates",
           "type": "rpm",
-          "version": "2026.2.92_v9.0.319-100.1.el10",
+          "version": "2026.2.92_v9.0.319-100.3.el10",
           "path": "/usr/share/rpm/rpmdb.sqlite"
         }
       ]
