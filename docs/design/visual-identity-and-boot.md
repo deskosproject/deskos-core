@@ -127,16 +127,17 @@ dracut-ng `main`) loads those drivers unconditionally. *Unresolved*.
 
 ## VM QA
 
-Implemented in `tests/vm/` (CS10 and Fedora in `image-bootcheck`; AlmaLinux in the publish
-gate; Ubuntu in its own repository; RHEL through the entitled factory on demand):
-Tier A (`bootcheck.py`, no
-reference matching) and a Tier B subset (`sessioncheck.py`, SMBIOS credentials,
-serial report). See
-[`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)
+Implemented in `tests/vm/` (CS10 and Fedora in `image-bootcheck`; AlmaLinux in
+the publish gate; Ubuntu in its own repository; RHEL through the entitled
+factory on demand): Tier A (`bootcheck.py`, no reference matching) and a Tier B
+subset (`sessioncheck.py`, SMBIOS credentials, serial report).
+
+See [`docs/roadmap.md`](../roadmap.md#milestone-3-vm-boot-and-desktop-tests)
 Milestone 3; *the rest is the proposal.*
 
 Tiers are reported separately, each result tied to the candidate digest, the
 QCOW2 SHA-256, harness and test-suite commits and the runner image digest;
+
 **nothing is published unless the required tier passes**.
 
 - **Tier A, unmodified artifact.** Boot the exact QCOW2 in QEMU/KVM with no

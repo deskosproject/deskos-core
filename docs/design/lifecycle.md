@@ -50,6 +50,7 @@ digest changes; a test-only layer is a fixture, never a resource kind.
 
 **Install.** `skopeo copy containers-storage:<image> oci:<dir>:test`, then a
 privileged container running `bootc install to-disk --via-loopback <disk>
+
 --source-imgref oci:/src-oci:test --target-imgref <registry ref>
 --composefs-backend --bootloader grub --filesystem ext4 --wipe
 --allow-missing-verity`; `bootc upgrade` pulls B after the host pushes the tag.

@@ -10,8 +10,10 @@ built earlier.
 Every move names a digest, its records and who approved it: `automatic (gate)`
 with the run that produced it. The first promotion of all was a dispatch on
 2026-10-26 and moved `sha256:96fe80d3…` to `:stable` from `:latest` (run
-`40317904401`, because `:candidate` starts with the next weekly build); its record is
-`approvals/deskos-core-centos-stream-10/stable/20261026T115001Z-96fe80d3….json`.
+`40317904401`, because `:candidate` starts with the next weekly build); its
+record is `approvals/deskos-core-centos-
+stream-10/stable/20261026T115001Z-96fe80d3….json`.
+
 No canary or pilot channel exists.
 
 P0-06 asks for build-once promotion: one digest moves through stages without a

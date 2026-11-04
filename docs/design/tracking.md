@@ -44,12 +44,13 @@ spec:
 
 ## Moving a pin
 
-The release tag does not always carry the version (`extensions.gnome.org-v110` for
-version `110`), so `track.yaml` holds the curated rule per repository: the
-repository to match and the prefix to strip from the tag. `--write` only touches a
-pin named there, and it rewrites the three scalars on their own lines, keeping
-indentation, quoting and any trailing comment. Everything else stays byte for
-byte.
+The release tag does not always carry the version (`extensions.gnome.org-v110`
+for version `110`), so `track.yaml` holds the curated rule per repository: the
+repository to match and the prefix to strip from the tag. `--write` only touches
+a pin named there, and it rewrites the three scalars on their own lines, keeping
+indentation, quoting and any trailing comment.
+
+Everything else stays byte for byte.
 
 ## The weekly workflow
 
