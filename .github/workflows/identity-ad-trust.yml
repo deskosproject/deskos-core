@@ -219,6 +219,22 @@ jobs:
             || true
           sudo podman exec deskos-freeipa \
             dig +time=2 +tries=1 SOA adtrust.test "@$AD_SERVER_IP" || true
+          # Whether the failure is DNS-specific or all traffic: try the DC's
+          # other ports too, and record how podman wires the network.
+          echo "=== the DC's ports, from the IPA container" >&2
+          sudo podman exec -i deskos-freeipa bash -s <<EOF || true
+          for p in 53 88 389 445; do
+            if timeout 2 bash -c "echo >/dev/tcp/$AD_SERVER_IP/\$p" 2>/dev/null; then
+              echo "\$p open"
+            else
+              echo "\$p blocked"
+            fi
+          done
+          EOF
+          echo "=== podman network backend and firewall" >&2
+          sudo podman info --format '{{.Host.NetworkBackend}} {{.Host.FirewallBackend}}' || true
+          sudo iptables -S FORWARD 2>/dev/null | head -20 || true
+          sudo nft list ruleset 2>/dev/null | grep -iE 'forward|10.89.0' | head -20 || true
           ok=0
           for _ in $(seq 1 30); do
             if sudo -E tests/identity/samba-ad.sh status &&
