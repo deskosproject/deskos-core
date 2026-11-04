@@ -93,10 +93,10 @@ jobs:
           fi
           printf '%s' "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$' \
             || { echo "::error::commit must be a hex commit"; exit 1; }
-          # The ISO repository carries the same suffix in every DeskOS release.
-          # It used to be -iso; -installer says what the artifact is and matches
-          # the DayTwo organization's artifacts.
-          echo "ISO_REPO=${IMAGE}-installer" >> "$GITHUB_ENV"
+          # The repository keeps the -iso suffix until the Quay repository
+          # deskos-core-<platform>-installer exists and the robot account can
+          # write to it: the rename's first push returned 401 (2026-11-04).
+          echo "ISO_REPO=${IMAGE}-iso" >> "$GITHUB_ENV"
 
       - name: Is there an image to install?
         id: presence

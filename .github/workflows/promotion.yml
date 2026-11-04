@@ -115,7 +115,7 @@ jobs:
           {
             echo "DIGEST=$DIGEST_INPUT"
             echo "REPO=$REGISTRY/$station"
-            echo "ISO_REPO=$REGISTRY/$station-installer"
+            echo "ISO_REPO=$REGISTRY/$station-iso"
             echo "STATION=$station"
             echo "REASON=$REASON"
             echo "APPROVER=$approve"

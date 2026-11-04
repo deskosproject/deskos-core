@@ -1,0 +1,410 @@
+{
+  "disk": "/mnt/deskos-work/output/qcow2/disk.qcow2",
+  "disk_sha256": "d6740c41626655b017933ea454209391783950ff07e886c78ab1db9488d82e4e",
+  "qemu": "/usr/bin/qemu-system-x86_64",
+  "ovmf_code": "/usr/share/OVMF/OVMF_CODE_4M.fd",
+  "memory_mib": 4096,
+  "cpus": 4,
+  "boot_timeout_s": 420,
+  "shutdown_timeout_s": 120,
+  "expect_splash": true,
+  "until_serial": null,
+  "until_serial_ready": null,
+  "ready_timeout_s": null,
+  "frames": [
+    {
+      "t": 0.0,
+      "phase": "boot",
+      "class": "text",
+      "size": "640x480",
+      "digest": "d2467d044dd69a10",
+      "dark": 0.9981,
+      "lit": 0.0019,
+      "bbox": [
+        200,
+        226,
+        428,
+        238
+      ],
+      "file": "frames/boot-0000.0-text.png"
+    },
+    {
+      "t": 1.0,
+      "phase": "boot",
+      "class": "blank",
+      "size": "640x480",
+      "digest": "0b150fd32588b1da",
+      "dark": 1.0,
+      "lit": 0.0,
+      "file": "frames/boot-0001.0-blank.png"
+    },
+    {
+      "t": 2.1,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "eba5f6655b95bd28",
+      "dark": 0.9896,
+      "lit": 0.0101,
+      "bbox": [
+        544,
+        372,
+        734,
+        428
+      ],
+      "file": "frames/boot-0002.1-text.png"
+    },
+    {
+      "t": 3.2,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "23a17e8cc73bf23d",
+      "dark": 0.9787,
+      "lit": 0.0213,
+      "bbox": [
+        252,
+        128,
+        1028,
+        654
+      ],
+      "file": "frames/boot-0003.2-text.png"
+    },
+    {
+      "t": 4.3,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "5af9bd208744e8cc",
+      "dark": 0.9987,
+      "lit": 0.0013,
+      "bbox": [
+        240,
+        106,
+        636,
+        160
+      ],
+      "file": "frames/boot-0004.3-text.png"
+    },
+    {
+      "t": 5.4,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "5af9bd208744e8cc",
+      "dark": 0.9987,
+      "lit": 0.0013,
+      "bbox": [
+        240,
+        106,
+        636,
+        160
+      ]
+    },
+    {
+      "t": 6.5,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "159a418f6026a299",
+      "dark": 0.9987,
+      "lit": 0.0013,
+      "bbox": [
+        0,
+        2,
+        502,
+        30
+      ],
+      "file": "frames/boot-0006.5-text.png"
+    },
+    {
+      "t": 7.6,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "da38ff5d5b2666b2",
+      "dark": 0.9937,
+      "lit": 0.0063,
+      "bbox": [
+        0,
+        2,
+        566,
+        94
+      ],
+      "file": "frames/boot-0007.6-text.png"
+    },
+    {
+      "t": 8.7,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "717b10d7d385f9b2",
+      "dark": 0.9937,
+      "lit": 0.0063,
+      "bbox": [
+        2,
+        2,
+        566,
+        78
+      ],
+      "file": "frames/boot-0008.7-text.png"
+    },
+    {
+      "t": 9.8,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "da38ff5d5b2666b2",
+      "dark": 0.9937,
+      "lit": 0.0063,
+      "bbox": [
+        0,
+        2,
+        566,
+        94
+      ],
+      "file": "frames/boot-0009.8-text.png"
+    },
+    {
+      "t": 10.9,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "da38ff5d5b2666b2",
+      "dark": 0.9937,
+      "lit": 0.0063,
+      "bbox": [
+        0,
+        2,
+        566,
+        94
+      ]
+    },
+    {
+      "t": 12.0,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "9c274705200498ef",
+      "dark": 0.9955,
+      "lit": 0.0044,
+      "bbox": [
+        516,
+        726,
+        762,
+        762
+      ],
+      "file": "frames/boot-0012.0-splash.png"
+    },
+    {
+      "t": 13.1,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "86a51c0d2d6d3c9a",
+      "dark": 0.9951,
+      "lit": 0.0046,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/boot-0013.1-splash.png"
+    },
+    {
+      "t": 14.2,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "a9fc6ec15d1c8730",
+      "dark": 0.9951,
+      "lit": 0.0047,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/boot-0014.2-splash.png"
+    },
+    {
+      "t": 15.4,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "a0312373375ccd29",
+      "dark": 0.9951,
+      "lit": 0.0046,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/boot-0015.4-splash.png"
+    },
+    {
+      "t": 16.6,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "a0312373375ccd29",
+      "dark": 0.9951,
+      "lit": 0.0046,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ]
+    },
+    {
+      "t": 17.7,
+      "phase": "boot",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "a0312373375ccd29",
+      "dark": 0.9951,
+      "lit": 0.0046,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ]
+    },
+    {
+      "t": 18.8,
+      "phase": "boot",
+      "class": "text",
+      "size": "1280x800",
+      "digest": "70e2dba75da7a916",
+      "dark": 0.9994,
+      "lit": 0.0006,
+      "bbox": [
+        520,
+        386,
+        748,
+        398
+      ],
+      "file": "frames/boot-0018.8-text.png"
+    },
+    {
+      "t": 20.0,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "439ac3f7eaa3586f",
+      "dark": 0.0396,
+      "lit": 0.9604,
+      "file": "frames/boot-0020.0-graphical.png"
+    },
+    {
+      "t": 21.1,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "439ac3f7eaa3586f",
+      "dark": 0.0396,
+      "lit": 0.9604
+    },
+    {
+      "t": 22.3,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "439ac3f7eaa3586f",
+      "dark": 0.0396,
+      "lit": 0.9604
+    },
+    {
+      "t": 23.4,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567,
+      "file": "frames/boot-0023.4-graphical.png"
+    },
+    {
+      "t": 24.6,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 25.7,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 26.8,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 28.0,
+      "phase": "boot",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 28.1,
+      "phase": "shutdown",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 28.5,
+      "phase": "shutdown",
+      "class": "graphical",
+      "size": "1280x800",
+      "digest": "993f36c9ffbad53c",
+      "dark": 0.0396,
+      "lit": 0.9567
+    },
+    {
+      "t": 29.0,
+      "phase": "shutdown",
+      "class": "splash",
+      "size": "1280x800",
+      "digest": "1e7437c3289c335e",
+      "dark": 0.9951,
+      "lit": 0.0047,
+      "bbox": [
+        516,
+        546,
+        762,
+        762
+      ],
+      "file": "frames/shutdown-0029.0-splash.png"
+    }
+  ],
+  "result": "pass",
+  "failures": [],
+  "splash_first_s": 12.0,
+  "graphical_first_s": 20.0,
+  "ready_serial_s": null,
+  "text_frames_between_splash_and_graphical": 1,
+  "shutdown_s": 1.2,
+  "shutdown_text_frames": 0
+}
