@@ -56,7 +56,7 @@ COPY rootfs/ /
 
 # System configuration
 RUN systemctl enable 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' 'systemd-remount-fs.service' \
     && systemctl set-default 'graphical.target'
 
 # Cleanup and bootc validation

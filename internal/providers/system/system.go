@@ -136,7 +136,23 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	errs.Add(lowerTrust(c, p))
 	errs.Add(lowerNetwork(c, p))
 	errs.Add(lowerUpdates(c, p))
+	errs.Add(lowerPlatformMasks(c, p))
 	return errs.Err()
+}
+
+// lowerPlatformMasks masks units the base ships but the platform cannot use.
+// They are unconditional platform facts, unlike imageUpdateUnits, which are
+// masked only when an UpdatePolicy asks DeskOS to own the update path.
+func lowerPlatformMasks(c *compose.Composition, p *plan.Plan) error {
+	prov := model.Provenance{
+		Resource: c.Platform.ID(),
+		Layer:    model.LayerFoundation.String(),
+		Source:   c.Platform.Source.String(),
+	}
+	for _, unit := range c.PlatformSpec.MaskedUnits {
+		p.MaskUnit(unit, prov)
+	}
+	return nil
 }
 
 // lowerBoot translates boot settings into kernel arguments and, for the

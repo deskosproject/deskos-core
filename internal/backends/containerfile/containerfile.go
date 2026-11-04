@@ -722,10 +722,18 @@ func updateUnits(u plan.ScheduledUpdate) (service, timer []byte, err error) {
 		"Documentation=" + doc + "\n" +
 		cond +
 		"Wants=network-online.target\n" +
-		"After=network-online.target\n\n" +
+		"After=network-online.target\n" +
+		// network-online can be reached before DNS answers, as the first
+		// DeskOS Fedora 45 boot showed: bootc could not resolve the registry
+		// and the oneshot stayed failed until the next timer. Retry without a
+		// start limit, like the Flatpak preinstall unit, so a slow link is not
+		// a failed unit and a later boot is not the only retry.
+		"StartLimitIntervalSec=0\n\n" +
 		"[Service]\n" +
 		"Type=oneshot\n" +
-		"ExecStart=" + exec + "\n")
+		"ExecStart=" + exec + "\n" +
+		"Restart=on-failure\n" +
+		"RestartSec=60\n")
 	// A service with no timer runs on demand (an endpoint command), not on a
 	// schedule.
 	if u.Timer == "" && u.Schedule == "" {

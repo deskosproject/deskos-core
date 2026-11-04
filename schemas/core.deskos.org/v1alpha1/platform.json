@@ -92,6 +92,12 @@
           "uniqueItems": true,
           "items": { "$ref": "../../common/definitions.json#/$defs/packageName" }
         },
+        "maskedUnits": {
+          "description": "systemd units the platform's base ships but the image must mask. A platform fact: the base owns the unit, and the platform says it cannot use it (for example systemd-remount-fs on a composefs root).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9_.:-]+\\.(service|timer)$" }
+        },
         "unavailablePackages": {
           "type": "array",
           "items": {

@@ -285,6 +285,16 @@
             "source": "resources/system/deskos-core-updates.yaml:1"
           }
         ]
+      },
+      {
+        "unit": "systemd-remount-fs.service",
+        "provenance": [
+          {
+            "resource": "Platform/rhel-10",
+            "layer": "foundation",
+            "source": "resources/platforms/rhel-10.yaml:1"
+          }
+        ]
       }
     ],
     "scheduledUpdates": [

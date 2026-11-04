@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/deskosproject/deskos-core/internal/evidence"
 )
 
 // The command is exercised with --root, so nothing here needs a bootc machine.
@@ -115,7 +117,12 @@ func TestCheckFailsWhenSomethingChanged(t *testing.T) {
 
 func TestUpdateRefusesWithoutAPlanAndChangesNothing(t *testing.T) {
 	// update takes no --root: it acts on the machine it runs on. On a machine without
-	// the plan it refuses instead of updating something into something else.
+	// the plan it refuses instead of updating something into something else. An
+	// installed DeskOS machine carries the plan, so only a build host can reach
+	// this path; skip there instead of asserting on a precondition it lacks.
+	if _, err := os.Stat(evidence.PlanPath); err == nil {
+		t.Skipf("this machine carries a plan (%s)", evidence.PlanPath)
+	}
 	code, out, errOut := runCLI(t, "update")
 	if code != 1 {
 		t.Fatalf("exit %d, want 1 (stdout %q)", code, out)
