@@ -156,9 +156,9 @@
     "binaries": [
       {
         "artifact": "deskos",
-        "version": "0.19.0",
-        "url": "https://github.com/deskosproject/deskos-core/releases/download/v0.19.0/deskos-v0.19.0-linux-amd64",
-        "sha256": "cf605efd754229ac2b04378f91d223f6578d59afbd140cc8b2203f6d500e3085",
+        "version": "0.20.0",
+        "url": "https://github.com/deskosproject/deskos-core/releases/download/v0.20.0/deskos-v0.20.0-linux-amd64",
+        "sha256": "f92828cbcddbd4922474db2f1404f98be0ce6a5dbdf93b07cdb0776ceb96a7eb",
         "archive": "none",
         "destination": "/usr/bin/deskos",
         "mode": "0755",
