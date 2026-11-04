@@ -5,14 +5,16 @@ your image, your desktop, your ISO.
 
 | Way | What you do | Use it when |
 |---|---|---|
-| Install the published image | pull, write a disk or ISO, boot | evaluating; CentOS Stream 10 has a Core ISO, Fedora and AlmaLinux publish an image you write a disk from |
-| Build your own, then install it | author a `Workstation`, render, build, install | you need your packages, defaults and policy; RHEL 10 is this way on an entitled base |
+| Install the published image | pull, write a disk or ISO, boot | evaluation; CentOS has a Core ISO, Fedora and Alma a disk image |
+| Build your own, then install it | author a `Workstation`, render, build, install | your packages and policy; RHEL needs an entitlement |
+
 Two templates do the second way for you:
 
 | Template | Runner and registry |
 |---|---|
 | [`deskos-template-cs10`](https://github.com/deskosproject/deskos-template-cs10) | GitHub-hosted runner, image to `ghcr.io`, public |
 | [`deskos-template-rhel10`](https://github.com/deskosproject/deskos-template-rhel10) | your entitled RHEL runner, image to your private registry |
+
 Fork one, edit the resources, run the workflow, pull the image. The templates
 stop at the image on purpose, because where an ISO lives is your decision.
 
@@ -31,6 +33,7 @@ spare disk.
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
 | Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
 | AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:latest`, `:candidate`, `:<commit>` |
+
 `:latest` is the newest image that passed the weekly build. `:stable` is the
 digest a promotion accepted. Outside a lab, pin the digest:
 [validation status](architecture.md#validation-status) names the current one.

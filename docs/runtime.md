@@ -17,6 +17,7 @@ Toolboxes) stays outside the model.
 | 3 | upstream binary | exact version, https URL and SHA-256 |
 | 4 | system Flatpak | application id and branch |
 | 5 | managed web application | later |
+
 `BinaryArtifact` installs into `/usr/local/bin` with mode `0755` or `0555`. The
 fetch uses `curl`, which the platform's image must provide; a base that neither
 ships nor declares it fails late at build.
@@ -47,6 +48,7 @@ to install and does not reinstall an app a user removed.
 | before each attempt | `flatpak repair`, then `flatpak update --appstream` | an interrupted pull or a stale summary otherwise blocks |
 | retry | `Restart=on-failure`, `RestartSec=60`, no start limit | a slow link is not a failed unit |
 | stop | within 20 s | a boot is not held |
+
 A remote is OSTree by default. `transport: oci` carries `Url=oci+https://…` and
 no signing key, because the registry and its images are what get verified. An
 OCI remote with an authenticator gets `deskos-flatpak-oci-
@@ -74,6 +76,7 @@ are repository assets under `/usr/share/deskos/backgrounds/`.
 | Terminal shortcut | `keyboard.terminal` | a `.desktop` id bound to Ctrl+Alt+T; EL10 has no native key |
 | Login screen | `appearance.loginLogo` | GDM reads `distro`, which Platforms declare with `gnome.loginScreen` |
 | First boot | GLib vendor override | Initial Setup has its own profile and does not read `distro` |
+
 `software.updates` maps to GNOME's update settings:
 
 | Value | allow | download | Effect |
@@ -81,6 +84,7 @@ are repository assets under `/usr/share/deskos/backgrounds/`.
 | `automatic` | true | true | downloads and applies what needs no reboot |
 | `manual` | true | false | offers updates; the user applies them |
 | `disabled` | false | false | no Updates page; another updater owns updates |
+
 `deskos-gnome` sets `manual`, unlocked.
 
 EL10 reads `user`, `local`, `site`, `distro`, highest first:
@@ -89,6 +93,7 @@ EL10 reads `user`, `local`, `site`, `distro`, highest first:
 |---|---|
 | a default | `local`, `site` or a user change overrides it |
 | a lock | the `distro` value applies and is not writable; `local` and `site` locks are ignored |
+
 > **Warning:**
 > A lock is image-level enforcement that defeats `site` and `local`. Core uses
 > none. Lock only what the image must enforce.
@@ -147,6 +152,7 @@ generates:
 | `deskos-image-update.service` | `/usr/bin/bootc upgrade --quiet` |
 | `deskos-flatpak-update.service` | `/usr/bin/flatpak update --system --noninteractive --assumeyes` |
 | `deskos-image-apply.service` (opt-in) | `deskos window` guard, then `bootc upgrade --apply --quiet` |
+
 `bootc upgrade` without `--apply` downloads and stages; `ostree-finalize-staged`
 applies at the next shutdown or reboot. No generated unit reboots unless an
 organization sets `image.apply.enabled: true`; a test rejects `--apply`,
@@ -189,5 +195,6 @@ against its plan (ADR 0018).
 | Artifact | everything identical across machines: packages, branding, client binaries, descriptors |
 | Provisioning | per-machine install choices, local bootstrap account, storage and encryption, first-boot Flatpak materialization |
 | Enrollment | FreeIPA or AD join, device certificates, VPN identities, EDR tenancy |
+
 One digest serves many machines, so no identity or secret is ever in the
 artifact. Enrollment is reserved in the Plan and not implemented.

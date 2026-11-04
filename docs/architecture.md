@@ -20,6 +20,7 @@ published image.
 |---|---|
 | builds the baseline: resources to Plan to image | keeps 4,000 machines in a state: Ansible, Satellite, Foreman, MDM |
 | owns the artifact and its evidence | owns the running machine, its drift and its remediation |
+
 DeskOS does not replace those tools. A machine installs an image and later moves
 to a newer one.
 
@@ -41,6 +42,7 @@ data: no anchors, aliases, merge keys, custom tags, shell, templates or hooks.
 | `software.deskos.org` | `PackageSet`, `RpmRepository`, `AptRepository`, `BinaryArtifact`, `FlatpakRemote`, `FlatpakSet` |
 | `desktop.deskos.org` | `GnomeProfile`, `Theme` |
 | `system.deskos.org` | `BootProfile`, `UpdatePolicy`, `TrustAnchor`, `NetworkProfile` |
+
 Schemas live in `schemas/` and are embedded in `deskosctl`. Every kind is checked
 twice: against its JSON Schema, then by strict typed decoding with semantic
 validation in its provider. Core is embedded in the binary and loads beside the
@@ -53,6 +55,7 @@ roots passed on the command line.
 | `Platform` | the bootc base, redistribution, RPM groups, GNOME and boot facts, image-update units, Flatpak capabilities, trust-store paths |
 | `Profile` | a reusable fragment at one semantic layer |
 | `Workstation` | one Platform plus Profiles; it compiles into one image |
+
 Core is a foundation profile with `deskos-gnome` for GNOME defaults and `deskos-
 dock` for the dock. A RHEL workstation starts from
 `registry.redhat.io/rhel10/rhel-bootc`, never from the CentOS-based DeskOS
@@ -76,6 +79,7 @@ Layers: `foundation` < `organization` < `role` < `workstation`.
 | set | packages, groups, units, GNOME locks | union; duplicates collapse |
 | keyed | repositories, RPM files, binary destinations, desktop entries, Flatpak remotes and applications, trust anchors | identical definitions deduplicate; different ones conflict at any layer |
 | scalar | GNOME, boot and update settings | highest layer wins; different values at one layer conflict |
+
 Every contribution carries provenance: resource, profile, layer, file, line.
 Conflicts name every contributor. References are transitive (a `PackageSet` to
 its repositories, a `FlatpakSet` to its remote), and an included resource joins
@@ -90,6 +94,7 @@ The image carries policy, provisioning carries identity, Ansible carries state.
 | Image | the baseline identical on every machine of a fleet | appearance, fonts, locks, privacy, proxy, idle policy, default apps, update policy, trust anchors, Flatpak, extensions |
 | Provisioning (kickstart, PXE, Satellite) | the identity of one machine | hostname, network and 802.1X, disk layout, subscription, accounts, SSH keys, timezone, locale |
 | Ansible, after the fact | state that changes per machine or per person | printers, VPN credentials, rotating certificates, later software, a user's own settings |
+
 A value that names a machine or a person is not image content. A secret is not
 resource content: the image would make it identical everywhere and the
 repository would publish it. That is why `appearance.fonts.terminal` exists and a
@@ -115,6 +120,7 @@ declaring root. An unknown kind fails with
 | Artifact | base image, labels, repositories, group and package installs, removals, RPM files, verified binaries, files, trust anchors, desktop entries, icon cache, dconf, kernel arguments, initramfs, Plymouth, units, scheduled updates, default target |
 | Provisioning | system Flatpak remotes and applications, materialized by `flatpak preinstall` |
 | Enrollment | reserved and empty |
+
 Every item keeps its provenance. The Plan is canonical, sorted, with no maps and
 no timestamps.
 
@@ -207,6 +213,7 @@ moves.
 | Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
 | AlmaLinux 10 | published by the weekly build; boot and session checks run in the publish leg | `image-publish.yml` |
 | RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [ADR 0014](adr/0014-platform-base-ownership.md) |
+
 The session check reads every dconf default, extension, favorite, wallpaper and
 binary the Plan declares. It also opens applications through AT-SPI, opens
 Settings and closes a file-manager window. A sidebar click and lock/unlock remain
