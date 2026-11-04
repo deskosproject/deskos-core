@@ -4,12 +4,16 @@
 
 ## Context
 
-Composition is additive, and `PackageGroup.excludePackages` only stops a member from being installed by **that group
-transaction**; it cannot remove a package the base already carries. Measured on 2026-10-22: Fedora Silverblue 45
-carries `gnome-software-51.0-1.fc45` and `gnome-software-rpm-ostree-51.0-1.fc45`, and excluding either from
-`workstation-product-environment` leaves them. **Bazaar is DeskOS's graphical application store**:
-`Profile/deskos-reference-apps` preinstalls the Flathub Flatpak `io.github.kolunmi.Bazaar`. DeskOS forbids shell hooks
-(ADR 0005) and a `Profile` cannot express a removal (ADR 0003).
+Composition is additive, and `PackageGroup.excludePackages` only stops a member
+from being installed by **that group transaction**; it cannot remove a package
+the base already carries. Measured on 2026-10-22: Fedora Silverblue 45 carries
+`gnome-software-51.0-1.fc45` and `gnome-software-rpm-ostree-51.0-1.fc45`, and
+excluding either from `workstation-product-environment` leaves them. **Bazaar is
+DeskOS's graphical application store**: `Profile/deskos-reference-apps`
+preinstalls the Flathub Flatpak `io.github.kolunmi.Bazaar`.
+
+DeskOS forbids shell hooks (ADR 0005) and a `Profile` cannot express a removal
+(ADR 0003).
 
 ## Decision
 

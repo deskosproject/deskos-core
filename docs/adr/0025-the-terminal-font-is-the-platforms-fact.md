@@ -6,10 +6,12 @@
 
 GNOME has a font key for every surface it draws, and `GnomeProfile` models them:
 `interface`, `document`, `monospace` and, since this decision, `titlebar` and
-`textScaling`. A terminal is not one of those surfaces. It is a packaged
-application with its own GSettings schema, and on the EL10 family it is Ptyxis:
-`org.gnome.Ptyxis`, path `/org/gnome/Ptyxis/`, keys `font-name` and
-`use-system-font`, where the second decides whether the first is read at all.
+`textScaling`. A terminal is not one of those surfaces.
+
+It is a packaged application with its own GSettings schema, and on the EL10
+family it is Ptyxis: `org.gnome.Ptyxis`, path `/org/gnome/Ptyxis/`, keys `font-
+name` and `use-system-font`, where the second decides whether the first is read
+at all.
 
 The person deploying a workstation does not think in schemas. "Set the terminal
 font" is one intent, and leaving it out of the model means the one surface a
@@ -38,12 +40,14 @@ terminal:
   useSystemFontKey: use-system-font
 ```
 
-`GnomeProfile.appearance.fonts.terminal` (and the same field in a `Theme`) is one
-font, `{family, size}`. It lowers to two defaults: the platform's path plus
+`GnomeProfile.appearance.fonts.terminal` (and the same field in a `Theme`) is
+one font, `{family, size}`. It lowers to two defaults: the platform's path plus
 `fontKey` receives `"<family> <size>"`, and the same path plus
-`useSystemFontKey` receives `false`, because a terminal that uses the system font
-ignores the family it was given. The platform's `package` is added to the image,
-so a font for a terminal that is not installed cannot be declared either.
+`useSystemFontKey` receives `false`, because a terminal that uses the system
+font ignores the family it was given.
+
+The platform's `package` is added to the image, so a font for a terminal that is
+not installed cannot be declared either.
 
 A platform that does not declare a terminal cannot carry the setting:
 composition fails and says which platform lacks which fact, instead of writing a

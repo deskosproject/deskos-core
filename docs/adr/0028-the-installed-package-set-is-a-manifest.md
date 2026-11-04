@@ -4,13 +4,14 @@
 
 ## Context
 
-A platform installs its desktop from distribution groups:
-`workstation-product-environment` on EL10. A group is the distribution's list, in
-`comps.xml`, and it changes between minor releases without asking anyone. Measured
-on the pinned CentOS Stream 10 base (2026-10-30): the group adds **845 packages**;
-the eleven groups have **297 direct members** and the rest are dependencies. What
-arrives beyond a session includes 18 desktop applications, 16 input-method packages
-and 14 tools a workstation rarely needs.
+A platform installs its desktop from distribution groups: `workstation-product-
+environment` on EL10. A group is the distribution's list, in `comps.xml`, and it
+changes between minor releases without asking anyone.
+
+Measured on the pinned CentOS Stream 10 base (2026-10-30): the group adds **845
+packages**; the eleven groups have **297 direct members** and the rest are
+dependencies. What arrives beyond a session includes 18 desktop applications, 16
+input-method packages and 14 tools a workstation rarely needs.
 
 The choices are a hand-kept package list (297 names, per platform, and a comps
 change that adds a required dependency would be missed), the group with exclusions

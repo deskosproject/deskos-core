@@ -5,16 +5,17 @@
 ## Context
 
 GNOME has shipped its own families since 47: **Adwaita Sans**, a variation of
-Inter, and **Adwaita Mono**, Iosevka matched to it, both OFL. The
-[HIG's typography page](https://developer.gnome.org/hig/guidelines/typography.html)
+Inter, and **Adwaita Mono**, Iosevka matched to it, both OFL. The [HIG's
+typography page](https://developer.gnome.org/hig/guidelines/typography.html)
 states it as the default an app should expect: "In GNOME, the default font is
-Adwaita Sans, a custom built variant of Inter". GNOME OS builds them
-(`elements/sdk/adwaita-fonts.bst`) and `gsettings-desktop-schemas` defaults to
-`Adwaita Sans 11`, `Adwaita Sans 12` for documents and `Adwaita Mono 11`
-(measured 2026-10-30 on the upstream tree). EL10 does not package them: its schema
-defaults are still Cantarell 11 and Source Code Pro 10, and RHEL 10 overrides both
-to **Red Hat Text Regular 11** and **Red Hat Mono Regular 10**
-(`org.gnome.desktop.interface.rhel.gschema.override`, in
+Adwaita Sans, a custom built variant of Inter".
+
+GNOME OS builds them (`elements/sdk/adwaita-fonts.bst`) and `gsettings-desktop-
+schemas` defaults to `Adwaita Sans 11`, `Adwaita Sans 12` for documents and
+`Adwaita Mono 11` (measured 2026-10-30 on the upstream tree). EL10 does not
+package them: its schema defaults are still Cantarell 11 and Source Code Pro 10,
+and RHEL 10 overrides both to **Red Hat Text Regular 11** and **Red Hat Mono
+Regular 10** (`org.gnome.desktop.interface.rhel.gschema.override`, in
 `gsettings-desktop-schemas-47.1-4.el10`).
 
 So a DeskOS image inherits whichever family its platform happens to name, and on
