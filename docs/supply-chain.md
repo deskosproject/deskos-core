@@ -10,6 +10,7 @@ initial slice, not a finished attestation pipeline
 |---|---|---|---|
 | Declared | `deskosctl sbom` | the inputs the Plan selects | yes |
 | Installed | Syft, on the built image | the bytes the image contains | no, build-time |
+
 The comparison checks RPM packages. Files, binaries, Flatpaks and trust anchors
 are reported, not compared.
 
@@ -56,6 +57,7 @@ is what CI uses.
 | ISO builder | installer workflows | hand, by digest | image build, boot check, ISO install test |
 | Syft and Grype | the publish workflow | Renovate proposes the installer tag | pinned installer, checked in the same run |
 | Flatpak remotes and apps | `FlatpakRemote`, `FlatpakSet` | hand, on the vendor's release | build and first-boot preinstall |
+
 Known gaps: the RHEL base cannot be checked anonymously, Flatpak remotes have no
 URL probe like binary artifacts, and a version-only binary PR is incomplete until
 the checksum is filled.
@@ -116,6 +118,7 @@ The policy is [ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md):
 | Critical | blocks; the vendor's severity wins for a package the distribution ships, and an NVD score beside it does not move the check |
 | High | tracked, not blocking by default; a desktop with a browser and a distribution kernel always carries many |
 | Vendor-controlled components | follow the distribution's response; a Critical still blocks |
+
 Every exception is explicit: an OpenVEX statement
 (`tests/supply-chain/vex.openvex.json`) or an entry in the platform's record:
 `exceptions.json` for CentOS Stream 10, `exceptions-fedora-45.json` for Fedora,
@@ -145,6 +148,7 @@ Each leg writes `identity.json`, a small canonical record:
 | artifacts | exported OCI archive, tested QCOW2 or raw disk, by SHA-256 |
 | published | manifest digest and reference, when `publish=true` |
 | checks | signature verification, boot, session and first-boot summaries |
+
 `tests/supply-chain/identity.py` writes it with sorted keys and records every
 missing entry instead of inventing one. A successful leg runs `--check`.
 
