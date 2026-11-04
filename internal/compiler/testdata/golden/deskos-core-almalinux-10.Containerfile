@@ -298,7 +298,7 @@ RUN tmp="$(mktemp -d)" \
     && dconf update \
     && 'update-ca-trust' \
     && systemctl enable 'deskos-flatpak-preinstall.service' 'deskos-flatpak-update.timer' 'deskos-image-update.timer' 'gdm.service' \
-    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' \
+    && systemctl mask 'bootc-fetch-apply-updates.service' 'bootc-fetch-apply-updates.timer' 'rpm-ostreed-automatic.service' 'rpm-ostreed-automatic.timer' 'systemd-remount-fs.service' \
     && systemctl set-default 'graphical.target'
 
 # Boot splash theme deskos: package-owned frames from /usr/share/plymouth/themes/spinner, then made the default

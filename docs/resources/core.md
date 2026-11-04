@@ -80,7 +80,7 @@ ships `centos-stream-10` and `rhel-10` in
 | `packageManifest` | a file beside the resource, one package name per line | no | the set the groups must resolve to; the build fails when the installed set differs (ADR 0028) |
 | `packageGroups[].name`, `.rpmGroups` / `.members` | group name; string list | yes; one of the two |
 | `packageGroups[].excludePackages`, `.graphical` | package names; boolean | no |
-| `displayManager`, `removePackages`, `unavailablePackages[]` | `*.service`; package names; `{name, reason}` | no |
+| `displayManager`, `removePackages`, `maskedUnits`, `unavailablePackages[]` | `*.service`; package names; `*.service`, `*.timer`; `{name, reason}` | no |
 | `repoConfigDirs[]` | absolute paths of directories whose `.repo` files the image also exposes in `/etc/yum.repos.d` | no |
 | `imageOwnedDirs[]` | absolute paths whose content ships with the image, not `/var` state; the build replaces a base image's symlink with a real directory before the first transaction | no |
 | `gnome.dconfDatabase` / `gnome.keepsVendorDefaults` | name; boolean | one of the two |
@@ -116,3 +116,11 @@ carries. The build removes `removePackages` after every install transaction, ski
 names that are not installed, does not autoremove dependencies, and fails if a
 named package remains. RPM-only in v1alpha1
 ([ADR 0022](../adr/0022-removing-packages-a-platform-must-not-carry.md)).
+
+`maskedUnits` is a platform fact: a unit the base ships that the image cannot
+use. The compiler masks it unconditionally, with the platform as its provenance.
+The mask is written during the image build, so it also reaches the installer
+disk, which writes the same image. It is not `updates.imageUpdateUnits`, which
+is masked only when an `UpdatePolicy` asks DeskOS to own the update path.
+`systemd-remount-fs.service` is the first case: a composefs root cannot be
+remounted, so the unit fails on every boot.
