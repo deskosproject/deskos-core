@@ -3,10 +3,11 @@
 **Status: decided, 2026-10-25.** Core signs keyless with OIDC: no key file, no
 consumer enforcement, manual verification. An organization that chooses
 enforcement keeps a key outside its repository and a key-based policy, so
-`bootc` can reject an unsigned update. The lab proved that recipe; the
-organization's policy, installer and key rotation stay unverified. CI checks
-signatures with `cosign`, but no installer or installed workstation was shown to
-reject an unsigned image.
+`bootc` can reject an unsigned update.
+
+The lab proved that recipe; the organization's policy, installer and key
+rotation stay unverified. CI checks signatures with `cosign`, but no installer
+or installed workstation was shown to reject an unsigned image.
 
 ## What is true today
 

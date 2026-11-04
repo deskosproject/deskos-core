@@ -22,12 +22,13 @@ session is not its measurement.
 
 ## What changed in /etc
 
-On a deployment that merges `/etc`, `deskos etc` compares the running `/etc` with
-the baseline at `/usr/etc` and lists modified, added and removed paths. It is
-read-only, needs no root, and refuses without that baseline. Runtime state is not
-an edit: NetworkManager connections, machine-id, SSH host keys, printer and
-Bluetooth state, sockets and caches are ignored; `/etc/deskos/deskos.json` adds
-patterns, and `/etc/deskos/` itself is ignored.
+On a deployment that merges `/etc`, `deskos etc` compares the running `/etc`
+with the baseline at `/usr/etc` and lists modified, added and removed paths. It
+is read-only, needs no root, and refuses without that baseline.
+
+Runtime state is not an edit: NetworkManager connections, machine-id, SSH host
+keys, printer and Bluetooth state, sockets and caches are ignored;
+`/etc/deskos/deskos.json` adds patterns, and `/etc/deskos/` itself is ignored.
 
 ```bash
 deskos etc                     # the differences, with a count of what was ignored
@@ -66,10 +67,12 @@ An organization sets the schedule or turns automation off in its own `UpdatePoli
 equivalents); with `automatic: false` the service exists but no timer does, so
 `deskos update` runs it on demand ([system.md](resources/system.md#updatepolicy)).
 
-With `image.requireACPower`, a udev rule starts the staging service when AC comes
-online, and the service still checks `ConditionACPower`. The service first runs
-`deskos window`, which checks the local weekday and `at`/window (and optional IANA
-timezone), so a timer that fires after suspend outside the interval does nothing.
+With `image.requireACPower`, a udev rule starts the staging service when AC
+comes online, and the service still checks `ConditionACPower`. The service first
+runs `deskos window`, which checks the local weekday and `at`/window (and
+optional IANA timezone), so a timer that fires after suspend outside the
+interval does nothing.
+
 An exact `at` allows five minutes of grace, a `window` its full duration; no
 active-session check exists, because the window is the contract.
 

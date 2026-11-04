@@ -5,7 +5,7 @@ back.
 
 | Item | Pin |
 |---|---|
-| `deskosctl` | `v0.19.0`, sha256 `873c3a0cac7b02ce7e886d55173b2a0df4acf029eefe792b1d0f87f533b1bfee` |
+| `deskosctl` | `v0.20.0`, sha256 `d8d4c7cf83306705b163d6493ba17d8ac52fc496574520630021f4c71df6dcea` |
 | Disk builder | `quay.io/centos-bootc/bootc-image-builder:latest`; the workflow pins the digest |
 | Platform base | pinned in `resources/platforms/centos-stream-10.yaml`; the Plan records the digest |
 
@@ -17,14 +17,14 @@ back.
 ```bash
 git clone https://github.com/deskosproject/deskos-core
 cd deskos-core
-git checkout v0.19.0
-base=https://github.com/deskosproject/deskos-core/releases/download/v0.19.0
+git checkout v0.20.0
+base=https://github.com/deskosproject/deskos-core/releases/download/v0.20.0
 curl \
   -fLO "$base/deskosctl-linux-amd64" \
   -O "$base/SHA256SUMS"
 sha256sum -c --ignore-missing SHA256SUMS
 install -D -m 0755 deskosctl-linux-amd64 bin/deskosctl
-./bin/deskosctl version      # deskosctl v0.19.0 (commit …)
+./bin/deskosctl version      # deskosctl v0.20.0 (commit …)
 ```
 
 ## 2. Validate, then plan
@@ -73,7 +73,9 @@ spec:
 ```
 
 ```yaml
+
 # profiles/example-organization.yaml
+
     - kind: UpdatePolicy
       name: example-updates
 ```

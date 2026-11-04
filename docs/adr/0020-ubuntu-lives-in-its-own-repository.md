@@ -4,12 +4,16 @@
 
 ## Context
 
-ADR 0004 requires a vendor's official bootc base, and ADR 0014 allows one exception: an organization-owned base
-with a named owner and a declared support tier. Ubuntu 26.04 is that exception, because Canonical publishes
-container images, not an installable and updatable operating system, so Project DeskOS builds and maintains the
-base in `deskosproject/deskos-ubuntu-base`. Keeping it in Core cost more than a platform normally does: a base
-without `curl` produced the `downloads` fact (ADR 0019), no `/etc/dconf/profile/user` produced
-`gnome.keepsVendorDefaults` and the `deskos-gnome` split (ADR 0016), and Flatpak 1.16.6 a failure path.
+ADR 0004 requires a vendor's official bootc base, and ADR 0014 allows one
+exception: an organization-owned base with a named owner and a declared support
+tier. Ubuntu 26.04 is that exception, because Canonical publishes container
+images, not an installable and updatable operating system, so Project DeskOS
+builds and maintains the base in `deskosproject/deskos-ubuntu-base`.
+
+Keeping it in Core cost more than a platform normally does: a base without
+`curl` produced the `downloads` fact (ADR 0019), no `/etc/dconf/profile/user`
+produced `gnome.keepsVendorDefaults` and the `deskos-gnome` split (ADR 0016),
+and Flatpak 1.16.6 a failure path.
 
 ## Decision
 

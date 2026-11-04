@@ -53,11 +53,12 @@ spec:
     requireACPower: true
 ```
 
-`requireACPower` also installs a udev rule that starts the staging service when AC
-comes online; the daily timer remains the schedule. Core sets the **image** policy
-only: `flatpak:` is deliberately absent
-([`resources/system/deskos-core-updates.yaml`](../../resources/system/deskos-core-updates.yaml)),
-because the foundation must not impose an application channel on every platform.
+`requireACPower` also installs a udev rule that starts the staging service when
+AC comes online; the daily timer remains the schedule. Core sets the **image**
+policy only: `flatpak:` is deliberately absent ([`resources/system/deskos-core-
+updates.yaml`](../../resources/system/deskos-core-updates.yaml)), because the
+foundation must not impose an application channel on every platform.
+
 Units and operation: [runtime.md](../runtime.md#updates),
 [operations.md](../operations.md).
 
@@ -105,12 +106,14 @@ spec:
 ```
 
 Anchors are keyed by `name`: one certificate deduplicates, a different one under
-the same name conflicts at any layer. The Platform supplies the directory and the
-update command: `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust` on the EL
-platforms. The private key is neither needed nor accepted. A `blocklist` entry such
-as `{name: compromised-root-ca, file: ../assets/compromised-root-ca.pem}` lowers to
-`trust.blocklistDir` (`/etc/pki/ca-trust/source/blocklist/` on EL), which p11-kit
-reads as distrusted, so a chain ending at it is rejected
+the same name conflicts at any layer. The Platform supplies the directory and
+the update command: `/etc/pki/ca-trust/source/anchors/` and `update-ca-trust` on
+the EL platforms.
+
+The private key is neither needed nor accepted. A `blocklist` entry such as
+`{name: compromised-root-ca, file: ../assets/compromised-root-ca.pem}` lowers to
+`trust.blocklistDir` (`/etc/pki/ca-trust/source/blocklist/` on EL), which
+p11-kit reads as distrusted, so a chain ending at it is rejected
 ([runtime.md](../runtime.md#trust-store)).
 
 The rescue path for a compromised CA is a resource, not a script, and composes at
@@ -151,12 +154,14 @@ published, and an identity names a machine or a person the image would share
 across the fleet.
 
 **A password method is `secret: agent` and needs `identity`**, so NetworkManager
-asks a session agent for the secret after a login. It does not connect at boot or
-at the greeter, because before a login there is no agent, and NetworkManager
-refuses to load the profile at all without an identity (measured: `802-1x.identity:
-property is missing`). A tunnelled method needs `phase2` for the same reason
-(`phase2-auth, phase2-autheap: exactly one property must be set`). The identity is
-not a secret, and every machine of the image shares it.
+asks a session agent for the secret after a login. It does not connect at boot
+or at the greeter, because before a login there is no agent, and NetworkManager
+refuses to load the profile at all without an identity (measured:
+`802-1x.identity: property is missing`).
+
+A tunnelled method needs `phase2` for the same reason (`phase2-auth,
+phase2-autheap: exactly one property must be set`). The identity is not a
+secret, and every machine of the image shares it.
 
 **EAP-TLS is `secret: none`**: the CA travels in the image, and the machine's
 certificate and key are paths the fleet fills under `/etc/pki/tls/certs/` and

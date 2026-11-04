@@ -3,6 +3,12 @@
 What each milestone has done and what it left. **No dates are implied.** Fleet
 configuration management is outside every milestone.
 
+| Today | State |
+|---|---|
+| Compiler | `v0.20.0` (2026-11-04): `Platform.maskedUnits` and the update-unit retry |
+| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), Fedora 45 `45.20261103.0`, AlmaLinux 10 `5ef1b06e`; RHEL awaits a fixed vendor base |
+| Open | AD trust fixture (#406), `/var/home` label (#409), CVE-2026-114406 decision (#411), and the image scan and build disk limits tracked in the organization repository |
+
 ## Milestone 0: resource model (done)
 
 Resources, schemas, layered composition, typed Plan, Containerfile backend, Core
@@ -179,16 +185,19 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 ### Secure Boot (proposed 2026-10-26)
 
 Every installation runs with Secure Boot **off** today, and that is a choice of
-test coverage rather than a missing chain. Measured 2026-10-30 on CentOS Stream 10:
-`shim-x64` 16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and
-`grubx64.efi` and `vmlinuz` are signed by CentOS's Secure Boot keys, so the vendor
-chain exists on both EL10 platforms. What is missing is a boot with Secure Boot on:
-no DeskOS run has done it, on either platform, and `checks.md` records it as
-untested. An organization with its own key needs an owner, db or MOK enrolment,
-signed GRUB and kernel, and Microsoft signing for the default trust. The installer,
-out-of-tree modules and two QEMU tests (a signed image boots, an unsigned kernel is
-refused) belong to the item. **Decision:** vendor chain only, or a DeskOS key with an
-owner and a rotation plan.
+test coverage rather than a missing chain. Measured 2026-10-30 on CentOS Stream
+10: `shim-x64` 16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and
+`grubx64.efi` and `vmlinuz` are signed by CentOS's Secure Boot keys, so the
+vendor chain exists on both EL10 platforms.
+
+What is missing is a boot with Secure Boot on: no DeskOS run has done it, on
+either platform, and `checks.md` records it as untested. An organization with
+its own key needs an owner, db or MOK enrolment, signed GRUB and kernel, and
+Microsoft signing for the default trust.
+
+The installer, out-of-tree modules and two QEMU tests (a signed image boots, an
+unsigned kernel is refused) belong to the item. **Decision:** vendor chain only,
+or a DeskOS key with an owner and a rotation plan.
 
 ### Test organization (proposed 2026-10-26)
 
@@ -210,24 +219,29 @@ got stuck.
 
 [gnome-coverage.md](gnome-coverage.md) gives every page of the [GNOME System
 Administration Guide](https://help.gnome.org/system-admin-guide/) a verdict:
-modelled, partial, artifact, a missing field, a candidate kind, or refused with the
-invariant that refuses it. The vocabulary is **closed** (no raw dconf field), so
-the audit found fourteen modelled exactly and four partially, and the fields
-shipped since are in the table rather than in this paragraph, which is how a count
-stops being a claim. A NetworkManager connection has an ADR (0027) and a kind; a
-polkit action file is a security surface; autostart, custom sessions and
-single-application mode are refused under invariant 5. Next: one issue per field,
-one PR per group, each with its check.
+modelled, partial, artifact, a missing field, a candidate kind, or refused with
+the invariant that refuses it.
+
+The vocabulary is **closed** (no raw dconf field), so the audit found fourteen
+modelled exactly and four partially, and the fields shipped since are in the
+table rather than in this paragraph, which is how a count stops being a claim. A
+NetworkManager connection has an ADR (0027) and a kind; a polkit action file is
+a security surface; autostart, custom sessions and single-application mode are
+refused under invariant 5.
+
+Next: one issue per field, one PR per group, each with its check.
 
 ### GNOME settings for a fleet (Ansible collection, proposed 2026-11-01)
 
 Core compiles GNOME settings into the image: `GnomeProfile` writes the distro
 dconf database and the session check reads every key back. A separate Ansible
 collection could apply the same vocabulary to a running fleet, system-wide and,
-where a person opts in, to one user's session. It would be a consumer of the
-model, never a compiler dependency, and it would live outside Core: invariant 1
-keeps the artifact free of a controller, and invariant 5 keeps the compiler out
-of `$HOME`. The person using it decides whether a machine or a user is managed.
+where a person opts in, to one user's session.
+
+It would be a consumer of the model, never a compiler dependency, and it would
+live outside Core: invariant 1 keeps the artifact free of a controller, and
+invariant 5 keeps the compiler out of `$HOME`. The person using it decides
+whether a machine or a user is managed.
 
 What to analyze:
 

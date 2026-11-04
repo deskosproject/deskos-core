@@ -65,5 +65,7 @@ A `Platform` resource says whether its base can fetch a verified artifact
 (`downloads.baseFetches`, and `downloads.package` when the base cannot). A plan
 that downloads anything (a `BinaryArtifact` or an `RpmFile`) on a platform that
 declares nothing fails composition with the platform named, instead of failing
-minutes into a build with `curl: not found` (ADR 0019). The platforms this
-repository ships declare it, so a workstation built on one needs no change.
+minutes into a build with `curl: not found` (ADR 0019).
+
+The platforms this repository ships declare it, so a workstation built on one
+needs no change.

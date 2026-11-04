@@ -14,11 +14,11 @@ units:
 | `enableUnits`, `rpmFiles[].url`, `.sha256`, `.gpgKeyFile` | `*.service` etc.; https URL; `sha256:<64 hex>`; relative path | signed RPMs published without a repository |
 
 The foundation names its metapackage group and no packages: the base already
-carries what a desktop needs. A browser, firewall and application channel belong to
-a platform or organization (`PackageSet/rhel-family`), since composition unions sets
-and offers no removal (ADR 0003), so the foundation would impose them everywhere
-(ADR 0014). `rpmFiles` needs a non-floating https URL, the SHA-256 and `gpgKeyFile`
-in the resource root, or the build fails.
+carries what a desktop needs. A browser, firewall and application channel belong
+to a platform or organization (`PackageSet/rhel-family`), since composition
+unions sets and offers no removal (ADR 0003), so the foundation would impose
+them everywhere (ADR 0014). `rpmFiles` needs a non-floating https URL, the
+SHA-256 and `gpgKeyFile` in the resource root, or the build fails.
 
 ## `RpmRepository`
 
@@ -49,13 +49,15 @@ A **signed APT source** for a platform whose package manager is apt:
 spec: {id: vscode, baseURL: https://packages.microsoft.com/repos/code, suite: stable, components: [main], gpgKeyFiles: [keys/microsoft.asc]}
 ```
 
-It renders as one **deb822** stanza in `/etc/apt/sources.list.d/deskos-<id>.sources`
-and its key as `/etc/apt/keyrings/deskos-<sha256>.asc`, both copied before the first
-package transaction. `Signed-By` names the keyring, so an unsigned APT source is not
-expressible (ADR 0015). Apt rules apply: suite and components are one decision; the
-id takes only letters, digits, dots, hyphens and underscores, because apt ignores
-other names in `sources.list.d`; with `architectures` omitted, apt uses its own
-list.
+It renders as one **deb822** stanza in
+`/etc/apt/sources.list.d/deskos-<id>.sources` and its key as
+`/etc/apt/keyrings/deskos-<sha256>.asc`, both copied before the first package
+transaction. `Signed-By` names the keyring, so an unsigned APT source is not
+expressible (ADR 0015).
+
+Apt rules apply: suite and components are one decision; the id takes only
+letters, digits, dots, hyphens and underscores, because apt ignores other names
+in `sources.list.d`; with `architectures` omitted, apt uses its own list.
 
 ## `BinaryArtifact`
 
@@ -98,16 +100,20 @@ with the same `id` conflict unless their entries are identical.
 Some applications only ship as a vendor package: Microsoft Edge and the Intune
 app (`intune-portal`). They are a `PackageSet` plus the vendor's `RpmRepository`
 with its GPG key, not a kind, because the image can own the package and the
-repository it trusts and nothing else. Everything after that belongs to the vendor: a tenant, a device
-enrolment, a compliance decision, a licence. A kind for one of them would freeze a
-vendor's state machine in the public API, and the next vendor would need another.
+repository it trusts and nothing else.
+
+Everything after that belongs to the vendor: a tenant, a device enrolment, a
+compliance decision, a licence. A kind for one of them would freeze a vendor's
+state machine in the public API, and the next vendor would need another.
 
 Teams is not in that group. Microsoft's `ms-teams` yum repository is empty
 (measured 2026-10-31: `packages="0"`), the RHEL 10 `prod` repository carries
 `intune-portal` and `mdatp` but no `teams`, and the classic native client was
-retired. Teams on Linux is the web app, which a `DesktopEntry` can open in the
-browser, or an organization's own decision to run an unofficial client. Neither is
-a vendor package.
+retired.
+
+Teams on Linux is the web app, which a `DesktopEntry` can open in the browser,
+or an organization's own decision to run an unofficial client. Neither is a
+vendor package.
 
 The example organization already adds Microsoft's and Google's repositories for its
 tools; the same shape carries a browser and a compliance agent. The enrolment is
@@ -128,15 +134,17 @@ A **system** Flatpak remote, and applications preinstalled from it:
 spec: {title: Flathub, url: https://dl.flathub.org/repo/, gpgKeyFile: keys/flathub.gpg}
 ```
 
-An **OCI** remote indexes Flatpak images in a container registry over `oci+https`
-(the scheme DeskOS adds to `url`): the registry and images carry the signatures, so
-it has no `gpgKeyFile` and no `collectionID`. A registry that asks for credentials
-names its authenticator, for example `org.flatpak.Authenticator.Oci`; the machine
-supplies them, and the artifact never carries a token. DeskOS writes
-`/usr/share/flatpak/remotes.d/<name>.flatpakrepo`, which cannot carry an
-authenticator, so a remote that names one also gets a unit that points the remote at
-it. The credentials stay on the machine, for example in `/etc/flatpak/oci-auth.json`,
-and are not part of the image.
+An **OCI** remote indexes Flatpak images in a container registry over
+`oci+https` (the scheme DeskOS adds to `url`): the registry and images carry the
+signatures, so it has no `gpgKeyFile` and no `collectionID`. A registry that
+asks for credentials names its authenticator, for example
+`org.flatpak.Authenticator.Oci`; the machine supplies them, and the artifact
+never carries a token.
+
+DeskOS writes `/usr/share/flatpak/remotes.d/<name>.flatpakrepo`, which cannot
+carry an authenticator, so a remote that names one also gets a unit that points
+the remote at it. The credentials stay on the machine, for example in
+`/etc/flatpak/oci-auth.json`, and are not part of the image.
 
 ```yaml
 spec: {remote: flathub, applications: [{id: io.github.kolunmi.Bazaar, branch: stable}]}

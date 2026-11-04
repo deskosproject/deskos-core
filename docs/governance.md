@@ -21,11 +21,12 @@ secrets, releases or registries, and never weakens a check to go green (ADR 0011
 ## Review and release
 
 `main` is protected: a pull request and a green `validate` check, administrators
-included. One person reviews and merges. There is no second approver, which is a
-recorded decision about build authority in
-[promotion.md](design/promotion.md), not an oversight. A release is not a separate
-act: the weekly build publishes, promotion moves `:stable` with its record, and
-"who released this" is answered by that record.
+included. One person reviews and merges.
+
+There is no second approver, which is a recorded decision about build authority
+in [promotion.md](design/promotion.md), not an oversight. A release is not a
+separate act: the weekly build publishes, promotion moves `:stable` with its
+record, and "who released this" is answered by that record.
 
 ## Ownership
 

@@ -34,8 +34,11 @@ reference is where installed machines update from.
 Write `config.toml`:
 
 ```toml
+
 # bootc-image-builder enables only the Network, Payloads and Storage modules,
+
 # which leaves the Language/Keyboard and Time & Date spokes out of the summary.
+
 [customizations.installer.modules]
 enable = [
   "org.fedoraproject.Anaconda.Modules.Localization",
@@ -44,7 +47,9 @@ enable = [
 
 [customizations.installer.kickstart]
 contents = """
+
 # Graphical Anaconda, and nothing else is answered.
+
 graphical
 rootpw --lock
 reboot
@@ -180,6 +185,7 @@ installed unattended in KVM and reached GNOME Initial Setup; that is a manual ru
 Storage is interactive, so this ISO cannot finish an install without a person: a
 QEMU check can assert that the installer reaches the hub with an editable
 Installation Destination, but not that the install completes. Automated install
-tests use the test-only ISO in [tests/installer](../tests/installer/README.md): the
-same image with a kickstart that answers storage, locale and network. It is never
-published; do not put those answers into the shipped ISO.
+tests use the test-only ISO in [tests/installer](../tests/installer/README.md):
+the same image with a kickstart that answers storage, locale and network.
+
+It is never published; do not put those answers into the shipped ISO.

@@ -69,12 +69,12 @@ names is not a list a person keeps correct.
 comps change that adds a package nobody asked for.
 
 **B. An explicit list.** Replace `rpmGroups` with `packages` on the platform: the
-297 direct members, minus what we do not want, plus what we add. dnf still resolves
-dependencies, so the installed set stays close to 845, but nothing arrives that the
-list does not name. The cost is maintenance: a per-platform list (EL10 now, Fedora
-45 later), a missing package is a broken session that only a boot finds, and a comps
-change that *adds a required* package (a new GNOME dependency) would be missed
-because our list is frozen.
+297 direct members, minus what we do not want, plus what we add. dnf still
+resolves dependencies, so the installed set stays close to 845, but nothing
+arrives that the list does not name. The cost is maintenance: a per-platform
+list (EL10 now, Fedora 45 later), a missing package is a broken session that
+only a boot finds, and a comps change that *adds a required* package (a new
+GNOME dependency) would be missed because our list is frozen.
 
 **C. The group plus a committed manifest.** Install the group as today, then compare
 the resolved set with a manifest committed in the repository and **fail the build
@@ -122,8 +122,10 @@ belongs.
 `fedora-bootc:45` has 540 packages and no `gnome-shell`.
 
 So on Fedora the desktop is a **base image**, not an install: the list is
-Silverblue's, curated by Fedora, and DeskOS adds and removes on top. The manifest in
-option C still applies, and it is what makes "Silverblue changed under us" a pull
-request instead of a surprise. Starting from `fedora-bootc` and installing GNOME
-explicitly is possible, and it would mean maintaining a second list for no gain over
-the image Fedora already tests.
+Silverblue's, curated by Fedora, and DeskOS adds and removes on top. The
+manifest in option C still applies, and it is what makes "Silverblue changed
+under us" a pull request instead of a surprise.
+
+Starting from `fedora-bootc` and installing GNOME explicitly is possible, and it
+would mean maintaining a second list for no gain over the image Fedora already
+tests.

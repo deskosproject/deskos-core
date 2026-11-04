@@ -37,12 +37,13 @@ and independent updates, and adds integration work.
 
 ## Firefox has both, and the difference is entitlement
 
-Red Hat ships Firefox and Thunderbird as Flatpaks from `flatpaks.redhat.io` since
-RHEL 10.2, and keeps the RPMs in AppStream. The Flatpak needs an active
-subscription on the installed system to reach the registry; the RPM needs only the
-subscription that built the image. On a fleet that does not register its machines,
-the RPM is the channel that works, and it is the one the vendor keeps for exactly
-that case.
+Red Hat ships Firefox and Thunderbird as Flatpaks from `flatpaks.redhat.io`
+since RHEL 10.2, and keeps the RPMs in AppStream. The Flatpak needs an active
+subscription on the installed system to reach the registry; the RPM needs only
+the subscription that built the image.
+
+On a fleet that does not register its machines, the RPM is the channel that
+works, and it is the one the vendor keeps for exactly that case.
 
 ## What this rejects
 

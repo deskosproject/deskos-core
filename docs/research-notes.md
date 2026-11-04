@@ -573,10 +573,11 @@ packages with strict NVR requirements. Measured on the pinned CentOS Stream 10
 and AlmaLinux 10 bases with the same transactions the rendered Containerfiles
 declare (`dnf group install --assumeno workstation-product-environment`, then
 `dnf install --assumeno firefox firewalld flatpak plymouth …`): **no downgrade
-was proposed** and no dependency failure appeared. Nothing is copied: an
-unpinned repository downloaded mid-build is outside the typed repository plan.
-If a future pin starts downgrading, the answer is a declared `RpmRepository` or a
-documented platform gap, not a `cs.repo` fetch.
+was proposed** and no dependency failure appeared.
+
+Nothing is copied: an unpinned repository downloaded mid-build is outside the
+typed repository plan. If a future pin starts downgrading, the answer is a
+declared `RpmRepository` or a documented platform gap, not a `cs.repo` fetch.
 
 ## Fedora's rebuilt initramfs dropped ostree and bootc (2026-10-20)
 
@@ -584,15 +585,18 @@ The first Fedora 45 boot checks never reached a graphical screen: the guest
 stopped in dracut's emergency shell, with a btrfs disk and again with ext4, so
 the root filesystem was never prepared and ACPI shutdown was ignored.
 
-The first hypothesis, a host-only initramfs, was **wrong**. Fedora already
-sets `hostonly=no` in `/usr/lib/dracut/dracut.conf.d/20-atomic-nohostonly.conf`,
-and passing `--no-hostonly` changed nothing. Measured instead: the base image's
-initramfs carries the ostree and composefs pieces (7 and 2 matches), while the
-initramfs the build regenerates carries **none** (0 and 0). The dracut modules
-explain it: `50ostree`'s `check()` returns 255, which means "include only when
-explicitly asked", and `51bootc`'s says in as many words *"We are never installed
-by default"*. CentOS Stream 10 includes them anyway (its check returns 0): a
-plain rebuild keeps 6 `ostree` matches and boots.
+The first hypothesis, a host-only initramfs, was **wrong**. Fedora already sets
+`hostonly=no` in `/usr/lib/dracut/dracut.conf.d/20-atomic-nohostonly.conf`, and
+passing `--no-hostonly` changed nothing.
+
+Measured instead: the base image's initramfs carries the ostree and composefs
+pieces (7 and 2 matches), while the initramfs the build regenerates carries
+**none** (0 and 0). The dracut modules explain it: `50ostree`'s `check()`
+returns 255, which means "include only when explicitly asked", and `51bootc`'s
+says in as many words *"We are never installed by default"*.
+
+CentOS Stream 10 includes them anyway (its check returns 0): a plain rebuild
+keeps 6 `ostree` matches and boots.
 
 The backend now passes `--add ostree --add bootc` for whichever modules the base
 carries, and the build asserts `ostree-prepare-root` inside every regenerated
@@ -635,12 +639,14 @@ So the base image is **ahead of the repository it installs from**: a promotion
 or mirror skew, not a defect in the bump. The pinned base is consistent and
 still builds.
 
-The build also prints `no group 'base-graphical' from environment
-'workstation-product-environment'`. That reference is dangling in the CS10
-comps (the environment lists it; no group with that id exists in BaseOS or
-AppStream, in the composes or the rolling repo), but it is **not fatal**: dnf
-continues and resolves. It is a separate, older comps inconsistency worth
-reporting upstream, not the cause of this failure.
+The build also prints `no group 'base-graphical' from environment 'workstation-
+product-environment'`. That reference is dangling in the CS10 comps (the
+environment lists it; no group with that id exists in BaseOS or AppStream, in
+the composes or the rolling repo), but it is **not fatal**: dnf continues and
+resolves.
+
+It is a separate, older comps inconsistency worth reporting upstream, not the
+cause of this failure.
 
 **Decision:** keep the pinned base, leave the bump open and unmergeable until
 the repository serves `rpm-4.19.1.1-28` (or later); then rebase it, update the
@@ -663,10 +669,11 @@ machines, which is a deliberate choice and not an oversight.
 **What Red Hat does.** From RHEL 10.2, Firefox and Thunderbird are Flatpaks by
 default on GNOME installs, served from `flatpaks.redhat.io`. Red Hat's blog
 (2026-07-30) says an active subscription on the installed system handles
-registry access, and that the RPMs stay in AppStream for constrained
-deployments (air-gapped, custom builds, policy). They also say Firefox and
-Thunderbird are the first two and that Flatpak delivery becomes the standard for
-RHEL desktop applications.
+registry access, and that the RPMs stay in AppStream for constrained deployments
+(air-gapped, custom builds, policy).
+
+They also say Firefox and Thunderbird are the first two and that Flatpak
+delivery becomes the standard for RHEL desktop applications.
 
 **What that means here.** A machine that is never registered has no entitlement,
 so it cannot fetch from `flatpaks.redhat.io` at runtime; and a Flatpak baked into

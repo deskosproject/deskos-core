@@ -4,12 +4,16 @@
 
 ## Context
 
-Three gaps. Extensions are a `Platform` fact (`gnome.extensions`, `gnome.enabledExtensions`) and a profile could only
-turn on Dash to Dock. Enabling a platform-declared UUID stays inside the managed-baseline boundary, but configuring
-one with a free key/value map would not: an extension's settings can execute commands, and its schema id and dconf
-path are separate. Retiring a Flatpak remote is a negative operation that collides with first-boot `flatpak
-preinstall` and that `flatpak remote-delete` refuses unless forced. The power button's action is not expressible
-either.
+Three gaps. Extensions are a `Platform` fact (`gnome.extensions`,
+`gnome.enabledExtensions`) and a profile could only turn on Dash to Dock.
+
+Enabling a platform-declared UUID stays inside the managed-baseline boundary,
+but configuring one with a free key/value map would not: an extension's settings
+can execute commands, and its schema id and dconf path are separate. Retiring a
+Flatpak remote is a negative operation that collides with first-boot `flatpak
+preinstall` and that `flatpak remote-delete` refuses unless forced.
+
+The power button's action is not expressible either.
 
 ## Decision
 
@@ -44,12 +48,14 @@ either.
 9. A remote the **base image** installs from is not visible to composition; retiring one is the workstation author's
    decision, which the mandatory `reason` makes reviewable.
 10. The removal is an **image** operation: the plan records it and the backend removes the remote's configuration at
+
     build time. It is **not** `flatpak uninstall`: installed applications stay (their data lives under
     `/var/lib/flatpak`, which an update keeps), DeskOS never passes `--force`, and never removes an application.
 
 ### The power button
 
 11. `power.buttonAction` lowers to `org.gnome.settings-daemon.plugins.power power-button-action`, with GNOME's values
+
     `nothing`, `suspend`, `hibernate` and `interactive` (measured on the built CentOS Stream 10 image; schema default
     `suspend`). It is a scalar like every other option.
 

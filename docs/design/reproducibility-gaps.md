@@ -47,11 +47,12 @@ Timestamps break bit-for-bit equality and nothing else: an auditor comparing the
 plan, the package set or a file's hash sees the same answer.
 
 The gap that matters is **the repository state**. Both builds were 45 minutes
-apart, so they resolved the same packages. A build tomorrow, with the same inputs
-and the same base digest, can resolve a newer package, and then the installed set
-and the SBOM change while the resources did not. Nothing in the repository pins
-that: the base is pinned by digest, the artifacts by checksum, and the RPMs by
-nothing at all.
+apart, so they resolved the same packages.
+
+A build tomorrow, with the same inputs and the same base digest, can resolve a
+newer package, and then the installed set and the SBOM change while the
+resources did not. Nothing in the repository pins that: the base is pinned by
+digest, the artifacts by checksum, and the RPMs by nothing at all.
 
 For audit that is survivable because the SBOM travels with the image and the
 promotion record keeps the digest. For **recovery** it is the real question: "build
@@ -63,10 +64,11 @@ resources, and only for as long as the registry keeps it.
 A **published content view version is a frozen snapshot**: publishing copies the
 selected repositories, and a later sync does not change that version. Satellite
 serves it at
-`https://satellite.example.com/pulp/content/<org>/<environment>/<view>/...`, and an
-archived version can be distributed without a lifecycle environment. That is exactly
-the pin the build needs: point dnf at a published version and the RPMs stop moving
-until someone publishes a new one.
+`https://satellite.example.com/pulp/content/<org>/<environment>/<view>/...`, and
+an archived version can be distributed without a lifecycle environment.
+
+That is exactly the pin the build needs: point dnf at a published version and
+the RPMs stop moving until someone publishes a new one.
 
 **Registration is the transport, not the freeze.** `subscription-manager` only
 writes `redhat.repo` with whatever the server it registers to publishes. Registered
@@ -76,13 +78,15 @@ activation key bound to a published content view, they are frozen. The mechanism
 the same; the server decides.
 
 **Katello does this without a Red Hat subscription.** Satellite is the supported
-product; Foreman with Katello is the same content engine and mirrors CentOS Stream
-as a custom product, publishes a content view, and registers the host with
-`subscription-manager --org ... --environment <environment>/<view>` or an
-activation key. The registration needs the server's CA
-(`katello-ca-consumer-latest.noarch.rpm`), and nothing else. That is how the first
-DeskOS deployments consumed CentOS content, and it is why this page names Katello
-and not only Satellite.
+product; Foreman with Katello is the same content engine and mirrors CentOS
+Stream as a custom product, publishes a content view, and registers the host
+with `subscription-manager --org ... --environment <environment>/<view>` or an
+activation key.
+
+The registration needs the server's CA (`katello-ca-consumer-
+latest.noarch.rpm`), and nothing else. That is how the first DeskOS deployments
+consumed CentOS content, and it is why this page names Katello and not only
+Satellite.
 
 **On CentOS Stream the build does not register at all today**, so it resolves from
 the base image's own repositories and a content view would be one more repository

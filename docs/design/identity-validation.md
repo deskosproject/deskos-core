@@ -12,6 +12,7 @@ quoted below.
 
 This is a test rig, not a product capability: it proves a machine can join a
 directory automatically and repeatedly. DeskOS does not enrol machines.
+
 *Enrollment is reserved in the Plan and not implemented*
 ([architecture.md](../runtime.md#provisioning-and-enrollment)), and keeping
 running machines in a state belongs to configuration management. Nothing here

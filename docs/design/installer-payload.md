@@ -16,6 +16,7 @@ the one we can keep today.
 
 A rebuild days later can ship the same image with a different installer, and the
 same kickstart can behave differently. A kickstart with `graphical
+
 --non-interactive` installed on one RHEL 10.2 build and aborted on another at the
 progress spoke (`User interaction required on standalone spoke
 ProgressSpoke`), then rebooted, which reads as a hardware failure to the person

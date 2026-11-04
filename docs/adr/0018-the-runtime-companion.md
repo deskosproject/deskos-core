@@ -4,12 +4,16 @@
 
 ## Context
 
-`deskosctl` builds an artifact before the image exists, with no network, privileges or model. A machine built from
-that artifact has the opposite need: to be told what it was built from, to have its drift measured in the terms the
-artifact declares, and to be updated. A catalog of recipes that run commands on the machine does not answer that:
-recipes that write to `/etc` and to a home do not come back with a `bootc rollback`, and a recipe catalog is a
-distribution's job (ADR 0001, ADR 0005). [ADR 0010](0010-artifact-evidence-and-supply-chain.md) left stage 4 open:
-the plan travels with the image, the SBOM does not.
+`deskosctl` builds an artifact before the image exists, with no network,
+privileges or model. A machine built from that artifact has the opposite need:
+to be told what it was built from, to have its drift measured in the terms the
+artifact declares, and to be updated.
+
+A catalog of recipes that run commands on the machine does not answer that:
+recipes that write to `/etc` and to a home do not come back with a `bootc
+rollback`, and a recipe catalog is a distribution's job (ADR 0001, ADR 0005).
+[ADR 0010](0010-artifact-evidence-and-supply-chain.md) left stage 4 open: the
+plan travels with the image, the SBOM does not.
 
 ## Decision
 
@@ -37,12 +41,16 @@ reconciliation against the plan, no network beyond `bootc`, and no dependence on
 
 ### How it gets onto a machine
 
-`deskos` is a **pinned `BinaryArtifact` in Core's foundation**: every Core image installs `/usr/bin/deskos` from a
-published release asset with its checksum. It is the one binary the schema lets a `BinaryArtifact` place in
-`/usr/bin` (every other stays under `/usr/local/bin`), because `sudo` searches `/usr/bin` through its `secure_path`
-and `sudo deskos update` must work without a full path. The path is fixed by the schema (amended 2026-10-21). v0.12.0
-is the first release that publishes the asset: `resources/software/deskos.yaml` names it and its checksum,
-`deskos-core` references it, and the binary is part of the declared SBOM.
+`deskos` is a **pinned `BinaryArtifact` in Core's foundation**: every Core image
+installs `/usr/bin/deskos` from a published release asset with its checksum. It
+is the one binary the schema lets a `BinaryArtifact` place in `/usr/bin` (every
+other stays under `/usr/local/bin`), because `sudo` searches `/usr/bin` through
+its `secure_path` and `sudo deskos update` must work without a full path.
+
+The path is fixed by the schema (amended 2026-10-21). v0.12.0 is the first
+release that publishes the asset: `resources/software/deskos.yaml` names it and
+its checksum, `deskos-core` references it, and the binary is part of the
+declared SBOM.
 
 ### Amended 2026-10-29: a font is not a package
 
@@ -52,12 +60,15 @@ trust boundary to whoever runs it, and a rebuilt distribution package is a fork 
 2016 is the cautionary case, and the reason it is no longer needed: EL10's FreeType already enables subpixel
 rendering). A `FontPolicy` kind would be a fifteenth kind for one file format.
 
-So `BinaryArtifact` gains a second destination form: **`/usr/local/share/fonts/<file>`**, with a font extension
-(`ttf`, `otf`, `ttc`) or a text file for the licence that must travel beside the font. It is deliberate that the
-allowance names extensions: it must not become a way to place any payload in a directory that `/usr/local` does not
-interpret. fontconfig reads that directory with no configuration on EL10 and Fedora (measured 2026-10-29), so the
-files are found by every application the moment the image boots, and `deskos check` verifies them by digest and mode
-like any other file the plan installs.
+So `BinaryArtifact` gains a second destination form:
+**`/usr/local/share/fonts/<file>`**, with a font extension (`ttf`, `otf`, `ttc`)
+or a text file for the licence that must travel beside the font. It is
+deliberate that the allowance names extensions: it must not become a way to
+place any payload in a directory that `/usr/local` does not interpret.
+fontconfig reads that directory with no configuration on EL10 and Fedora
+(measured 2026-10-29), so the files are found by every application the moment
+the image boots, and `deskos check` verifies them by digest and mode like any
+other file the plan installs.
 
 A font is data, so its mode is `0644` or `0444`, while an executable stays `0755` or `0555`; the decoder pairs the
 mode with the destination and rejects a font that claims to run or a binary that claims not to. A `desktopEntry`

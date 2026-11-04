@@ -31,12 +31,13 @@ spec:
 `deskosctl plan ./examples/layers --workstation
 example-devops-centos-stream-10` shows which layer won each setting.
 
-A workstation can retire a Flatpak remote the base ships:
-`removeRemotes: [{name: flathub, reason: apps come from the organization's own
-remote}]`. Declaring the same remote in the composition is a contradiction and
-fails; a `FlatpakSet` names its remote as a declared resource, so it is covered.
-The removal is image-level, not `flatpak uninstall`: applications already installed
-from that remote stay on an updated machine, and DeskOS never forces
+A workstation can retire a Flatpak remote the base ships: `removeRemotes:
+[{name: flathub, reason: apps come from the organization's own remote}]`.
+Declaring the same remote in the composition is a contradiction and fails; a
+`FlatpakSet` names its remote as a declared resource, so it is covered.
+
+The removal is image-level, not `flatpak uninstall`: applications already
+installed from that remote stay on an updated machine, and DeskOS never forces
 ([ADR 0017](../adr/0017-extensions-flatpak-remote-and-power-button.md)).
 
 ## `Profile`
@@ -65,12 +66,14 @@ spec:
 ## `Platform`
 
 Facts about an OS target: bootc base image, package manager (`rpm` or `deb`),
-package-group mapping, GNOME, boot, image update and Flatpak capabilities, whether
-the base can fetch a verified artifact, and redistribution constraints. DeskOS
-ships `centos-stream-10` and `rhel-10` in
+package-group mapping, GNOME, boot, image update and Flatpak capabilities,
+whether the base can fetch a verified artifact, and redistribution constraints.
+DeskOS ships `centos-stream-10` and `rhel-10` in
 [`resources/platforms/`](../../resources/platforms/), with status in
-[platforms.md](../platforms.md). A platform still being evaluated carries its own
-`Platform` resource in an example root.
+[platforms.md](../platforms.md).
+
+A platform still being evaluated carries its own `Platform` resource in an
+example root.
 
 | Field | Type | Required |
 |---|---|---|
@@ -110,15 +113,18 @@ setting any GNOME value fails composition. `gnome.loginScreen: true` also needs
 Fedora); the greeter reads its own dconf profile, so a key written beside the
 desktop defaults never shows (#246).
 
-`removePackages` differs from a group's `excludePackages`: an exclusion only stops
-that transaction from installing a member, and cannot remove a package the base
-carries. The build removes `removePackages` after every install transaction, skips
-names that are not installed, does not autoremove dependencies, and fails if a
-named package remains. RPM-only in v1alpha1
-([ADR 0022](../adr/0022-removing-packages-a-platform-must-not-carry.md)).
+`removePackages` differs from a group's `excludePackages`: an exclusion only
+stops that transaction from installing a member, and cannot remove a package the
+base carries. The build removes `removePackages` after every install
+transaction, skips names that are not installed, does not autoremove
+dependencies, and fails if a named package remains.
+
+RPM-only in v1alpha1 ([ADR 0022](../adr/0022-removing-packages-a-platform-must-
+not-carry.md)).
 
 `maskedUnits` is a platform fact: a unit the base ships that the image cannot
 use. The compiler masks it unconditionally, with the platform as its provenance.
+
 The mask is written during the image build, so it also reaches the installer
 disk, which writes the same image. It is not `updates.imageUpdateUnits`, which
 is masked only when an `UpdatePolicy` asks DeskOS to own the update path.

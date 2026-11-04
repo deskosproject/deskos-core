@@ -29,6 +29,7 @@ image:
 The window form replaces `at` with a `window` of `start` (`HH:MM`) and `duration`. `apply.enabled: true` requires
 `image.automatic: true`; the staging service remains, and a separate `deskos-image-apply.service` and `.timer` are
 added. Rules:
+
 - `days` is a non-empty list of lowercase weekdays, and exactly one of `at` or `window` is required;
   `window.duration` is a positive whole-minute duration that ends on the same day.
 - `timezone` is an optional IANA name, validated with Go's embedded `time/tzdata`, never the build host's zoneinfo;

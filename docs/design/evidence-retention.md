@@ -101,10 +101,14 @@ digest=sha256:…
 base=https://evidence.deskos.org/deskos/deskos-core-centos-stream-10/sha256/${digest#sha256:}
 curl -fsS "$base/index.json" -o index.json
 jq -r '.objects[] | "\(.sha256)  \(.name)"' index.json > SHA256SUMS
+
 # Fetch each named object, then:
+
 sha256sum -c SHA256SUMS
 cosign verify <image@$digest> …       # identity policy from supply-chain.md
+
 # Compare the SBOM hash named by the attestation with the object fetched here.
+
 ```
 
 The public bucket and `evidence.deskos.org` are defined in
@@ -125,8 +129,9 @@ That path ran on 2026-10-26: `prune` removed the 332 objects of a failed upload
 (`sha256:36824c3e…`, which indexed the whole checkout and never wrote
 `index.json`), and `backfill` published the 16 objects from run `40244202449`'s
 artifact. Fetching them from `evidence.deskos.org` and running `verify.py`
-reported `verified 16 object(s)`. The records for `sha256:96fe80d3…` were not
-touched.
+reported `verified 16 object(s)`.
+
+The records for `sha256:96fe80d3…` were not touched.
 
 ## Open decisions
 
