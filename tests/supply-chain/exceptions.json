@@ -3,7 +3,7 @@
   "review": "2026-11-17",
   "base": {
     "image": "quay.io/centos-bootc/centos-bootc:stream10",
-    "digest": "sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723"
+    "digest": "sha256:0af0dc397389a8f37d8809fab35eac3c3ace383826769b559e3116c03b7a8e11"
   },
   "exceptions": [
     {
