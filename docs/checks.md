@@ -51,11 +51,13 @@ splash retry runs, and artifacts carry the run attempt in their name
 ## Tested and published identity
 
 The publish path builds **one** image, boots it, and pushes it by digest.
-`image.txt` holds the local image ID, `digest.txt` the pushed digest,
-`cosign-verify.txt` the verification, `identity.json` the base and image digests
-with the Plan and context. A machine reports its boot with `bootc status` and
-`deskos report`. `:latest` moves after the checks; `:<commit>` is a naming
-convention, not registry-enforced immutability.
+`image.txt` holds the local image ID, `digest.txt` the pushed digest, `cosign-
+verify.txt` the verification, `identity.json` the base and image digests with
+the Plan and context.
+
+A machine reports its boot with `bootc status` and `deskos report`. `:latest`
+moves after the checks; `:<commit>` is a naming convention, not registry-
+enforced immutability.
 
 ## Workstation behavior matrix
 
@@ -86,12 +88,12 @@ autologin or a session script; **unmodified** boots the disk as shipped.
 | Test ISO installs unattended | `installer-test.yml` | serial marker and GNOME Initial Setup | timeout or marker missing | unmodified, dispatch |
 | Published ISO carries the signed digest | `installer-build.yml` (called by the weekly build, dispatchable) | the digest's keyless signature verifies, the ISO is built from it, pushed signed, and tagged `sha256-<image digest>` | signature does not verify, build fails, or the annotation does not name the digest | from the published digest, not `main` |
 
-A missing result, an unreadable value or a `not measurable` count is a failure or
-an unverified item, not a pass. The session row is an **instrumented autologin
-session**, not proof of an interactive GDM login, so the Wayland session type
-through GDM is unproved too, as are launching every declared favorite, Flatpak
-install after reconnection, and suspend, battery, display and other hardware
-behavior (P1-07).
+A missing result, an unreadable value or a `not measurable` count is a failure
+or an unverified item, not a pass. The session row is an **instrumented
+autologin session**, not proof of an interactive GDM login, so the Wayland
+session type through GDM is unproved too, as are launching every declared
+favorite, Flatpak install after reconnection, and suspend, battery, display and
+other hardware behavior (P1-07).
 
 ## What is not covered
 

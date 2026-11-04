@@ -4,12 +4,14 @@ Question: what does a DeskOS desktop look like on each flavor, and where does it
 differ?
 
 Every flavor composes the same desktop from the same profiles. A platform
-contributes its stack and, on one flavor, its families; it does not contribute the
-look. The reference workstations are
-[CentOS Stream 10](../resources/workstations/deskos-core-centos-stream-10.yaml),
-[Fedora 45](../resources/workstations/deskos-core-fedora-45.yaml) and
-[AlmaLinux 10](../resources/workstations/deskos-core-almalinux-10.yaml); the RHEL
-fleet is built by the organization ([example platforms](example-platforms.md)).
+contributes its stack and, on one flavor, its families; it does not contribute
+the look.
+
+The reference workstations are [CentOS Stream
+10](../resources/workstations/deskos-core-centos-stream-10.yaml), [Fedora
+45](../resources/workstations/deskos-core-fedora-45.yaml) and [AlmaLinux
+10](../resources/workstations/deskos-core-almalinux-10.yaml); the RHEL fleet is
+built by the organization ([example platforms](example-platforms.md)).
 
 ## What every flavor shares
 
@@ -37,8 +39,10 @@ from the base on Fedora (ADR 0026).
 
 ## What each platform brings
 
-Measured 2026-11-01 with `dnf repoquery` on the pinned digests: CentOS Stream 10
-`0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `900e1adf`.
+Measured 2026-11-01 with `dnf repoquery` on the digests then pinned: CentOS
+Stream 10 `0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `900e1adf`. The CentOS
+pin moved to `f43c24c5` on 2026-11-03; re-measure before relying on a version
+tie.
 
 | | CentOS Stream 10 | Fedora 45 | AlmaLinux 10 | RHEL 10.2 |
 |---|---|---|---|---|
