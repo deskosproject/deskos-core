@@ -131,17 +131,21 @@ case "${1:-}" in
     # when the next command reaches the API.
     printf '%s\n' "$FREEIPA_PASSWORD" | podman exec -i "$name" kinit admin
     # The AD zone is not signed. Validation rejects the forwarded SOA and
-    # trust-add cannot read the domain. This FreeIPA build has no
-    # `ipa dnsconfig-mod --dnssec-validation` (run 42116859715), and the
-    # installer flag did not reach named, so turn it off in named's own
-    # configuration and reload it before the trust asks the zone for its SOA.
+    # trust-add cannot read the domain. Red Hat documents the switch for
+    # RHEL 8.2+ in /etc/named/ipa-options-ext.conf (solution 1400113); this
+    # image is RHEL 9 with BIND 9.16, and `ipa dnsconfig-mod` has no
+    # --dnssec-validation (run 42116859715). Append or replace the directive
+    # after ipa-adtrust-install, then reload named.
     podman exec "$name" bash -lc '
-      for f in /etc/named.conf /etc/named/*.conf /etc/named/*/*.conf; do
-        [ -f "$f" ] || continue
+      f=/etc/named/ipa-options-ext.conf
+      touch "$f"
+      if grep -q "^[[:space:]]*dnssec-validation" "$f"; then
         sed -i "s/^[[:space:]]*dnssec-validation .*/dnssec-validation no;/" "$f"
-      done
+      else
+        echo "dnssec-validation no;" >> "$f"
+      fi
       systemctl restart named
-      grep -R "^[[:space:]]*dnssec-validation" /etc/named.conf /etc/named 2>/dev/null || true
+      grep -n "dnssec-validation" "$f"
     '
     # Only the AD zone goes to the DC. A global forwarder would send every
     # unknown name there; the conditional forward zone is the documented shape
