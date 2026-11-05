@@ -295,8 +295,12 @@ jobs:
           if desc="$(oras manifest fetch --descriptor "$ISO_REPO:$tag" 2>"$RUNNER_TEMP/iso.err")"; then
             iso="$(jq -r .digest <<<"$desc")"
           else
-            if grep -qiE 'not found|manifest unknown|NAME_UNKNOWN' "$RUNNER_TEMP/iso.err"; then
-              echo "no ISO published for $DIGEST; the ISO channel is left alone"
+            # A platform without an installer has no installer repository,
+            # and the registry answers 401 for a repository the robot cannot
+            # see. That is "no installer", not a failed promotion: AlmaLinux
+            # and Fedora publish images only.
+            if grep -qiE 'not found|manifest unknown|NAME_UNKNOWN|unauthorized|401' "$RUNNER_TEMP/iso.err"; then
+              echo "no installer for $DIGEST; the ISO channel is left alone"
               exit 0
             fi
             echo "::error::could not read $ISO_REPO:$tag" >&2
