@@ -250,8 +250,9 @@ repository per shipped platform.
 A weekly build publishes `:<commit>`, `:latest` and `:candidate` by digest,
 after building, scanning and booting. `:stable` moves only through
 [promotion.yml](design/promotion.md), which verifies the signature and the
-records. Automatic promotion runs for CentOS Stream 10; AlmaLinux and Fedora
-stay on `:latest`/`:candidate` unless a person dispatches one.
+records. The promotion runs once for every `publish (…)` leg the run completed:
+CentOS Stream 10, AlmaLinux 10 and Fedora 45 all receive `:stable` automatically.
+A leg that failed is left alone and does not hold back the others.
 
 Pin a digest in production.
 

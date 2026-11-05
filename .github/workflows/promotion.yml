@@ -59,11 +59,49 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  promote:
+  # One station per successful `publish (…)` leg of the run that triggered this.
+  # A failed leg has no new candidate, and a dispatch names one station.
+  prepare:
     if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      stations: ${{ steps.stations.outputs.stations }}
+    steps:
+      - name: Which stations did this run publish?
+        id: stations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+          REQUESTED: ${{ inputs.workstation }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_run" ]; then
+            stations="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN/jobs?per_page=100" --paginate \
+              --jq '[.jobs[] | select(.name | startswith("publish (")) | select(.conclusion == "success") | .name | capture("publish \\((?<token>[^,]+), (?<station>[^,]+),") | .station] | unique')"
+          else
+            station="${REQUESTED:-deskos-core-centos-stream-10}"
+            case "$station" in
+              deskos-core-*) ;;
+              *) station="deskos-core-$station" ;;
+            esac
+            stations="$(jq -cn --arg station "$station" '[$station]')"
+          fi
+          echo "stations=$stations" >> "$GITHUB_OUTPUT"
+          echo "promoting: $stations"
+
+  promote:
+    needs: prepare
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == '' && needs.prepare.outputs.stations != '[]'
     runs-on: ubuntu-24.04
     environment: evidence-write
     timeout-minutes: 30
+    strategy:
+      # One station failing must not hide another; they are independent moves.
+      fail-fast: false
+      matrix:
+        station: ${{ fromJSON(needs.prepare.outputs.stations) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -77,25 +115,12 @@ jobs:
           TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          station="${{ inputs.workstation }}"
-          [ -n "$station" ] || station=deskos-core-centos-stream-10
+          station="${{ matrix.station }}"
 
           if [ "$EVENT" = "workflow_run" ]; then
-            # The gate published this run; the digest is read from :candidate and
-            # the reason names the run that produced it.
-            #
-            # The gate is the `publish` job, not the whole run: the installer is
-            # its own workflow now, and its failure must not hold back an image
-            # that was scanned, booted and signed. Every publish leg has to be
-            # green, and at least one has to exist.
-            counts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN/jobs?per_page=100" --paginate \
-              --jq '[.jobs[] | select(.name | startswith("publish ("))] | "\(length) \(map(select(.conclusion != "success")) | length)"')"
-            read -r legs bad <<<"$counts"
-            if [ "${legs:-0}" -lt 1 ] || [ "${bad:-1}" -gt 0 ]; then
-              echo "the gate did not publish in run $TRIGGER_RUN ($legs legs, $bad not successful); nothing to promote"
-              echo "SKIP=yes" >> "$GITHUB_ENV"
-              exit 0
-            fi
+            # The gate published this station in this run; the digest is read
+            # from :candidate and the reason names the run that produced it.
+            # The matrix only contains stations whose publish leg succeeded.
             REASON="automatic: the gate passed and published on main (run $TRIGGER_RUN)"
             DIGEST_INPUT=""
             approve="automatic (gate)"
@@ -115,7 +140,7 @@ jobs:
           {
             echo "DIGEST=$DIGEST_INPUT"
             echo "REPO=$REGISTRY/$station"
-            echo "ISO_REPO=$REGISTRY/$station-iso"
+            echo "ISO_REPO=$REGISTRY/$station-installer"
             echo "STATION=$station"
             echo "REASON=$REASON"
             echo "APPROVER=$approve"
@@ -238,7 +263,10 @@ jobs:
             --actor "$GITHUB_ACTOR" --approver "$APPROVER" --reason "$REASON" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             --stamp "$stamp" --output approval.json
-          echo "PREVIOUS=${previous:-none}" >> "$GITHUB_ENV"
+          {
+            echo "PREVIOUS=${previous:-none}"
+            echo "STAMP=$stamp"
+          } >> "$GITHUB_ENV"
 
       - name: Move stable by digest
         if: env.SKIP != 'yes'
@@ -270,8 +298,12 @@ jobs:
           if desc="$(oras manifest fetch --descriptor "$ISO_REPO:$tag" 2>"$RUNNER_TEMP/iso.err")"; then
             iso="$(jq -r .digest <<<"$desc")"
           else
-            if grep -qiE 'not found|manifest unknown|NAME_UNKNOWN' "$RUNNER_TEMP/iso.err"; then
-              echo "no ISO published for $DIGEST; the ISO channel is left alone"
+            # A platform without an installer has no installer repository,
+            # and the registry answers 401 for a repository the robot cannot
+            # see. That is "no installer", not a failed promotion: AlmaLinux
+            # and Fedora publish images only.
+            if grep -qiE 'not found|manifest unknown|NAME_UNKNOWN|unauthorized|401' "$RUNNER_TEMP/iso.err"; then
+              echo "no installer for $DIGEST; the ISO channel is left alone"
               exit 0
             fi
             echo "::error::could not read $ISO_REPO:$tag" >&2
@@ -297,6 +329,23 @@ jobs:
           oras tag "$ISO_REPO@$iso" stable
           moved="$(oras manifest fetch --descriptor "$ISO_REPO:stable" | jq -r .digest)"
           [ "$moved" = "$iso" ] || { echo "::error::ISO stable is $moved, not $iso"; exit 1; }
+          echo "ISO_DIGEST=$iso" >> "$GITHUB_ENV"
+
+      - name: Write the release record
+        if: env.SKIP != 'yes'
+        env:
+          EVIDENCE_S3_ENDPOINT: ${{ vars.EVIDENCE_S3_ENDPOINT }}
+          EVIDENCE_S3_REGION: ${{ vars.EVIDENCE_S3_REGION }}
+          EVIDENCE_S3_BUCKET: ${{ vars.EVIDENCE_S3_BUCKET }}
+          EVIDENCE_S3_ACCESS_KEY_ID: ${{ secrets.EVIDENCE_S3_ACCESS_KEY_ID }}
+          EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          python3 tests/evidence/release.py --dir "$EVIDENCE" \
+            --approval approval.json --iso "${ISO_DIGEST:-}" \
+            --signature-scheme keyless \
+            --signature-identity "https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main" \
+            --stamp "$STAMP" --output release.json
 
       - name: Summary
         if: always()
@@ -314,8 +363,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: promotion-record-attempt-${{ github.run_attempt }}
-          path: approval.json
+          name: promotion-record-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: |
+            approval.json
+            release.json
           retention-days: 14
           if-no-files-found: warn
 

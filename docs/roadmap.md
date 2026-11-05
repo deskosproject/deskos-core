@@ -6,7 +6,7 @@ configuration management is outside every milestone.
 | Today | State |
 |---|---|
 | Compiler | `v0.20.0` (2026-11-04): `Platform.maskedUnits` and the update-unit retry |
-| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`; RHEL's vendor fix is published (RHSA-2026:93413), the base pin move is pending |
+| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`, RHEL 10 `80485ddb` (2026-11-05, kernel `211.74.1`, the CVE-2026-98432 fix) |
 | Open | AD trust fixture (#406), `/var/home` label (#409), CVE-2026-114406 decision (#411), and the image scan and build disk limits tracked in the organization repository |
 
 ## Milestone 0: resource model (done)
@@ -361,21 +361,22 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
   follows `:stable` and describes today's download digest; a private
   organization's records never appear.
 
-## Release contract (planned)
+## Release contract
 
 Core and the DayTwo organization already share the shape: build one digest,
 scan it with a reviewed exception record, boot it, sign it, publish it under an
 immutable `:<commit>`, move `:candidate`, and promote `:stable` by digest with an
 approval record. The installers follow the image digest.
 
-- **Blocked 2026-11-04:** the installer repository should end in `-installer`,
-  the same suffix DayTwo already uses. The first push to
-  `deskos-core-centos-stream-10-installer` returned 401 because the Quay robot
-  account cannot create or write that repository; the rename waits for the
-  repository and its robot permission.
+- **Done 2026-11-05:** the installer repository ends in `-installer`, the same
+  suffix DayTwo uses. The first push returned 401 because the Quay repository
+  did not exist; it was created and the rename moved the workflow, the
+  promotion and the verify page. The old `-iso` repository was deleted after
+  `:stable` moved.
 - **Planned:** a Core RHEL leg that builds and gates but never publishes, so the
   platform is exercised where its resources live.
-- **Planned:** a shared `design/release-contract.md` and a `release.json` every
-  release emits, with the digest, Plan and SBOM hashes, check results, scan and
-  exceptions, signature identity, channels and evidence index. The fields are
-  shared; the workflows are not.
+- **Done 2026-11-05:** [`design/release-contract.md`](design/release-contract.md)
+  and `tests/evidence/release.py`. Every promotion writes
+  `releases/<repository>/stable/<stamp>-<digest>.json` beside the evidence, with
+  the digest, channels, signature, installer digest, evidence index hash and the
+  full approval record. The fields are shared with DayTwo; the workflows are not.
