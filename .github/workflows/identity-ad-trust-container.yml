@@ -1,0 +1,272 @@
+name: identity-ad-trust-container
+
+# Once a day, and on demand: provision a disposable Samba AD DC and a
+# disposable FreeIPA server on one podman network, establish the cross-forest
+# trust, and prove both directions of DNS and a Kerberos login for the AD user.
+#
+# This is the container half of the case the two client checks do not cover.
+# It builds no image and boots no VM: the desktop login is a separate check,
+# and this one fails for trust, DNS or directory reasons only.
+on:
+  schedule:
+    - cron: '43 5 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/identity-ad-trust-container.yml
+      - tests/identity/samba-ad.sh
+      - tests/identity/freeipa.sh
+      - tests/identity/samba/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: identity-ad-trust-container-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AD_IMAGE: localhost/deskos-ad-trust:ci
+  # One network, fixed addresses. A podman restart can take a new address, and
+  # that is what made the first VM attempts talk to a dead DC (issue #436).
+  AD_NETWORK: deskos-identity
+  IPA_NETWORK: deskos-identity
+  AD_IP: 10.89.0.2
+  IPA_IP: 10.89.0.3
+  AD_BIND: 127.0.0.2
+  IPA_BIND: 127.0.0.1
+  AD_SERVER_HOSTNAME: dc.adtrust.test
+  AD_REALM: ADTRUST.TEST
+  # The NetBIOS name for the DC; the trust step uses adtrust.test as the DNS
+  # domain and both are different facts, not a typo.
+  AD_DOMAIN: ADTRUST
+  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
+  IPA_SERVER_HOSTNAME: ipa.lab.test
+  IPA_SERVER_DOMAIN: lab.test
+  IPA_SERVER_REALM: LAB.TEST
+
+jobs:
+  trust:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install podman, openssl and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends podman openssl jq
+
+      - name: Put container storage on /mnt
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Create the identity network
+        run: |
+          set -euo pipefail
+          sudo podman network create --subnet 10.89.0.0/24 --gateway 10.89.0.1 \
+            --opt isolate=false "$AD_NETWORK" || true
+          sudo podman network inspect "$AD_NETWORK" | jq '.[0] | {subnets, dns_enabled, internal, isolate}'
+          # The runner's FORWARD policy is DROP; same-subnet traffic is bridged,
+          # but the accept makes the intent explicit and costs nothing.
+          subnet="$(sudo podman network inspect "$AD_NETWORK" | jq -r '.[0].subnets[0].subnet')"
+          sudo iptables -I FORWARD -s "$subnet" -d "$subnet" -j ACCEPT
+          sudo iptables -S FORWARD | head
+
+      - name: Build the disposable AD DC image
+        timeout-minutes: 20
+        run: sudo podman build -t "$AD_IMAGE" tests/identity/samba
+
+      - name: Start the AD DC
+        run: |
+          set -euo pipefail
+          password="A1a$(openssl rand -hex 20)"
+          echo "::add-mask::$password"
+          echo "ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
+          export ADMIN_PASSWORD="$password" AD_IMAGE AD_BIND AD_IP AD_NETWORK \
+            AD_SERVER_HOSTNAME AD_REALM AD_DOMAIN
+          sudo -E tests/identity/samba-ad.sh start
+
+      - name: Wait for the AD DC
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          ok=0
+          for _ in $(seq 1 60); do
+            if sudo -E tests/identity/samba-ad.sh status; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 2 ]; then
+                echo "the DC answered twice, ten seconds apart"
+                exit 0
+              fi
+              sleep 10
+              continue
+            fi
+            ok=0
+            sudo podman logs deskos-ad 2>&1 | tail -40 || true
+            sleep 5
+          done
+          echo "the DC did not answer twice within the timeout" >&2
+          sudo podman logs deskos-ad 2>&1 | tail -80 || true
+          exit 1
+
+      - name: Pin the DC address
+        run: |
+          set -euo pipefail
+          ip="$(sudo podman inspect deskos-ad --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+          test "$ip" = "$AD_IP"
+          echo "AD_SERVER_IP=$AD_IP" >> "$GITHUB_ENV"
+          sudo podman exec deskos-ad host -t A "$AD_SERVER_HOSTNAME" 127.0.0.1
+
+      - name: Start FreeIPA
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "FREEIPA_PASSWORD=$password" >> "$GITHUB_ENV"
+          export FREEIPA_PASSWORD="$password" FREEIPA_IMAGE IPA_IP IPA_BIND IPA_NETWORK
+          sudo -E tests/identity/freeipa.sh start
+
+      - name: Wait for FreeIPA
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            if sudo -E tests/identity/freeipa.sh status; then
+              echo "the realm answers after $((i * 10))s"
+              exit 0
+            fi
+            state=$(sudo podman inspect --format '{{.State.Status}}' deskos-freeipa 2>/dev/null || echo missing)
+            if [ "$state" != running ]; then
+              echo "container deskos-freeipa is $state, not running" >&2
+              sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "the realm did not answer within 20 minutes" >&2
+          sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
+          exit 1
+
+      - name: Point the DC at the IPA server's DNS
+        run: |
+          set -euo pipefail
+          ip="$(sudo podman inspect deskos-freeipa --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')"
+          test "$ip" = "$IPA_IP"
+          echo "IPA_SERVER_IP=$IPA_IP" >> "$GITHUB_ENV"
+          export AD_DNS_FORWARDER="$IPA_IP"
+          sudo -E tests/identity/samba-ad.sh forwarder
+
+      - name: Wait for the restarted DC and prove DNS in both directions
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 30); do
+            if sudo -E tests/identity/samba-ad.sh status &&
+               sudo podman exec deskos-freeipa \
+                 dig +time=2 +tries=1 +short SOA adtrust.test "@$AD_SERVER_IP" >/dev/null; then
+              break
+            fi
+            sleep 5
+          done
+          # The DC reaches the IPA zone through the forwarder. The other
+          # direction needs the IPA conditional forward zone, which the trust
+          # step adds before it asks AD for the trust; it is asserted there.
+          sudo podman exec deskos-ad \
+            dig +short SRV "_kerberos._tcp.lab.test" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
+          test -s /tmp/ad-to-ipa.txt
+
+      - name: Prove the trust ports reach both ways
+        run: |
+          set -euo pipefail
+          check() {
+            local from=$1 to=$2; shift 2
+            for port in "$@"; do
+              if sudo podman exec -i "$from" bash -c "timeout 2 bash -c 'echo >/dev/tcp/$to/$port'" 2>/dev/null; then
+                echo "$from -> $to:$port open"
+              else
+                echo "$from -> $to:$port blocked" >&2
+                return 1
+              fi
+            done
+          }
+          check deskos-freeipa "$AD_SERVER_IP" 53 88 389 445 464
+          check deskos-ad "$IPA_SERVER_IP" 53 88 389 464
+
+      - name: Create the AD user
+        run: |
+          set -euo pipefail
+          export AD_USER=qa
+          user_password="$(openssl rand -hex 16)"
+          echo "::add-mask::$user_password"
+          echo "AD_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
+          export AD_USER_PASSWORD="$user_password"
+          sudo -E tests/identity/samba-ad.sh user
+          sudo podman exec deskos-ad samba-tool user show qa
+
+      - name: Negative control before the trust
+        run: |
+          set -euo pipefail
+          if sudo podman exec deskos-freeipa getent passwd qa@adtrust.test; then
+            echo "::error::the AD user resolves before the trust exists"
+            exit 1
+          fi
+          echo "the AD user does not resolve before the trust, as expected"
+
+      - name: Establish the trust and prove lookup and Kerberos
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
+          sudo -E tests/identity/freeipa.sh trust
+          # Now that the conditional forward zone exists, prove the other
+          # direction: the IPA server resolves the AD zone through it.
+          sudo podman exec deskos-freeipa \
+            dig +short SRV "_ldap._tcp.adtrust.test" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
+          test -s /tmp/ipa-to-ad.txt
+          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test | tee /tmp/getent.txt
+          test -s /tmp/getent.txt
+          printf '%s\n' "$AD_USER_PASSWORD" |
+            sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
+          sudo podman exec deskos-freeipa klist | tee /tmp/klist.txt
+          grep -q 'ADTRUST.TEST' /tmp/klist.txt
+          # A name the trust does not know must not resolve.
+          if sudo podman exec deskos-freeipa getent passwd deskos-nobody@adtrust.test; then
+            echo "::error::a name outside the trust resolved"
+            exit 1
+          fi
+
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p evidence
+          cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
+          sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
+          sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
+          sudo podman exec deskos-freeipa ipa trust-show adtrust.test > evidence/trust.txt 2>&1 || true
+          sudo podman exec deskos-freeipa ipa idrange-find > evidence/idrange.txt 2>&1 || true
+          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test > evidence/ad-user-on-ipa.txt 2>&1 || true
+          sudo podman exec deskos-freeipa sssctl domain-status adtrust.test > evidence/domain-status.txt 2>&1 || true
+          sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.adtrust.test @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true
+          sudo podman inspect deskos-ad --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/ad-state.txt 2>&1 || true
+          sudo podman logs deskos-ad > evidence/ad-dc.log 2>&1 || true
+          sudo podman exec deskos-ad samba-tool user show qa > evidence/ad-user-directory.txt 2>&1 || true
+          sudo chown -R "$(id -u):$(id -g)" evidence 2>/dev/null || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: identity-ad-trust-container-evidence
+          path: evidence
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Stop the disposable directories
+        if: always()
+        run: |
+          sudo tests/identity/freeipa.sh purge || true
+          sudo tests/identity/samba-ad.sh purge || true
