@@ -361,7 +361,7 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
   follows `:stable` and describes today's download digest; a private
   organization's records never appear.
 
-## Release contract (planned)
+## Release contract
 
 Core and the DayTwo organization already share the shape: build one digest,
 scan it with a reviewed exception record, boot it, sign it, publish it under an
@@ -371,8 +371,8 @@ approval record. The installers follow the image digest.
 - **Done 2026-11-05:** the installer repository ends in `-installer`, the same
   suffix DayTwo uses. The first push returned 401 because the Quay repository
   did not exist; it was created and the rename moved the workflow, the
-  promotion and the verify page. The old `-iso` repository is retired once the
-  new one serves `:stable`.
+  promotion and the verify page. The old `-iso` repository was deleted after
+  `:stable` moved.
 - **Planned:** a Core RHEL leg that builds and gates but never publishes, so the
   platform is exercised where its resources live.
 - **Done 2026-11-05:** [`design/release-contract.md`](design/release-contract.md)
