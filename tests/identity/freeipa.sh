@@ -32,7 +32,10 @@ case "${1:-}" in
     # zone, and a forwarder would make the fixture depend on the runner's
     # resolver. The log driver keeps the whole install log, the evidence when
     # the install fails.
-    opts="-U -r $realm -n $domain --setup-dns --no-forwarders --no-ntp --skip-mem-check"
+    # The trust forwards adtrust.test to the DC's DNS. The disposable .test
+    # realms are not DNSSEC-signed, and validation rejects the forwarded SOA,
+    # which leaves trust-add without domain information (run 42109140793).
+    opts="-U -r $realm -n $domain --setup-dns --no-forwarders --no-ntp --skip-mem-check --no-dnssec-validation"
     # The upstream image is documented for a plain (bridge) container, not for
     # host networking or privileged mode: privileged setup is explicitly not
     # supported. On the bridge the container resolves its own name to its own
