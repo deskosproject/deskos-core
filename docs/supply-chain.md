@@ -237,11 +237,16 @@ A digest moves only when, for that digest:
 3. the CVE scan is at or below `critical`;
 4. the image carries a signature over its digest.
 
-`promotion.yml` checks that the source channel serves the digest, verifies the
-keyless signature, fetches and verifies every object the record names, stores an
-approval record under `approvals/<repository>/stable/`, and only then moves
-`:stable` by digest. The record names the digest, the previous stable digest, the
-actor, the approver, the reason, the index hash and the run.
+`promotion.yml` runs once for every successful `publish (…)` leg of the run:
+a `prepare` job builds the station list and a matrix promotes each one. For each
+digest it checks that the source channel serves it, verifies the keyless
+signature, fetches and verifies every object the index names, stores an approval
+record under `approvals/<repository>/stable/`, moves `:stable` by digest, and
+writes the release record under `releases/<repository>/stable/`. The approval
+names the digest, the previous stable digest, the actor, the approver, the reason,
+the index hash and the run; the release record adds the channels, the signature,
+the installer digest and the evidence objects (see
+[release-contract.md](design/release-contract.md)).
 
 The first promotion (run `40317904401`, 2026-10-26) moved `sha256:96fe80d3…`; a
 second after the Stream 10 base bump (run `40412048361`) moved

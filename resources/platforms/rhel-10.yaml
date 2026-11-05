@@ -10,8 +10,9 @@ spec:
   packageManager: rpm
   bootc:
     image: registry.redhat.io/rhel10/rhel-bootc:10.2
-    # x86_64 manifest (config sha256:14d164b5...), created 2026-10-12; move it deliberately.
-    digest: sha256:d4d57dd13569e05bf6732eacacf2ad84a20ba22d232cd64b9a6820d692f682ee
+    # x86_64 manifest, created 2026-11-05; kernel 6.12.0-211.74.1.el10_2, which
+    # carries the CVE-2026-98432 fix (RHSA-2026:93413). Move it deliberately.
+    digest: sha256:80485ddb9025df594891c36e23f865c63910739c10d37f41ae7247b0c64c2884
   distribution:
     # rhel-bootc and images derived from it are covered by the RHEL EULA and
     # must not be publicly redistributed.

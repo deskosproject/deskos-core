@@ -16,6 +16,7 @@ incomplete.
 | **Provenance** | SLSA v1 predicate: commit, base digest, builder, run | attached to the image | `cosign verify-attestation --type slsaprovenance1` |
 | **Test results** | boot, session and first-boot summaries, the scan and the accepted risks | evidence index | sha256 from the index |
 | **Authorization** | who moved the digest to `:stable`, when, against which records | `approvals/<repository>/stable/<stamp>-<digest>.json` in the evidence bucket | read the record; it names the evidence index hash |
+| **Release record** | the image, channels, signature, installer digest and evidence objects of a promotion | `releases/<repository>/stable/<stamp>-<digest>.json` in the evidence bucket; `tests/evidence/release.py` builds it | compare it with the index and the approval; [release contract](release-contract.md) |
 
 The **evidence index** is the hub: a JSON object per digest naming every file and
 its sha256, served from the public bucket. Everything above except the subject

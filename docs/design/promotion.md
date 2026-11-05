@@ -29,11 +29,16 @@ rebuild. The weekly build scans and boots an image and moves `:candidate` and
   digest is the exact identity.
 - Records are a 14-day workflow artifact (attempt-suffixed) and, for a published
   digest, a digest-keyed index under `evidence.deskos.org` (P0-05, implemented
-  2026-10-26).
+  2026-10-26). The approval record is stored under
+  `approvals/<repository>/stable/` and the release record under
+  `releases/<repository>/stable/` in the same bucket.
 - `promotion.yml` is the only writer of `:stable`: it verifies the keyless
   signature (identity `image-publish.yml` on `main`) and every object the index
   names, records the approval, moves the tag by digest, and verifies the tag
   resolves to the same digest.
+- A `prepare` job reads the successful `publish (…)` jobs of the triggering run
+  and a matrix promotes each station; a dispatch names one. A failed leg is not
+  in the matrix, so it cannot hold back a station that published.
 - Machines follow the reference they were installed from; `:latest` is mutable, a
   digest is not. `deskos update` stages whatever that reference now serves.
 - Publication does not wait for a person: the weekly build publishes and
@@ -74,7 +79,11 @@ At this project's scale the path is `candidate → stable`, with no canary stage
    inside a digest's immutable prefix.
 4. Move the destination tag **by digest**, never by rebuilding; `:<commit>`
    remains as the build record.
-5. Verify from a clean machine that the destination tag resolves to the same
+5. Write the release record under `releases/<repository>/stable/…`: image,
+   digest, channels, signature, installer digest, the evidence index hash and its
+   objects, and the approval record. It is derived from the index and the
+   approval, so it cannot claim more than they hold.
+6. Verify from a clean machine that the destination tag resolves to the same
    digest, that its signature verifies, and that its records are retrievable.
 
 Caches and already-staged machines keep what they have until they fetch. The
@@ -85,7 +94,10 @@ approval record is the source of truth.
 - If the move succeeds but a consumer cannot fetch, the registry is the problem;
   do not rebuild.
 - If verification fails after the move, move the tag back to the previous digest
-  and record the failed approval; the previous digest's records must remain.
+  and record the failed approval; the previous digest's records must remain. A
+  release record that fails to write leaves the move already made: the promotion
+  is red, and the record must be rebuilt from the evidence before the next
+  promotion of that digest.
 - If records are missing, the promotion does not start. A 404 is not "no known
   issues".
 - If the **installer** failed, the image is still promoted: promotion depends on

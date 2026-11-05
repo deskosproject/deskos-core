@@ -11,13 +11,14 @@ KVM for the virtual machine.
 
 | Platform | Image |
 |---|---|
-| CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10:latest` |
-| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10:latest` |
-| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:latest` |
+| CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10:stable` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10:stable` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45:stable` |
 
-`:latest` is the newest image that passed the weekly build; `:candidate` is the
-digest that build published and signed. Outside a lab, pin the digest you
-verified ([install.md](install.md#option-1-install-the-published-image)).
+`:stable` is the digest a promotion verified and recorded; `:latest` is the fast
+lane with the newest digest the weekly build passed; `:candidate` is that same
+digest before promotion. The table uses `:stable`; pin the digest you verified
+for production ([install.md](install.md#option-1-install-the-published-image)).
 
 ## 2. Write a QCOW2
 
@@ -36,7 +37,7 @@ sudo podman run \
   build \
   --type qcow2 \
   --rootfs xfs \
-  quay.io/deskos/deskos-core-centos-stream-10:latest
+  quay.io/deskos/deskos-core-centos-stream-10:stable
 ```
 
 The disk lands at `output/qcow2/disk.qcow2`. Fedora's root filesystem is
