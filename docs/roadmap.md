@@ -375,7 +375,8 @@ approval record. The installers follow the image digest.
   new one serves `:stable`.
 - **Planned:** a Core RHEL leg that builds and gates but never publishes, so the
   platform is exercised where its resources live.
-- **Planned:** a shared `design/release-contract.md` and a `release.json` every
-  release emits, with the digest, Plan and SBOM hashes, check results, scan and
-  exceptions, signature identity, channels and evidence index. The fields are
-  shared; the workflows are not.
+- **Done 2026-11-05:** [`design/release-contract.md`](design/release-contract.md)
+  and `tests/evidence/release.py`. Every promotion writes
+  `releases/<repository>/stable/<stamp>-<digest>.json` beside the evidence, with
+  the digest, channels, signature, installer digest, evidence index hash and the
+  full approval record. The fields are shared with DayTwo; the workflows are not.
