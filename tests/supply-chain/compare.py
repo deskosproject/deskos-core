@@ -33,6 +33,24 @@ def source(component):
     return None
 
 
+def rpm_present(declared, installed_names):
+    """Is the declared RPM in the installed SBOM?
+
+    A resource may pin a full NEVRA (`ca-certificates-2026.2.92...-100.3.el10_2`)
+    while the scanner reports the RPM name alone (`ca-certificates`). A declared
+    name whose installed name is a prefix followed by a dash and a digit is the
+    same package with its version attached; anything else is a different package.
+    """
+    name = declared.lower()
+    if name in installed_names:
+        return True
+    for installed_name in installed_names:
+        prefix = installed_name + "-"
+        if name.startswith(prefix) and len(name) > len(prefix) and name[len(prefix)].isdigit():
+            return True
+    return False
+
+
 def compare(declared, installed):
     """Return (missing_rpm_names, count_of_other_declared_components)."""
     installed_names = {(c.get("name") or "").lower() for c in installed}
@@ -41,7 +59,7 @@ def compare(declared, installed):
     for c in declared:
         if source(c) == "rpm":
             name = c.get("name") or ""
-            if name.lower() not in installed_names:
+            if not rpm_present(name, installed_names):
                 missing.append(name)
         else:
             others += 1

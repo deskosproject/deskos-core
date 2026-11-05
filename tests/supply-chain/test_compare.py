@@ -14,6 +14,20 @@ def comp(name, source=None):
 
 
 class CompareTest(unittest.TestCase):
+    def test_declared_nevra_matches_the_installed_name(self):
+        missing, _ = compare.compare(
+            [comp("ca-certificates-2026.2.92_v9.0.319-100.3.el10_2", "rpm")],
+            [comp("ca-certificates")],
+        )
+        self.assertEqual(missing, [])
+
+    def test_a_different_package_does_not_match(self):
+        missing, _ = compare.compare(
+            [comp("ca-certificates-extra", "rpm")],
+            [comp("ca-certificates")],
+        )
+        self.assertEqual(missing, ["ca-certificates-extra"])
+
     def test_declared_rpm_must_appear(self):
         missing, others = compare.compare(
             [comp("git", "rpm"), comp("oc", "binary"), comp("root", "trust-anchor")],
