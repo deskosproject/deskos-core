@@ -59,11 +59,49 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  promote:
+  # One station per successful `publish (…)` leg of the run that triggered this.
+  # A failed leg has no new candidate, and a dispatch names one station.
+  prepare:
     if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      stations: ${{ steps.stations.outputs.stations }}
+    steps:
+      - name: Which stations did this run publish?
+        id: stations
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+          REQUESTED: ${{ inputs.workstation }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "workflow_run" ]; then
+            stations="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN/jobs?per_page=100" --paginate \
+              --jq '[.jobs[] | select(.name | startswith("publish (")) | select(.conclusion == "success") | .name | capture("publish \\((?<token>[^,]+), (?<station>[^,]+),") | .station] | unique')"
+          else
+            station="${REQUESTED:-deskos-core-centos-stream-10}"
+            case "$station" in
+              deskos-core-*) ;;
+              *) station="deskos-core-$station" ;;
+            esac
+            stations="$(jq -cn --arg station "$station" '[$station]')"
+          fi
+          echo "stations=$stations" >> "$GITHUB_OUTPUT"
+          echo "promoting: $stations"
+
+  promote:
+    needs: prepare
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == '' && needs.prepare.outputs.stations != '[]'
     runs-on: ubuntu-24.04
     environment: evidence-write
     timeout-minutes: 30
+    strategy:
+      # One station failing must not hide another; they are independent moves.
+      fail-fast: false
+      matrix:
+        station: ${{ fromJSON(needs.prepare.outputs.stations) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -77,25 +115,12 @@ jobs:
           TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          station="${{ inputs.workstation }}"
-          [ -n "$station" ] || station=deskos-core-centos-stream-10
+          station="${{ matrix.station }}"
 
           if [ "$EVENT" = "workflow_run" ]; then
-            # The gate published this run; the digest is read from :candidate and
-            # the reason names the run that produced it.
-            #
-            # The gate is the `publish` job, not the whole run: the installer is
-            # its own workflow now, and its failure must not hold back an image
-            # that was scanned, booted and signed. Every publish leg has to be
-            # green, and at least one has to exist.
-            counts="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TRIGGER_RUN/jobs?per_page=100" --paginate \
-              --jq '[.jobs[] | select(.name | startswith("publish ("))] | "\(length) \(map(select(.conclusion != "success")) | length)"')"
-            read -r legs bad <<<"$counts"
-            if [ "${legs:-0}" -lt 1 ] || [ "${bad:-1}" -gt 0 ]; then
-              echo "the gate did not publish in run $TRIGGER_RUN ($legs legs, $bad not successful); nothing to promote"
-              echo "SKIP=yes" >> "$GITHUB_ENV"
-              exit 0
-            fi
+            # The gate published this station in this run; the digest is read
+            # from :candidate and the reason names the run that produced it.
+            # The matrix only contains stations whose publish leg succeeded.
             REASON="automatic: the gate passed and published on main (run $TRIGGER_RUN)"
             DIGEST_INPUT=""
             approve="automatic (gate)"
@@ -314,7 +339,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: promotion-record-attempt-${{ github.run_attempt }}
+          name: promotion-record-${{ matrix.station }}-attempt-${{ github.run_attempt }}
           path: approval.json
           retention-days: 14
           if-no-files-found: warn
