@@ -78,6 +78,8 @@ def main(argv=None):
                         help="UTC timestamp for the key, YYYYMMDDTHHMMSSZ")
     parser.add_argument("--output", type=Path,
                         help="also keep the record here, for the workflow artifact")
+    parser.add_argument("--private", action="store_true",
+                        help="upload without the public-read ACL (DayTwo's bucket)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -113,7 +115,7 @@ def main(argv=None):
             return 0
         try:
             upload.upload(endpoint, bucket, key, path, access_key, secret_key,
-                          region, True)
+                          region, not args.private)
         except (OSError, subprocess.CalledProcessError) as exc:
             print(f"approval: {exc}", file=sys.stderr)
             return 1
