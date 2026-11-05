@@ -114,7 +114,7 @@ its kickstart runs `clearpart --all` and erases every disk it sees.
 > The disk and the ISO bake in the reference they were built from, and the
 > installed machine follows it for every later `bootc upgrade`. The kickstarts are
 > in [installer-iso.md](installer-iso.md).
-A preview ISO is at <https://download.deskos.org/>; verify its `SHA256SUMS`
+An installer ISO is at <https://download.deskos.org/>; verify its `SHA256SUMS`
 before booting.
 
 ### 4. Boot it

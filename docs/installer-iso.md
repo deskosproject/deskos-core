@@ -168,9 +168,9 @@ builder.
 
 ## Validation status
 
-The CentOS Stream 10 preview ISO at <https://download.deskos.org/> was installed
+The CentOS Stream 10 installer ISO at <https://download.deskos.org/> was installed
 and booted in KVM: DeskOS splash, then GNOME Initial Setup over the DeskOS
-wallpaper. It is a preview built from a published image, not from the current
+wallpaper. It is an installer built from a published image, not from the current
 `main`; verify its published checksum.
 
 **Not tested here:** bare metal, BIOS boot, RHEL ISOs (downstream), and updates
