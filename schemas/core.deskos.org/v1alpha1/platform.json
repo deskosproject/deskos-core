@@ -86,6 +86,12 @@
           "uniqueItems": true,
           "items": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" }
         },
+        "relabelDirs": {
+          "description": "Absolute directories the base can create without a SELinux context. The image ships a tmpfiles.d rule that creates each directory and restores its context at every boot, so a confined service can write inside it (ADR 0029).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^/[A-Za-z0-9._/-]+$" }
+        },
         "removePackages": {
           "description": "RPM packages the platform image must not carry. The build removes them after the package transactions and fails if one remains. A package the composition explicitly installs is a conflict (ADR 0022).",
           "type": "array",

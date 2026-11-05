@@ -424,6 +424,7 @@ join_log=/var/lib/deskos-qa/join.log
   else
     echo "join_home_before=missing"
   fi
+  echo "home_root_label=$(ls -Zd /var/home 2>/dev/null | awk '{print $1}')"
 } > /var/lib/deskos-qa/join.status
 chmod 0644 /var/lib/deskos-qa/join.status
 """
@@ -2139,6 +2140,14 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
               values.get("join_home_before") == "missing" and uid is not None and owner == uid,
               f"join_home_before={values.get('join_home_before')} "
               f"home_owner={values.get('home_owner')} uid={uid}")
+        # Name the labeling failure instead of leaving it as "no home": a
+        # directory created before the policy loads stays default_t, and a
+        # confined oddjob_mkhomedir_t cannot create inside it (issue #409).
+        label = values.get("home_root_label") or ""
+        label_type = label.split(":")[2] if label.count(":") >= 2 else ""
+        check("the platform labels /var/home for home creation",
+              label_type == "home_root_t",
+              f"home_root_label={label or 'missing'}")
         check("oddjobd is active", values.get("oddjobd") == "active",
               f"oddjobd={values.get('oddjobd')}")
     if offline:

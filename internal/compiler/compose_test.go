@@ -1477,6 +1477,22 @@ func TestPlatformRemovePackagesTypedValidationWithoutSchema(t *testing.T) {
 	mustFail(t, prov.Decode(res), "removePackages is an RPM operation")
 }
 
+func TestPlatformRelabelDirsTypedValidationWithoutSchema(t *testing.T) {
+	c := newCompiler(t)
+	doc := `{"displayName":"T","family":"t","release":"1","architectures":["x86_64"],"bootc":{"image":"example.org/t:1"},
+"distribution":{"redistributable":true,"requiresSubscription":false},"displayManager":"gdm.service",
+"relabelDirs":["/ok","/ok","relative","/"]}`
+	res := rawResource("core.deskos.org/v1alpha1", "Platform", "t", doc)
+	prov, err := c.Registry.Lookup(res.GVK())
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustFail(t, prov.Decode(res),
+		`relabelDirs "relative" must be an absolute, clean path other than /`,
+		`relabelDirs "/" must be an absolute, clean path other than /`,
+		`relabelDirs lists "/ok" twice`)
+}
+
 func fileData(t *testing.T, files []containerfile.File, path string) []byte {
 	t.Helper()
 	for _, f := range files {

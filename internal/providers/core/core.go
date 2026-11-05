@@ -55,6 +55,13 @@ type PlatformSpec struct {
 	// package or artifact writes are dropped with the image; the build replaces the
 	// symlink with a real directory before the first transaction.
 	ImageOwnedDirs []string `json:"imageOwnedDirs,omitempty"`
+	// RelabelDirs are absolute directories the base can create without a SELinux
+	// context. Every bootc base here symlinks /home to var/home and does not ship
+	// var/home; whichever component creates it first can leave it default_t, and a
+	// confined service such as oddjob_mkhomedir_t then cannot create a user's home
+	// inside it. The image ships a tmpfiles.d rule that creates the directory and
+	// restores its context at every boot (issue #409, ADR 0029).
+	RelabelDirs []string `json:"relabelDirs,omitempty"`
 	// RemovePackages are RPM packages the platform image must not carry. The
 	// build removes them after the package transactions and fails if one remains
 	// (docs/adr/0022). They are not group exclusions: a group exclusion only
@@ -431,6 +438,16 @@ func (platformProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "imageOwnedDirs lists %q twice", dir))
 		}
 		owned[dir] = true
+	}
+	relabelled := map[string]bool{}
+	for _, dir := range s.RelabelDirs {
+		if !strings.HasPrefix(dir, "/") || path.Clean(dir) != dir || dir == "/" {
+			errs.Add(model.Errorf(res, "relabelDirs %q must be an absolute, clean path other than /", dir))
+		}
+		if relabelled[dir] {
+			errs.Add(model.Errorf(res, "relabelDirs lists %q twice", dir))
+		}
+		relabelled[dir] = true
 	}
 	seen := map[string]bool{}
 	for _, g := range s.PackageGroups {

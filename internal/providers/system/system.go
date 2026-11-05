@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"path"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -137,7 +138,48 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	errs.Add(lowerNetwork(c, p))
 	errs.Add(lowerUpdates(c, p))
 	errs.Add(lowerPlatformMasks(c, p))
+	errs.Add(lowerPlatformRelabel(c, p))
 	return errs.Err()
+}
+
+// RelabelTmpfilesPath is the image-owned tmpfiles.d drop-in that fixes the
+// SELinux context of platform directories. It sorts after the base's own
+// rpm-ostree rule, so `d` cannot race it.
+const RelabelTmpfilesPath = "/usr/lib/tmpfiles.d/zz-deskos-relabel.conf"
+
+// lowerPlatformRelabel ships the directories a platform declares as
+// relabelDirs. The base symlinks /home to var/home and does not ship var/home;
+// whichever component creates it first can leave it default_t. A confined
+// oddjob_mkhomedir_t cannot create a user's home inside a default_t directory,
+// so the login has no home (issue #409, ADR 0029). `d` creates the directory if
+// the boot path did not, and `z` restores the policy context of the directory
+// itself at every boot; children inherit their own contexts.
+func lowerPlatformRelabel(c *compose.Composition, p *plan.Plan) error {
+	dirs := append([]string(nil), c.PlatformSpec.RelabelDirs...)
+	if len(dirs) == 0 {
+		return nil
+	}
+	sort.Strings(dirs)
+	var b strings.Builder
+	b.WriteString("# Directories an OSTree base can create without a SELinux context.\n")
+	b.WriteString("# `d` creates the directory; `z` restores its policy context every boot, so a\n")
+	b.WriteString("# confined service can write inside it (issue #409, ADR 0029).\n")
+	for _, dir := range dirs {
+		fmt.Fprintf(&b, "d %s 0755 root root -\n", dir)
+		fmt.Fprintf(&b, "z %s - - - -\n", dir)
+	}
+	prov := model.Provenance{
+		Resource: c.Platform.ID(),
+		Layer:    model.LayerFoundation.String(),
+		Source:   c.Platform.Source.String(),
+	}
+	p.Artifact.GeneratedFiles = append(p.Artifact.GeneratedFiles, plan.GeneratedFile{
+		Path:       RelabelTmpfilesPath,
+		Mode:       "0644",
+		Content:    b.String(),
+		Provenance: []model.Provenance{prov},
+	})
+	return nil
 }
 
 // lowerPlatformMasks masks units the base ships but the platform cannot use.
