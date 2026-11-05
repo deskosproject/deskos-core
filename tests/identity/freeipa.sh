@@ -131,11 +131,18 @@ case "${1:-}" in
     # when the next command reaches the API.
     printf '%s\n' "$FREEIPA_PASSWORD" | podman exec -i "$name" kinit admin
     # The AD zone is not signed. Validation rejects the forwarded SOA and
-    # trust-add cannot read the domain; the installer's --no-dnssec-validation
-    # did not take effect in this image (run 42110920922), so set it in the
-    # running DNS configuration and reload named.
-    podman exec "$name" ipa dnsconfig-mod --dnssec-validation=no
-    podman exec "$name" systemctl restart named || true
+    # trust-add cannot read the domain. This FreeIPA build has no
+    # `ipa dnsconfig-mod --dnssec-validation` (run 42116859715), and the
+    # installer flag did not reach named, so turn it off in named's own
+    # configuration and reload it before the trust asks the zone for its SOA.
+    podman exec "$name" bash -lc '
+      for f in /etc/named.conf /etc/named/*.conf /etc/named/*/*.conf; do
+        [ -f "$f" ] || continue
+        sed -i "s/^[[:space:]]*dnssec-validation .*/dnssec-validation no;/" "$f"
+      done
+      systemctl restart named
+      grep -R "^[[:space:]]*dnssec-validation" /etc/named.conf /etc/named 2>/dev/null || true
+    '
     # Only the AD zone goes to the DC. A global forwarder would send every
     # unknown name there; the conditional forward zone is the documented shape
     # for a trust when the two zones are not children of one another.
