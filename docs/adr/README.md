@@ -37,3 +37,4 @@ kind" while the API now has **fifteen**; the count is in
 | [0026: The families are the workstation's choice, not the platform's](0026-the-families-are-the-workstations-choice.md) | accepted |
 | [0027: A network profile is a typed resource, and its secrets are not](0027-a-network-profile-is-typed-and-its-secrets-are-not.md) | accepted |
 | [0028: The installed package set is a manifest the build verifies](0028-the-installed-package-set-is-a-manifest.md) | accepted |
+| [0029: A platform names the directories its base can leave unlabeled](0029-platforms-name-unlabeled-directories.md) | accepted |
