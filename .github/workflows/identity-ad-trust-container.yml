@@ -173,14 +173,12 @@ jobs:
             fi
             sleep 5
           done
-          # The DC reaches the IPA zone through the forwarder; the IPA server
-          # reaches the AD zone through its conditional forward zone.
+          # The DC reaches the IPA zone through the forwarder. The other
+          # direction needs the IPA conditional forward zone, which the trust
+          # step adds before it asks AD for the trust; it is asserted there.
           sudo podman exec deskos-ad \
             dig +short SRV "_kerberos._tcp.lab.test" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
           test -s /tmp/ad-to-ipa.txt
-          sudo podman exec deskos-freeipa \
-            dig +short SRV "_ldap._tcp.adtrust.test" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
-          test -s /tmp/ipa-to-ad.txt
 
       - name: Prove the trust ports reach both ways
         run: |
@@ -225,6 +223,11 @@ jobs:
           set -euo pipefail
           export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
           sudo -E tests/identity/freeipa.sh trust
+          # Now that the conditional forward zone exists, prove the other
+          # direction: the IPA server resolves the AD zone through it.
+          sudo podman exec deskos-freeipa \
+            dig +short SRV "_ldap._tcp.adtrust.test" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
+          test -s /tmp/ipa-to-ad.txt
           sudo podman exec deskos-freeipa getent passwd qa@adtrust.test | tee /tmp/getent.txt
           test -s /tmp/getent.txt
           printf '%s\n' "$AD_USER_PASSWORD" |
