@@ -130,6 +130,12 @@ case "${1:-}" in
     # The installer restarts services; a ticket obtained before it can be stale
     # when the next command reaches the API.
     printf '%s\n' "$FREEIPA_PASSWORD" | podman exec -i "$name" kinit admin
+    # The AD zone is not signed. Validation rejects the forwarded SOA and
+    # trust-add cannot read the domain; the installer's --no-dnssec-validation
+    # did not take effect in this image (run 42110920922), so set it in the
+    # running DNS configuration and reload named.
+    podman exec "$name" ipa dnsconfig-mod --dnssec-validation=no
+    podman exec "$name" systemctl restart named || true
     # Only the AD zone goes to the DC. A global forwarder would send every
     # unknown name there; the conditional forward zone is the documented shape
     # for a trust when the two zones are not children of one another.
