@@ -30,18 +30,20 @@ project owns one, and its build, boot and publication live in
 [`deskos-ubuntu`](https://github.com/deskosproject/deskos-ubuntu) (ADR 0020).
 
 AlmaLinux 10 and Fedora 45 joined the matrix on 2026-10-30. AlmaLinux's base
-is still labelled experimental by its vendor. Core publishes an image and no
-installer for either; their pins live in `resources/platforms/`, and Fedora's
-mirror is described in [fedora.md](fedora.md). The desktop is the same on every
-flavor; [desktop parity](desktop-parity.md) lists what each platform adds.
+is still labelled experimental by its vendor. All three publish an image with
+`:latest`, `:candidate` and `:stable`; only CentOS Stream 10 has a Core installer.
+Their pins live in `resources/platforms/`, and Fedora's mirror is described in
+[fedora.md](fedora.md). The desktop is the same on every flavor;
+[desktop parity](desktop-parity.md) lists what each platform adds.
 
 ## How to get a machine today
 
 ### CentOS Stream 10: pull the image, then install
 
 The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as
-`:latest` and `:<commit>` by the weekly build, with its digest and run in
-[architecture.md](architecture.md#validation-status). A preview ISO from a
+`:stable`, `:latest`, `:candidate` and `:<commit>`; the weekly build writes
+`:latest`/`:candidate` and the promotion writes `:stable`. Its digest and run are
+in [architecture.md](architecture.md#validation-status). A preview ISO from a
 published image is at <https://download.deskos.org/> (check its checksum); for a
 QCOW2 or Anaconda ISO use `bootc-image-builder`:
 [install.md](install.md#option-1-install-the-published-image).
