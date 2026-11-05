@@ -15,19 +15,13 @@
           "package": "google.golang.org/grpc",
           "type": "go-module",
           "version": "v1.72.2",
-          "path": "/sysroot/ostree/repo/objects/f6/a30b5a92fe21f3923d131ab8aa8d6b64c7f01ee31e6d8293aaf6d205cfef7f.file"
+          "path": "/sysroot/ostree/repo/objects/49/41690828285b3f41c1120cb03d5e6ad87bddcdfea83b96271341f06884f7d3.file"
         },
         {
           "package": "google.golang.org/grpc",
           "type": "go-module",
           "version": "v1.72.2",
           "path": "/usr/bin/podman"
-        },
-        {
-          "package": "google.golang.org/grpc",
-          "type": "go-module",
-          "version": "v1.72.2",
-          "path": "/sysroot/ostree/repo/objects/49/41690828285b3f41c1120cb03d5e6ad87bddcdfea83b96271341f06884f7d3.file"
         }
       ]
     },
@@ -52,7 +46,7 @@
           "package": "golang.org/x/net",
           "type": "go-module",
           "version": "v0.56.0",
-          "path": "/sysroot/ostree/repo/objects/f6/a30b5a92fe21f3923d131ab8aa8d6b64c7f01ee31e6d8293aaf6d205cfef7f.file"
+          "path": "/sysroot/ostree/repo/objects/49/41690828285b3f41c1120cb03d5e6ad87bddcdfea83b96271341f06884f7d3.file"
         },
         {
           "package": "golang.org/x/net",
@@ -71,12 +65,6 @@
           "type": "go-module",
           "version": "go1.26.2",
           "path": "/usr/bin/toolbox"
-        },
-        {
-          "package": "golang.org/x/net",
-          "type": "go-module",
-          "version": "v0.56.0",
-          "path": "/sysroot/ostree/repo/objects/49/41690828285b3f41c1120cb03d5e6ad87bddcdfea83b96271341f06884f7d3.file"
         }
       ]
     },
@@ -120,6 +108,44 @@
           "type": "go-module",
           "version": "v5.0.0-20261102064944-2da290ab6b9a+dirty",
           "path": "/sysroot/ostree/repo/objects/84/ad15cba42d767cbab08fa8db72d569596c0e3b3e93e06a942b4ea88126bbd1.file"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-2cvf-wqm6-wr9g",
+      "kind": "accepted-risk-upstream-binary",
+      "reason": "Accepted by the owner on 2026-11-05 for the AlmaLinux 10 base 5ef1b06e. Not a false positive: the vulnerable Go module is compiled into the podman the base installs, AlmaLinux publishes no fixed build for it, and DeskOS neither builds nor patches it. The fix is the distribution's rebuild in a later base. The matches are the exact paths and version from the rebuilt image. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20261102064944-2da290ab6b9a+dirty",
+          "path": "/sysroot/ostree/repo/objects/49/41690828285b3f41c1120cb03d5e6ad87bddcdfea83b96271341f06884f7d3.file"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20261102064944-2da290ab6b9a+dirty",
+          "path": "/sysroot/ostree/repo/objects/84/ad15cba42d767cbab08fa8db72d569596c0e3b3e93e06a942b4ea88126bbd1.file"
+        },
+        {
+          "package": "github.com/containers/podman/v5",
+          "type": "go-module",
+          "version": "v5.0.0-20261102064944-2da290ab6b9a+dirty",
+          "path": "/sysroot/ostree/repo/objects/9d/e60942f54db53a6af85bb0b76437638ae1be3b24a693d80255f68cadc3ddee.file"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-115905",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-11-05 for the AlmaLinux 10 base 5ef1b06e. Red Hat rates the CVE Critical (CVSS 3.1 8.1, draft), records RHEL 10 firefox as Affected and publishes no fixed build: the flaw is in the zip streaming extractor, the package is the vendor's, and DeskOS neither builds nor patches it. Blocking the fleet would not reduce the risk; the fix is the distribution's rebuild in a later base. The tracked issue is #420, and the base bump that carries it closes the entry. This record makes the acceptance explicit and expires on the review date below.",
+      "matches": [
+        {
+          "package": "firefox",
+          "type": "rpm",
+          "version": "153.6.0-1.el10_2",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
         }
       ]
     }
