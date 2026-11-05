@@ -31,11 +31,13 @@ spare disk.
 | Platform | Image | Tags |
 |---|---|---|
 | CentOS Stream 10 | `quay.io/deskos/deskos-core-centos-stream-10` | `:stable`, `:latest`, `:<commit>` |
-| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:latest`, `:candidate`, `:<commit>` |
-| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:latest`, `:candidate`, `:<commit>` |
+| AlmaLinux 10 | `quay.io/deskos/deskos-core-almalinux-10` | `:stable`, `:latest`, `:<commit>` |
+| Fedora 45 | `quay.io/deskos/deskos-core-fedora-45` | `:stable`, `:latest`, `:<commit>` |
 
-`:latest` is the newest image that passed the weekly build. `:stable` is the
-digest a promotion accepted. Outside a lab, pin the digest:
+All three publish `:stable`, `:latest` and `:candidate`. `:latest` is the newest
+image that passed the weekly build; `:candidate` is the digest that build
+published and signed; `:stable` is the digest a promotion accepted after
+verifying the evidence. Outside a lab, use `:stable` or pin the digest:
 [validation status](architecture.md#validation-status) names the current one.
 
 The commands use CentOS Stream 10. For AlmaLinux 10 or Fedora 45, replace the
