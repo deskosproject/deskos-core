@@ -1379,10 +1379,14 @@ echo {MARK_BEGIN}
 test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
 if [ ! -s {RESULTS} ]; then
   # No session reported: GDM may be sitting at the greeter because the login
-  # could not happen. Say what the join did, so the boot is not silent.
+  # could not happen. Say what the join did and what the display manager and
+  # logind saw, so the boot is not silent (issue #437).
   echo "--- join status (no session reported)"
   cat {JOIN_STATUS_PATH} 2>/dev/null || echo "join_status=missing"
   tail -40 /var/lib/deskos-qa/join.log 2>/dev/null
+  echo "login_sessions=$(loginctl list-sessions --no-legend 2>/dev/null | wc -l)"
+  echo "gdm_state=$(systemctl show gdm -p ActiveState -p SubState --value 2>/dev/null | paste -sd/ -)"
+  echo "autologin=$(grep -h '^AutomaticLogin' /etc/gdm/custom.conf /etc/gdm3/custom.conf 2>/dev/null | paste -sd, -)"
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
@@ -2071,8 +2075,23 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
             c["unread"] = list(unread)
         checks.append(c)
 
-    check("session results reported", values.get("session_results") != "missing" and "session_type" in values,
-          f"session_type={values.get('session_type')}")
+    reported = values.get("session_results")
+    if reported == "missing":
+        check("session results reported", False,
+              "session_results=missing: the report ran, but the autologin session never wrote its results; "
+              f"join={values.get('join_ok') or 'unreported'} "
+              f"login_sessions={values.get('login_sessions') or 'unread'} "
+              f"gdm={values.get('gdm_state') or 'unread'} "
+              f"autologin={values.get('autologin') or 'unread'}; "
+              "the join status, the last frames and the journal are in this report")
+    elif not values:
+        check("session results reported", False,
+              "the report never reached the serial port; serial.log carries the unit's own output")
+    elif "session_type" not in values:
+        check("session results reported", False,
+              f"the report ran without session fields (session_results={reported or 'missing'})")
+    else:
+        check("session results reported", True, f"session_type={values.get('session_type')}")
     # Accessibility: the session must expose its applications through AT-SPI, the
     # interface a screen reader uses. This is the ground the interactions are built
     # on; it proves the stack is live and that the driver can see the desktop. An
