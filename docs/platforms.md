@@ -43,7 +43,7 @@ Their pins live in `resources/platforms/`, and Fedora's mirror is described in
 The image is published at `quay.io/deskos/deskos-core-centos-stream-10` as
 `:stable`, `:latest`, `:candidate` and `:<commit>`; the weekly build writes
 `:latest`/`:candidate` and the promotion writes `:stable`. Its digest and run are
-in [architecture.md](architecture.md#validation-status). A preview ISO from a
+in [architecture.md](architecture.md#validation-status). An installer ISO from a
 published image is at <https://download.deskos.org/> (check its checksum); for a
 QCOW2 or Anaconda ISO use `bootc-image-builder`:
 [install.md](install.md#option-1-install-the-published-image).
