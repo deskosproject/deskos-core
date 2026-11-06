@@ -231,6 +231,22 @@ refused under invariant 5.
 
 Next: one issue per field, one PR per group, each with its check.
 
+The RHEL 10 guide, [Administering RHEL by using the GNOME desktop
+environment](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10),
+was audited the same way on 2026-11-06. It corrected one field and added three
+groups: GNOME 40+ has no separate lock-screen image, so `appearance.lockShield`
+wrote a key nothing read and left the model; the background gained its rendering
+options and gradient colours; and the power key and lid switch moved to a
+`logind` drop-in, where they apply with no session running (#445).
+
+What the guide asks for and the image still cannot carry is tracked, not
+modelled: typed settings for the classification banner and heads-up display
+(#446, because the alternative is a raw dconf map, which is the escape hatch
+the vocabulary refuses), and the NFS profile line, polkit repartitioning, extra
+backgrounds, autologin and the default session, switchable GDM authentication
+and kiosk mode (#448). [gnome-coverage.md](gnome-coverage.md), not this
+paragraph, holds the verdict and the reason for each.
+
 ### GNOME settings for a fleet (Ansible collection, proposed 2026-11-01)
 
 Core compiles GNOME settings into the image: `GnomeProfile` writes the distro
