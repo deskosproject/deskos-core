@@ -1886,18 +1886,6 @@
         ]
       },
       {
-        "path": "/usr/lib/tmpfiles.d/zz-deskos-relabel.conf",
-        "mode": "0644",
-        "content": "# Directories an OSTree base can create without a SELinux context.\n# `d` creates the directory; `z` restores its policy context every boot, so a\n# confined service can write inside it (issue #409, ADR 0029).\nd /var/home 0755 root root -\nz /var/home - - - -\n",
-        "provenance": [
-          {
-            "resource": "Platform/centos-stream-10",
-            "layer": "foundation",
-            "source": "resources/platforms/centos-stream-10.yaml:1"
-          }
-        ]
-      },
-      {
         "path": "/usr/share/deskos/image-info.json",
         "mode": "0644",
         "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"layered-ws\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723\",\n  \"base-image-digest\": \"sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"example-org\",\n      \"layer\": \"organization\"\n    },\n    {\n      \"name\": \"example-role\",\n      \"layer\": \"role\"\n    }\n  ]\n}\n",
