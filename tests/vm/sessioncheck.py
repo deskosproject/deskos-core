@@ -1335,8 +1335,9 @@ for i in $(seq 1 120); do
 done
 # gnome-shell exists before the greeter draws its username field. Measured on
 # run 42121387385: the marker was 8 s after the process, the field appeared
-# 9.2 s later, and the keys sent at the marker were lost. Wait for the field.
-sleep 20
+# 9.2 s later, and the keys sent at the marker were lost. A 20 s wait still
+# sent them 3 s before the field was drawn (run 42137227039, frame 54.8 s).
+sleep 30
 stty -F /dev/ttyS0 115200 2>/dev/null
 echo {GDM_READY_MARKER} > /dev/ttyS0 2>&1
 """
