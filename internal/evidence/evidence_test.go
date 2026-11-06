@@ -219,11 +219,10 @@ func TestGuardRefusesAMachineThatIsNotABootcDeployment(t *testing.T) {
 	if len(conditions) == 0 || !conditions[0].Blocks {
 		t.Fatalf("conditions = %+v, want a blocking one", conditions)
 	}
-	var out bytes.Buffer
-	err := evidence.Update(&out, conditions, func(string, ...string) error {
+	_, err := evidence.Update(conditions, func(string, ...string) ([]byte, error) {
 		t.Error("an update must not run when the guard refuses")
-		return nil
-	}, false, false)
+		return nil, nil
+	}, false)
 	if err == nil || !strings.Contains(err.Error(), "was not installed that way") {
 		t.Fatalf("err = %v", err)
 	}
@@ -255,37 +254,47 @@ func reportLines(conditions []evidence.Condition) []string {
 	return out
 }
 
-func TestUpdateStagesByDefaultAndAppliesOnRequest(t *testing.T) {
+func TestUpdateRunsTheCommandAndReturnsItsOutput(t *testing.T) {
 	var ran []string
-	run := func(name string, args ...string) error {
+	run := func(name string, args ...string) ([]byte, error) {
 		ran = append(ran, name+" "+strings.Join(args, " "))
-		return nil
+		return []byte("No changes in quay.io/deskos/x:stable\n"), nil
 	}
-	var out bytes.Buffer
-	if err := evidence.Update(&out, nil, run, false, false); err != nil {
+	out, err := evidence.Update(nil, run, false)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := evidence.Update(&out, nil, run, true, false); err != nil {
+	if _, err := evidence.Update(nil, run, true); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{"bootc upgrade", "bootc upgrade --apply"}
 	if len(ran) != 2 || ran[0] != want[0] || ran[1] != want[1] {
 		t.Errorf("ran = %v, want %v", ran, want)
 	}
-	if !strings.Contains(out.String(), "staged. The machine applies it on the next reboot") {
-		t.Errorf("staging is not explained: %q", out.String())
+	// The tool's prose goes back to the caller, which decides who reads it: a
+	// summary for a person, this with --verbose or on failure.
+	if !strings.Contains(string(out), "No changes in") {
+		t.Errorf("output = %q", out)
 	}
 }
 
-func TestUpdateDryRunChangesNothing(t *testing.T) {
-	var out bytes.Buffer
-	if err := evidence.Update(&out, nil, func(string, ...string) error {
-		t.Error("a dry run must not run anything")
-		return nil
-	}, true, true); err != nil {
-		t.Fatal(err)
+func TestUpdateRefusesBeforeRunningAnything(t *testing.T) {
+	blocked := evidence.Blocking([]evidence.Condition{
+		{Name: "this machine is a bootc deployment", Blocks: true},
+		{Name: "this image updates itself"},
+	})
+	if len(blocked) != 1 || blocked[0].Name != "this machine is a bootc deployment" {
+		t.Fatalf("blocking = %+v", blocked)
 	}
-	if !strings.Contains(out.String(), "would run: bootc upgrade --apply") {
-		t.Errorf("dry run said %q", out.String())
+	ran := false
+	_, err := evidence.Update(blocked, func(string, ...string) ([]byte, error) {
+		ran = true
+		return nil, nil
+	}, false)
+	if err == nil || !strings.Contains(err.Error(), "not updating") {
+		t.Fatalf("err = %v", err)
+	}
+	if ran {
+		t.Error("a blocked update ran the command")
 	}
 }
