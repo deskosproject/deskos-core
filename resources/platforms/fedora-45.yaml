@@ -48,12 +48,6 @@ spec:
   # directories, and so does every other DeskOS platform; the build takes them back
   # before the first package transaction. Measured 2026-11-01 on this pin.
   imageOwnedDirs: [/opt, /usr/local]
-  # The base symlinks /home to var/home and does not ship var/home; whichever
-  # component creates it first can leave it default_t, and a confined
-  # oddjob_mkhomedir_t cannot create a user's home inside it (issue #409). The
-  # image ships the tmpfiles.d rule that creates and relabels it at boot
-  # (docs/adr/0029).
-  relabelDirs: [/var/home]
   # The set the group below resolves to on this base digest: 1509 packages in
   # Silverblue, 1857 after workstation-product-environment. Measured 2026-11-03
   # with `dnf group install` on the mirrored digest, and verified by the build's

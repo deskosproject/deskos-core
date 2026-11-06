@@ -10,7 +10,10 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/deskosproject/deskos-core/cmd/deskosctl/track"
@@ -211,36 +214,36 @@ func newFlags(name string) *flag.FlagSet {
 
 // load composes the resource roots, prepending the embedded DeskOS Core
 // unless noCore is set. The returned cleanup removes the materialized Core.
-func load(roots []string, noCore bool) (*compiler.Compiler, *compose.Catalog, func(), error) {
+func load(roots []string, noCore bool) (*compiler.Compiler, *compose.Catalog, []string, func(), error) {
 	all := roots
 	cleanup := func() {}
 	if !noCore {
 		tmp, err := os.MkdirTemp("", "deskos-core-")
 		if err != nil {
-			return nil, nil, cleanup, err
+			return nil, nil, nil, cleanup, err
 		}
 		cleanup = func() { os.RemoveAll(tmp) }
 		core, err := corefs.Materialize(tmp)
 		if err != nil {
 			cleanup()
-			return nil, nil, func() {}, err
+			return nil, nil, nil, func() {}, err
 		}
 		all = append([]string{core}, roots...)
 	}
 	if len(all) == 0 {
-		return nil, nil, cleanup, usageError{"at least one resource root is required"}
+		return nil, nil, nil, cleanup, usageError{"at least one resource root is required"}
 	}
 	c, err := compiler.New()
 	if err != nil {
 		cleanup()
-		return nil, nil, func() {}, err
+		return nil, nil, nil, func() {}, err
 	}
 	cat, err := c.Load(all)
 	if err != nil {
 		cleanup()
-		return nil, nil, func() {}, err
+		return nil, nil, nil, func() {}, err
 	}
-	return c, cat, cleanup, nil
+	return c, cat, all, cleanup, nil
 }
 
 // cmdCore writes the embedded Core so it can be inspected or pinned.
@@ -266,7 +269,7 @@ func cmdValidate(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	c, cat, cleanup, err := load(roots, *noCore)
+	c, cat, _, cleanup, err := load(roots, *noCore)
 	defer cleanup()
 	var errs model.ErrorList
 	errs.Add(err)
@@ -314,7 +317,7 @@ func cmdPlan(args []string, stdout io.Writer) error {
 	if *format != "text" && *format != "json" {
 		return usageError{fmt.Sprintf("unknown format %q", *format)}
 	}
-	c, cat, cleanup, err := load(roots, *noCore)
+	c, cat, _, cleanup, err := load(roots, *noCore)
 	defer cleanup()
 	if err != nil {
 		return err
@@ -350,7 +353,7 @@ func cmdRender(args []string, stdout io.Writer) error {
 	if *backend != containerfile.Name {
 		return usageError{fmt.Sprintf("unknown backend %q (available: %s)", *backend, containerfile.Name)}
 	}
-	c, cat, cleanup, err := load(roots, *noCore)
+	c, cat, allRoots, cleanup, err := load(roots, *noCore)
 	defer cleanup()
 	if err != nil {
 		return err
@@ -360,6 +363,10 @@ func cmdRender(args []string, stdout io.Writer) error {
 		return err
 	}
 	files, err := containerfile.Render(p)
+	if err != nil {
+		return err
+	}
+	files, err = appendSystemFiles(files, allRoots)
 	if err != nil {
 		return err
 	}
@@ -384,7 +391,7 @@ func cmdSBOM(args []string, stdout io.Writer) error {
 	if *ws == "" {
 		return usageError{"--workstation is required"}
 	}
-	c, cat, cleanup, err := load(roots, *noCore)
+	c, cat, _, cleanup, err := load(roots, *noCore)
 	defer cleanup()
 	if err != nil {
 		return err
@@ -406,4 +413,81 @@ func cmdSBOM(args []string, stdout io.Writer) error {
 	}
 	fmt.Fprintf(stdout, "wrote the declared SBOM of %s to %s\n", p.Workstation.Name, *output)
 	return nil
+}
+
+// appendSystemFiles adds the reviewed static base files to the build context.
+// The tree is resources/system_files/ in each root; only systemd drop-ins for
+// existing units and tmpfiles.d entries are accepted, so the tree cannot carry
+// a new service, a script or an executable. The Containerfile copies rootfs/,
+// so the destination is rootfs/<path>.
+func appendSystemFiles(files []containerfile.File, roots []string) ([]containerfile.File, error) {
+	seen := map[string]bool{}
+	for _, f := range files {
+		seen[f.Path] = true
+	}
+	for _, root := range roots {
+		dir := filepath.Join(root, "system_files")
+		info, err := os.Stat(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		if !info.IsDir() {
+			return nil, fmt.Errorf("%s is not a directory", dir)
+		}
+		err = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(dir, p)
+			if err != nil {
+				return err
+			}
+			rel = filepath.ToSlash(rel)
+			if !allowedSystemFile(rel) {
+				return fmt.Errorf("system_files/%s: only systemd drop-ins and tmpfiles.d entries are allowed", rel)
+			}
+			if !d.Type().IsRegular() {
+				return fmt.Errorf("system_files/%s is not a regular file", rel)
+			}
+			data, err := os.ReadFile(p)
+			if err != nil {
+				return err
+			}
+			dest := path.Join("rootfs", rel)
+			if seen[dest] {
+				return fmt.Errorf("system_files/%s is defined more than once", rel)
+			}
+			seen[dest] = true
+			files = append(files, containerfile.File{Path: dest, Mode: 0o644, Data: data})
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return files, nil
+}
+
+// allowedSystemFile is the closed set the system_files tree may carry. A unit
+// drop-in adjusts an existing unit; tmpfiles.d creates or relabels a path. A
+// new .service, a .sh or a binary is a different mechanism and needs a
+// reviewed Plan field, not this tree.
+func allowedSystemFile(rel string) bool {
+	if strings.Contains(rel, "..") {
+		return false
+	}
+	if rest, ok := strings.CutPrefix(rel, "usr/lib/tmpfiles.d/"); ok {
+		return strings.HasSuffix(rest, ".conf") && !strings.Contains(rest, "/")
+	}
+	if rest, ok := strings.CutPrefix(rel, "usr/lib/systemd/system/"); ok {
+		parts := strings.Split(rest, "/")
+		return len(parts) == 2 && strings.HasSuffix(parts[0], ".d") && strings.HasSuffix(parts[1], ".conf")
+	}
+	return false
 }

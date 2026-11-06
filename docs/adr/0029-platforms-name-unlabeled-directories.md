@@ -1,6 +1,6 @@
 # ADR 0029: a platform names the directories its base can leave unlabeled
 
-**Status:** accepted (2026-11-05)
+**Status:** superseded by [ADR 0030](0030-base-fixes-are-a-reviewed-tree.md) (2026-11-06)
 
 ## Context
 

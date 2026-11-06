@@ -18,12 +18,6 @@ spec:
     # must not be publicly redistributed.
     redistributable: false
     requiresSubscription: true
-  # The base symlinks /home to var/home and does not ship var/home; whichever
-  # component creates it first can leave it default_t, and a confined
-  # oddjob_mkhomedir_t cannot create a user's home inside it (issue #409). The
-  # image ships the tmpfiles.d rule that creates and relabels it at boot
-  # (docs/adr/0029).
-  relabelDirs: [/var/home]
   packageGroups:
     - name: workstation
       rpmGroups: [workstation-product-environment]

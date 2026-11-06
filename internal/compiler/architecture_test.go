@@ -19,7 +19,6 @@ import (
 	"github.com/deskosproject/deskos-core/internal/loader"
 	"github.com/deskosproject/deskos-core/internal/plan"
 	softwares "github.com/deskosproject/deskos-core/internal/providers/software"
-	"github.com/deskosproject/deskos-core/internal/providers/system"
 	"github.com/deskosproject/deskos-core/internal/schema"
 )
 
@@ -222,31 +221,6 @@ func TestFedoraExposesRepositoriesWhereTheInstallerReadsThem(t *testing.T) {
 	centos := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
 	if len(centos.Artifact.RepoConfigDirs) != 0 {
 		t.Errorf("CentOS Stream 10 declares repoConfigDirs = %v", centos.Artifact.RepoConfigDirs)
-	}
-}
-
-func TestPlatformRelabelDirsRestoreHomeContext(t *testing.T) {
-	p := mustPlan(t, "deskos-core-centos-stream-10", resourcesRoot)
-	var file *plan.GeneratedFile
-	for i := range p.Artifact.GeneratedFiles {
-		if p.Artifact.GeneratedFiles[i].Path == system.RelabelTmpfilesPath {
-			file = &p.Artifact.GeneratedFiles[i]
-			break
-		}
-	}
-	if file == nil {
-		t.Fatalf("the plan does not carry %s", system.RelabelTmpfilesPath)
-	}
-	for _, want := range []string{"d /var/home 0755 root root -\n", "z /var/home - - - -\n"} {
-		if !strings.Contains(file.Content, want) {
-			t.Errorf("%s lacks %q:\n%s", system.RelabelTmpfilesPath, want, file.Content)
-		}
-	}
-	if len(file.Provenance) != 1 || file.Provenance[0].Resource != "Platform/centos-stream-10" {
-		t.Errorf("provenance = %+v, want Platform/centos-stream-10", file.Provenance)
-	}
-	if file.Mode != "0644" {
-		t.Errorf("mode = %q, want 0644", file.Mode)
 	}
 }
 
