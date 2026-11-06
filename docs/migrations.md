@@ -5,6 +5,24 @@ DeskOS. A release note says what changed; read the section for the version you c
 from, then the ones after it. Verify every download before you use it:
 [check what you download](https://deskos.org/verify/).
 
+## v0.22 → the lock screen follows the wallpaper
+
+`appearance.lockShield` is **removed**. GNOME 40 and later draw the lock screen
+from a blurred copy of the background, so the field lowered to an
+`org.gnome.desktop.screensaver picture-uri` that nothing read.
+
+- Delete the field from every `GnomeProfile`. A root that keeps it fails
+  validation with an unknown field rather than ignoring it.
+- The lock screen shows `appearance.wallpaper`. The wallpaper's new `options`,
+  `primaryColor`, `secondaryColor` and `colorShadingType` describe the
+  background, not the lock screen.
+- An installed machine keeps the old key in its dconf database until the image
+  updates. Nothing reads it, and the next update removes it.
+
+`power.keyAction` and `power.lidSwitch` are new in the same release and lower to
+`/etc/systemd/logind.conf.d/50-deskos-power.conf`, not to dconf; a machine that
+sets them needs the new image, and `spec.locks` does not reach them.
+
 ## v0.18 → `/opt` and `/usr/local` on Fedora
 
 - Fedora 45's base symlinks `/opt` to `var/opt` and `/usr/local` to
