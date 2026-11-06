@@ -1333,7 +1333,11 @@ for i in $(seq 1 120); do
   pgrep -u gdm -f gnome-shell >/dev/null 2>&1 && break
   sleep 1
 done
-sleep 8
+# gnome-shell exists before the greeter draws its username field. Measured on
+# run 42121387385: the marker was 8 s after the process, the field appeared
+# 9.2 s later, and the keys sent at the marker were lost. A 20 s wait still
+# sent them 3 s before the field was drawn (run 42137227039, frame 54.8 s).
+sleep 30
 stty -F /dev/ttyS0 115200 2>/dev/null
 echo {GDM_READY_MARKER} > /dev/ttyS0 2>&1
 """
@@ -1596,7 +1600,10 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             "[Unit]\nDescription=Set the DeskOS QA password for the lock probe\n"
             "After=systemd-sysusers.service\nBefore=gdm.service\n\n"
             "[Service]\nType=oneshot\n"
-            f"ExecStart=/bin/sh -c 'echo {USER}:{LOCK_PASSWORD} | /usr/sbin/chpasswd'\n"
+            # chpasswd goes through PAM and this Fedora base has no usable
+            # system-auth config in the fixture (run 42137227156): set the
+            # hash directly with usermod, which does not consult PAM.
+            f"ExecStart=/bin/sh -c 'usermod -p \"$(openssl passwd -6 {LOCK_PASSWORD})\" {USER}'\n"
         )
     if mode == "session" and gdm_login:
         creds["systemd.extra-unit.deskos-qa-gdm-config.service"] = (
