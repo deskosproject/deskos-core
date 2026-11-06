@@ -2,8 +2,10 @@
 
 What of the [GNOME System Administration
 Guide](https://help.gnome.org/system-admin-guide/) a DeskOS image can carry, page
-by page. Audited 2026-10-30 against `GnomeProfile` and the providers, not against
-the guide's own assumption that any dconf key is a setting.
+by page. Audited 2026-11-06 against `GnomeProfile` and the providers, and
+cross-checked with the RHEL 10 [Administering RHEL by using the GNOME desktop
+environment](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10) guide,
+not against the guide's own assumption that any dconf key is a setting.
 
 This page is also the evidence for [ADR 0024](adr/0024-what-a-desktop-platform-must-expose.md):
 a desktop is adopted because it exposes file-based configuration with precedence
@@ -44,7 +46,9 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Extra fonts (all users) | files under `/usr/share/fonts` | **artifact**: a package or a placed file; `deskos-gnome` ships Noto (Latin, symbols, math, color emoji), Red Hat Text and Display, Overpass, Gelasio, Liberation, DejaVu, Carlito, Caladea and the URW base 35, and `deskos-adwaita` adds Adwaita Sans and Mono (ADR 0026) |
 | Extra fonts (one user) | `$HOME/.local/share/fonts` | **outside** (`$HOME`) |
 | Extra backgrounds | files plus the wallpaper key | **artifact** plus the modelled wallpaper key |
-| Lock screen shield | `screensaver picture-uri` | **modelled** since 2026-10-29 (`appearance.lockShield`; the wallpaper is the default) |
+| Lock screen shield | `screensaver picture-uri` | **not supported**: since GNOME 40 the lock screen blurs the current background; `appearance.lockShield` was removed on 2026-11-06 |
+| Background rendering options and colours | `background picture-options`, `primary-color`, `secondary-color`, `color-shading-type` | **modelled** since 2026-11-06 (`appearance.wallpaper.options`, `.primaryColor`, `.secondaryColor`, `.colorShadingType`) |
+| Extra backgrounds gallery | `/usr/share/gnome-background-properties/*.xml` | **artifact**: a package or a placed file; no gallery field |
 | Lock the screen when idle | `screensaver lock-enabled`, `lock-delay` | **modelled** |
 | Custom background | `background picture-uri`, `-dark` | **modelled** (`appearance.wallpaper.light`, `.dark`) |
 | Default favorite applications | `shell favorite-apps` | **modelled**, order-sensitive and checked |
@@ -55,10 +59,14 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 | Default session per user | AccountsService `XSession` | **outside**: a provisioning choice for one account |
 | Automatic login | `/etc/gdm/custom.conf` | **outside**: provisioning; the VM harness uses it for tests |
 | Automatic logout, suspend or shutdown when idle | `plugins.power sleep-inactive-ac/battery-timeout`, `-type` | **modelled** since 2026-10-30 (`session.idle.action`, `.after`, `.batteryAction`, `.batteryAfter`); a policy that can lose unsaved work, so the pair is explicit |
+| Power button when GNOME is not running | `logind HandlePowerKey` | **modelled** since 2026-11-06 (`power.keyAction`; `/etc/systemd/logind.conf.d/50-deskos-power.conf`) |
+| Lid close behaviour | `logind HandleLidSwitch` | **modelled** since 2026-11-06 (`power.lidSwitch`) |
 | Custom session | a session file with an `Exec` | **refused**: arbitrary shell |
 | Multiple keyboard layouts | `input-sources sources` | **modelled** since 2026-10-30 (`keyboard.layouts`, in switch order; the key lands in the distro database, which GDM's profile also reads) |
 | Console keymap | `localectl`, `/etc/vconsole.conf` | **outside**: the graphical session is Wayland and reads `input-sources`, and the TTY keymap is set by the installer, which is provisioning (architecture.md, "What each layer owns") |
 | Enterprise credentials | FreeIPA or AD join | **Milestone 5**: identity, never image content |
+| Classification banner and heads-up display | an extension plus `org.gnome.shell.extensions.*` settings | **gap: decision**: the extension can be enabled, its message and colours cannot; a typed extension-settings surface or a reviewed dconf overlay |
+| GDM switchable authentication | `authselect with-switchable-auth`, SSSD `pam_json_services`, `login-screen enable-switchable-authentication` | **outside**: identity and provisioning; the image carries no realm |
 | **Network and hardware** | | |
 | System proxy | `org.gnome.system.proxy` mode, PAC, ignore hosts, per-protocol servers | **modelled** since 2026-10-30 (`network.proxy`); a password is refused as a secret |
 | Default server list | `$HOME/.config/gtk-3.0/servers` (XBEL) | **outside** (`$HOME`) |
@@ -79,26 +87,25 @@ by design (ADR 0005, invariant 5), so "GNOME lets you set it" never implies
 Three different bills, and conflating them is how a backlog grows without
 shipping:
 
-- **Three fields are cheap**: idle logout, XKB layouts and the NFS profile line.
-  Each is a scalar (or two) in
-  `GnomeProfile`, a lowering rule, a schema entry and a check; no new kind, and
-  the count stays at fifteen.
-- **Two are kinds**: a NetworkManager connection (VPN, 802.1X, proxy) and a
-  polkit action file. The first is needed by real organizations and needs an ADR
-  for secrets at runtime; the second is a security surface and may be refused.
+- **The cheap fields have shipped**: the background rendering keys, the logind
+  power key and lid switch, idle logout, the XKB layouts and the greeter's two.
+  The NFS profile line remains: it edits `/etc/dconf/profile/user`, which the
+  platform owns, so it is not a scalar in `GnomeProfile`.
+- **Two are decisions**: extension settings (classification banner, heads-up
+  display) need a typed surface or a reviewed dconf overlay; polkit
+  repartitioning is a security surface and may be refused. The NFS line needs a
+  platform profile file. None is a new kind yet.
 - **Three are refused on purpose**: single-application mode, custom sessions and
   autostart. All three are an `Exec` in a directory; invariant 5 is the reason,
   and it does not bend for convenience.
 
 ## Decisions this produces
 
-1. Add the remaining five fields, one PR per group, each with its check; the
-   greeter's two shipped on 2026-10-29, and dim and brightness with them.
-2. Open the NetworkManager connection ADR if an organization asks; refuse polkit
-   unless one shows a real need.
-3. Keep the refusals written down here rather than rediscovered in review.
-4. Correct the roadmap: it claimed dconf defaults and locks covered more than
-   expected. At the audit they covered **fourteen** guide items exactly and four
-   partially, which is a different claim. The greeter's two, the power pair,
-   Looking Glass and the shield have since added five, so the table above reads
-   nineteen and one.
+1. Open the extension-settings decision: a typed surface for the documented
+   extensions, or a reviewed organization dconf overlay; not a raw map on
+   `GnomeProfile`.
+2. Add the NFS profile line as a platform fact, or refuse it with a reason; a
+   platform that owns its profile cannot get it from a scalar alone.
+3. Open the polkit decision; refuse unless an organization shows a real need.
+4. Keep the refusals written down here rather than rediscovered in review.
+5. The lock screen shield left the model: GNOME 40+ has no separate image.
