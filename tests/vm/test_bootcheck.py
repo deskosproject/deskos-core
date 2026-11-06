@@ -101,7 +101,7 @@ class KeysymTest(unittest.TestCase):
 class VncTypeTest(unittest.TestCase):
     """The hypervisor keyboard the lock screen accepts, against a fake RFB server."""
 
-    def fake_server(self, path, events):
+    def fake_server(self, path, events, stop_after_returns=1, on_return=None):
         import socket
         import struct
 
@@ -139,8 +139,12 @@ class VncTypeTest(unittest.TestCase):
                                        struct.unpack(">H", body[3:5])[0]))
                     else:
                         raise AssertionError(f"unexpected client message {kind}")
-                    if kind == 4 and len(events) >= 2 and events[-1] == (4, 0, 0xFF0D) and events[-2][2] == 0xFF0D:
-                        break
+                    if kind == 4 and body[0] == 0 and struct.unpack(">I", body[3:7])[0] == 0xFF0D:
+                        returns = sum(1 for e in events if e[0] == 4 and e[1] == 0 and e[2] == 0xFF0D)
+                        if on_return is not None:
+                            on_return(returns)
+                        if returns >= stop_after_returns:
+                            break
             finally:
                 conn.close()
                 srv.close()
@@ -163,6 +167,36 @@ class VncTypeTest(unittest.TestCase):
         self.assertEqual(events[1], (4, 0, 0xFFE1))
         typed = [sym for kind, down, sym in events[2:] if down]
         self.assertEqual(typed, [ord(ch) for ch in "redHat"] + [0xFF0D])
+
+
+    def test_a_lost_part_is_typed_again_once(self):
+        # Run 42215986390: the AD user was typed at 136.7 s, the greeter drew at
+        # 139.7 s, and the field stayed empty. A part that leaves the screen
+        # unchanged is cleared and typed again, and the caller learns how many
+        # attempts it took.
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "vnc.sock")
+            events = []
+            state = {"changed": False}
+
+            def on_return(n):
+                if n >= 2:
+                    state["changed"] = True
+
+            thread = self.fake_server(path, events, stop_after_returns=2, on_return=on_return)
+
+            def snapshot():
+                return "b" if state["changed"] else "a"
+
+            out = bootcheck.vnc_type(path, "qa", settle=0.3, snapshot=snapshot)
+            thread.join(5)
+
+        self.assertEqual(out["attempts"], 2)
+        self.assertTrue(out["landed"])
+        typed = [sym for kind, down, sym in events if kind == 4 and down]
+        # curtain, first attempt, then Ctrl+A and the same text again
+        self.assertEqual(typed, [0xFFE1, ord("q"), ord("a"), 0xFF0D,
+                                 0xFFE3, ord("a"), ord("q"), ord("a"), 0xFF0D])
 
     def test_a_lock_screen_is_woken_by_a_pointer_press_first(self):
         # The display can be in DPMS off when the guest reports the lock; Shift
