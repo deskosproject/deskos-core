@@ -27,6 +27,8 @@ on:
       - tests/identity/*.py
       - tests/identity/resources/**
       - tests/identity/samba/**
+      - tests/vm/bootcheck.py
+      - tests/vm/test_bootcheck.py
       - tests/vm/sessioncheck.py
       - tests/vm/test_sessioncheck.py
 
