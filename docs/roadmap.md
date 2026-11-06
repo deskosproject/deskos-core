@@ -231,6 +231,22 @@ refused under invariant 5.
 
 Next: one issue per field, one PR per group, each with its check.
 
+The RHEL 10 guide, [Administering RHEL by using the GNOME desktop
+environment](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10),
+was audited the same way on 2026-11-06. It corrected one field and added three
+groups: GNOME 40+ has no separate lock-screen image, so `appearance.lockShield`
+wrote a key nothing read and left the model; the background gained its rendering
+options and gradient colours; and the power key and lid switch moved to a
+`logind` drop-in, where they apply with no session running (#445).
+
+What the guide asks for and the image still cannot carry is tracked, not
+modelled: typed settings for the classification banner and heads-up display
+(#446, because the alternative is a raw dconf map, which is the escape hatch
+the vocabulary refuses), and the NFS profile line, polkit repartitioning, extra
+backgrounds, autologin and the default session, switchable GDM authentication
+and kiosk mode (#448). [gnome-coverage.md](gnome-coverage.md), not this
+paragraph, holds the verdict and the reason for each.
+
 ### GNOME settings for a fleet (Ansible collection, proposed 2026-11-01)
 
 Core compiles GNOME settings into the image: `GnomeProfile` writes the distro
@@ -368,8 +384,10 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Enterprise use cases.** EDR, antivirus, VPN and proxy settings are organization
   software, never Core (invariant 7). A check may claim that software installs and
   that the machine, session and updates keep working; never vendor support, a
-  licence or the deployment method. `docs/use-cases/` will split "what DeskOS
-  does", "what it does not" and "how it is validated", each claim pointing at a run.
+  licence or the deployment method.
+  [corporate-identity.md](use-cases/corporate-identity.md) is the first page of
+  `docs/use-cases/`: what DeskOS does, what it does not and how it is validated,
+  each claim pointing at a run.
 - **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).
