@@ -277,6 +277,34 @@ Decision: whether it is a separate repository and who owns it. The GNOME
 administration audit ([gnome-coverage.md](gnome-coverage.md)) is the inventory
 of what the vocabulary already covers.
 
+### Authoring and review tooling (proposed 2026-11-06)
+
+Three gaps sit between what the compiler guarantees and what a person can see
+or start from. None changes the model, a kind or the Plan.
+
+- **A semantic Plan diff** (`deskosctl diff a.plan.json b.plan.json`). Today a
+  change is reviewed as a golden diff, line by line, and the reviewer has to
+  reconstruct which setting moved and why. The command would print added,
+  removed and changed settings with their provenance, exit non-zero on a
+  difference, and give CI something narrower than "the golden changed". Cost:
+  one command, its tests, one reference page.
+- **An authoring kit** (`deskosctl init`). A person who wants a workstation
+  starts by copying an example and deleting lines. The command would write a
+  valid minimal workstation and its profile, and the schemas already in
+  `schemas/` would be referenced so an editor validates while typing. Cost: one
+  command, a snippet per kind, a check that what it writes compiles.
+- **A pinned resource catalog.** Reusing another organization's resources today
+  means copying YAML, and the copy drifts. A catalog would name resources by
+  commit and checksum, resolved before compilation and held locally, so the
+  compiler still runs offline and on identical bytes: a pin, the way a platform
+  pins its base digest ([platforms.md](platforms.md)), not a branch. Cost: a
+  loader path, a lockfile, a check that a resolved catalog reproduces.
+
+Order: the diff first, because it makes every later change reviewable; the kit
+second; the catalog when a second organization asks to reuse resources rather
+than fork them. The first two need no ADR; the third does, because it adds an
+input to the compiler.
+
 ## Open work
 
 - **P1-00, installing image mode over the network** (deferred 2026-10-30). The
