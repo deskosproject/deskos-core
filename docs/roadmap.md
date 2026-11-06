@@ -340,8 +340,10 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Enterprise use cases.** EDR, antivirus, VPN and proxy settings are organization
   software, never Core (invariant 7). A check may claim that software installs and
   that the machine, session and updates keep working; never vendor support, a
-  licence or the deployment method. `docs/use-cases/` will split "what DeskOS
-  does", "what it does not" and "how it is validated", each claim pointing at a run.
+  licence or the deployment method.
+  [corporate-identity.md](use-cases/corporate-identity.md) is the first page of
+  `docs/use-cases/`: what DeskOS does, what it does not and how it is validated,
+  each claim pointing at a run.
 - **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).
