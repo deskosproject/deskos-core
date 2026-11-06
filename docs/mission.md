@@ -21,7 +21,6 @@ and update policy. Compilation is deterministic, with no model and no network.
 | evidence bound to a digest | a support contract or a hardware promise |
 
 The supported platforms are CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora
-
 45 ([Platforms](platforms.md)). Core never publishes RHEL images: an organization
 builds them with its own subscription.
 
