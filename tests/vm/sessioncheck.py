@@ -1600,7 +1600,10 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
             "[Unit]\nDescription=Set the DeskOS QA password for the lock probe\n"
             "After=systemd-sysusers.service\nBefore=gdm.service\n\n"
             "[Service]\nType=oneshot\n"
-            f"ExecStart=/bin/sh -c 'echo {USER}:{LOCK_PASSWORD} | /usr/sbin/chpasswd'\n"
+            # chpasswd goes through PAM and this Fedora base has no usable
+            # system-auth config in the fixture (run 42137227156): set the
+            # hash directly with usermod, which does not consult PAM.
+            f"ExecStart=/bin/sh -c 'usermod -p \"$(openssl passwd -6 {LOCK_PASSWORD})\" {USER}'\n"
         )
     if mode == "session" and gdm_login:
         creds["systemd.extra-unit.deskos-qa-gdm-config.service"] = (
