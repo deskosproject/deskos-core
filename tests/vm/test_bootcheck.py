@@ -129,9 +129,17 @@ class VncTypeTest(unittest.TestCase):
                 recv(conn, 1)  # ClientInit
                 conn.sendall(struct.pack(">HH", 640, 480) + b"\x00" * 16 + struct.pack(">I", 0))
                 while True:
-                    head = recv(conn, 8)
-                    events.append((head[0], head[1], struct.unpack(">I", head[4:8])[0]))
-                    if len(events) >= 2 and events[-1] == (4, 0, 0xFF0D) and events[-2][2] == 0xFF0D:
+                    kind = recv(conn, 1)[0]
+                    if kind == 4:
+                        body = recv(conn, 7)
+                        events.append((4, body[0], struct.unpack(">I", body[3:7])[0]))
+                    elif kind == 5:
+                        body = recv(conn, 5)
+                        events.append((5, body[0], struct.unpack(">H", body[1:3])[0],
+                                       struct.unpack(">H", body[3:5])[0]))
+                    else:
+                        raise AssertionError(f"unexpected client message {kind}")
+                    if kind == 4 and len(events) >= 2 and events[-1] == (4, 0, 0xFF0D) and events[-2][2] == 0xFF0D:
                         break
             finally:
                 conn.close()
@@ -154,6 +162,22 @@ class VncTypeTest(unittest.TestCase):
         self.assertEqual(events[0], (4, 1, 0xFFE1))
         self.assertEqual(events[1], (4, 0, 0xFFE1))
         typed = [sym for kind, down, sym in events[2:] if down]
+        self.assertEqual(typed, [ord(ch) for ch in "redHat"] + [0xFF0D])
+
+    def test_a_lock_screen_is_woken_by_a_pointer_press_first(self):
+        # The display can be in DPMS off when the guest reports the lock; Shift
+        # alone only wakes the panel (run 42154612511, frame 83.4 s). The click
+        # comes first, then the curtain and the password.
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "vnc.sock")
+            events = []
+            thread = self.fake_server(path, events)
+            bootcheck.vnc_type(path, "redHat", wake_click=True)
+            thread.join(5)
+        self.assertEqual(events[0], (5, 1, 640, 478))
+        self.assertEqual(events[1], (5, 0, 640, 478))
+        self.assertEqual(events[2], (4, 1, 0xFFE1))
+        typed = [sym for kind, down, sym in events[3:] if kind == 4 and down]
         self.assertEqual(typed, [ord(ch) for ch in "redHat"] + [0xFF0D])
 
 
