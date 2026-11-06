@@ -600,7 +600,7 @@ def run(args):
                 keys_sent.add(i)
 
             for pending in list(retry_login):
-                if "session_type=" in serial_text():
+                if b"session_type=" in serial_text():
                     retry_login.remove(pending)
                     continue
                 if time.monotonic() < pending["next"]:
