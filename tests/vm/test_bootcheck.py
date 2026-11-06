@@ -202,6 +202,20 @@ class VncTypeTest(unittest.TestCase):
         self.assertTrue(any(i < first_retry_key for i, e in enumerate(events) if e[0] == 5),
                         "the retry must click the field before clearing it")
 
+
+    def test_a_login_clicks_the_field_before_typing(self):
+        # `click` was documented and never used: the greeter draws the entry
+        # before it owns keyboard focus, and every key went nowhere.
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "vnc.sock")
+            events = []
+            thread = self.fake_server(path, events)
+            bootcheck.vnc_type(path, "qa", select_first=True, click=(640, 478))
+            thread.join(5)
+        self.assertEqual(events[0], (5, 1, 640, 478))
+        self.assertEqual(events[1], (5, 0, 640, 478))
+        self.assertEqual(events[2], (4, 1, 0xFFE1))
+
     def test_a_lock_screen_is_woken_by_a_pointer_press_first(self):
         # The display can be in DPMS off when the guest reports the lock; Shift
         # alone only wakes the panel (run 42154612511, frame 83.4 s). The click

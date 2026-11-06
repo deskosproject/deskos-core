@@ -303,6 +303,14 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
             return False
 
         parts = list(text) if isinstance(text, (list, tuple)) else [text]
+        if click:
+            # The greeter draws the username entry before it owns keyboard
+            # focus; a click gives it to the field. This was a documented
+            # parameter that nothing used, which is why a drawn field could
+            # swallow every key: runs 42292630365 and 42297834953.
+            pointer(click[0], click[1], True)
+            pointer(click[0], click[1], False)
+            time.sleep(0.5)
         if wake_click:
             # A pointer event wakes the panel and raises the curtain; Shift on a
             # dark screen only wakes it, and the typing is lost (run 42154612511,
