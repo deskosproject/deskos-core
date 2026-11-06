@@ -74,7 +74,7 @@ func Report(w io.Writer, p *plan.Plan, present *Booted) {
 		}
 		pf("Boot args:   %s\n", strings.Join(args, " "))
 	}
-	if kinds := updatingKinds(p); len(kinds) > 0 {
+	if kinds := UpdatingKinds(p); len(kinds) > 0 {
 		pf("Updates:     the plan schedules %s updates for the image itself (declared, not that a timer is on)\n",
 			strings.Join(kinds, ", "))
 	}

@@ -112,7 +112,10 @@ sudo reboot                                          # apply the staged image
 
 `deskos update` is the same staging step behind a guard: it refuses when this is
 not a bootc deployment or bootc cannot read it, and reports, without refusing, an
-image that updates itself and what the plan owns under `/etc`.
+image that updates itself and what the plan owns under `/etc`. It prints what the
+machine booted, what is already staged, and one line saying whether this run
+changed anything and what to do next; `--verbose` adds every condition and bootc's
+own output.
 
 ## Roll back
 

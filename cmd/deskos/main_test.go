@@ -144,6 +144,54 @@ func TestUpdateTakesNoRoot(t *testing.T) {
 	}
 }
 
+func TestUpdateSaysWhatChangedAndWhatToDoNext(t *testing.T) {
+	// The old output appended "staged. The machine applies it on the next reboot"
+	// after every successful bootc run, including the one where bootc said
+	// "No changes ... Staged update present, not changed" (2026-11-06). The summary
+	// is now derived from the deployment, not from the command's exit status.
+	dep := func(digest, version string) *bootcDeployment {
+		d := &bootcDeployment{}
+		d.Image.Image.Image = "zot.apps.virt.daytwo.dev/daytwo/deskos-daytwo-devops-fedora-45:stable"
+		d.Image.ImageDigest = digest
+		d.Image.Version = version
+		return d
+	}
+	booted := hostStatus{Booted: dep("sha256:b2aeca9e6689c15476ee3b2198ba9dda14a233cc1d5ab60a12503fc579b16de6", "v0.21.0")}
+
+	staged := booted
+	staged.Staged = dep("sha256:595e533930e422dfcdbed115018c717843e75b84015f6f3da39ff223da0efa43", "v0.23.0")
+
+	if got := stagedLine(nil); got != "nothing" {
+		t.Errorf("stagedLine(nil) = %q", got)
+	}
+	if got := stagedLine(staged.Staged); !strings.Contains(got, "sha256:595e533930e4") || !strings.Contains(got, "waiting for a reboot") {
+		t.Errorf("stagedLine = %q", got)
+	}
+
+	// Nothing new, and something already waiting: say so, and say what to do.
+	got := resultLine(staged, staged, false)
+	if !strings.Contains(got, "already staged") || !strings.Contains(got, "reboot") {
+		t.Errorf("already staged: %q", got)
+	}
+	if strings.Contains(got, "Staged ") {
+		t.Errorf("an unchanged deployment is reported as newly staged: %q", got)
+	}
+
+	// Nothing staged at all.
+	if got := resultLine(booted, booted, false); !strings.Contains(got, "already runs the newest image") {
+		t.Errorf("no change: %q", got)
+	}
+
+	// A staging this run made.
+	if got := resultLine(booted, staged, false); !strings.Contains(got, "Staged v0.23.0") || !strings.Contains(got, "--apply") {
+		t.Errorf("newly staged: %q", got)
+	}
+
+	if got := resultLine(booted, staged, true); !strings.Contains(got, "Applied") || !strings.Contains(got, "reboots") {
+		t.Errorf("applied: %q", got)
+	}
+}
+
 func TestUsageAndVersion(t *testing.T) {
 	if code, out, _ := runCLI(t, "version"); code != 0 || !strings.HasPrefix(out, "deskos ") {
 		t.Errorf("version: exit %d, %q", code, out)
