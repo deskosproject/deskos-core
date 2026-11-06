@@ -347,10 +347,19 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
                     retried += 1
                     landed = changed(base, settle)
             if i + 1 < len(parts):
-                # The first directory lookup can take most of a minute; the
-                # password page follows it, not the Return. Measured on run
-                # 42147244438: username at 67 s, password page at 115.8 s.
-                time.sleep(60.0)
+                # The password page follows the directory lookup, not the Return,
+                # and the lookup takes 50 to 90 seconds with a disposable realm.
+                # A fixed sixty seconds typed the password 5 s before the page
+                # existed on run 42292630365 (round 3 landed, no session). Wait
+                # for the page to draw, and type anyway if it never does.
+                if snapshot:
+                    page = snapshot()
+                    deadline = time.monotonic() + 90
+                    while time.monotonic() < deadline and not changed(page, 2.0):
+                        pass
+                    time.sleep(0.5)
+                else:
+                    time.sleep(60.0)
         typed_result["attempts"] = attempts
         typed_result["landed"] = landed
     finally:
