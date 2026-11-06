@@ -40,12 +40,6 @@ OVMF_CANDIDATES = [
 # Pixel classes by luma: dark below DARK, lit from LIT (text, logos, spinner).
 DARK, LIT = 24, 60
 
-# A login that does not start is retried while the guest is still up: the keys
-# can be lost (run 42269507235) or the password can go to a page that is not
-# there yet. Three rounds, ninety seconds apart, covers the measured lookup.
-LOGIN_ROUNDS = 3
-LOGIN_RETRY_AFTER = 90.0
-
 
 class HarnessError(Exception):
     pass
@@ -465,7 +459,6 @@ def run(args):
         last_digest, stable, graphical_at, splash_at, stable_digest = None, 0, None, None, None
         marker_at, ready_at, ready_failed = None, None, False
         keys_sent = set()
-        retry_login = []
 
         def serial_text():
             try:
@@ -557,44 +550,9 @@ def run(args):
                     summary.setdefault("keys_sent", []).append(
                         {"marker": marker_text, "t": round(time.monotonic() - t0, 1),
                          "attempts": typed.get("attempts"), "landed": typed.get("landed")})
-                    if login:
-                        # A login that did not start is the same problem one step
-                        # later: the keys landed nowhere, or the password went to a
-                        # page that was not there. Type the whole login again while
-                        # the guest keeps running, and record how many rounds it
-                        # took; the session report's first line is the signal.
-                        retry_login.append({
-                            "keys": keys,
-                            "next": time.monotonic() + LOGIN_RETRY_AFTER,
-                            "rounds": 1,
-                        })
                 except (HarnessError, OSError) as exc:
                     summary["failures"].append(f"typing on VNC after {marker_text!r}: {exc}")
                 keys_sent.add(i)
-
-            for pending in list(retry_login):
-                if "session_type=" in serial_text():
-                    retry_login.remove(pending)
-                    continue
-                if time.monotonic() < pending["next"]:
-                    continue
-                if pending["rounds"] >= LOGIN_ROUNDS:
-                    retry_login.remove(pending)
-                    summary["failures"].append(
-                        f"no session after {pending['rounds']} login rounds: "
-                        "the guest never wrote a session report" + serial_hint(serial_text()))
-                    continue
-                try:
-                    typed = vnc_type(vnc_path, pending["keys"], select_first=True,
-                                     click=(640, 478), snapshot=band_digest)
-                    pending["rounds"] += 1
-                    pending["next"] = time.monotonic() + LOGIN_RETRY_AFTER
-                    summary.setdefault("login_rounds", []).append(
-                        {"round": pending["rounds"], "t": round(time.monotonic() - t0, 1),
-                         "attempts": typed.get("attempts"), "landed": typed.get("landed")})
-                except (HarnessError, OSError) as exc:
-                    summary["failures"].append(f"login round {pending['rounds']}: {exc}")
-                    retry_login.remove(pending)
             if marker and marker_seen():
                 marker_at = round(time.monotonic() - t0, 1)
                 capture("boot")
