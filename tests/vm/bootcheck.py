@@ -327,8 +327,12 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
                 retried = 0
                 while not landed and retried < retries:
                     # The keys were sent while the greeter was still drawing and
-                    # nothing reached the field. Clear what is there and type
-                    # again, once.
+                    # nothing reached the field. Click the field again (the first
+                    # click landed before the field existed), clear what is
+                    # there, and type once more.
+                    pointer(640, 478, True)
+                    pointer(640, 478, False)
+                    time.sleep(1.0)
                     select_all()
                     base = snapshot()
                     type_chars(part)
@@ -512,6 +516,17 @@ def run(args):
             top, bottom = int(h * 0.30), int(h * 0.80)
             return hashlib.sha256(rgb[top * w * 3:bottom * w * 3]).hexdigest()[:16]
 
+        def changed_in(base, seconds):
+            """Whether the middle of the screen moved within `seconds`."""
+            if base is None:
+                return False
+            deadline = time.monotonic() + seconds
+            while time.monotonic() < deadline:
+                time.sleep(0.25)
+                if band_digest() != base:
+                    return True
+            return False
+
         while time.monotonic() - t0 < args.boot_timeout:
             e = capture("boot")
             if e:
@@ -544,6 +559,18 @@ def run(args):
                     continue
                 try:
                     login = isinstance(keys, (list, tuple))
+                    if login:
+                        # The ready marker is the greeter's shell process; the
+                        # username field is drawn later (run 42269507235: typed at
+                        # 163.0 s, field drawn at 166.0 s). Wait up to ten seconds
+                        # for the screen to move before the first keystroke, then
+                        # type anyway: when the marker arrives after the field is
+                        # drawn, nothing moves and the extra wait would be waste.
+                        base = band_digest()
+                        deadline = time.monotonic() + 10
+                        while time.monotonic() < deadline and not changed_in(base, 1.0):
+                            pass
+                        time.sleep(1.5)
                     typed = vnc_type(vnc_path, keys, select_first=login,
                                      click=(640, 478) if login else None,
                                      wake_click=not login, snapshot=band_digest)
