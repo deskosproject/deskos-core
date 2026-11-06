@@ -278,9 +278,10 @@ def vnc_type(path, text, select_first=False, click=None, timeout=15):
         for i, part in enumerate(parts):
             type_part(part)
             if i + 1 < len(parts):
-                # The first directory lookup can take a few seconds; the
-                # password page follows it, not the Return.
-                time.sleep(5.0)
+                # The first directory lookup can take most of a minute; the
+                # password page follows it, not the Return. Measured on run
+                # 42147244438: username at 67 s, password page at 115.8 s.
+                time.sleep(60.0)
     finally:
         sock.close()
 
