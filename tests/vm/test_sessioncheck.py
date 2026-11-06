@@ -172,7 +172,7 @@ class TmpfilesTest(unittest.TestCase):
         c = sc.credentials("session")
         unit = c["systemd.extra-unit.deskos-qa-password.service"]
         self.assertIn("Before=gdm.service", unit)
-        self.assertIn(f"echo deskos-qa:{sc.LOCK_PASSWORD} | /usr/sbin/chpasswd", unit)
+        self.assertIn(f'usermod -p "$(openssl passwd -6 {sc.LOCK_PASSWORD})" deskos-qa', unit)
         self.assertIn("deskos-qa-password.service", c["systemd.unit-dropin.graphical.target"])
         self.assertIn(sc.LOCK_SIGNAL_PATH, c["tmpfiles.extra"])
         signal = c["systemd.extra-unit.deskos-qa-lock-signal.service"]
