@@ -89,7 +89,11 @@ jobs:
       - name: Start the disposable AD DC
         run: |
           set -euo pipefail
-          password="$(openssl rand -base64 24 | tr -d '\n/+=' | head -c 20)"
+          # Samba refuses an Administrator password that does not meet its
+          # quality rule, and a base64 draw can lack a digit or a capital
+          # (run 42194071805: "does not meet the default quality standards").
+          # Pin the classes and randomise the rest, as the trust fixture does.
+          password="A1a$(openssl rand -hex 20)"
           echo "::add-mask::$password"
           echo "ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
           export ADMIN_PASSWORD="$password"
