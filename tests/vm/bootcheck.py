@@ -187,7 +187,7 @@ def keysym(ch):
     return False, ord(ch)
 
 
-def vnc_type(path, text, select_first=False, click=None, timeout=15):
+def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeout=15):
     """Type `text` and Return into a QEMU VNC server on a Unix socket.
 
     The lock screen refuses remote-desktop portal input: Mutter tears the
@@ -206,6 +206,12 @@ def vnc_type(path, text, select_first=False, click=None, timeout=15):
     first part, so a remembered username is replaced instead of appended to.
     `click` is a framebuffer coordinate to press first; a drawn entry does not
     always own keyboard focus, and the click gives it to the field.
+
+    `wake_click` presses the framebuffer's centre before anything else, for the
+    lock screen: the display may be in DPMS off by then (run 42154612511, frame
+    83.4 s reads "Display output is not active"), and Shift alone wakes the
+    panel without raising the curtain, so the password would be typed into a
+    screen that is still waking. A pointer event wakes and raises it at once.
     """
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(timeout)
@@ -261,6 +267,13 @@ def vnc_type(path, text, select_first=False, click=None, timeout=15):
             time.sleep(1.0)
 
         parts = list(text) if isinstance(text, (list, tuple)) else [text]
+        if wake_click:
+            # A pointer event wakes the panel and raises the curtain; Shift on a
+            # dark screen only wakes it, and the typing is lost (run 42154612511,
+            # frame 83.4 s: "Display output is not active").
+            pointer(640, 478, True)
+            pointer(640, 478, False)
+            time.sleep(1.0)
         # Shift_L raises the curtain; Return on an empty field would submit.
         key(0xFFE1, True)
         key(0xFFE1, False)
@@ -462,8 +475,10 @@ def run(args):
                 if i in keys_sent or marker_text.encode() not in serial_text():
                     continue
                 try:
-                    vnc_type(vnc_path, keys, select_first=isinstance(keys, (list, tuple)),
-                             click=(640, 478) if isinstance(keys, (list, tuple)) else None)
+                    login = isinstance(keys, (list, tuple))
+                    vnc_type(vnc_path, keys, select_first=login,
+                             click=(640, 478) if login else None,
+                             wake_click=not login)
                     summary.setdefault("keys_sent", []).append(
                         {"marker": marker_text, "t": round(time.monotonic() - t0, 1)})
                 except (HarnessError, OSError) as exc:
