@@ -5,6 +5,18 @@ DeskOS. A release note says what changed; read the section for the version you c
 from, then the ones after it. Verify every download before you use it:
 [check what you download](https://deskos.org/verify/).
 
+## v0.23 → the output of `deskos update`
+
+The command no longer prints the guard's conditions and bootc's own output by
+default. It prints what the machine booted, what is already staged, and one line
+saying whether this run changed anything and what to do next; `--verbose` adds
+every condition and the tool's output.
+
+Nothing needs editing on the machine. A script that parsed the old text does:
+the summary is now derived from the deployment before and after the command, and
+the old `staged. The machine applies it on the next reboot` line appeared even
+when nothing had been staged.
+
 ## v0.22 → the lock screen follows the wallpaper
 
 `appearance.lockShield` is **removed**. GNOME 40 and later draw the lock screen
