@@ -32,7 +32,7 @@
           "uniqueItems": true,
           "items": { "enum": [
             "windows.buttons", "windows.buttonPlacement",
-            "appearance.wallpaper", "appearance.loginLogo", "appearance.lockShield",
+            "appearance.wallpaper", "appearance.loginLogo",
             "appearance.fonts.interface", "appearance.fonts.document", "appearance.fonts.monospace",
             "appearance.fonts.titlebar", "appearance.fonts.terminal", "appearance.fonts.textScaling",
             "appearance.fonts.antialiasing", "appearance.fonts.hinting",
@@ -119,7 +119,11 @@
               "required": ["light"],
               "properties": {
                 "light": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
-                "dark": { "$ref": "../../common/definitions.json#/$defs/relativePath" }
+                "dark": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
+                "options": { "enum": ["none", "wallpaper", "centered", "scaled", "stretched", "zoom", "spanned"] },
+                "primaryColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                "secondaryColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}$" },
+                "colorShadingType": { "enum": ["horizontal", "vertical", "solid"] }
               }
             },
             "fonts": {
@@ -139,7 +143,6 @@
               }
             },
             "loginLogo": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
-            "lockShield": { "$ref": "../../common/definitions.json#/$defs/relativePath" },
             "iconTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
             "cursorTheme": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._+-]*$" },
             "colorScheme": { "enum": ["default", "prefer-dark", "prefer-light"] },
@@ -190,7 +193,9 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "buttonAction": { "enum": ["nothing", "suspend", "hibernate", "interactive"] }
+            "buttonAction": { "enum": ["nothing", "suspend", "hibernate", "interactive"] },
+            "keyAction": { "enum": ["poweroff", "reboot", "halt", "kexec", "suspend", "hibernate", "ignore"], "description": "logind HandlePowerKey, which applies even when GNOME is not running." },
+            "lidSwitch": { "enum": ["suspend", "poweroff", "lock", "ignore"], "description": "logind HandleLidSwitch." }
           }
         },
         "search": {

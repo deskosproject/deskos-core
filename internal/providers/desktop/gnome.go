@@ -43,7 +43,6 @@ const (
 	KeyAppPDFViewer    = "applications.pdfViewer"
 	KeyWallpaper       = "appearance.wallpaper"
 	KeyLoginLogo       = "appearance.loginLogo"
-	KeyLockShield      = "appearance.lockShield"
 	KeyFontInterface   = "appearance.fonts.interface"
 	KeyFontDocument    = "appearance.fonts.document"
 	KeyFontMonospace   = "appearance.fonts.monospace"
@@ -113,6 +112,8 @@ const (
 	KeyPrivacyHideIdentity   = "privacy.hideIdentity"
 	KeyPrivacyScreen         = "privacy.privacyScreen"
 	KeyPowerButton           = "power.buttonAction"
+	KeyPowerKeyAction        = "power.keyAction"
+	KeyPowerLidSwitch        = "power.lidSwitch"
 	KeyDevTools              = "shell.developmentTools"
 	KeyShowUserList          = "login.showUserList"
 	KeyBanner                = "login.banner"
@@ -154,6 +155,9 @@ var idleActions = []string{"blank", "suspend", "shutdown", "hibernate", "interac
 // powerButtonActions are the values GNOME's power plugin accepts.
 var powerButtonActions = []string{"nothing", "suspend", "hibernate", "interactive"}
 
+// colourRE is the shape GNOME's background schema accepts.
+var colourRE = regexp.MustCompile(`^#[0-9A-Fa-f]{6}$`)
+
 // fontEnum are the values fontconfig and Xsettings understand for each rendering
 // setting.
 var fontEnum = map[string][]string{
@@ -165,7 +169,6 @@ var fontEnum = map[string][]string{
 
 var knownKeys = map[string]bool{
 	KeyButtons: true, KeyButtonPlacement: true, KeyWallpaper: true, KeyLoginLogo: true,
-	KeyLockShield:    true,
 	KeyFontInterface: true, KeyFontDocument: true, KeyFontMonospace: true,
 	KeyFontTitlebar: true, KeyFontTerminal: true, KeyTextScaling: true,
 	KeyFontAA: true, KeyFontHinting: true, KeyFontRGBA: true, KeyFontLCD: true, KeyIconTheme: true,
@@ -184,7 +187,8 @@ var knownKeys = map[string]bool{
 	KeyPrivacyScreen:  true,
 	KeySearchExternal: true, KeySearchDisabled: true,
 	KeyNotifBanners: true, KeyNotifLockScreen: true,
-	KeyPowerButton: true, KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
+	KeyPowerButton: true, KeyPowerKeyAction: true, KeyPowerLidSwitch: true,
+	KeyExtensions: true, KeyShowUserList: true, KeyBanner: true,
 	KeyDevTools:                true,
 	KeyLockdownDisablePrinting: true, KeyLockdownDisablePrintSetup: true,
 	KeyLockdownDisableSaveToDisk: true, KeyLockdownDisableLogOut: true,
@@ -196,11 +200,15 @@ var knownKeys = map[string]bool{
 
 // Enumerations of gsettings-desktop-schemas 47.1 (GDesktopColorScheme, GDesktopAccentColor).
 var (
-	colorSchemes = []string{"default", "prefer-dark", "prefer-light"}
-	accentColors = []string{"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
-	updateModes  = []string{"automatic", "manual", "disabled"}
-	clockFormats = []string{"24h", "12h"}
-	xkbOptions   = []string{
+	colorSchemes      = []string{"default", "prefer-dark", "prefer-light"}
+	accentColors      = []string{"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
+	updateModes       = []string{"automatic", "manual", "disabled"}
+	clockFormats      = []string{"24h", "12h"}
+	wallpaperOptions  = []string{"none", "wallpaper", "centered", "scaled", "stretched", "zoom", "spanned"}
+	colorShadingTypes = []string{"horizontal", "vertical", "solid"}
+	logindKeyActions  = []string{"poweroff", "reboot", "halt", "kexec", "suspend", "hibernate", "ignore"}
+	logindLidSwitches = []string{"suspend", "poweroff", "lock", "ignore"}
+	xkbOptions        = []string{
 		"caps:none", "compose:caps", "compose:menu", "compose:ralt",
 		"compose:rctrl", "ctrl:nocaps", "grp:alt_shift_toggle",
 	}
@@ -323,9 +331,13 @@ type Lockdown struct {
 	DisableUserAdministration     *bool `json:"disableUserAdministration,omitempty"`
 }
 
-// Power is the hardware power button's action.
+// Power is the hardware power behaviour. ButtonAction is the GNOME session's
+// decision; KeyAction and LidSwitch are logind's, which apply even when no
+// session is running.
 type Power struct {
 	ButtonAction string `json:"buttonAction,omitempty"`
+	KeyAction    string `json:"keyAction,omitempty"`
+	LidSwitch    string `json:"lidSwitch,omitempty"`
 }
 
 type Windows struct {
@@ -347,7 +359,6 @@ type Applications struct {
 type Appearance struct {
 	Wallpaper   *Wallpaper `json:"wallpaper,omitempty"`
 	LoginLogo   string     `json:"loginLogo,omitempty"`
-	LockShield  string     `json:"lockShield,omitempty"`
 	Fonts       *Fonts     `json:"fonts,omitempty"`
 	IconTheme   string     `json:"iconTheme,omitempty"`
 	CursorTheme string     `json:"cursorTheme,omitempty"`
@@ -358,6 +369,13 @@ type Appearance struct {
 type Wallpaper struct {
 	Light string `json:"light,omitempty"`
 	Dark  string `json:"dark,omitempty"`
+	// Options is org.gnome.desktop.background picture-options.
+	Options string `json:"options,omitempty"`
+	// PrimaryColor and SecondaryColor are #RRGGBB strings.
+	PrimaryColor   string `json:"primaryColor,omitempty"`
+	SecondaryColor string `json:"secondaryColor,omitempty"`
+	// ColorShadingType is horizontal, vertical or solid.
+	ColorShadingType string `json:"colorShadingType,omitempty"`
 }
 
 type Fonts struct {
@@ -488,10 +506,15 @@ type Asset struct {
 	File   string `json:"-"`
 }
 
-// WallpaperValue is the composed wallpaper; Dark is optional.
+// WallpaperValue is the composed wallpaper. Dark, the rendering options and
+// the gradient colours are optional; omitting them keeps GNOME's defaults.
 type WallpaperValue struct {
-	Light Asset  `json:"light"`
-	Dark  *Asset `json:"dark,omitempty"`
+	Light            Asset  `json:"light"`
+	Dark             *Asset `json:"dark,omitempty"`
+	Options          string `json:"options,omitempty"`
+	PrimaryColor     string `json:"primaryColor,omitempty"`
+	SecondaryColor   string `json:"secondaryColor,omitempty"`
+	ColorShadingType string `json:"colorShadingType,omitempty"`
 }
 
 // Seconds is a duration setting in whole seconds.
@@ -618,6 +641,34 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 						display += " (dark: " + v.Dark.Path + ")"
 					}
 				}
+				if wp.Options != "" {
+					if !slices.Contains(wallpaperOptions, wp.Options) {
+						bad("%s.options: expected %s, got %q", KeyWallpaper, strings.Join(wallpaperOptions, ", "), wp.Options)
+					} else {
+						v.Options = wp.Options
+					}
+				}
+				if wp.ColorShadingType != "" {
+					if !slices.Contains(colorShadingTypes, wp.ColorShadingType) {
+						bad("%s.colorShadingType: expected %s, got %q", KeyWallpaper, strings.Join(colorShadingTypes, ", "), wp.ColorShadingType)
+					} else {
+						v.ColorShadingType = wp.ColorShadingType
+					}
+				}
+				for name, colour := range map[string]string{"primaryColor": wp.PrimaryColor, "secondaryColor": wp.SecondaryColor} {
+					if colour == "" {
+						continue
+					}
+					if !colourRE.MatchString(colour) {
+						bad("%s.%s: expected #RRGGBB, got %q", KeyWallpaper, name, colour)
+						continue
+					}
+					if name == "primaryColor" {
+						v.PrimaryColor = colour
+					} else {
+						v.SecondaryColor = colour
+					}
+				}
 				set(KeyWallpaper, v, display)
 			}
 		}
@@ -630,17 +681,6 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 				bad("%s: %s must be a .png or .svg file with a simple name", KeyLoginLogo, as.Path)
 			default:
 				set(KeyLoginLogo, Asset{Path: as.Path, SHA256: as.SHA256, File: as.File}, as.Path)
-			}
-		}
-		if a.LockShield != "" {
-			as, err := assets.Read(res, a.LockShield)
-			switch {
-			case err != nil:
-				bad("%s: %v", KeyLockShield, err)
-			case !assetNameRE.MatchString(path.Base(as.Path)):
-				bad("%s: %s must be a .png, .jpg, .jpeg or .svg file with a simple name", KeyLockShield, as.Path)
-			default:
-				set(KeyLockShield, Asset{Path: as.Path, SHA256: as.SHA256, File: as.File}, as.Path)
 			}
 		}
 		if f := a.Fonts; f != nil {
@@ -1092,11 +1132,25 @@ func (gnomeProfile) Decode(res *model.Resource) error {
 		set(KeySoftwareUpdates, sw.Updates, sw.Updates)
 	}
 
-	if pw := s.Power; pw != nil && pw.ButtonAction != "" {
-		if !slices.Contains(powerButtonActions, pw.ButtonAction) {
-			bad("%s: expected %s, got %q", KeyPowerButton, strings.Join(powerButtonActions, ", "), pw.ButtonAction)
+	if pw := s.Power; pw != nil {
+		if pw.ButtonAction != "" {
+			if !slices.Contains(powerButtonActions, pw.ButtonAction) {
+				bad("%s: expected %s, got %q", KeyPowerButton, strings.Join(powerButtonActions, ", "), pw.ButtonAction)
+			}
+			set(KeyPowerButton, pw.ButtonAction, pw.ButtonAction)
 		}
-		set(KeyPowerButton, pw.ButtonAction, pw.ButtonAction)
+		if pw.KeyAction != "" {
+			if !slices.Contains(logindKeyActions, pw.KeyAction) {
+				bad("%s: expected %s, got %q", KeyPowerKeyAction, strings.Join(logindKeyActions, ", "), pw.KeyAction)
+			}
+			set(KeyPowerKeyAction, pw.KeyAction, pw.KeyAction)
+		}
+		if pw.LidSwitch != "" {
+			if !slices.Contains(logindLidSwitches, pw.LidSwitch) {
+				bad("%s: expected %s, got %q", KeyPowerLidSwitch, strings.Join(logindLidSwitches, ", "), pw.LidSwitch)
+			}
+			set(KeyPowerLidSwitch, pw.LidSwitch, pw.LidSwitch)
+		}
 	}
 
 	if ld := s.Lockdown; ld != nil {

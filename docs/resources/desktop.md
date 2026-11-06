@@ -12,7 +12,7 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 |---|---|---|
 | `windows.buttons`, `windows.buttonPlacement` | `minimize`, `maximize`, `close`, at least one; `left` or `right` | |
 | `applications.browser`, `.fileManager`, `.textEditor`, `.imageViewer`, `.videoPlayer`, `.pdfViewer` | a `*.desktop` id | |
-| `appearance.wallpaper.light` (required), `.dark`, `appearance.loginLogo`, `.lockShield`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; theme names | |
+| `appearance.wallpaper.light` (required), `.dark`, `.options`, `.primaryColor`, `.secondaryColor`, `.colorShadingType`, `appearance.loginLogo`, `appearance.iconTheme`, `appearance.cursorTheme` | assets inside the resource root; `options`: `none`, `wallpaper`, `centered`, `scaled`, `stretched`, `zoom`, `spanned`; colours `#RRGGBB`; shading `horizontal`, `vertical`, `solid`; theme names | |
 | `appearance.fonts.interface`, `.document`, `.monospace`, `.titlebar`, `.terminal`; `appearance.colorScheme`, `.accentColor` | `{family, size}`, size 6 to 72; `default`, `prefer-dark`, `prefer-light`; `blue`, `teal`, `green`, `yellow`, `orange`, `red`, `pink`, `purple`, `slate` | |
 | `appearance.fonts.textScaling` | number, 0.5 to 3.0 | |
 | `appearance.fonts.antialiasing`, `.hinting`, `.rgbaOrder`, `.lcdfilter` | `none`, `grayscale`, `rgba`; `none`, `slight`, `medium`, `full`; `rgb`, `bgr`, `vrgb`, `vbgr`; `none`, `default`, `light`, `legacy` | |
@@ -20,9 +20,19 @@ field exists is in [GNOME coverage](../gnome-coverage.md).
 | `search.external`, `.disabled`, `notifications.banners`, `.onLockScreen` | boolean; desktop ids; boolean | |
 | `network.proxy.mode`, `.autoconfigUrl`, `.ignoreHosts`, `.useSameProxy`, `.http`, `.https`, `.ftp`, `.socks` | `none`, `auto`, `manual`; http or https URL; host patterns; boolean; `{host, port}` | `mode` yes; a password is never authored |
 | `privacy.*` | booleans, plus `recentFilesMaxAge` (days, -1 keeps every recent file) and `oldFilesAge` (1 to 3650 days) | |
-| `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive` | |
+| `clock.showWeekday`, `.format`, `keyboard.numLock`, `.terminal`, `.layouts`, `.xkbOptions`, `power.buttonAction`, `.keyAction`, `.lidSwitch` | boolean; `24h` or `12h`; boolean; a `*.desktop` id bound to Ctrl+Alt+T; `[{layout, variant?}]` in switch order, the first one the layout a session starts in; `compose:caps` and the other reviewed XKB options; `nothing`, `suspend`, `hibernate`, `interactive`; `poweroff`, `reboot`, `halt`, `kexec`, `suspend`, `hibernate`, `ignore`; `suspend`, `poweroff`, `lock`, `ignore` | |
 | `login.showUserList`, `login.banner` | boolean; text of any length, never read from a file | |
 | `session.idle.blankAfter`, `.action`, `.after`, `.batteryAction`, `.batteryAfter`, `.dim`, `.dimBrightness`, `session.lock.enabled`, `.delay`, `dock.position`, `.behavior`, `.iconSize`, `.showTrash`, `software.updates`, `locks` | `never` or a duration (`5m`); boolean; 1 to 100, a percentage of the level; boolean; a duration (`0s`); `bottom`, `left`, `right`, `top`; `fixed`, `autohide`, `intellihide`; 16 to 64; boolean; `automatic`, `manual`, `disabled`; semantic names from `defaults` ([locks.md](../locks.md)) | |
+
+The lock screen has **no separate image** since GNOME 40: it shows a blurred
+version of the current background, so `appearance.wallpaper` decides both.
+
+`power.buttonAction` is the GNOME session's action; `power.keyAction` and
+`.lidSwitch` are `logind`'s `HandlePowerKey` and `HandleLidSwitch`, which apply
+even when no session is running. They lower to
+`/etc/systemd/logind.conf.d/50-deskos-power.conf`, not to dconf, so
+`spec.locks` does not reach them: they are an image default a runtime
+administrator can override.
 
 ```yaml
 apiVersion: desktop.deskos.org/v1alpha1
