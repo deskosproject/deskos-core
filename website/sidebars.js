@@ -69,6 +69,11 @@ const sidebars = {
         'support',
       ],
     ),
+    group(
+      'Use cases',
+      "An organization's desk, end to end, with the evidence for each claim.",
+      ['use-cases/corporate-identity'],
+    ),
     group('Reference', 'The exact fields, keys and checks.', [
       'resources/core',
       'resources/desktop',

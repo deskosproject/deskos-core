@@ -231,6 +231,22 @@ refused under invariant 5.
 
 Next: one issue per field, one PR per group, each with its check.
 
+The RHEL 10 guide, [Administering RHEL by using the GNOME desktop
+environment](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10),
+was audited the same way on 2026-11-06. It corrected one field and added three
+groups: GNOME 40+ has no separate lock-screen image, so `appearance.lockShield`
+wrote a key nothing read and left the model; the background gained its rendering
+options and gradient colours; and the power key and lid switch moved to a
+`logind` drop-in, where they apply with no session running (#445).
+
+What the guide asks for and the image still cannot carry is tracked, not
+modelled: typed settings for the classification banner and heads-up display
+(#446, because the alternative is a raw dconf map, which is the escape hatch
+the vocabulary refuses), and the NFS profile line, polkit repartitioning, extra
+backgrounds, autologin and the default session, switchable GDM authentication
+and kiosk mode (#448). [gnome-coverage.md](gnome-coverage.md), not this
+paragraph, holds the verdict and the reason for each.
+
 ### GNOME settings for a fleet (Ansible collection, proposed 2026-11-01)
 
 Core compiles GNOME settings into the image: `GnomeProfile` writes the distro
@@ -260,6 +276,34 @@ What to analyze:
 Decision: whether it is a separate repository and who owns it. The GNOME
 administration audit ([gnome-coverage.md](gnome-coverage.md)) is the inventory
 of what the vocabulary already covers.
+
+### Authoring and review tooling (proposed 2026-11-06)
+
+Three gaps sit between what the compiler guarantees and what a person can see
+or start from. None changes the model, a kind or the Plan.
+
+- **A semantic Plan diff** (`deskosctl diff a.plan.json b.plan.json`). Today a
+  change is reviewed as a golden diff, line by line, and the reviewer has to
+  reconstruct which setting moved and why. The command would print added,
+  removed and changed settings with their provenance, exit non-zero on a
+  difference, and give CI something narrower than "the golden changed". Cost:
+  one command, its tests, one reference page.
+- **An authoring kit** (`deskosctl init`). A person who wants a workstation
+  starts by copying an example and deleting lines. The command would write a
+  valid minimal workstation and its profile, and the schemas already in
+  `schemas/` would be referenced so an editor validates while typing. Cost: one
+  command, a snippet per kind, a check that what it writes compiles.
+- **A pinned resource catalog.** Reusing another organization's resources today
+  means copying YAML, and the copy drifts. A catalog would name resources by
+  commit and checksum, resolved before compilation and held locally, so the
+  compiler still runs offline and on identical bytes: a pin, the way a platform
+  pins its base digest ([platforms.md](platforms.md)), not a branch. Cost: a
+  loader path, a lockfile, a check that a resolved catalog reproduces.
+
+Order: the diff first, because it makes every later change reviewable; the kit
+second; the catalog when a second organization asks to reuse resources rather
+than fork them. The first two need no ADR; the third does, because it adds an
+input to the compiler.
 
 ## Open work
 
@@ -340,8 +384,10 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 - **Enterprise use cases.** EDR, antivirus, VPN and proxy settings are organization
   software, never Core (invariant 7). A check may claim that software installs and
   that the machine, session and updates keep working; never vendor support, a
-  licence or the deployment method. `docs/use-cases/` will split "what DeskOS
-  does", "what it does not" and "how it is validated", each claim pointing at a run.
+  licence or the deployment method.
+  [corporate-identity.md](use-cases/corporate-identity.md) is the first page of
+  `docs/use-cases/`: what DeskOS does, what it does not and how it is validated,
+  each claim pointing at a run.
 - **Model a network proxy**: closed 2026-10-30. `network.proxy` in `GnomeProfile`
   covers mode, PAC file, ignore hosts and per-protocol servers, with no password
   field because a secret is not image content ([desktop.md](resources/desktop.md)).

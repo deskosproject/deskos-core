@@ -381,36 +381,40 @@ func TestDevelopmentToolsReachTheShell(t *testing.T) {
 	}
 }
 
-func TestLockShieldCanDifferFromTheWallpaper(t *testing.T) {
-	// The guide changes the lock screen shield independently of the wallpaper. The
-	// wallpaper also writes the shield key, so a profile that names its own must win
-	// and the key must be written once.
+func TestWallpaperRenderingAndLogindPower(t *testing.T) {
+	// The guide documents picture-options and the gradient colours, and the
+	// logind actions that apply even when GNOME is not running. The first four
+	// are dconf keys; the last two are a system file.
 	dir := base.with(fixture{
 		"ws.yaml":   workstation("ws", "core"),
 		"core.yaml": profile("core", "foundation", "GnomeProfile/core"),
-		"g.yaml": gnome("core", "    appearance:\n      wallpaper:\n        light: bg.svg\n"+
-			"      lockShield: shield.svg\n"),
-		"bg.svg":     "<svg/>",
-		"shield.svg": "<svg/>",
+		"g.yaml":    gnome("core", "    appearance:\n      wallpaper:\n        light: bg.svg\n        options: scaled\n        primaryColor: '#112233'\n        secondaryColor: '#445566'\n        colorShadingType: solid\n    power:\n      keyAction: ignore\n      lidSwitch: lock\n"),
+		"bg.svg":    "<svg/>",
 	}).dir(t)
 	p := mustPlan(t, "ws", dir)
-	if got, _ := dconf(p, "/org/gnome/desktop/background/picture-uri"); got != "'file:///usr/share/deskos/backgrounds/bg.svg'" {
-		t.Errorf("wallpaper = %q", got)
-	}
-	if got, _ := dconf(p, "/org/gnome/desktop/screensaver/picture-uri"); got != "'file:///usr/share/deskos/backgrounds/shield.svg'" {
-		t.Errorf("shield = %q, want the lockShield asset", got)
-	}
-	if n := len(p.Artifact.Dconf.Defaults); n == 0 {
-		t.Fatal("no dconf defaults")
-	}
-	var seen int
-	for _, d := range p.Artifact.Dconf.Defaults {
-		if d.Key == "/org/gnome/desktop/screensaver/picture-uri" {
-			seen++
+	for key, want := range map[string]string{
+		"/org/gnome/desktop/background/picture-options":    "'scaled'",
+		"/org/gnome/desktop/background/primary-color":      "'#112233'",
+		"/org/gnome/desktop/background/secondary-color":    "'#445566'",
+		"/org/gnome/desktop/background/color-shading-type": "'solid'",
+	} {
+		if got, ok := dconf(p, key); !ok || got != want {
+			t.Errorf("%s = %q (present %v), want %q", key, got, ok, want)
 		}
 	}
-	if seen != 1 {
-		t.Fatalf("screensaver picture-uri written %d times, want 1", seen)
+	var logind *plan.GeneratedFile
+	for i := range p.Artifact.GeneratedFiles {
+		if p.Artifact.GeneratedFiles[i].Path == "/etc/systemd/logind.conf.d/50-deskos-power.conf" {
+			logind = &p.Artifact.GeneratedFiles[i]
+		}
+	}
+	if logind == nil {
+		t.Fatal("the plan carries no logind drop-in")
+	}
+	for _, want := range []string{"HandlePowerKey=ignore", "HandleLidSwitch=lock"} {
+		if !strings.Contains(logind.Content, want) {
+			t.Errorf("logind drop-in lacks %q:\n%s", want, logind.Content)
+		}
 	}
 }
 
@@ -762,7 +766,6 @@ func TestEveryDeclaredSettingCanBeLocked(t *testing.T) {
 		{"login.banner", "    login:\n      banner: 'Lab machine'\n"},
 		{"login.showUserList", "    login:\n      showUserList: false\n"},
 		{"shell.developmentTools", "    shell:\n      developmentTools: false\n"},
-		{"appearance.lockShield", "    appearance:\n      lockShield: shield.svg\n"},
 		{"appearance.fonts.hinting", "    appearance:\n      fonts:\n        hinting: slight\n"},
 		{"appearance.fonts.titlebar", "    appearance:\n      fonts:\n        titlebar: {family: Noto Sans, size: 11}\n"},
 		{"appearance.fonts.terminal", "    appearance:\n      fonts:\n        terminal: {family: JetBrains Mono, size: 11}\n"},

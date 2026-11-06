@@ -1,14 +1,17 @@
 # Validating identity the way a fleet needs it
 
-**Status:** design note, 2026-10-27. The FreeIPA check landed in
+**Status:** design note, updated 2026-11-06. The FreeIPA check landed in
 [#236](https://github.com/deskosproject/deskos-core/pull/236), the GDM login in
 [#237](https://github.com/deskosproject/deskos-core/pull/237) and the Samba AD
 check in [#238](https://github.com/deskosproject/deskos-core/pull/238). The
 interactive login that replaced autologin landed in
-[#396](https://github.com/deskosproject/deskos-core/pull/396), and the realm's
-own DNS in [#397](https://github.com/deskosproject/deskos-core/pull/397);
-FreeIPA run `41631837345` and AD run `41631837362` (2026-11-03) are the runs
-quoted below.
+[#396](https://github.com/deskosproject/deskos-core/pull/396), the realm's
+own DNS in [#397](https://github.com/deskosproject/deskos-core/pull/397), and
+the cross-forest trust in [#441](https://github.com/deskosproject/deskos-core/pull/441).
+FreeIPA run `41631837345` and AD run `41631837362` (2026-11-03) are the client
+runs quoted below; the trust has its own container workflow. The corporate
+case, with screenshots, is in
+[corporate-identity.md](../use-cases/corporate-identity.md).
 
 This is a test rig, not a product capability: it proves a machine can join a
 directory automatically and repeatedly. DeskOS does not enrol machines.
@@ -131,9 +134,10 @@ runner's resolver for the zone.
   organization's decision. FreeIPA fits Linux better because it models Unix
   identity, host-based access and `sudo` policy natively; AD is supported because
   organizations already have it.
-- **Not a trust yet.** FreeIPA and AD each serve their own DNS now, but a trust
-  needs both realms reachable at once, with DNS delegation; that is the next
-  step.
+- **The trust is a separate fixture.** `identity-ad-trust-container.yml`
+  provisions the DC and the IPA server on one network, with DNS in both
+  directions and the trust, and fails if the user resolves before it. It does
+  not boot the client: the GDM login under the trust is the client workflow.
 - **Not a real user's password.** The fixture generates one per run, and the
   disposable DC turns off its complexity rule so the keyboard path stays
   lowercase; it is a test credential, not a directory policy.
@@ -142,6 +146,6 @@ runner's resolver for the zone.
 ## Reusing the pattern
 
 The same shape (disposable service in a container, booted image, credentials at
-runtime, serial report, watchdog) is what the next fleet properties need: an AD
-trust with DNS delegation, a realm outage with cached and emergency accounts, and
-signature enforcement against a local registry. None changes the compiler.
+runtime, serial report, watchdog) covers the trust and the client login. The
+next fleet properties are a realm outage with cached and emergency accounts,
+and signature enforcement against a local registry. None changes the compiler.
