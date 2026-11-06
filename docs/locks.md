@@ -54,10 +54,14 @@ spec:
 The Settings chooser and `gsettings` cannot change it. `appearance.loginLogo` is a
 different setting, not covered by this lock.
 
+`power.keyAction` and `power.lidSwitch` lower to `logind`, not to dconf, so
+they are image defaults a runtime administrator can override and `spec.locks`
+does not reach them.
+
 ## What can be locked
 
 - **Windows:** `windows.buttons`, `windows.buttonPlacement`.
-- **Appearance:** `appearance.wallpaper`, `.loginLogo`, `.lockShield`,
+- **Appearance:** `appearance.wallpaper`, `.loginLogo`,
   `.fonts.interface`, `.fonts.document`, `.fonts.monospace`, `.fonts.titlebar`,
   `.fonts.terminal`, `.fonts.textScaling`, `.fonts.antialiasing`, `.fonts.hinting`,
   `.fonts.rgbaOrder`, `.fonts.lcdfilter`, `.iconTheme`, `.cursorTheme`,

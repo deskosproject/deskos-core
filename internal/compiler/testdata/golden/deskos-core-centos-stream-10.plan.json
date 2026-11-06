@@ -2262,20 +2262,6 @@
           ]
         },
         {
-          "key": "/org/gnome/desktop/screensaver/picture-uri",
-          "type": "s",
-          "value": "'file:///usr/share/deskos/backgrounds/deskos-light.svg'",
-          "setting": "appearance.wallpaper",
-          "provenance": [
-            {
-              "resource": "GnomeProfile/deskos-look",
-              "profile": "deskos-look",
-              "layer": "foundation",
-              "source": "resources/desktop/deskos-look.yaml:1"
-            }
-          ]
-        },
-        {
           "key": "/org/gnome/desktop/session/idle-delay",
           "type": "u",
           "value": "uint32 600",

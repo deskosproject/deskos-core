@@ -35,6 +35,10 @@ const ptyxisPalettesDir = "/etc/skel/.local/share/org.gnome.Ptyxis/palettes"
 // profile database there and the build runs dconf update.
 const dconfDropInDir = "/etc/dconf/db/distro.d"
 
+// logindDropInPath carries HandlePowerKey and HandleLidSwitch, which apply
+// without a session and therefore are not dconf keys.
+const logindDropInPath = "/etc/systemd/logind.conf.d/50-deskos-power.conf"
+
 // mimeAppsPath is the system-wide default for document handlers. An entry in a
 // user's ~/.config/mimeapps.list still wins; this is a default, not a lock.
 const mimeAppsPath = "/etc/xdg/mimeapps.list"
@@ -174,7 +178,6 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		l.set(KeyLockDelay, "/org/gnome/desktop/screensaver/lock-delay", "u", gvUint32(v.Value.(Seconds)), v.Provenance)
 	}
 
-	shield, hasShield := get(KeyLockShield)
 	if wp, ok := get(KeyWallpaper); ok {
 		v := wp.Value.(WallpaperValue)
 		light := l.installAsset(v.Light, wp.Provenance)
@@ -184,9 +187,17 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		}
 		l.set(KeyWallpaper, "/org/gnome/desktop/background/picture-uri", "s", gvString(light), wp.Provenance)
 		l.set(KeyWallpaper, "/org/gnome/desktop/background/picture-uri-dark", "s", gvString(dark), wp.Provenance)
-		if !hasShield {
-			// The shield follows the wallpaper unless a profile names its own.
-			l.set(KeyWallpaper, "/org/gnome/desktop/screensaver/picture-uri", "s", gvString(light), wp.Provenance)
+		if v.Options != "" {
+			l.set(KeyWallpaper, "/org/gnome/desktop/background/picture-options", "s", gvString(v.Options), wp.Provenance)
+		}
+		if v.PrimaryColor != "" {
+			l.set(KeyWallpaper, "/org/gnome/desktop/background/primary-color", "s", gvString(v.PrimaryColor), wp.Provenance)
+		}
+		if v.SecondaryColor != "" {
+			l.set(KeyWallpaper, "/org/gnome/desktop/background/secondary-color", "s", gvString(v.SecondaryColor), wp.Provenance)
+		}
+		if v.ColorShadingType != "" {
+			l.set(KeyWallpaper, "/org/gnome/desktop/background/color-shading-type", "s", gvString(v.ColorShadingType), wp.Provenance)
 		}
 		// GNOME Initial Setup's dconf profile skips the DeskOS database, so
 		// the first-boot session gets the wallpaper as a schema default.
@@ -226,11 +237,6 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 		// until welcome-dialog-last-shown-version is at least the version of
 		// its last tour change; setting it suppresses the dialog.
 		l.set(KeyWelcomeTour, "/org/gnome/shell/welcome-dialog-last-shown-version", "s", gvString(welcomeDialogShownVersion), v.Provenance)
-	}
-
-	if hasShield {
-		l.set(KeyLockShield, "/org/gnome/desktop/screensaver/picture-uri", "s",
-			gvString(l.installAsset(shield.Value.(Asset), shield.Provenance)), shield.Provenance)
 	}
 
 	if v, ok := get(KeyLoginLogo); ok {
@@ -347,6 +353,27 @@ func (Lowerer) Lower(c *compose.Composition, p *plan.Plan) error {
 	}
 	if v, ok := get(KeyPowerButton); ok {
 		l.set(KeyPowerButton, "/org/gnome/settings-daemon/plugins/power/power-button-action", "s", gvString(v.Value.(string)), v.Provenance)
+	}
+	// logind's actions apply even when no session runs, so they are a system
+	// file, not a dconf key. A runtime administrator can still override them;
+	// they are an image default, and spec.locks does not reach them.
+	var logindLines []string
+	var logindProv []model.Provenance
+	if v, ok := get(KeyPowerKeyAction); ok {
+		logindLines = append(logindLines, "HandlePowerKey="+v.Value.(string))
+		logindProv = append(logindProv, v.Provenance...)
+	}
+	if v, ok := get(KeyPowerLidSwitch); ok {
+		logindLines = append(logindLines, "HandleLidSwitch="+v.Value.(string))
+		logindProv = append(logindProv, v.Provenance...)
+	}
+	if len(logindLines) > 0 {
+		l.p.Artifact.GeneratedFiles = append(l.p.Artifact.GeneratedFiles, plan.GeneratedFile{
+			Path:       logindDropInPath,
+			Mode:       "0644",
+			Content:    "# DeskOS power policy; a runtime administrator may override it.\n[Login]\n" + strings.Join(logindLines, "\n") + "\n",
+			Provenance: logindProv,
+		})
 	}
 	for key, gkey := range map[string]string{
 		KeyLockdownDisablePrinting:            "/org/gnome/desktop/lockdown/disable-printing",
