@@ -19,6 +19,7 @@ on:
       - tests/identity/samba-ad.sh
       - tests/identity/freeipa.sh
       - tests/identity/samba/**
+      - tests/identity/freeipa/**
       - tests/identity/resources/**
       - tests/vm/bootcheck.py
       - tests/vm/test_bootcheck.py
@@ -47,7 +48,7 @@ env:
   # The NetBIOS name for the DC; the trust step uses adtrust.test as the DNS
   # domain and both are different facts, not a typo.
   AD_DOMAIN: ADTRUST
-  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
+  FREEIPA_IMAGE: localhost/deskos-freeipa:ci
   IPA_SERVER_HOSTNAME: ipa.lab.test
   IPA_SERVER_DOMAIN: lab.test
   IPA_SERVER_REALM: LAB.TEST
@@ -128,6 +129,12 @@ jobs:
           test "$ip" = "$AD_IP"
           echo "AD_SERVER_IP=$AD_IP" >> "$GITHUB_ENV"
           sudo podman exec deskos-ad host -t A "$AD_SERVER_HOSTNAME" 127.0.0.1
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
 
       - name: Start FreeIPA
         run: |
@@ -400,6 +407,12 @@ jobs:
           done
           echo "the DC did not answer twice within the timeout" >&2
           exit 1
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
 
       - name: Start FreeIPA
         run: |

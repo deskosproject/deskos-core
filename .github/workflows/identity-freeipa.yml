@@ -18,6 +18,7 @@ on:
       - tests/identity/*.py
       - tests/identity/resources/**
       - tests/identity/samba/**
+      - tests/identity/freeipa/**
       - tests/vm/bootcheck.py
       - tests/vm/test_bootcheck.py
       - tests/vm/sessioncheck.py
@@ -39,7 +40,7 @@ env:
   # to AD: each check owns its workspace, image tag and disk.
   WORK: /mnt/deskos-ipa-work
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
-  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
+  FREEIPA_IMAGE: localhost/deskos-freeipa:ci
   WS: identity-client-centos-stream-10
   IMAGE: localhost/identity-client-ipa-centos-stream-10:ci
 
@@ -73,6 +74,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
 
       - name: Start the disposable FreeIPA
         run: |
