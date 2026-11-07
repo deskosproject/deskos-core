@@ -40,11 +40,12 @@ OVMF_CANDIDATES = [
 # Pixel classes by luma: dark below DARK, lit from LIT (text, logos, spinner).
 DARK, LIT = 24, 60
 
-# A login that does not start is retried while the guest is still up: the keys
-# can be lost (run 42269507235) or the password can go to a page that is not
-# there yet. Three rounds, ninety seconds apart, covers the measured lookup.
-LOGIN_ROUNDS = 3
-LOGIN_RETRY_AFTER = 90.0
+# A login that does not start is retried while the guest is still up. The keys
+# are lost for minutes at a time in some boots and land later (runs 42292630365,
+# 42317585720: nothing at 198 s, 418 s, then a working window past 500 s), so
+# the rounds cover the whole boot: eight attempts a minute apart.
+LOGIN_ROUNDS = 8
+LOGIN_RETRY_AFTER = 60.0
 
 
 class HarnessError(Exception):
