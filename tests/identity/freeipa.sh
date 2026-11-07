@@ -13,9 +13,9 @@ name=deskos-freeipa
 volume=deskos-freeipa-data
 # A single-label domain such as test is rejected by ipa-server-install; the
 # fixture uses a two-label domain that cannot collide with a real one.
-hostname=${IPA_SERVER_HOSTNAME:-ipa.lab.test}
-domain=${IPA_SERVER_DOMAIN:-lab.test}
-realm=${IPA_SERVER_REALM:-LAB.TEST}
+hostname=${IPA_SERVER_HOSTNAME:-idm1.idm.example.com}
+domain=${IPA_SERVER_DOMAIN:-idm.example.com}
+realm=${IPA_SERVER_REALM:-IDM.EXAMPLE.COM}
 
 usage() {
   sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
@@ -134,7 +134,7 @@ case "${1:-}" in
       'command -v ipa-adtrust-install >/dev/null || \
          dnf -y install ipa-server-trust-ad || \
          dnf -y install freeipa-server-trust-ad'
-    podman exec "$name" ipa-adtrust-install --unattended --netbios-name=LAB \
+    podman exec "$name" ipa-adtrust-install --unattended --netbios-name=IDM \
       -a "$FREEIPA_PASSWORD"
     # The installer restarts services; a ticket obtained before it can be stale
     # when the next command reaches the API.

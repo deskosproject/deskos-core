@@ -8,7 +8,7 @@
 # user can log in.
 set -euo pipefail
 
-realm=${AD_REALM:-AD.LAB.TEST}
+realm=${AD_REALM:-AD.EXAMPLE.COM}
 domain=${AD_DOMAIN:-AD}
 : "${ADMIN_PASSWORD:?set ADMIN_PASSWORD for the throwaway Administrator}"
 

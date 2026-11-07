@@ -23,15 +23,15 @@ so `deskosctl render` never sees them and the image is shareable.
 ## The shape
 
 ```
-AD DC (adtrust.test)            FreeIPA server (lab.test)
+AD DC (ad.example.com)            FreeIPA server (idm.example.com)
         \                          /
          \   trust, DNS, Kerberos /
           \                      /
            DeskOS client (FreeIPA-enrolled, GDM)
 ```
 
-- The DC forwards `lab.test` to the IPA server; the IPA server forwards
-  `adtrust.test` to the DC with a conditional zone. Both directions are
+- The DC forwards `idm.example.com` to the IPA server; the IPA server forwards
+  `ad.example.com` to the DC with a conditional zone. Both directions are
   asserted before the trust is created.
 - Both directories share a podman network with pinned addresses
   (`10.89.0.2` and `10.89.0.3`). A restart used to move the DC's address and
@@ -40,7 +40,7 @@ AD DC (adtrust.test)            FreeIPA server (lab.test)
   `dnssec-validation no` in `/etc/named/ipa-options-ext.conf`, the file Red Hat
   documents in solution 1400113.
 - The trust is one-way: AD trusts IPA. `ipa-adtrust-install`, `trust-add`,
-  `getent passwd qa@adtrust.test` and a cross-realm `kinit` prove it. The
+  `getent passwd qa@ad.example.com` and a cross-realm `kinit` prove it. The
   negative controls ask the same IPA server before the trust and for a name
   outside it; both must fail.
 
@@ -52,7 +52,7 @@ is the auth phase, not only the session phase.
 
 ![The AD user at the GDM greeter, with the user list disabled](../images/identity/ad-gdm-username.png)
 
-*The greeter asks for `user@ad.lab.test`; the frame is from the instrumented
+*The greeter asks for `user@ad.example.com`; the frame is from the instrumented
 boot check, not a mock.*
 
 ![The password page for the AD user](../images/identity/ad-gdm-password.png)

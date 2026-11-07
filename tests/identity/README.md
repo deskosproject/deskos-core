@@ -34,9 +34,9 @@ passes `-U`, because `ipa-server-install` prompts by default.
 ```bash
 export FREEIPA_IMAGE='freeipa/freeipa-server@sha256:…'
 export FREEIPA_PASSWORD='a throwaway Directory Manager password'
-export IPA_SERVER_HOSTNAME=ipa.lab.test
-export IPA_SERVER_DOMAIN=lab.test
-export IPA_SERVER_REALM=LAB.TEST
+export IPA_SERVER_HOSTNAME=idm1.idm.example.com
+export IPA_SERVER_DOMAIN=idm.example.com
+export IPA_SERVER_REALM=IDM.EXAMPLE.COM
 sudo -E tests/identity/freeipa.sh start
 
 export FREEIPA_USER=qa
@@ -45,13 +45,13 @@ sudo -E tests/identity/freeipa.sh user
 ```
 
 The domain needs at least two labels (`ipa-server-install` rejects `test`), so
-the fixture uses `lab.test`, which cannot collide with a real realm.
+the fixture uses `idm.example.com`, which cannot collide with a real realm.
 
 **Join the guest.** Boot the disk with QEMU user networking (host `10.0.2.2`),
 log in as the local installer, copy [join.sh](join.sh) and run it as root:
 
 ```bash
-sudo IPA_DOMAIN=lab.test IPA_REALM=LAB.TEST IPA_SERVER=ipa.lab.test \
+sudo IPA_DOMAIN=idm.example.com IPA_REALM=IDM.EXAMPLE.COM IPA_SERVER=idm1.idm.example.com \
   IPA_PRINCIPAL=admin IPA_PASSWORD='…' ./join.sh
 ```
 
@@ -97,7 +97,7 @@ the DC's DNS before it joins**, which `identity-ad.yml` does through `JOIN_DNS`.
 
 The domain uses `--use-rfc2307`, so `uidNumber`, `gidNumber`,
 `unixHomeDirectory` and `loginShell` live in the directory. Verified 2026-10-27:
-the daily check joins the VM, GDM logs in as `qa@ad.lab.test`, and `oddjobd` is
+the daily check joins the VM, GDM logs in as `qa@ad.example.com`, and `oddjobd` is
 active.
 
 Four things easy to miss:

@@ -84,6 +84,10 @@ JOIN_CLIENT_SCRIPT_PATH = "/var/lib/deskos-qa/join-client.sh"
 WATCHDOG_SCRIPT_PATH = "/var/lib/deskos-qa/watchdog.sh"
 JOIN_ENV_PATH = "/var/lib/deskos-qa/join.env"
 JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
+# The cross-forest diagnostics are their own file: together with the rest
+# they exceed the 4095 B a single tmpfiles argument can carry (run
+# 42424582176).
+JOIN_TRUST_STATUS_PATH = "/var/lib/deskos-qa/join-trust-status.sh"
 # The probes live outside the home: with a directory user the home does not
 # exist until first login, so nothing can be seeded there in advance. A
 # system-wide autostart runs them in whichever account GDM logs in.
@@ -401,22 +405,7 @@ export JOIN_OK="$ok"
 /bin/bash /var/lib/deskos-qa/join-status.sh
 """
 
-JOIN_STATUS = """#!/bin/bash
-join_log=/var/lib/deskos-qa/join.log
-# A failed login through a trust says only "System error" at the default debug
-# level; the reason is in the domain log. Raise it before GDM starts.
-sssctl debug-level 9 >/dev/null 2>&1 || true
-{
-  echo "join_ok=${JOIN_OK:-no}"
-  echo "join_kind=$JOIN_KIND"
-  echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"
-  echo "join_user=$(getent passwd "$JOIN_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
-  echo "join_sssctl=$(sssctl user-checks "$JOIN_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
-  echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
-  echo "join_resolv=$(grep -E '^nameserver|^search' /etc/resolv.conf 2>/dev/null | paste -sd, -)"
-  echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
-  echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
-  echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+JOIN_TRUST_STATUS = """#!/bin/bash
   # A user in another domain is the cross-forest case. The client reaches the
   # IPA server, but a Kerberos referral for the other forest needs the client to
   # reach that forest's KDC, and SSSD reports only "System error" when it cannot
@@ -433,27 +422,46 @@ sssctl debug-level 9 >/dev/null 2>&1 || true
     echo "join_trust_dc=$ad_host/$ad_ip"
     echo "join_trust_probe=$(for p in 88 389 464; do timeout 3 bash -c "echo > /dev/tcp/$ad_ip/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
     if [ -n "${JOIN_USER_PASSWORD:-}" ] && [ -n "$ad_ip" ]; then
-      if printf '%s\\n' "$JOIN_USER_PASSWORD" | timeout 20 kinit "$JOIN_USER" >/tmp/trust-kinit.log 2>&1; then
+      if printf '%s\\\n' "$JOIN_USER_PASSWORD" | timeout 20 kinit "$JOIN_USER" >/tmp/trust-kinit.log 2>&1; then
         echo "join_trust_kinit=ok"
       else
-        echo "join_trust_kinit=$(tr '\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
+        echo "join_trust_kinit=$(tr '\\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
       fi
-      echo "join_trust_klist=$(klist 2>&1 | tr '\\n' '|' | cut -c1-300)"
+      echo "join_trust_klist=$(klist 2>&1 | tr '\\\n' '|' | cut -c1-300)"
       # kinit succeeds with the same password, so the failure is in the path
       # SSSD takes. Its own log for the IPA domain names it; the subdomain
       # status says whether the trust was even discovered.
-      echo "join_trust_subdomain=$(sssctl domain-status "$ad_domain" 2>&1 | tr '\\n' '|' | cut -c1-400)"
-      echo "join_trust_sssd=$(tail -40 "/var/log/sssd/sssd_$REALM_DOMAIN.log" 2>/dev/null | tr '\\n' '|' | cut -c1-1200)"
-      echo "join_trust_journal=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -20 | tr '\\n' '|' | cut -c1-800)"
+      echo "join_trust_subdomain=$(sssctl domain-status "$ad_domain" 2>&1 | tr '\\\n' '|' | cut -c1-400)"
+      echo "join_trust_sssd=$(tail -40 "/var/log/sssd/sssd_$REALM_DOMAIN.log" 2>/dev/null | tr '\\\n' '|' | cut -c1-1200)"
+      echo "join_trust_journal=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -20 | tr '\\\n' '|' | cut -c1-800)"
     fi
   fi
+"""
+
+JOIN_STATUS = """#!/bin/bash
+join_log=/var/lib/deskos-qa/join.log
+# A failed login through a trust says only "System error" at the default debug
+# level; the reason is in the domain log. Raise it before GDM starts.
+sssctl debug-level 9 >/dev/null 2>&1 || true
+{
+  echo "join_ok=${JOIN_OK:-no}"
+  echo "join_kind=$JOIN_KIND"
+  echo "join_sssd=$(systemctl is-active sssd 2>/dev/null || true)"
+  echo "join_user=$(getent passwd "$JOIN_USER" | cut -d: -f1,3,6,7 | paste -sd'|' -)"
+  echo "join_sssctl=$(sssctl user-checks "$JOIN_USER" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  echo "join_log=$(tr '\\n' '|' < "$join_log" 2>/dev/null | cut -c1-800)"
+  echo "join_resolv=$(grep -E '^nameserver|^search' /etc/resolv.conf 2>/dev/null | paste -sd, -)"
+  echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
+  echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
+  echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  /bin/bash /var/lib/deskos-qa/join-trust-status.sh 2>/dev/null || true
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
   echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
   # The child that authenticates reads this file as the user; a mode without
   # "other read" is the documented cause of PAM_SYSTEM_ERR (solution 7134068).
   echo "join_krb5_mode=$(stat -c '%a %U:%G' /etc/krb5.conf 2>/dev/null)"
   echo "join_krb5_mode_before=$(cat /var/lib/deskos-qa/krb5-mode-before 2>/dev/null)"
-  echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
+  echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.example.com.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
   join_home=$(getent passwd "$JOIN_USER" | cut -d: -f6)
   echo "join_home=$join_home"
   if [ -n "$join_home" ] && [ -d "$join_home" ]; then
@@ -1626,6 +1634,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 f"f {JOIN_CLIENT_SCRIPT_PATH} 0755 root root - "
                 f"{tmpfiles_arg(join_client_script(join.get('kind', 'ipa')))}",
                 f"f {JOIN_STATUS_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_STATUS)}",
+                f"f {JOIN_TRUST_STATUS_PATH} 0755 root root - {tmpfiles_arg(JOIN_TRUST_STATUS)}",
                 f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
             ]
             creds["systemd.extra-unit.deskos-qa-join.service"] = (

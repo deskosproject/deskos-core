@@ -37,8 +37,8 @@ Two workflows, one per realm, never one for both:
 
 | workflow | realm | cadence |
 |---|---|---|
-| `identity-freeipa.yml` | FreeIPA (`lab.test`) | daily 04:23 UTC, dispatch, identity-only paths |
-| `identity-ad.yml` | Samba AD (`ad.lab.test`) | daily 04:47 UTC, dispatch, identity-only paths |
+| `identity-freeipa.yml` | FreeIPA (`idm.example.com`) | daily 04:23 UTC, dispatch, identity-only paths |
+| `identity-ad.yml` | Samba AD (`ad.example.com`) | daily 04:47 UTC, dispatch, identity-only paths |
 
 Neither is a pull-request check: each builds a container, a bootc image and a
 QCOW2, and boots a VM; a newer push cancels the run in flight. Each owns its
@@ -89,14 +89,14 @@ results and the journal to the serial port:
 - the typed password reaches PAM: this is the **auth** phase, not only the
   session phase;
 - `join_ok=yes`, `join_sssd=active`, and the user appears in `getent passwd`;
-- `session_user` **is the directory user**, for AD `qa@ad.lab.test`;
+- `session_user` **is the directory user**, for AD `qa@ad.example.com`;
 - the home did not exist before the login (`join_home_before=missing`) and is
   owned by the uid the directory resolved afterwards, through `oddjob-mkhomedir`;
 - `oddjobd` is active.
 
 FreeIPA run `41631837345` and AD run `41631837362` report exactly that, with a
 password typed at the greeter. The AD run also shows `sssctl domain-status`
-online with `dc.ad.lab.test` as domain controller and global catalog, and the
+online with `dc1.ad.example.com` as domain controller and global catalog, and the
 `DESKOS-QA$` and `host/DESKOS-QA` principals in the keytab.
 
 A watchdog timer writes the join status, the state of `gdm` and the join unit,

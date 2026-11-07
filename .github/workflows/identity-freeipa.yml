@@ -177,7 +177,7 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session \
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
-            --join-domain lab.test --join-realm LAB.TEST --join-server ipa.lab.test \
+            --join-domain idm.example.com --join-realm IDM.EXAMPLE.COM --join-server idm1.idm.example.com \
             --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa \
             --join-dns 10.0.2.2 \
             --gdm-login --gdm-password "$FREEIPA_USER_PASSWORD"

@@ -43,15 +43,15 @@ env:
   IPA_IP: 10.89.0.3
   AD_BIND: 127.0.0.2
   IPA_BIND: 127.0.0.1
-  AD_SERVER_HOSTNAME: dc.adtrust.test
-  AD_REALM: ADTRUST.TEST
-  # The NetBIOS name for the DC; the trust step uses adtrust.test as the DNS
+  AD_SERVER_HOSTNAME: dc1.ad.example.com
+  AD_REALM: AD.EXAMPLE.COM
+  # The NetBIOS name for the DC; the trust step uses ad.example.com as the DNS
   # domain and both are different facts, not a typo.
-  AD_DOMAIN: ADTRUST
+  AD_DOMAIN: AD
   FREEIPA_IMAGE: localhost/deskos-freeipa:ci
-  IPA_SERVER_HOSTNAME: ipa.lab.test
-  IPA_SERVER_DOMAIN: lab.test
-  IPA_SERVER_REALM: LAB.TEST
+  IPA_SERVER_HOSTNAME: idm1.idm.example.com
+  IPA_SERVER_DOMAIN: idm.example.com
+  IPA_SERVER_REALM: IDM.EXAMPLE.COM
 
 jobs:
   trust:
@@ -182,7 +182,7 @@ jobs:
           for _ in $(seq 1 30); do
             if sudo -E tests/identity/samba-ad.sh status &&
                sudo podman exec deskos-freeipa \
-                 dig +time=2 +tries=1 +short SOA adtrust.test "@$AD_SERVER_IP" >/dev/null; then
+                 dig +time=2 +tries=1 +short SOA ad.example.com "@$AD_SERVER_IP" >/dev/null; then
               break
             fi
             sleep 5
@@ -191,7 +191,7 @@ jobs:
           # direction needs the IPA conditional forward zone, which the trust
           # step adds before it asks AD for the trust; it is asserted there.
           sudo podman exec deskos-ad \
-            dig +short SRV "_kerberos._tcp.lab.test" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
+            dig +short SRV "_kerberos._tcp.idm.example.com" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
           test -s /tmp/ad-to-ipa.txt
 
       - name: Prove the trust ports reach both ways
@@ -225,7 +225,7 @@ jobs:
       - name: Negative control before the trust
         run: |
           set -euo pipefail
-          if sudo podman exec deskos-freeipa getent passwd qa@adtrust.test; then
+          if sudo podman exec deskos-freeipa getent passwd qa@ad.example.com; then
             echo "::error::the AD user resolves before the trust exists"
             exit 1
           fi
@@ -235,21 +235,21 @@ jobs:
         timeout-minutes: 30
         run: |
           set -euo pipefail
-          export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
+          export AD_DOMAIN=ad.example.com AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
           sudo -E tests/identity/freeipa.sh trust
           # Now that the conditional forward zone exists, prove the other
           # direction: the IPA server resolves the AD zone through it.
           sudo podman exec deskos-freeipa \
-            dig +short SRV "_ldap._tcp.adtrust.test" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
+            dig +short SRV "_ldap._tcp.ad.example.com" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
           test -s /tmp/ipa-to-ad.txt
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test | tee /tmp/getent.txt
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com | tee /tmp/getent.txt
           test -s /tmp/getent.txt
           printf '%s\n' "$AD_USER_PASSWORD" |
-            sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
+            sudo podman exec -i deskos-freeipa kinit qa@AD.EXAMPLE.COM
           sudo podman exec deskos-freeipa klist | tee /tmp/klist.txt
-          grep -q 'ADTRUST.TEST' /tmp/klist.txt
+          grep -q 'AD.EXAMPLE.COM' /tmp/klist.txt
           # A name the trust does not know must not resolve.
-          if sudo podman exec deskos-freeipa getent passwd deskos-nobody@adtrust.test; then
+          if sudo podman exec deskos-freeipa getent passwd deskos-nobody@ad.example.com; then
             echo "::error::a name outside the trust resolved"
             exit 1
           fi
@@ -270,10 +270,10 @@ jobs:
           # setting the password again after the trust regenerates them.
           sudo podman exec deskos-ad samba-tool user setpassword qa \
             --newpassword="$AD_USER_PASSWORD" >/dev/null
-          printf '%s\n' "$AD_USER_PASSWORD" | sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
-          sudo podman exec deskos-freeipa kvno -S host ipa.lab.test | tee /tmp/kvno.txt
+          printf '%s\n' "$AD_USER_PASSWORD" | sudo podman exec -i deskos-freeipa kinit qa@AD.EXAMPLE.COM
+          sudo podman exec deskos-freeipa kvno -S host idm1.idm.example.com | tee /tmp/kvno.txt
           sudo podman exec deskos-freeipa klist | tee /tmp/klist-after.txt
-          grep -q 'krbtgt/LAB.TEST@ADTRUST.TEST' /tmp/klist-after.txt
+          grep -q 'krbtgt/IDM.EXAMPLE.COM@AD.EXAMPLE.COM' /tmp/klist-after.txt
 
       - name: The KDC's cross-realm principals
         # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.
@@ -298,11 +298,11 @@ jobs:
           cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
-          sudo podman exec deskos-freeipa ipa trust-show adtrust.test > evidence/trust.txt 2>&1 || true
+          sudo podman exec deskos-freeipa ipa trust-show ad.example.com > evidence/trust.txt 2>&1 || true
           sudo podman exec deskos-freeipa ipa idrange-find > evidence/idrange.txt 2>&1 || true
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test > evidence/ad-user-on-ipa.txt 2>&1 || true
-          sudo podman exec deskos-freeipa sssctl domain-status adtrust.test > evidence/domain-status.txt 2>&1 || true
-          sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.adtrust.test @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com > evidence/ad-user-on-ipa.txt 2>&1 || true
+          sudo podman exec deskos-freeipa sssctl domain-status ad.example.com > evidence/domain-status.txt 2>&1 || true
+          sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.ad.example.com @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true
           sudo podman inspect deskos-ad --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/ad-state.txt 2>&1 || true
           sudo podman logs deskos-ad > evidence/ad-dc.log 2>&1 || true
           sudo podman exec deskos-ad samba-tool user show qa > evidence/ad-user-directory.txt 2>&1 || true
@@ -458,7 +458,7 @@ jobs:
           for _ in $(seq 1 30); do
             if sudo -E tests/identity/samba-ad.sh status &&
                sudo podman exec deskos-freeipa \
-                 dig +time=2 +tries=1 +short SOA adtrust.test "@$AD_IP" >/dev/null; then
+                 dig +time=2 +tries=1 +short SOA ad.example.com "@$AD_IP" >/dev/null; then
               break
             fi
             sleep 5
@@ -479,9 +479,9 @@ jobs:
         timeout-minutes: 30
         run: |
           set -euo pipefail
-          export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP="$AD_IP"
+          export AD_DOMAIN=ad.example.com AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP="$AD_IP"
           sudo -E tests/identity/freeipa.sh trust
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com
           sudo podman exec deskos-freeipa bash -lc \
             "kadmin.local -q 'listprincs' | grep -i 'krbtgt/.*@' | sort" | tee /tmp/krbtgt.txt
           test -s /tmp/krbtgt.txt
@@ -527,15 +527,15 @@ jobs:
         timeout-minutes: 30
         run: |
           # The guest resolves through the IPA server on the container network:
-          # it serves lab.test and forwards adtrust.test to the DC, so one
+          # it serves idm.example.com and forwards ad.example.com to the DC, so one
           # resolver answers for both realms. The guest reaches 10.89.0.0/24
           # through QEMU's user networking, which NATs to the host.
           python3 tests/vm/sessioncheck.py --mode session \
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
-            --join-domain lab.test --join-realm LAB.TEST --join-server ipa.lab.test \
+            --join-domain idm.example.com --join-realm IDM.EXAMPLE.COM --join-server idm1.idm.example.com \
             --join-principal admin --join-password "$FREEIPA_PASSWORD" \
-            --join-user qa@adtrust.test \
+            --join-user qa@ad.example.com \
             --join-dns "$IPA_IP" \
             --gdm-login --gdm-password "$AD_USER_PASSWORD"
 
@@ -546,8 +546,8 @@ jobs:
           cp -a "$WORK/session" evidence/ 2>/dev/null || true
           cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
           cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test > evidence/ad-user-on-ipa.txt 2>&1 || true
-          sudo podman exec deskos-freeipa ipa trust-show adtrust.test > evidence/trust.txt 2>&1 || true
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com > evidence/ad-user-on-ipa.txt 2>&1 || true
+          sudo podman exec deskos-freeipa ipa trust-show ad.example.com > evidence/trust.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
           sudo podman logs deskos-ad > evidence/ad-dc.log 2>&1 || true
           sudo chown -R "$(id -u):$(id -g)" evidence 2>/dev/null || true
