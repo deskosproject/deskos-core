@@ -637,8 +637,16 @@ def run(args):
                         {"round": pending["rounds"], "t": round(time.monotonic() - t0, 1),
                          "attempts": typed.get("attempts"), "landed": typed.get("landed")})
                 except (HarnessError, OSError) as exc:
+                    # A broken pipe means QEMU closed the VNC client, which it
+                    # does when the display mode changes under it: the keys were
+                    # not delivered, so this is another round, not the end.
+                    # Measured on run 42309673200, round 2.
+                    pending["rounds"] += 1
+                    pending["next"] = time.monotonic() + LOGIN_RETRY_AFTER
                     summary["failures"].append(f"login round {pending['rounds']}: {exc}")
-                    retry_login.remove(pending)
+                    summary.setdefault("login_rounds", []).append(
+                        {"round": pending["rounds"], "t": round(time.monotonic() - t0, 1),
+                         "error": str(exc)})
             if marker and marker_seen():
                 marker_at = round(time.monotonic() - t0, 1)
                 capture("boot")
