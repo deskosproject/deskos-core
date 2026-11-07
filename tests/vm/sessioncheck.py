@@ -1430,7 +1430,11 @@ if [ ! -s {RESULTS} ]; then
   # written long after the join status was collected. Read it here, where the
   # report runs as root and after the attempts (run 42375098806).
   . /var/lib/deskos-qa/join.env 2>/dev/null || true
-  echo "trust_sssd=$(tail -80 "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tr '\n' '|' | cut -c1-2500)"
+  # Only the lines that name a failure: the tail is one transaction and the
+  # report is a serial line, so a full log says nothing useful (run 42379546218
+  # captured a preauth success and stopped there).
+  echo "trust_sssd=$(grep -iE 'preauth|krb5_auth|pam_|error|fail|ccache|kcm|denied' "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  echo "trust_gdm=$(journalctl -b -o short-monotonic --no-pager -u gdm.service -u sssd.service -u oddjobd.service 2>/dev/null | grep -iE 'auth|sss|krb|error|fail|denied|session' | tail -60 | tr '\n' '|' | cut -c1-3000)"
   echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
