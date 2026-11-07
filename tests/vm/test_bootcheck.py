@@ -193,10 +193,28 @@ class VncTypeTest(unittest.TestCase):
 
         self.assertEqual(out["attempts"], 2)
         self.assertTrue(out["landed"])
-        typed = [sym for kind, down, sym in events if kind == 4 and down]
-        # curtain, first attempt, then Ctrl+A and the same text again
-        self.assertEqual(typed, [0xFFE1, ord("q"), ord("a"), 0xFF0D,
-                                 0xFFE3, ord("a"), ord("q"), ord("a"), 0xFF0D])
+        # curtain, first attempt, then a click, Ctrl+A and the same text again
+        keys = [e[2] for e in events if e[0] == 4 and e[1] == 1]
+        self.assertEqual(keys, [0xFFE1, ord("q"), ord("a"), 0xFF0D,
+                                0xFFE3, ord("a"), ord("q"), ord("a"), 0xFF0D])
+        pointers = [e for e in events if e[0] == 5]
+        first_retry_key = next(i for i, e in enumerate(events) if e[0] == 4 and e[2] == 0xFFE3)
+        self.assertTrue(any(i < first_retry_key for i, e in enumerate(events) if e[0] == 5),
+                        "the retry must click the field before clearing it")
+
+
+    def test_a_login_clicks_the_field_before_typing(self):
+        # `click` was documented and never used: the greeter draws the entry
+        # before it owns keyboard focus, and every key went nowhere.
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "vnc.sock")
+            events = []
+            thread = self.fake_server(path, events)
+            bootcheck.vnc_type(path, "qa", select_first=True, click=(640, 478))
+            thread.join(5)
+        self.assertEqual(events[0], (5, 1, 640, 478))
+        self.assertEqual(events[1], (5, 0, 640, 478))
+        self.assertEqual(events[2], (4, 1, 0xFFE1))
 
     def test_a_lock_screen_is_woken_by_a_pointer_press_first(self):
         # The display can be in DPMS off when the guest reports the lock; Shift
