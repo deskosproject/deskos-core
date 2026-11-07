@@ -414,6 +414,30 @@ join_log=/var/lib/deskos-qa/join.log
   echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
   echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
   echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  # A user in another domain is the cross-forest case. The client reaches the
+  # IPA server, but a Kerberos referral for the other forest needs the client to
+  # reach that forest's KDC, and SSSD reports only "System error" when it cannot
+  # (run 42324639187: pam_sss 4, no password typed wrong). Name the layer here:
+  # what the SRV lookup answered, which address it named, and whether that
+  # address takes a connection on the ports a login needs.
+  ad_domain="${JOIN_USER#*@}"
+  if [ "$ad_domain" != "$JOIN_USER" ] && [ "$ad_domain" != "$REALM_DOMAIN" ]; then
+    echo "join_trust_domain=$ad_domain"
+    ad_srv=$(dig +short SRV "_kerberos._tcp.$ad_domain" 2>/dev/null | head -1)
+    echo "join_trust_srv=$ad_srv"
+    ad_host=$(printf '%s' "$ad_srv" | awk '{print $4}' | sed 's/\\.$//')
+    ad_ip=$(getent hosts "$ad_host" 2>/dev/null | awk '{print $1}' | head -1)
+    echo "join_trust_dc=$ad_host/$ad_ip"
+    echo "join_trust_probe=$(for p in 88 389 464; do timeout 3 bash -c "echo > /dev/tcp/$ad_ip/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
+    if [ -n "${JOIN_USER_PASSWORD:-}" ] && [ -n "$ad_ip" ]; then
+      if printf '%s\\n' "$JOIN_USER_PASSWORD" | timeout 20 kinit "$JOIN_USER" >/tmp/trust-kinit.log 2>&1; then
+        echo "join_trust_kinit=ok"
+      else
+        echo "join_trust_kinit=$(tr '\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
+      fi
+      echo "join_trust_klist=$(klist 2>&1 | tr '\\n' '|' | cut -c1-300)"
+    fi
+  fi
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
   echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
   echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
@@ -539,6 +563,8 @@ def join_environment(join):
     ]
     if join.get("dns"):
         lines.append(("JOIN_DNS", join["dns"]))
+    if join.get("user_password"):
+        lines.append(("JOIN_USER_PASSWORD", join["user_password"]))
     return "".join(f"{key}={value}\n" for key, value in lines)
 
 
@@ -2516,6 +2542,9 @@ def main():
             "password": a.join_password,
             "user": a.join_user,
             "dns": a.join_dns,
+            # The directory user's own password, for the diagnostic that asks
+            # the guest whether it can authenticate that user through a trust.
+            "user_password": a.gdm_password,
         }
     if a.join_gdm and not join:
         p.error("--join-gdm needs the --join-* values")
