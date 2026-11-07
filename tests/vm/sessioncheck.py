@@ -541,33 +541,6 @@ ipa-client-install --unattended --force --hostname="$join_host" \
     --domain="$REALM_DOMAIN" --realm="$REALM_NAME" \
     --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
     --mkhomedir --no-ntp --force-join || exit 1
-
-# A user in another forest: the client resolves the account through IPA, but the
-# ticket for that account belongs to the other realm. The client has to reach
-# that realm's KDC -- in a real trust it gets a referral from IPA, and this
-# fixture's KDC has no krbtgt/<forest>@<IPA realm> principal (run 42396135847
-# listed only the reverse), so the referral cannot exist. Point the realm at the
-# DC the guest already reaches, and stop SSSD asking for an armor ticket through
-# the IPA KDC: `krb5_use_fast = never` turns the AP-REQ armor step off, which is
-# the step that failed with "Server krbtgt/ADTRUST.TEST@LAB.TEST not found".
-trust_domain="${JOIN_USER#*@}"
-if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
-  trust_realm=$(printf '%s' "$trust_domain" | tr '[:lower:]' '[:upper:]')
-  trust_kdc=$(getent hosts "dc.$trust_domain" 2>/dev/null | awk '{print $1}' | head -1)
-  if [ -n "$trust_kdc" ]; then
-    printf '\n[realms]\n %s = {\n  kdc = %s\n  admin_server = %s\n }\n' \
-      "$trust_realm" "$trust_kdc" "$trust_kdc" >> /etc/krb5.conf
-    printf '\n[domain_realm]\n .%s = %s\n %s = %s\n' \
-      "$trust_domain" "$trust_realm" "$trust_domain" "$trust_realm" >> /etc/krb5.conf
-    awk -v want="[domain/$REALM_DOMAIN]" \
-      '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
-      /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
-      { chown root:root /etc/sssd/sssd.conf.new
-        chmod 0600 /etc/sssd/sssd.conf.new
-        mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
-    systemctl restart sssd || true
-  fi
-fi
 exit 0
 """
 
