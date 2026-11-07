@@ -260,20 +260,20 @@ jobs:
         # passes a direct kinit to AD and fails every login (run 42386803763).
         run: |
           set -euo pipefail
-          # The checklist in the guide (10.2) asks that the AD accounts have AES
-          # keys; resetting the user's password after the trust is what
-          # regenerates them, and HANDLE_AUTHDATA is what a KDC says when the
-          # ticket it is handed cannot be validated at that layer.
+          # The admin ticket from the trust step is still in the cache here, so
+          # ask ipa first: the user's kinit below replaces it, and re-running
+          # kinit admin through `sudo podman exec -i` prompted on empty stdin
+          # (run 42423554518).
+          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
+          test -s /tmp/idrange.txt
+          # The guide's checklist (10.2) asks that the AD accounts have AES keys;
+          # setting the password again after the trust regenerates them.
           sudo podman exec deskos-ad samba-tool user setpassword qa \
             --newpassword="$AD_USER_PASSWORD" >/dev/null
           printf '%s\n' "$AD_USER_PASSWORD" | sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
           sudo podman exec deskos-freeipa kvno -S host ipa.lab.test | tee /tmp/kvno.txt
           sudo podman exec deskos-freeipa klist | tee /tmp/klist-after.txt
           grep -q 'krbtgt/LAB.TEST@ADTRUST.TEST' /tmp/klist-after.txt
-          # kinit replaced the admin ticket above; ipa has no credentials now.
-          printf '%s\\n' "$FREEIPA_PASSWORD" | sudo podman exec -i deskos-freeipa kinit admin
-          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
-          test -s /tmp/idrange.txt
 
       - name: The KDC's cross-realm principals
         # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.

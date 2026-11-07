@@ -452,6 +452,7 @@ sssctl debug-level 9 >/dev/null 2>&1 || true
   # The child that authenticates reads this file as the user; a mode without
   # "other read" is the documented cause of PAM_SYSTEM_ERR (solution 7134068).
   echo "join_krb5_mode=$(stat -c '%a %U:%G' /etc/krb5.conf 2>/dev/null)"
+  echo "join_krb5_mode_before=$(cat /var/lib/deskos-qa/krb5-mode-before 2>/dev/null)"
   echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
   join_home=$(getent passwd "$JOIN_USER" | cut -d: -f6)
   echo "join_home=$join_home"
@@ -550,6 +551,7 @@ ipa-client-install --unattended --force --hostname="$join_host" \
 # hardened umask makes that likely: the child then logs "cannot read
 # /etc/krb5.conf" and PAM reports PAM_SYSTEM_ERR (4), which looks like a
 # directory failure. Red Hat solution 7134068 names this exact cause and fix.
+stat -c '%a %U:%G' /etc/krb5.conf > /var/lib/deskos-qa/krb5-mode-before 2>/dev/null || true
 chmod 0644 /etc/krb5.conf
 exit 0
 """
