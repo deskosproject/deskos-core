@@ -247,6 +247,18 @@ jobs:
             exit 1
           fi
 
+      - name: The client's ticket through the trust
+        # What an IPA client does when an AD user logs in: ask its own KDC for
+        # krbtgt/<forest>@<IPA realm>. A trust that leaves that principal out
+        # passes a direct kinit to AD and fails every login (run 42386803763).
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$FREEIPA_PASSWORD" | sudo podman exec -i deskos-freeipa kinit admin
+          sudo podman exec deskos-freeipa kvno "krbtgt/ADTRUST.TEST@LAB.TEST" | tee /tmp/kvno.txt
+          grep -q 'krbtgt/ADTRUST.TEST@LAB.TEST' /tmp/kvno.txt
+          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
+          test -s /tmp/idrange.txt
+
       - name: The KDC's cross-realm principals
         # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.
         # The names are case-sensitive: an uppercase realm with a lowercase
@@ -264,6 +276,9 @@ jobs:
         run: |
           mkdir -p evidence
           cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
+          cp /tmp/kvno.txt /tmp/idrange.txt evidence/ 2>/dev/null || true
+          sudo cp /tmp/trust-add.txt evidence/ 2>/dev/null || true
+          sudo chown "$(id -u):$(id -g)" evidence/trust-add.txt 2>/dev/null || true
           cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true

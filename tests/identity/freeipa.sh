@@ -158,9 +158,12 @@ case "${1:-}" in
     # `--password` is a prompt, not an option with a value: passing
     # --password=... makes ipa exit with "--password option does not take a
     # value" (run 41742726895). Feed the prompt on stdin instead.
+    # Keep what trust-add says: it reports the cross-realm principals it
+    # created, and a trust that "succeeds" without them leaves clients with
+    # nothing to ask their KDC for (run 42396135847).
     printf '%s\n' "$AD_ADMIN_PASSWORD" | podman exec -i "$name" ipa trust-add "$AD_DOMAIN" --type=ad \
       --admin Administrator --password \
-      --range-type=ipa-ad-trust
+      --range-type=ipa-ad-trust 2>&1 | tee /tmp/trust-add.txt
     podman exec "$name" ipa trust-show "$AD_DOMAIN"
     podman exec "$name" ipa idrange-find
     # The IPA server's SSSD resolves the trusted user; wait for the domain to
