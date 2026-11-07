@@ -403,6 +403,9 @@ export JOIN_OK="$ok"
 
 JOIN_STATUS = """#!/bin/bash
 join_log=/var/lib/deskos-qa/join.log
+# A failed login through a trust says only "System error" at the default debug
+# level; the reason is in the domain log. Raise it before GDM starts.
+sssctl debug-level 9 >/dev/null 2>&1 || true
 {
   echo "join_ok=${JOIN_OK:-no}"
   echo "join_kind=$JOIN_KIND"
@@ -414,6 +417,36 @@ join_log=/var/lib/deskos-qa/join.log
   echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
   echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
   echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  # A user in another domain is the cross-forest case. The client reaches the
+  # IPA server, but a Kerberos referral for the other forest needs the client to
+  # reach that forest's KDC, and SSSD reports only "System error" when it cannot
+  # (run 42324639187: pam_sss 4, no password typed wrong). Name the layer here:
+  # what the SRV lookup answered, which address it named, and whether that
+  # address takes a connection on the ports a login needs.
+  ad_domain="${JOIN_USER#*@}"
+  if [ "$ad_domain" != "$JOIN_USER" ] && [ "$ad_domain" != "$REALM_DOMAIN" ]; then
+    echo "join_trust_domain=$ad_domain"
+    ad_srv=$(dig +short SRV "_kerberos._tcp.$ad_domain" 2>/dev/null | head -1)
+    echo "join_trust_srv=$ad_srv"
+    ad_host=$(printf '%s' "$ad_srv" | awk '{print $4}' | sed 's/\\.$//')
+    ad_ip=$(getent hosts "$ad_host" 2>/dev/null | awk '{print $1}' | head -1)
+    echo "join_trust_dc=$ad_host/$ad_ip"
+    echo "join_trust_probe=$(for p in 88 389 464; do timeout 3 bash -c "echo > /dev/tcp/$ad_ip/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
+    if [ -n "${JOIN_USER_PASSWORD:-}" ] && [ -n "$ad_ip" ]; then
+      if printf '%s\\n' "$JOIN_USER_PASSWORD" | timeout 20 kinit "$JOIN_USER" >/tmp/trust-kinit.log 2>&1; then
+        echo "join_trust_kinit=ok"
+      else
+        echo "join_trust_kinit=$(tr '\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
+      fi
+      echo "join_trust_klist=$(klist 2>&1 | tr '\\n' '|' | cut -c1-300)"
+      # kinit succeeds with the same password, so the failure is in the path
+      # SSSD takes. Its own log for the IPA domain names it; the subdomain
+      # status says whether the trust was even discovered.
+      echo "join_trust_subdomain=$(sssctl domain-status "$ad_domain" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+      echo "join_trust_sssd=$(tail -40 "/var/log/sssd/sssd_$REALM_DOMAIN.log" 2>/dev/null | tr '\\n' '|' | cut -c1-1200)"
+      echo "join_trust_journal=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -20 | tr '\\n' '|' | cut -c1-800)"
+    fi
+  fi
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
   echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
   echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
@@ -508,6 +541,23 @@ ipa-client-install --unattended --force --hostname="$join_host" \
     --domain="$REALM_DOMAIN" --realm="$REALM_NAME" \
     --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
     --mkhomedir --no-ntp --force-join || exit 1
+
+# A user in another forest logs in with a ticket from that forest. SSSD's FAST
+# armor asked the IPA KDC for krbtgt/<forest>@<IPA realm>, the reverse of the
+# one-way trust's krbtgt/<IPA realm>@<forest>, and a trust only has the latter
+# (Red Hat, Installing trust between IdM and AD, 9.6). With FAST off the AS-REQ
+# goes to the forest's own KDC, which the guest reaches and where a plain kinit
+# already works.
+trust_domain="${JOIN_USER#*@}"
+if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
+  awk -v want="[domain/$REALM_DOMAIN]" \
+    '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
+    /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+    { chown root:root /etc/sssd/sssd.conf.new
+      chmod 0600 /etc/sssd/sssd.conf.new
+      mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
+  systemctl restart sssd || true
+fi
 exit 0
 """
 
@@ -539,6 +589,8 @@ def join_environment(join):
     ]
     if join.get("dns"):
         lines.append(("JOIN_DNS", join["dns"]))
+    if join.get("user_password"):
+        lines.append(("JOIN_USER_PASSWORD", join["user_password"]))
     return "".join(f"{key}={value}\n" for key, value in lines)
 
 
@@ -1391,6 +1443,16 @@ if [ ! -s {RESULTS} ]; then
   echo "login_sessions=$(loginctl list-sessions --no-legend 2>/dev/null | wc -l)"
   echo "gdm_state=$(systemctl show gdm -p ActiveState -p SubState --value 2>/dev/null | paste -sd/ -)"
   echo "autologin=$(grep -h '^AutomaticLogin' /etc/gdm/custom.conf /etc/gdm3/custom.conf 2>/dev/null | paste -sd, -)"
+  # A login through a trust fails in SSSD, and the reason is in its domain log,
+  # written long after the join status was collected. Read it here, where the
+  # report runs as root and after the attempts (run 42375098806).
+  . /var/lib/deskos-qa/join.env 2>/dev/null || true
+  # Only the lines that name a failure: the tail is one transaction and the
+  # report is a serial line, so a full log says nothing useful (run 42379546218
+  # captured a preauth success and stopped there).
+  echo "trust_sssd=$(grep -iE 'preauth|krb5_auth|pam_|error|fail|ccache|kcm|denied' "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  echo "trust_gdm=$(journalctl -b -o short-monotonic --no-pager -u gdm.service -u sssd.service -u oddjobd.service 2>/dev/null | grep -iE 'auth|sss|krb|error|fail|denied|session' | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
@@ -2516,6 +2578,9 @@ def main():
             "password": a.join_password,
             "user": a.join_user,
             "dns": a.join_dns,
+            # The directory user's own password, for the diagnostic that asks
+            # the guest whether it can authenticate that user through a trust.
+            "user_password": a.gdm_password,
         }
     if a.join_gdm and not join:
         p.error("--join-gdm needs the --join-* values")
