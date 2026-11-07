@@ -403,6 +403,9 @@ export JOIN_OK="$ok"
 
 JOIN_STATUS = """#!/bin/bash
 join_log=/var/lib/deskos-qa/join.log
+# A failed login through a trust says only "System error" at the default debug
+# level; the reason is in the domain log. Raise it before GDM starts.
+sssctl debug-level 9 >/dev/null 2>&1 || true
 {
   echo "join_ok=${JOIN_OK:-no}"
   echo "join_kind=$JOIN_KIND"
@@ -436,6 +439,12 @@ join_log=/var/lib/deskos-qa/join.log
         echo "join_trust_kinit=$(tr '\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
       fi
       echo "join_trust_klist=$(klist 2>&1 | tr '\\n' '|' | cut -c1-300)"
+      # kinit succeeds with the same password, so the failure is in the path
+      # SSSD takes. Its own log for the IPA domain names it; the subdomain
+      # status says whether the trust was even discovered.
+      echo "join_trust_subdomain=$(sssctl domain-status "$ad_domain" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+      echo "join_trust_sssd=$(tail -40 "/var/log/sssd/sssd_$REALM_DOMAIN.log" 2>/dev/null | tr '\\n' '|' | cut -c1-1200)"
+      echo "join_trust_journal=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -20 | tr '\\n' '|' | cut -c1-800)"
     fi
   fi
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
