@@ -449,6 +449,9 @@ sssctl debug-level 9 >/dev/null 2>&1 || true
   fi
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
   echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
+  # The child that authenticates reads this file as the user; a mode without
+  # "other read" is the documented cause of PAM_SYSTEM_ERR (solution 7134068).
+  echo "join_krb5_mode=$(stat -c '%a %U:%G' /etc/krb5.conf 2>/dev/null)"
   echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
   join_home=$(getent passwd "$JOIN_USER" | cut -d: -f6)
   echo "join_home=$join_home"
@@ -542,22 +545,12 @@ ipa-client-install --unattended --force --hostname="$join_host" \
     --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
     --mkhomedir --no-ntp --force-join || exit 1
 
-# A user in another forest logs in with a ticket from that forest. SSSD's FAST
-# armor asked the IPA KDC for krbtgt/<forest>@<IPA realm>, the reverse of the
-# one-way trust's krbtgt/<IPA realm>@<forest>, and a trust only has the latter
-# (Red Hat, Installing trust between IdM and AD, 9.6). With FAST off the AS-REQ
-# goes to the forest's own KDC, which the guest reaches and where a plain kinit
-# already works.
-trust_domain="${JOIN_USER#*@}"
-if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
-  awk -v want="[domain/$REALM_DOMAIN]" \
-    '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
-    /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
-    { chown root:root /etc/sssd/sssd.conf.new
-      chmod 0600 /etc/sssd/sssd.conf.new
-      mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
-  systemctl restart sssd || true
-fi
+# SSSD's krb5_child runs as the user whose login is being checked, and it reads
+# /etc/krb5.conf to find the realm. ipa-client-install can leave it 0640, and a
+# hardened umask makes that likely: the child then logs "cannot read
+# /etc/krb5.conf" and PAM reports PAM_SYSTEM_ERR (4), which looks like a
+# directory failure. Red Hat solution 7134068 names this exact cause and fix.
+chmod 0644 /etc/krb5.conf
 exit 0
 """
 
