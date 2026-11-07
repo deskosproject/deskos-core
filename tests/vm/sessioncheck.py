@@ -1426,6 +1426,12 @@ if [ ! -s {RESULTS} ]; then
   echo "login_sessions=$(loginctl list-sessions --no-legend 2>/dev/null | wc -l)"
   echo "gdm_state=$(systemctl show gdm -p ActiveState -p SubState --value 2>/dev/null | paste -sd/ -)"
   echo "autologin=$(grep -h '^AutomaticLogin' /etc/gdm/custom.conf /etc/gdm3/custom.conf 2>/dev/null | paste -sd, -)"
+  # A login through a trust fails in SSSD, and the reason is in its domain log,
+  # written long after the join status was collected. Read it here, where the
+  # report runs as root and after the attempts (run 42375098806).
+  . /var/lib/deskos-qa/join.env 2>/dev/null || true
+  echo "trust_sssd=$(tail -80 "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tr '\n' '|' | cut -c1-2500)"
+  echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
