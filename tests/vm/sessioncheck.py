@@ -541,6 +541,23 @@ ipa-client-install --unattended --force --hostname="$join_host" \
     --domain="$REALM_DOMAIN" --realm="$REALM_NAME" \
     --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
     --mkhomedir --no-ntp --force-join || exit 1
+
+# A user in another forest logs in with a ticket from that forest. SSSD's FAST
+# armor asked the IPA KDC for krbtgt/<forest>@<IPA realm>, the reverse of the
+# one-way trust's krbtgt/<IPA realm>@<forest>, and a trust only has the latter
+# (Red Hat, Installing trust between IdM and AD, 9.6). With FAST off the AS-REQ
+# goes to the forest's own KDC, which the guest reaches and where a plain kinit
+# already works.
+trust_domain="${JOIN_USER#*@}"
+if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
+  awk -v want="[domain/$REALM_DOMAIN]" \
+    '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
+    /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+    { chown root:root /etc/sssd/sssd.conf.new
+      chmod 0600 /etc/sssd/sssd.conf.new
+      mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
+  systemctl restart sssd || true
+fi
 exit 0
 """
 

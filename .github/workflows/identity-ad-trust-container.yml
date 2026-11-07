@@ -253,9 +253,10 @@ jobs:
         # passes a direct kinit to AD and fails every login (run 42386803763).
         run: |
           set -euo pipefail
-          printf '%s\n' "$FREEIPA_PASSWORD" | sudo podman exec -i deskos-freeipa kinit admin
-          sudo podman exec deskos-freeipa kvno "krbtgt/ADTRUST.TEST@LAB.TEST" | tee /tmp/kvno.txt
-          grep -q 'krbtgt/ADTRUST.TEST@LAB.TEST' /tmp/kvno.txt
+          printf '%s\n' "$AD_USER_PASSWORD" | sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
+          sudo podman exec deskos-freeipa kvno -S host ipa.lab.test | tee /tmp/kvno.txt
+          sudo podman exec deskos-freeipa klist | tee /tmp/klist-after.txt
+          grep -q 'krbtgt/LAB.TEST@ADTRUST.TEST' /tmp/klist-after.txt
           sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
           test -s /tmp/idrange.txt
 
@@ -276,7 +277,7 @@ jobs:
         run: |
           mkdir -p evidence
           cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
-          cp /tmp/kvno.txt /tmp/idrange.txt evidence/ 2>/dev/null || true
+          cp /tmp/kvno.txt /tmp/klist-after.txt /tmp/idrange.txt evidence/ 2>/dev/null || true
           sudo cp /tmp/trust-add.txt evidence/ 2>/dev/null || true
           sudo chown "$(id -u):$(id -g)" evidence/trust-add.txt 2>/dev/null || true
           cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
