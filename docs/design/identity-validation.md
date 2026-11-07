@@ -134,10 +134,15 @@ runner's resolver for the zone.
   organization's decision. FreeIPA fits Linux better because it models Unix
   identity, host-based access and `sudo` policy natively; AD is supported because
   organizations already have it.
-- **The trust is a separate fixture.** `identity-ad-trust-container.yml`
-  provisions the DC and the IPA server on one network, with DNS in both
-  directions and the trust, and fails if the user resolves before it. It does
-  not boot the client: the GDM login under the trust is the client workflow.
+- **The trust is a separate fixture.** `identity-ad-trust-container.yml` runs
+  two jobs. The first provisions the DC (Samba on Fedora 45) and the IPA server
+  (CentOS Stream 10) on one network, with DNS in both directions and the trust,
+  and fails if the user resolves before it; it also asserts the guide's own
+  check, `kinit qa@ad.example.com` then `kvno -S host
+  idm1.idm.example.com`, so the cross-realm ticket is a record and not a
+  guess. The second repeats the fixture, boots the identity client, joins it to
+  FreeIPA and logs in at GDM as `qa@ad.example.com`, the account that lives in
+  AD, through the trust.
 - **Not a real user's password.** The fixture generates one per run, and the
   disposable DC turns off its complexity rule so the keyboard path stays
   lowercase; it is a test credential, not a directory policy.

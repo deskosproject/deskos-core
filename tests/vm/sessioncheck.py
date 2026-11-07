@@ -88,6 +88,9 @@ JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
 # they exceed the 4095 B a single tmpfiles argument can carry (run
 # 42424582176).
 JOIN_TRUST_STATUS_PATH = "/var/lib/deskos-qa/join-trust-status.sh"
+# What a failed login left behind is read after the attempt, and it is its
+# own file for the same 4095 B reason as the join status.
+REPORT_NO_SESSION_PATH = "/var/lib/deskos-qa/report-no-session.sh"
 # The probes live outside the home: with a directory user the home does not
 # exist until first login, so nothing can be seeded there in advance. A
 # system-wide autostart runs them in whichever account GDM logs in.
@@ -560,7 +563,24 @@ ipa-client-install --unattended --force --hostname="$join_host" \
 # /etc/krb5.conf" and PAM reports PAM_SYSTEM_ERR (4), which looks like a
 # directory failure. Red Hat solution 7134068 names this exact cause and fix.
 stat -c '%a %U:%G' /etc/krb5.conf > /var/lib/deskos-qa/krb5-mode-before 2>/dev/null || true
-chmod 0644 /etc/krb5.conf
+chmod 0644 /etc/krb5.conf || exit 1
+
+# A user from another forest logs in with a ticket from that forest. SSSD's FAST
+# armor asks the IPA KDC for krbtgt/<forest>@<IPA realm>, the reverse of a
+# one-way trust's krbtgt/<IPA realm>@<forest>, which can only exist in a two-way
+# trust. Red Hat documents krb5_use_fast = never for exactly this deployment
+# (RHEL 10, Planning Identity Management, 7.4) and notes that it removes the
+# client's IdM two-factor capability; this fixture has no OTP.
+trust_domain="${JOIN_USER#*@}"
+if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
+  awk -v want="[domain/$REALM_DOMAIN]" \
+    '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
+    /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+    { chown root:root /etc/sssd/sssd.conf.new
+      chmod 0600 /etc/sssd/sssd.conf.new
+      mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
+  systemctl restart sssd || true
+fi
 exit 0
 """
 
@@ -1429,14 +1449,7 @@ systemctl --no-block poweroff
 """
 
 
-REPORT_SESSION = f"""#!/bin/bash
-# Waits for the session results, then writes them and the journal to ttyS0.
-for i in $(seq 1 240); do test -s {RESULTS} && break; sleep 2; done
-stty -F /dev/ttyS0 115200 2>/dev/null
-{{
-echo {MARK_BEGIN}
-test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
-if [ ! -s {RESULTS} ]; then
+REPORT_NO_SESSION = """#!/bin/bash
   # No session reported: GDM may be sitting at the greeter because the login
   # could not happen. Say what the join did and what the display manager and
   # logind saw, so the boot is not silent (issue #437).
@@ -1455,7 +1468,22 @@ if [ ! -s {RESULTS} ]; then
   # captured a preauth success and stopped there).
   echo "trust_sssd=$(grep -iE 'preauth|krb5_auth|pam_|error|fail|ccache|kcm|denied' "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tail -60 | tr '\n' '|' | cut -c1-3000)"
   echo "trust_gdm=$(journalctl -b -o short-monotonic --no-pager -u gdm.service -u sssd.service -u oddjobd.service 2>/dev/null | grep -iE 'auth|sss|krb|error|fail|denied|session' | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  # The documented diagnostic for PAM_SYSTEM_ERR: the child that authenticates
+  # reads /etc/krb5.conf as the user (Red Hat solution 7134068).
+  echo "trust_krb5_conf=$(journalctl -b -u sssd -o short-monotonic --no-pager 2>/dev/null | grep -iE 'try_open_krb5_conf|cannot read /etc/krb5.conf' | tail -10 | tr '\n' '|' | cut -c1-1200)"
+  echo "trust_pam_acct=$(sssctl user-checks -a acct -s gdm-password "$JOIN_USER" 2>&1 | tr '\n' '|' | cut -c1-400)"
   echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
+"""
+
+REPORT_SESSION = f"""#!/bin/bash
+# Waits for the session results, then writes them and the journal to ttyS0.
+for i in $(seq 1 240); do test -s {RESULTS} && break; sleep 2; done
+stty -F /dev/ttyS0 115200 2>/dev/null
+{{
+echo {MARK_BEGIN}
+test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
+if [ ! -s {RESULTS} ]; then
+  /bin/bash /var/lib/deskos-qa/report-no-session.sh 2>/dev/null || true
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
@@ -1635,6 +1663,7 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 f"{tmpfiles_arg(join_client_script(join.get('kind', 'ipa')))}",
                 f"f {JOIN_STATUS_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_STATUS)}",
                 f"f {JOIN_TRUST_STATUS_PATH} 0755 root root - {tmpfiles_arg(JOIN_TRUST_STATUS)}",
+                f"f {REPORT_NO_SESSION_PATH} 0755 root root - {tmpfiles_arg(REPORT_NO_SESSION)}",
                 f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
             ]
             creds["systemd.extra-unit.deskos-qa-join.service"] = (

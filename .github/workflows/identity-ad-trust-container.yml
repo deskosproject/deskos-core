@@ -232,11 +232,18 @@ jobs:
           echo "the AD user does not resolve before the trust, as expected"
 
       - name: Establish the trust and prove lookup and Kerberos
+        # The order matters: ipa answers with the admin ticket that the trust
+        # step acquired, and the AD user's kinit below replaces it. Asking ipa
+        # after that kinit fails with "Invalid credentials" (run 42423554518),
+        # so every administrator query comes before the identity switch.
         timeout-minutes: 30
         run: |
           set -euo pipefail
           export AD_DOMAIN=ad.example.com AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
           sudo -E tests/identity/freeipa.sh trust
+          sudo podman exec deskos-freeipa ipa trust-show ad.example.com | tee /tmp/trust.txt
+          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
+          test -s /tmp/idrange.txt
           # Now that the conditional forward zone exists, prove the other
           # direction: the IPA server resolves the AD zone through it.
           sudo podman exec deskos-freeipa \
@@ -244,36 +251,22 @@ jobs:
           test -s /tmp/ipa-to-ad.txt
           sudo podman exec deskos-freeipa getent passwd qa@ad.example.com | tee /tmp/getent.txt
           test -s /tmp/getent.txt
+          # The guide's checklist (10.2) asks that the AD accounts have AES
+          # keys; setting the password again after the trust regenerates them.
+          sudo podman exec deskos-ad samba-tool user setpassword qa \
+            --newpassword="$AD_USER_PASSWORD" >/dev/null
+          # Section 9.6 of the guide, verbatim: the AD user's TGT, then a service
+          # ticket in the IPA realm, and the cross-realm TGT in klist.
           printf '%s\n' "$AD_USER_PASSWORD" |
             sudo podman exec -i deskos-freeipa kinit qa@AD.EXAMPLE.COM
+          sudo podman exec deskos-freeipa kvno -S host idm1.idm.example.com | tee /tmp/kvno.txt
           sudo podman exec deskos-freeipa klist | tee /tmp/klist.txt
-          grep -q 'AD.EXAMPLE.COM' /tmp/klist.txt
+          grep -q 'krbtgt/IDM.EXAMPLE.COM@AD.EXAMPLE.COM' /tmp/klist.txt
           # A name the trust does not know must not resolve.
           if sudo podman exec deskos-freeipa getent passwd deskos-nobody@ad.example.com; then
             echo "::error::a name outside the trust resolved"
             exit 1
           fi
-
-      - name: The client's ticket through the trust
-        # What an IPA client does when an AD user logs in: ask its own KDC for
-        # krbtgt/<forest>@<IPA realm>. A trust that leaves that principal out
-        # passes a direct kinit to AD and fails every login (run 42386803763).
-        run: |
-          set -euo pipefail
-          # The admin ticket from the trust step is still in the cache here, so
-          # ask ipa first: the user's kinit below replaces it, and re-running
-          # kinit admin through `sudo podman exec -i` prompted on empty stdin
-          # (run 42423554518).
-          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
-          test -s /tmp/idrange.txt
-          # The guide's checklist (10.2) asks that the AD accounts have AES keys;
-          # setting the password again after the trust regenerates them.
-          sudo podman exec deskos-ad samba-tool user setpassword qa \
-            --newpassword="$AD_USER_PASSWORD" >/dev/null
-          printf '%s\n' "$AD_USER_PASSWORD" | sudo podman exec -i deskos-freeipa kinit qa@AD.EXAMPLE.COM
-          sudo podman exec deskos-freeipa kvno -S host idm1.idm.example.com | tee /tmp/kvno.txt
-          sudo podman exec deskos-freeipa klist | tee /tmp/klist-after.txt
-          grep -q 'krbtgt/IDM.EXAMPLE.COM@AD.EXAMPLE.COM' /tmp/klist-after.txt
 
       - name: The KDC's cross-realm principals
         # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.
@@ -292,14 +285,12 @@ jobs:
         run: |
           mkdir -p evidence
           cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
-          cp /tmp/kvno.txt /tmp/klist-after.txt /tmp/idrange.txt evidence/ 2>/dev/null || true
+          cp /tmp/kvno.txt /tmp/klist.txt /tmp/idrange.txt /tmp/trust.txt evidence/ 2>/dev/null || true
           sudo cp /tmp/trust-add.txt evidence/ 2>/dev/null || true
           sudo chown "$(id -u):$(id -g)" evidence/trust-add.txt 2>/dev/null || true
-          cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
+          cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
-          sudo podman exec deskos-freeipa ipa trust-show ad.example.com > evidence/trust.txt 2>&1 || true
-          sudo podman exec deskos-freeipa ipa idrange-find > evidence/idrange.txt 2>&1 || true
           sudo podman exec deskos-freeipa getent passwd qa@ad.example.com > evidence/ad-user-on-ipa.txt 2>&1 || true
           sudo podman exec deskos-freeipa sssctl domain-status ad.example.com > evidence/domain-status.txt 2>&1 || true
           sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.ad.example.com @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true

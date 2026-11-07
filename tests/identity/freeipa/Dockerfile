@@ -3,8 +3,8 @@ FROM quay.io/centos/centos:stream10@sha256:c4bda52c705aae497e690bc0190fb111f8ddd
 ENV container=podman LANG=C.UTF-8
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# BaseOS/AppStream de CentOS Stream 10; sin EPEL ni módulos de RHEL 8.
-# ipa-server-dns incorpora las dependencias DNS; explicitamos el backend LDAP.
+# CentOS Stream 10 BaseOS/AppStream: no EPEL and no RHEL 8 module streams.
+# ipa-server-dns brings the DNS dependencies; the LDAP backend is explicit.
 RUN dnf -y install \
         systemd dbus-broker \
         ipa-server ipa-server-dns ipa-server-trust-ad \
@@ -17,16 +17,17 @@ RUN dnf -y install \
 COPY entrypoint.sh /usr/local/sbin/entrypoint.sh
 RUN chmod 0755 /usr/local/sbin/entrypoint.sh
 
-# Un target propio evita que ipa.service arranque a la vez que el bootstrap
-# en reinicios. Conserva sysinit/basic (tmpfiles, sockets, D-Bus, etc.). Las
-# unidades son ficheros y no un heredoc: buildah en los runners no expande
-# heredocs en RUN (run 42415026037, "Unknown instruction: CAT").
+# A target of its own keeps ipa.service from starting beside the bootstrap on
+# a restart. It keeps sysinit/basic (tmpfiles, sockets, D-Bus). The units are
+# files and not a heredoc: the runner's buildah does not expand a RUN heredoc
+# (run 42415026037, "Unknown instruction: CAT").
 COPY ipa-container.target ipa-container.service /etc/systemd/system/
 RUN systemctl set-default ipa-container.target \
  && rm -f /etc/machine-id /var/lib/dbus/machine-id \
  && touch /etc/machine-id
 
-# EXPOSE sólo documenta; el README usa una red privada sin publicar puertos.
+# EXPOSE documents only; the fixture uses a private network and publishes
+# the loopback ports it needs from the run script, not from the image.
 EXPOSE 53/tcp 53/udp 80/tcp 443/tcp 389/tcp 636/tcp
 EXPOSE 88/tcp 88/udp 464/tcp 464/udp
 EXPOSE 135/tcp 445/tcp 49152-65535/tcp

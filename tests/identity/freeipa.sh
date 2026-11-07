@@ -11,8 +11,8 @@ set -euo pipefail
 
 name=deskos-freeipa
 volume=deskos-freeipa-data
-# A single-label domain such as test is rejected by ipa-server-install; the
-# fixture uses a two-label domain that cannot collide with a real one.
+# A single-label domain is rejected by ipa-server-install; the fixture uses a
+# two-label domain under example.com, reserved for documentation.
 hostname=${IPA_SERVER_HOSTNAME:-idm1.idm.example.com}
 domain=${IPA_SERVER_DOMAIN:-idm.example.com}
 realm=${IPA_SERVER_REALM:-IDM.EXAMPLE.COM}
@@ -35,9 +35,10 @@ case "${1:-}" in
     # this zone, and a forwarder would make the fixture depend on the runner's
     # resolver. The trust adds a conditional forward zone for the AD domain.
     #
-    # The disposable .test realms are not DNSSEC-signed; validation rejects the
-    # forwarded SOA, which leaves trust-add without domain information (run
-    # 42109140793). The image installs with --no-dnssec-validation.
+    # The disposable example.com realms are not DNSSEC-signed; validation would
+    # reject the forwarded SOA and leave trust-add without domain information
+    # (run 42109140793). The trust step switches validation off in
+    # /etc/named/ipa-options-ext.conf before it adds the forward zone.
     bind=${IPA_BIND:-127.0.0.1}
     ports=(-p "$bind:53:53/udp" -p "$bind:53:53/tcp"
            -p "$bind:80:80" -p "$bind:443:443"
@@ -140,11 +141,10 @@ case "${1:-}" in
     # when the next command reaches the API.
     printf '%s\n' "$FREEIPA_PASSWORD" | podman exec -i "$name" kinit admin
     # The AD zone is not signed. Validation rejects the forwarded SOA and
-    # trust-add cannot read the domain. Red Hat documents the switch for
-    # RHEL 8.2+ in /etc/named/ipa-options-ext.conf (solution 1400113); this
-    # image is RHEL 9 with BIND 9.16, and `ipa dnsconfig-mod` has no
-    # --dnssec-validation (run 42116859715). Append or replace the directive
-    # after ipa-adtrust-install, then reload named.
+    # trust-add cannot read the domain. Red Hat documents the switch in
+    # /etc/named/ipa-options-ext.conf (solution 1400113), and `ipa dnsconfig-mod`
+    # has no --dnssec-validation (run 42116859715). Append or replace the
+    # directive after ipa-adtrust-install, then reload named.
     podman exec "$name" bash -lc '
       f=/etc/named/ipa-options-ext.conf
       touch "$f"
