@@ -247,10 +247,23 @@ jobs:
             exit 1
           fi
 
+      - name: The KDC's cross-realm principals
+        # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.
+        # The names are case-sensitive: an uppercase realm with a lowercase
+        # principal is "not found in Kerberos database" to the client, which is
+        # what run 42386803763 hit from the guest.
+        run: |
+          set -euo pipefail
+          sudo podman exec deskos-freeipa bash -lc \
+            "kadmin.local -q 'listprincs' | grep -i 'krbtgt/.*@' | sort" \
+            | tee /tmp/krbtgt.txt
+          test -s /tmp/krbtgt.txt
+
       - name: Collect evidence
         if: always()
         run: |
           mkdir -p evidence
+          cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
           cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
@@ -432,6 +445,9 @@ jobs:
           export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP="$AD_IP"
           sudo -E tests/identity/freeipa.sh trust
           sudo podman exec deskos-freeipa getent passwd qa@adtrust.test
+          sudo podman exec deskos-freeipa bash -lc \
+            "kadmin.local -q 'listprincs' | grep -i 'krbtgt/.*@' | sort" | tee /tmp/krbtgt.txt
+          test -s /tmp/krbtgt.txt
 
       - name: Render the identity image
         run: |
@@ -492,6 +508,7 @@ jobs:
           mkdir -p evidence
           cp -a "$WORK/session" evidence/ 2>/dev/null || true
           cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
+          cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
           sudo podman exec deskos-freeipa getent passwd qa@adtrust.test > evidence/ad-user-on-ipa.txt 2>&1 || true
           sudo podman exec deskos-freeipa ipa trust-show adtrust.test > evidence/trust.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
