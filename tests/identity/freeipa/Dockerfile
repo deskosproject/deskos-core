@@ -18,36 +18,13 @@ COPY entrypoint.sh /usr/local/sbin/entrypoint.sh
 RUN chmod 0755 /usr/local/sbin/entrypoint.sh
 
 # Un target propio evita que ipa.service arranque a la vez que el bootstrap
-# en reinicios. Conserva sysinit/basic (tmpfiles, sockets, D-Bus, etc.).
-RUN <<'BUILD'
-cat > /etc/systemd/system/ipa-container.target <<'UNIT'
-[Unit]
-Description=FreeIPA CI container
-Requires=basic.target
-Wants=network.target ipa-container.service
-After=basic.target
-AllowIsolate=yes
-UNIT
-cat > /etc/systemd/system/ipa-container.service <<'UNIT'
-[Unit]
-Description=Install or start the FreeIPA CI fixture
-Requires=dbus.socket
-After=network.target dbus.socket systemd-tmpfiles-setup.service
-FailureAction=exit-force
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/entrypoint.sh --configure
-RemainAfterExit=yes
-TimeoutStartSec=1800
-UMask=0022
-StandardOutput=journal+console
-StandardError=journal+console
-UNIT
-systemctl set-default ipa-container.target
-rm -f /etc/machine-id /var/lib/dbus/machine-id
-touch /etc/machine-id
-BUILD
+# en reinicios. Conserva sysinit/basic (tmpfiles, sockets, D-Bus, etc.). Las
+# unidades son ficheros y no un heredoc: buildah en los runners no expande
+# heredocs en RUN (run 42415026037, "Unknown instruction: CAT").
+COPY ipa-container.target ipa-container.service /etc/systemd/system/
+RUN systemctl set-default ipa-container.target \
+ && rm -f /etc/machine-id /var/lib/dbus/machine-id \
+ && touch /etc/machine-id
 
 # EXPOSE sólo documenta; el README usa una red privada sin publicar puertos.
 EXPOSE 53/tcp 53/udp 80/tcp 443/tcp 389/tcp 636/tcp

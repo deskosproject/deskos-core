@@ -1,0 +1,14 @@
+[Unit]
+Description=Install or start the FreeIPA CI fixture
+Requires=dbus.socket
+After=network.target dbus.socket systemd-tmpfiles-setup.service
+FailureAction=exit-force
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/entrypoint.sh --configure
+RemainAfterExit=yes
+TimeoutStartSec=1800
+UMask=0022
+StandardOutput=journal+console
+StandardError=journal+console
