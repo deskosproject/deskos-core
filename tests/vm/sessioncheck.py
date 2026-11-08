@@ -1472,6 +1472,9 @@ REPORT_NO_SESSION = """#!/bin/bash
   # reads /etc/krb5.conf as the user (Red Hat solution 7134068).
   echo "trust_krb5_conf=$(journalctl -b -u sssd -o short-monotonic --no-pager 2>/dev/null | grep -iE 'try_open_krb5_conf|cannot read /etc/krb5.conf' | tail -10 | tr '\n' '|' | cut -c1-1200)"
   echo "trust_pam_acct=$(sssctl user-checks -a acct -s gdm-password "$JOIN_USER" 2>&1 | tr '\n' '|' | cut -c1-400)"
+  # realmd and adcli say why a join was refused; the unit's log keeps only the
+  # last line, and "Insufficient permissions" alone names no layer.
+  echo "join_realmd=$(journalctl -b --no-pager 2>/dev/null | grep -iE 'adcli|realmd|realm:' | tail -40 | tr '\n' '|' | cut -c1-2500)"
   echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
 """
 
