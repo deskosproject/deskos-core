@@ -94,7 +94,7 @@ jobs:
           printf '%s' "$COMMIT" | grep -qE '^[0-9a-f]{7,40}$' \
             || { echo "::error::commit must be a hex commit"; exit 1; }
           # The installer repository carries the same suffix in every release:
-          # -installer says what the artifact is and matches DayTwo's name.
+          # -installer says what the artifact is; the organization uses the same suffix.
           echo "ISO_REPO=${IMAGE}-installer" >> "$GITHUB_ENV"
 
       - name: Is there an image to install?
