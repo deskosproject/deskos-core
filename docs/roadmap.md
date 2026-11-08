@@ -5,9 +5,9 @@ configuration management is outside every milestone.
 
 | Today | State |
 |---|---|
-| Compiler | `v0.20.0` (2026-11-04): `Platform.maskedUnits` and the update-unit retry |
-| Bases | CentOS Stream 10 `f43c24c5` (2026-11-03), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`, RHEL 10 `80485ddb` (2026-11-05, kernel `211.74.1`, the CVE-2026-98432 fix) |
-| Open | AD trust fixture (#406), `/var/home` label (#409), CVE-2026-114406 decision (#411), and the image scan and build disk limits tracked in the organization repository |
+| Compiler | `v0.25.1` (2026-11-08): the CentOS Stream 10 base moved to the 2026-11-06 build |
+| Bases | CentOS Stream 10 `f09b8e56` (2026-11-06, kernel `6.12.0-281`), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`, RHEL 10 `80485ddb` (2026-11-05, kernel `211.74.1`, the CVE-2026-98432 fix) |
+| Open | Satellite content source (#466), `fstrim` on `/sysroot` (#419), libvirt secrets (#407), GNOME coverage (#448, #446), firefox CVE-2026-115905 (#420), an installed run of the published ISO (#294), and the registry prune tracked in the organization repository |
 
 ## Milestone 0: resource model (done)
 
@@ -95,7 +95,7 @@ Design: [session-e2e.md](design/session-e2e.md); prior art and what we take:
 | Reach a Settings page | verified 2026-11-02 (run `41528142670`); the default panel label is asserted, the sidebar click is not |
 | Lock and unlock | **done** 2026-11-03, run `41551588828` |
 | Open and close a window through the tree | verified 2026-11-02 (run `41528142670`) |
-| Promotion waits for E2E | not before the steps above exist |
+| Promotion waits for E2E | yes: the publish job runs the checks and promotion follows it |
 
 Keyboard injection for application interaction is deferred: Wayland needs the
 remote-desktop portal, not a root helper. The lock screen is the exception, and
@@ -108,14 +108,19 @@ the harness types there through the hypervisor's VNC keyboard.
   daily and on demand. The session asserts the join, SSSD and the directory user,
   then logs in at GDM with a home from `oddjob-mkhomedir` (2026-10-27).
 - **AD membership.** `tests/identity/samba/` and `identity-ad.yml` join through
-  the realm's own DNS and log in as `qa@ad.example.com`; an AD trust is a later step.
+  the realm's own DNS and log in as `qa@ad.example.com`. The join uses Samba's
+  client: adcli's machine-password exchange is refused by Samba 4.23 and later.
 - **Interactive GDM login.** The greeter asks for a name, the harness types the
   directory user and its generated password on the VNC keyboard, and the session
   starts as that user; FreeIPA run `41579749802` and AD run `41579749764`
   (2026-11-03) pass.
 - **A realm with its own DNS.** FreeIPA runs integrated DNS and the client
   discovers it through SRV records; FreeIPA run `41631837345` (2026-11-03)
-  passes. **Next:** an AD trust with DNS delegation
+  passes.
+- **AD trust.** `identity-ad-trust-container.yml` provisions the Samba DC and the
+  FreeIPA server, proves DNS in both directions and the trust ports, establishes
+  a one-way trust, and logs in at GDM as the AD user through it (2026-11-08).
+  The cross-realm ticket check is the one from the RHEL 10 guide
   ([identity-validation.md](design/identity-validation.md)).
 - **Corporate dconf lockdown.** `GnomeProfile.spec.locks` renders locks and the
   `lockdown` block models `org.gnome.desktop.lockdown.*`. The session check proves
@@ -184,20 +189,23 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 
 ### Secure Boot (proposed 2026-10-26)
 
-Every installation runs with Secure Boot **off** today, and that is a choice of
-test coverage rather than a missing chain. Measured 2026-10-30 on CentOS Stream
-10: `shim-x64` 16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and
-`grubx64.efi` and `vmlinuz` are signed by CentOS's Secure Boot keys, so the
-vendor chain exists on both EL10 platforms.
+The vendor chain exists. Measured 2026-10-30 on CentOS Stream 10: `shim-x64`
+16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and `grubx64.efi`
+and `vmlinuz` are signed by CentOS's Secure Boot keys. On 2026-11-08 the
+maintainer reported a DayTwo DeskOS Fedora 45 workstation booting with Secure
+Boot enabled on a laptop, so the chain also works on real hardware for that
+flavor.
 
-What is missing is a boot with Secure Boot on: no DeskOS run has done it, on
-either platform, and `checks.md` records it as untested. An organization with
-its own key needs an owner, db or MOK enrolment, signed GRUB and kernel, and
-Microsoft signing for the default trust.
+What is missing is coverage: no CI check boots with Secure Boot on, and no
+CentOS Stream 10 or RHEL 10 image has been reported doing it. The installer in
+that mode is untested. An organization with its own key needs an owner, db or
+MOK enrolment, signed GRUB and kernel, and Microsoft signing for the default
+trust.
 
 The installer, out-of-tree modules and two QEMU tests (a signed image boots, an
-unsigned kernel is refused) belong to the item. **Decision:** vendor chain only,
-or a DeskOS key with an owner and a rotation plan.
+unsigned kernel is refused) belong to the item. **Decision:** the vendor chain
+is enough for the Fedora flavor; whether Core also ships a DeskOS key with an
+owner and a rotation plan is still open.
 
 ### Test organization (proposed 2026-10-26)
 
