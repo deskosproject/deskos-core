@@ -151,7 +151,7 @@ func TestUpdateSaysWhatChangedAndWhatToDoNext(t *testing.T) {
 	// is now derived from the deployment, not from the command's exit status.
 	dep := func(digest, version string) *bootcDeployment {
 		d := &bootcDeployment{}
-		d.Image.Image.Image = "zot.apps.virt.daytwo.dev/daytwo/deskos-daytwo-devops-fedora-45:stable"
+		d.Image.Image.Image = "registry.example.com/example/workstation:stable"
 		d.Image.ImageDigest = digest
 		d.Image.Version = version
 		return d

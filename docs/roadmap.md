@@ -192,7 +192,7 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 The vendor chain exists. Measured 2026-10-30 on CentOS Stream 10: `shim-x64`
 16.1-1.el10 is signed by Microsoft's 2011 and 2023 UEFI CAs, and `grubx64.efi`
 and `vmlinuz` are signed by CentOS's Secure Boot keys. On 2026-11-08 the
-maintainer reported a DayTwo DeskOS Fedora 45 workstation booting with Secure
+maintainer reported a DeskOS Fedora 45 workstation from the downstream organization booting with Secure
 Boot enabled on a laptop, so the chain also works on real hardware for that
 flavor.
 
@@ -417,13 +417,13 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 
 ## Release contract
 
-Core and the DayTwo organization already share the shape: build one digest,
+Core and the downstream organization already share the shape: build one digest,
 scan it with a reviewed exception record, boot it, sign it, publish it under an
 immutable `:<commit>`, move `:candidate`, and promote `:stable` by digest with an
 approval record. The installers follow the image digest.
 
 - **Done 2026-11-05:** the installer repository ends in `-installer`, the same
-  suffix DayTwo uses. The first push returned 401 because the Quay repository
+  suffix the organization uses. The first push returned 401 because the Quay repository
   did not exist; it was created and the rename moved the workflow, the
   promotion and the verify page. The old `-iso` repository was deleted after
   `:stable` moved.
@@ -433,4 +433,4 @@ approval record. The installers follow the image digest.
   and `tests/evidence/release.py`. Every promotion writes
   `releases/<repository>/stable/<stamp>-<digest>.json` beside the evidence, with
   the digest, channels, signature, installer digest, evidence index hash and the
-  full approval record. The fields are shared with DayTwo; the workflows are not.
+  full approval record. The fields are shared with the organization; the workflows are not.
