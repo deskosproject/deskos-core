@@ -11,7 +11,7 @@
 # distribution at build time, so their exact version moves with Fedora's
 # repositories; the job records `samba --version` in the evidence, and this
 # image is built in the run, never published.
-FROM registry.fedoraproject.org/fedora:45@sha256:e736b5d06f96f7560b82d106444cb00eb5dd735f30b2c15e575213a218810e18
+FROM registry.fedoraproject.org/fedora:46@sha256:3375b5f7d84cb52f52575148f13425899f40ee6a80112e3df8fef3bd208f58f5
 
 RUN dnf install -y --setopt=install_weak_deps=False \
       samba samba-dc samba-client samba-common-tools \
