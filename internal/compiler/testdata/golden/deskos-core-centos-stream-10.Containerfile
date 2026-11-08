@@ -3,7 +3,7 @@
 # Workstation: deskos-core-centos-stream-10
 # Platform:    centos-stream-10 (CentOS Stream 10)
 
-FROM quay.io/centos-bootc/centos-bootc:stream10@sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723
+FROM quay.io/centos-bootc/centos-bootc:stream10@sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \

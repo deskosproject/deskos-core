@@ -47,8 +47,8 @@
   "artifact": {
     "baseImage": {
       "image": "quay.io/centos-bootc/centos-bootc:stream10",
-      "digest": "sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723",
-      "ref": "quay.io/centos-bootc/centos-bootc:stream10@sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723"
+      "digest": "sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78",
+      "ref": "quay.io/centos-bootc/centos-bootc:stream10@sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78"
     },
     "labels": [
       {
@@ -1888,7 +1888,7 @@
       {
         "path": "/usr/share/deskos/image-info.json",
         "mode": "0644",
-        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"layered-ws\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723\",\n  \"base-image-digest\": \"sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"example-org\",\n      \"layer\": \"organization\"\n    },\n    {\n      \"name\": \"example-role\",\n      \"layer\": \"role\"\n    }\n  ]\n}\n",
+        "content": "{\n  \"schema\": \"deskos.image-info/v1\",\n  \"image-name\": \"layered-ws\",\n  \"platform\": \"centos-stream-10\",\n  \"platform-title\": \"CentOS Stream 10\",\n  \"platform-family\": \"centos\",\n  \"platform-release\": \"10\",\n  \"architectures\": [\n    \"x86_64\"\n  ],\n  \"base-image\": \"quay.io/centos-bootc/centos-bootc:stream10@sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78\",\n  \"base-image-digest\": \"sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78\",\n  \"plan-format\": \"plan.deskos.org/v1alpha1\",\n  \"profiles\": [\n    {\n      \"name\": \"deskos-core\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"deskos-gnome\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"rhel-family\",\n      \"layer\": \"foundation\"\n    },\n    {\n      \"name\": \"example-org\",\n      \"layer\": \"organization\"\n    },\n    {\n      \"name\": \"example-role\",\n      \"layer\": \"role\"\n    }\n  ]\n}\n",
         "provenance": [
           {
             "resource": "Workstation/layered-ws",
