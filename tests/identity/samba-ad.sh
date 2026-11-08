@@ -12,9 +12,9 @@
 set -euo pipefail
 
 name=deskos-ad
-realm=${AD_REALM:-AD.LAB.TEST}
+realm=${AD_REALM:-AD.EXAMPLE.COM}
 domain=${AD_DOMAIN:-AD}
-hostname=${AD_SERVER_HOSTNAME:-dc.ad.lab.test}
+hostname=${AD_SERVER_HOSTNAME:-dc1.ad.example.com}
 dnsdomain=$(printf '%s' "$realm" | tr '[:upper:]' '[:lower:]')
 # QEMU user networking exposes the host's loopback as 10.0.2.2, so the ports are
 # published there. Nothing binds a public interface.

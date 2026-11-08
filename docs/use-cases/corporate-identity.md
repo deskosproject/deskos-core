@@ -1,111 +1,110 @@
-# A corporate desktop with FreeIPA and an AD trust
+# A corporate desktop that knows who you are
 
-**Status:** use case and evidence, 2026-11-06. The trust runs in the
-container fixture (`identity-ad-trust-container.yml`, PR #441); the client
-login runs in `identity-ad.yml` (PR #396 and #444), with `identity-freeipa.yml`
-as the FreeIPA-only control.
+An employee sits at a new workstation, types the account the company already
+gave them, and their own home opens. No local user was created for them, no
+password was shared with the desk, and the image they booted never held a
+credential.
 
-The organization has Active Directory and Linux workstations. The account
-lives in AD; the machine is enrolled in FreeIPA; SSSD resolves the AD account
-through a one-way, cross-forest trust. This is the corporate desktop case
-DeskOS tests. It is not a product feature: DeskOS compiles the client image and
-does not enrol machines, hold a realm or run a join.
+That is what a corporate desktop has to do on the first day, before anything
+else on it matters.
 
-## What the image carries, and what it does not
+## The account is the desktop
 
-The client image carries `ipa-client`, `realmd`, `adcli`, `sssd-ad`,
-`samba-common-tools`, `krb5-workstation` and `oddjob-mkhomedir`
-(`tests/identity/resources`). It carries no realm, principal, keytab or
-password. The join is a runtime act. In the fixture the harness passes the
-credentials as systemd credentials and writes a root-only `join.env` at boot,
-so `deskosctl render` never sees them and the image is shareable.
+The first decision a workstation makes is who is sitting in front of it. If the
+answer is a local account with a password someone typed twice, every policy
+after it is advice: the screen lock protects a home that was never really the
+user's, the audit trail names nobody, and the account outlives the employment
+that justified it.
 
-## The shape
+A desktop that starts from the company account gets the rest for free. The home
+belongs to the directory user, permissions follow the directory groups, and the
+account that opens the session is the one the directory can suspend.
 
-```
-AD DC (adtrust.test)            FreeIPA server (lab.test)
-        \                          /
-         \   trust, DNS, Kerberos /
-          \                      /
-           DeskOS client (FreeIPA-enrolled, GDM)
-```
+## Three ways to belong
 
-- The DC forwards `lab.test` to the IPA server; the IPA server forwards
-  `adtrust.test` to the DC with a conditional zone. Both directions are
-  asserted before the trust is created.
-- Both directories share a podman network with pinned addresses
-  (`10.89.0.2` and `10.89.0.3`). A restart used to move the DC's address and
-  every check after it talked to a dead host; the static address is the fix.
-- The disposable `.test` zones are unsigned, so the IPA DNS runs with
-  `dnssec-validation no` in `/etc/named/ipa-options-ext.conf`, the file Red Hat
-  documents in solution 1400113.
-- The trust is one-way: AD trusts IPA. `ipa-adtrust-install`, `trust-add`,
-  `getent passwd qa@adtrust.test` and a cross-realm `kinit` prove it. The
-  negative controls ask the same IPA server before the trust and for a name
-  outside it; both must fail.
+The client image carries the pieces; the organization picks the directory.
+DeskOS supports the three arrangements a Linux fleet actually meets.
 
-## The greeter
+| Directory | What the user types | What the machine runs |
+|---|---|---|
+| Active Directory, direct | `qa@ad.example.com` | `sssd-ad` against the domain |
+| FreeIPA | `qa@idm.example.com` | `ipa-client`, with HBAC and `sudo` policy |
+| FreeIPA with an AD trust | `qa@ad.example.com` | `ipa-client` plus the one-way trust |
 
-The user list is disabled, so the greeter asks for a name. The test types the
-AD user and a generated password through the hypervisor's VNC keyboard, which
-is the auth phase, not only the session phase.
+The third is the common corporate case: the account lives in AD, the machine is
+enrolled in FreeIPA, and SSSD resolves the AD user through the trust. The user
+does not know which one they are on.
+
+## What the user sees
+
+The greeter asks for a name, because a list of every employee is not a login
+screen. The account authenticates against the directory, and the session begins
+in the user's own home.
 
 ![The AD user at the GDM greeter, with the user list disabled](../images/identity/ad-gdm-username.png)
 
-*The greeter asks for `user@ad.lab.test`; the frame is from the instrumented
-boot check, not a mock.*
+*The greeter asks for `user@ad.example.com`. The frame comes from the
+instrumented boot check, not a mock.*
 
 ![The password page for the AD user](../images/identity/ad-gdm-password.png)
 
 *PAM and SSSD authenticate the AD account through the trust. The password is
 generated per run and never enters the image.*
 
-## The session
-
-After the login the probe runs as the directory user and records the session.
-This frame is a FreeIPA session from the same fixture; the first-run dialog is
-in front and Settings is open behind it.
-
 ![A directory-user GNOME session with the Settings app and the DeskOS dock](../images/identity/freeipa-session.png)
 
-*The session belongs to the directory user, `oddjob-mkhomedir` created the
-home, and `/var/home` is labeled `home_root_t` by the image's tmpfiles rule.*
+*The session belongs to the directory user. `oddjob-mkhomedir` created the home
+on first login, and `/var/home` carries the `home_root_t` label the SELinux
+policy expects.*
 
-## What is verified
+## What the administrator keeps
 
-- **The trust in containers**: `identity-ad-trust-container` provisions the
-  DC and the IPA server, proves DNS in both directions and the trust ports,
-  establishes the trust, resolves the user, obtains a Kerberos ticket and keeps
-  the two negative controls. It builds no image and boots no VM.
-- **The client login**: `identity-ad` and `identity-freeipa` build the client
-  image, join the realm at boot, log in at GDM and assert `join_ok`,
-  `join_sssd`, `session_user`, the home owner and `oddjobd`.
-- **The label**: the identity check reads `home_root_label` from `/var/home`
-  and requires `home_root_t`; the RHEL 10 bases create the directory unlabeled,
-  which is why the image carries the tmpfiles rule (ADR 0030).
-- **No secrets**: the artifact carries the client packages only; the realm,
-  principal and password are runtime inputs.
+- **The directory stays the source of truth.** DeskOS does not copy users,
+  groups or passwords into the image, and does not become a second place to
+  deprovision someone.
+- **The image carries the client, not the realm.** `ipa-client`, `realmd`,
+  `adcli`, `sssd-ad`, `krb5-workstation` and `oddjob-mkhomedir` ship; the realm,
+  principal and password arrive at boot, from the machine's own configuration.
+- **The join happens before the greeter.** GDM only starts once the account can
+  be resolved, so the first login is the directory login and not a local
+  workaround.
+- **The desktop is typed.** The greeter, the session and the locks are
+  `GnomeProfile` fields, reviewed like any other resource, not shell run at boot.
 
-## What it does not
+## How we know it works
 
-- **Not Microsoft AD.** The Samba DC runs the same Kerberos, LDAP, DNS and
-  `sssd-ad` path as a Windows domain for the client, but it has no Group
-  Policy and no Windows replication. It is a stand-in for testing.
-- **Not a production directory.** One account, a throwaway realm, no
-  hardening, generated passwords.
-- **Not enrolment.** A real machine needs a credential for that machine alone,
-  forward and reverse DNS, and a place to run the join; that is the
-  organization's configuration management.
-- **Not every trust.** DNS delegation, firewall policy, the organization's PKI
-  and the AD side's governance stay with the organization.
+The repository runs three identity checks every day, at 04:23, 04:47 and 05:43
+UTC, and in pull requests that touch the fixtures:
 
-## Evidence
+- a DeskOS client enrolled in FreeIPA,
+- a DeskOS client joined directly to Active Directory,
+- a DeskOS client enrolled in FreeIPA, logging in as a user who lives in AD
+  through a cross-forest trust.
 
-- [The identity validation design](../design/identity-validation.md) records
-  the client checks, the credential path and the watchdog.
-- The workflows: `identity-ad-trust-container.yml`, `identity-ad.yml` and
-  `identity-freeipa.yml`. The container trust is the cheap half; the VM login
-  is the expensive one.
-- The desktop configuration in this image is typed: `GnomeProfile` carries the
-  greeter, the session and the locks, and
-  [the GNOME coverage](../gnome-coverage.md) records what is modelled.
+Each builds its own image, boots a VM and logs in at the greeter with the
+directory password. The checks assert the session user, the home created on
+first login, `oddjobd` and the SELinux label on `/var/home`. The trust job also
+performs the cross-realm ticket check from the RHEL 10 identity guide.
+
+The fixtures, the assertions and the limits are in
+[identity validation](../design/identity-validation.md). The short version:
+these are real machines, real Kerberos and real PAM, not a unit test that reads
+a configuration file.
+
+## What DeskOS does not do
+
+- **Not enrolment.** A machine joins with a credential that belongs to that
+  machine, through the organization's configuration management. Core compiles
+  the baseline and does not run a join.
+- **Not a directory.** DeskOS holds no realm, no principals and no keytab.
+- **Not Active Directory.** The test domain is Samba, which speaks the same
+  Kerberos, LDAP, DNS and `sssd-ad` path to the client, without Group Policy or
+  Windows replication.
+- **Not a policy engine.** Password rules, account lifecycle and access
+  decisions stay in AD or FreeIPA, where they already live.
+
+## The point
+
+A workstation without an identity is a login screen, not a corporate desktop.
+The company account is the first thing the machine should understand, and the
+one thing it should never store.

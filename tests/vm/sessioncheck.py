@@ -84,6 +84,13 @@ JOIN_CLIENT_SCRIPT_PATH = "/var/lib/deskos-qa/join-client.sh"
 WATCHDOG_SCRIPT_PATH = "/var/lib/deskos-qa/watchdog.sh"
 JOIN_ENV_PATH = "/var/lib/deskos-qa/join.env"
 JOIN_STATUS_PATH = "/var/lib/deskos-qa/join.status"
+# The cross-forest diagnostics are their own file: together with the rest
+# they exceed the 4095 B a single tmpfiles argument can carry (run
+# 42424582176).
+JOIN_TRUST_STATUS_PATH = "/var/lib/deskos-qa/join-trust-status.sh"
+# What a failed login left behind is read after the attempt, and it is its
+# own file for the same 4095 B reason as the join status.
+REPORT_NO_SESSION_PATH = "/var/lib/deskos-qa/report-no-session.sh"
 # The probes live outside the home: with a directory user the home does not
 # exist until first login, so nothing can be seeded there in advance. A
 # system-wide autostart runs them in whichever account GDM logs in.
@@ -401,8 +408,44 @@ export JOIN_OK="$ok"
 /bin/bash /var/lib/deskos-qa/join-status.sh
 """
 
+JOIN_TRUST_STATUS = """#!/bin/bash
+  # A user in another domain is the cross-forest case. The client reaches the
+  # IPA server, but a Kerberos referral for the other forest needs the client to
+  # reach that forest's KDC, and SSSD reports only "System error" when it cannot
+  # (run 42324639187: pam_sss 4, no password typed wrong). Name the layer here:
+  # what the SRV lookup answered, which address it named, and whether that
+  # address takes a connection on the ports a login needs.
+  ad_domain="${JOIN_USER#*@}"
+  if [ "$ad_domain" != "$JOIN_USER" ] && [ "$ad_domain" != "$REALM_DOMAIN" ]; then
+    echo "join_trust_domain=$ad_domain"
+    ad_srv=$(dig +short SRV "_kerberos._tcp.$ad_domain" 2>/dev/null | head -1)
+    echo "join_trust_srv=$ad_srv"
+    ad_host=$(printf '%s' "$ad_srv" | awk '{print $4}' | sed 's/\\.$//')
+    ad_ip=$(getent hosts "$ad_host" 2>/dev/null | awk '{print $1}' | head -1)
+    echo "join_trust_dc=$ad_host/$ad_ip"
+    echo "join_trust_probe=$(for p in 88 389 464; do timeout 3 bash -c "echo > /dev/tcp/$ad_ip/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
+    if [ -n "${JOIN_USER_PASSWORD:-}" ] && [ -n "$ad_ip" ]; then
+      if printf '%s\\\n' "$JOIN_USER_PASSWORD" | timeout 20 kinit "$JOIN_USER" >/tmp/trust-kinit.log 2>&1; then
+        echo "join_trust_kinit=ok"
+      else
+        echo "join_trust_kinit=$(tr '\\\n' '|' < /tmp/trust-kinit.log | cut -c1-300)"
+      fi
+      echo "join_trust_klist=$(klist 2>&1 | tr '\\\n' '|' | cut -c1-300)"
+      # kinit succeeds with the same password, so the failure is in the path
+      # SSSD takes. Its own log for the IPA domain names it; the subdomain
+      # status says whether the trust was even discovered.
+      echo "join_trust_subdomain=$(sssctl domain-status "$ad_domain" 2>&1 | tr '\\\n' '|' | cut -c1-400)"
+      echo "join_trust_sssd=$(tail -40 "/var/log/sssd/sssd_$REALM_DOMAIN.log" 2>/dev/null | tr '\\\n' '|' | cut -c1-1200)"
+      echo "join_trust_journal=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -20 | tr '\\\n' '|' | cut -c1-800)"
+    fi
+  fi
+"""
+
 JOIN_STATUS = """#!/bin/bash
 join_log=/var/lib/deskos-qa/join.log
+# A failed login through a trust says only "System error" at the default debug
+# level; the reason is in the domain log. Raise it before GDM starts.
+sssctl debug-level 9 >/dev/null 2>&1 || true
 {
   echo "join_ok=${JOIN_OK:-no}"
   echo "join_kind=$JOIN_KIND"
@@ -414,9 +457,14 @@ join_log=/var/lib/deskos-qa/join.log
   echo "join_dc_probe=$(for p in 88 389 445; do timeout 3 bash -c "echo > /dev/tcp/$REALM_SERVER/$p" 2>/dev/null && echo "$p=ok" || echo "$p=fail"; done | paste -sd, -)"
   echo "join_sssd_conf=$(sed -n '1,40p' /etc/sssd/sssd.conf 2>/dev/null | tr '\\n' '|' | cut -c1-500)"
   echo "join_domain_status=$(sssctl domain-status "$REALM_DOMAIN" 2>&1 | tr '\\n' '|' | cut -c1-400)"
+  /bin/bash /var/lib/deskos-qa/join-trust-status.sh 2>/dev/null || true
   echo "join_sssd_log=$(journalctl -u sssd -b --no-pager 2>/dev/null | tail -40 | tr '\\n' '|' | cut -c1-900)"
   echo "join_keytab=$(klist -k 2>&1 | head -6 | tr '\\n' '|' | cut -c1-400)"
-  echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.lab.test.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
+  # The child that authenticates reads this file as the user; a mode without
+  # "other read" is the documented cause of PAM_SYSTEM_ERR (solution 7134068).
+  echo "join_krb5_mode=$(stat -c '%a %U:%G' /etc/krb5.conf 2>/dev/null)"
+  echo "join_krb5_mode_before=$(cat /var/lib/deskos-qa/krb5-mode-before 2>/dev/null)"
+  echo "join_sssd_files=$(for f in /var/log/sssd/sssd.log /var/log/sssd/sssd_ad.example.com.log; do echo "== $f"; tail -12 "$f" 2>/dev/null; done | tr '\\n' '|' | cut -c1-800)"
   join_home=$(getent passwd "$JOIN_USER" | cut -d: -f6)
   echo "join_home=$join_home"
   if [ -n "$join_home" ] && [ -d "$join_home" ]; then
@@ -431,7 +479,7 @@ chmod 0644 /var/lib/deskos-qa/join.status
 
 JOIN_AD = """#!/bin/bash
 set -u
-# A real AD join: discovery through DNS, realmd/adcli, sssd-ad. The POSIX
+# A real AD join: discovery through DNS, realmd with Samba's client, sssd-ad. The POSIX
 # attributes live in the directory, so the Unix identity comes from the realm.
 #
 # realmd refuses a machine whose name is not a resolvable FQDN.
@@ -440,6 +488,12 @@ hostnamectl set-hostname "$ad_host"
 if ! grep -qE "[[:space:]]$ad_host([[:space:]]|$)" /etc/hosts; then
   printf '127.0.1.1 %s %s\n' "$ad_host" "${ad_host%%.*}" >> /etc/hosts
 fi
+# The machine-account password exchange negotiates RC4, and the DEFAULT crypto
+# policy forbids it: "Encryption type [23] not permitted", then "Cannot set
+# computer password: gensec_unwrap failed - NT_STATUS_ACCESS_DENIED" (run
+# 42428527872). RHEL documents DEFAULT:AD-SUPPORT for exactly this, and the
+# policy is a property of joining AD, not of the image.
+update-crypto-policies --set DEFAULT:AD-SUPPORT >/dev/null 2>&1 || true
 realm discover "$REALM_DOMAIN"
 # Record what DNS answered. The realm's DNS is the source of truth for the DC's
 # address; overriding it with the published host breaks the join.
@@ -463,7 +517,12 @@ if [ "$dc_ready" != yes ]; then
   echo "the DC did not accept authentication for $JOIN_PRINCIPAL: $(tr '\\n' ' ' < /tmp/kinit.log | cut -c1-300)"
   exit 1
 fi
-if ! printf '%s\\n' "$JOIN_PASSWORD" | timeout 120 realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN"; then
+# adcli creates the computer account and then sets its password over netlogon,
+# which Samba 4.23 refuses to unwrap from this client ("gensec_unwrap failed -
+# NT_STATUS_ACCESS_DENIED", runs 42428527872, 42430711881). Samba's own client
+# joins a Samba DC; realmd still configures SSSD, and the check is the session,
+# not which binary performed the join.
+if ! printf '%s\\n' "$JOIN_PASSWORD" | timeout 120 realm join --membership-software=samba --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN"; then
   echo "realm join failed against $REALM_SERVER; the unit does not wait on a prompt"
   exit 1
 fi
@@ -508,6 +567,31 @@ ipa-client-install --unattended --force --hostname="$join_host" \
     --domain="$REALM_DOMAIN" --realm="$REALM_NAME" \
     --server="$REALM_SERVER" --principal="$JOIN_PRINCIPAL" --password="$JOIN_PASSWORD" \
     --mkhomedir --no-ntp --force-join || exit 1
+
+# SSSD's krb5_child runs as the user whose login is being checked, and it reads
+# /etc/krb5.conf to find the realm. ipa-client-install can leave it 0640, and a
+# hardened umask makes that likely: the child then logs "cannot read
+# /etc/krb5.conf" and PAM reports PAM_SYSTEM_ERR (4), which looks like a
+# directory failure. Red Hat solution 7134068 names this exact cause and fix.
+stat -c '%a %U:%G' /etc/krb5.conf > /var/lib/deskos-qa/krb5-mode-before 2>/dev/null || true
+chmod 0644 /etc/krb5.conf || exit 1
+
+# A user from another forest logs in with a ticket from that forest. SSSD's FAST
+# armor asks the IPA KDC for krbtgt/<forest>@<IPA realm>, the reverse of a
+# one-way trust's krbtgt/<IPA realm>@<forest>, which can only exist in a two-way
+# trust. Red Hat documents krb5_use_fast = never for exactly this deployment
+# (RHEL 10, Planning Identity Management, 7.4) and notes that it removes the
+# client's IdM two-factor capability; this fixture has no OTP.
+trust_domain="${JOIN_USER#*@}"
+if [ "$trust_domain" != "$JOIN_USER" ] && [ "$trust_domain" != "$REALM_DOMAIN" ]; then
+  awk -v want="[domain/$REALM_DOMAIN]" \
+    '$0 == want { print; print "krb5_use_fast = never"; next } { print }' \
+    /etc/sssd/sssd.conf > /etc/sssd/sssd.conf.new &&
+    { chown root:root /etc/sssd/sssd.conf.new
+      chmod 0600 /etc/sssd/sssd.conf.new
+      mv /etc/sssd/sssd.conf.new /etc/sssd/sssd.conf; }
+  systemctl restart sssd || true
+fi
 exit 0
 """
 
@@ -539,6 +623,8 @@ def join_environment(join):
     ]
     if join.get("dns"):
         lines.append(("JOIN_DNS", join["dns"]))
+    if join.get("user_password"):
+        lines.append(("JOIN_USER_PASSWORD", join["user_password"]))
     return "".join(f"{key}={value}\n" for key, value in lines)
 
 
@@ -1374,14 +1460,7 @@ systemctl --no-block poweroff
 """
 
 
-REPORT_SESSION = f"""#!/bin/bash
-# Waits for the session results, then writes them and the journal to ttyS0.
-for i in $(seq 1 240); do test -s {RESULTS} && break; sleep 2; done
-stty -F /dev/ttyS0 115200 2>/dev/null
-{{
-echo {MARK_BEGIN}
-test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
-if [ ! -s {RESULTS} ]; then
+REPORT_NO_SESSION = """#!/bin/bash
   # No session reported: GDM may be sitting at the greeter because the login
   # could not happen. Say what the join did and what the display manager and
   # logind saw, so the boot is not silent (issue #437).
@@ -1391,6 +1470,34 @@ if [ ! -s {RESULTS} ]; then
   echo "login_sessions=$(loginctl list-sessions --no-legend 2>/dev/null | wc -l)"
   echo "gdm_state=$(systemctl show gdm -p ActiveState -p SubState --value 2>/dev/null | paste -sd/ -)"
   echo "autologin=$(grep -h '^AutomaticLogin' /etc/gdm/custom.conf /etc/gdm3/custom.conf 2>/dev/null | paste -sd, -)"
+  # A login through a trust fails in SSSD, and the reason is in its domain log,
+  # written long after the join status was collected. Read it here, where the
+  # report runs as root and after the attempts (run 42375098806).
+  . /var/lib/deskos-qa/join.env 2>/dev/null || true
+  # Only the lines that name a failure: the tail is one transaction and the
+  # report is a serial line, so a full log says nothing useful (run 42379546218
+  # captured a preauth success and stopped there).
+  echo "trust_sssd=$(grep -iE 'preauth|krb5_auth|pam_|error|fail|ccache|kcm|denied' "/var/log/sssd/sssd_${{REALM_DOMAIN}}.log" 2>/dev/null | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  echo "trust_gdm=$(journalctl -b -o short-monotonic --no-pager -u gdm.service -u sssd.service -u oddjobd.service 2>/dev/null | grep -iE 'auth|sss|krb|error|fail|denied|session' | tail -60 | tr '\n' '|' | cut -c1-3000)"
+  # The documented diagnostic for PAM_SYSTEM_ERR: the child that authenticates
+  # reads /etc/krb5.conf as the user (Red Hat solution 7134068).
+  echo "trust_krb5_conf=$(journalctl -b -u sssd -o short-monotonic --no-pager 2>/dev/null | grep -iE 'try_open_krb5_conf|cannot read /etc/krb5.conf' | tail -10 | tr '\n' '|' | cut -c1-1200)"
+  echo "trust_pam_acct=$(sssctl user-checks -a acct -s gdm-password "$JOIN_USER" 2>&1 | tr '\n' '|' | cut -c1-400)"
+  # realmd and adcli say why a join was refused; the unit's log keeps only the
+  # last line, and "Insufficient permissions" alone names no layer.
+  echo "join_realmd=$(journalctl -b --no-pager 2>/dev/null | grep -iE 'adcli|realmd|realm:' | tail -40 | tr '\n' '|' | cut -c1-2500)"
+  echo "trust_krb5=$(sed -n '1,60p' /etc/krb5.conf 2>/dev/null | tr '\n' '|' | cut -c1-1500)"
+"""
+
+REPORT_SESSION = f"""#!/bin/bash
+# Waits for the session results, then writes them and the journal to ttyS0.
+for i in $(seq 1 240); do test -s {RESULTS} && break; sleep 2; done
+stty -F /dev/ttyS0 115200 2>/dev/null
+{{
+echo {MARK_BEGIN}
+test -s {RESULTS} && cat {RESULTS} || echo "session_results=missing"
+if [ ! -s {RESULTS} ]; then
+  /bin/bash /var/lib/deskos-qa/report-no-session.sh 2>/dev/null || true
 fi
 echo "system_failed_units=$(systemctl --failed --no-legend --plain | awk '{{print $1}}' | paste -sd, -)"
 echo "flatpak_preinstall=$(systemctl show deskos-flatpak-preinstall.service -p ActiveState -p Result --value | paste -sd/ -)"
@@ -1569,6 +1676,8 @@ def credentials(mode, seed_skel=False, app=None, skel_rels=(), dconf_keys=(), dc
                 f"f {JOIN_CLIENT_SCRIPT_PATH} 0755 root root - "
                 f"{tmpfiles_arg(join_client_script(join.get('kind', 'ipa')))}",
                 f"f {JOIN_STATUS_SCRIPT_PATH} 0755 root root - {tmpfiles_arg(JOIN_STATUS)}",
+                f"f {JOIN_TRUST_STATUS_PATH} 0755 root root - {tmpfiles_arg(JOIN_TRUST_STATUS)}",
+                f"f {REPORT_NO_SESSION_PATH} 0755 root root - {tmpfiles_arg(REPORT_NO_SESSION)}",
                 f"f {JOIN_ENV_PATH} 0600 root root - {tmpfiles_arg(join_environment(join))}",
             ]
             creds["systemd.extra-unit.deskos-qa-join.service"] = (
@@ -2487,7 +2596,7 @@ def main():
     p.add_argument("--gdm-password",
                    help="password the interactive GDM login types; runtime only")
     p.add_argument("--join-kind", choices=("ipa", "ad"), default="ipa",
-                   help="which client to run: ipa-client-install or realm/adcli")
+                   help="which client to run: ipa-client-install or realm (Samba's client)")
     p.add_argument("--join-dns",
                    help="DNS server the guest must use before the join (the AD case)")
     p.add_argument("--seed-skel", action="store_true",
@@ -2516,6 +2625,9 @@ def main():
             "password": a.join_password,
             "user": a.join_user,
             "dns": a.join_dns,
+            # The directory user's own password, for the diagnostic that asks
+            # the guest whether it can authenticate that user through a trust.
+            "user_password": a.gdm_password,
         }
     if a.join_gdm and not join:
         p.error("--join-gdm needs the --join-* values")
