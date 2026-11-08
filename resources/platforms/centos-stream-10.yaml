@@ -10,11 +10,12 @@ spec:
   packageManager: rpm
   bootc:
     image: quay.io/centos-bootc/centos-bootc:stream10
-    # x86_64 manifest, created 2026-11-03. Measured with
-    # `rpm -q kernel glibc`: kernel-6.12.0-280.el10, glibc-2.39-148.el10. The
-    # previous pin (2026-10-26) carried 6.12.0-279 and glibc 147; move it
-    # deliberately and regenerate the manifest when the set moves.
-    digest: sha256:f43c24c58b2c8e18767109efe3965515c1e2d552bae113a3dccc30eba2dfd723
+    # x86_64 manifest, created 2026-11-06. Measured with
+    # `rpm -q kernel glibc`: kernel-6.12.0-281.el10, glibc-2.39-148.el10. The
+    # group install resolves to the same package set as the 2026-11-03 pin, so
+    # the manifest is unchanged; move the pin deliberately and regenerate the
+    # manifest when the set moves.
+    digest: sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78
   distribution:
     redistributable: true
     requiresSubscription: false
