@@ -1233,7 +1233,7 @@ class LockTest(unittest.TestCase):
 
 
 JOIN = {
-    "domain": "lab.test", "realm": "LAB.TEST", "server": "ipa.lab.test",
+    "domain": "idm.example.com", "realm": "IDM.EXAMPLE.COM", "server": "idm1.idm.example.com",
     "principal": "admin", "password": "throwaway", "user": "qa",
 }
 
@@ -1280,7 +1280,7 @@ class JoinTest(unittest.TestCase):
         files = c["tmpfiles.extra"]
         self.assertIn(sc.JOIN_SCRIPT_PATH, files)
         self.assertIn(sc.JOIN_ENV_PATH, files)
-        self.assertIn("REALM_DOMAIN=lab.test", files)
+        self.assertIn("REALM_DOMAIN=idm.example.com", files)
         self.assertIn(sc.JOIN_STATUS_PATH, files)
 
     def join_checks(self, **extra):
@@ -1330,11 +1330,11 @@ class JoinTest(unittest.TestCase):
         self.assertNotIn("/etc/skel/.config/gnome-initial-setup-done", plain["tmpfiles.extra"])
 
     def test_an_ad_join_carries_its_kind_and_dns(self):
-        ad = dict(JOIN, kind="ad", dns="10.0.2.2", user="qa@ad.lab.test")
-        files = sc.credentials("session", join=ad, gdm_user="qa@ad.lab.test")["tmpfiles.extra"]
+        ad = dict(JOIN, kind="ad", dns="10.0.2.2", user="qa@ad.example.com")
+        files = sc.credentials("session", join=ad, gdm_user="qa@ad.example.com")["tmpfiles.extra"]
         self.assertIn("JOIN_KIND=ad", files)
         self.assertIn("JOIN_DNS=10.0.2.2", files)
-        self.assertIn("JOIN_USER=qa@ad.lab.test", files)
+        self.assertIn("JOIN_USER=qa@ad.example.com", files)
         # Only the branch the guest runs is delivered: together they do not fit
         # one tmpfiles argument.
         self.assertIn("realm join", sc.join_client_script("ad"))
@@ -1404,8 +1404,8 @@ class JoinTest(unittest.TestCase):
         self.assertTrue(checks["the session is the directory user"]["pass"], checks["the session is the directory user"])
 
     def test_an_ad_session_with_the_qualified_name_passes(self):
-        checks = self.gdm_checks(session_user="qa@ad.lab.test",
-                                 join_user="qa@ad.lab.test:10000:/home/qa:/bin/bash",
+        checks = self.gdm_checks(session_user="qa@ad.example.com",
+                                 join_user="qa@ad.example.com:10000:/home/qa:/bin/bash",
                                  home_owner="10000:10000")
         self.assertTrue(checks["the session is the directory user"]["pass"])
         self.assertTrue(checks["the login created the home for that user"]["pass"])

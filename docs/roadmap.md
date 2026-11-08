@@ -108,7 +108,7 @@ the harness types there through the hypervisor's VNC keyboard.
   daily and on demand. The session asserts the join, SSSD and the directory user,
   then logs in at GDM with a home from `oddjob-mkhomedir` (2026-10-27).
 - **AD membership.** `tests/identity/samba/` and `identity-ad.yml` join through
-  the realm's own DNS and log in as `qa@ad.lab.test`; an AD trust is a later step.
+  the realm's own DNS and log in as `qa@ad.example.com`; an AD trust is a later step.
 - **Interactive GDM login.** The greeter asks for a name, the harness types the
   directory user and its generated password on the VNC keyboard, and the session
   starts as that user; FreeIPA run `41579749802` and AD run `41579749764`

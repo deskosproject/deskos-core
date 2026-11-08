@@ -69,11 +69,24 @@ const sidebars = {
         'support',
       ],
     ),
-    group(
-      'Use cases',
-      "An organization's desk, end to end, with the evidence for each claim.",
-      ['use-cases/corporate-identity'],
-    ),
+    {
+      type: 'category',
+      label: 'Use cases',
+      link: {
+        type: 'generated-index',
+        title: 'Use cases',
+        description: "An organization's desk, end to end.",
+      },
+      // Open by default: the page is an argument, not a footnote.
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'use-cases/corporate-identity',
+          label: 'Corporate identity',
+        },
+      ],
+    },
     group('Reference', 'The exact fields, keys and checks.', [
       'resources/core',
       'resources/desktop',

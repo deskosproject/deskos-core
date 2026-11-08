@@ -1,0 +1,6 @@
+[Unit]
+Description=FreeIPA CI container
+Requires=basic.target
+Wants=network.target ipa-container.service
+After=basic.target
+AllowIsolate=yes

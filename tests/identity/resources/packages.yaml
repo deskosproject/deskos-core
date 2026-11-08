@@ -9,9 +9,12 @@ spec:
   packages:
     # The FreeIPA client.
     - ipa-client
-    # The AD client: realmd and adcli are what `realm join` runs, and sssd-ad is
-    # the provider it configures. Without them the image can join FreeIPA and
-    # nothing else, which is what the AD check found the hard way.
+    # The AD client: realmd runs the join, `sssd-ad` is the provider it
+    # configures, and adcli stays because realmd reaches for it by default and
+    # some domains need it. The join in the check names Samba's client
+    # explicitly: adcli's machine-password exchange is what Samba 4.23+ refuses.
+    # Without these the image can join FreeIPA and nothing else, which is what
+    # the AD check found the hard way.
     - realmd
     - adcli
     - sssd-ad
