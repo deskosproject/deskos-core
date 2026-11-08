@@ -2,7 +2,6 @@ package evidence
 
 import (
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/deskosproject/deskos-core/internal/plan"
@@ -58,12 +57,12 @@ func ReportedConditions(p *plan.Plan) []Condition {
 	if p == nil {
 		return out
 	}
-	if kinds := updatingKinds(p); len(kinds) > 0 {
+	if kinds := UpdatingKinds(p); len(kinds) > 0 {
 		out = append(out, Condition{
 			Name: "this image updates itself",
 			Detail: fmt.Sprintf("%s update(s) are scheduled by the image itself (%s), "+
 				"so a manual update may find nothing to do or race with its own timer",
-				strings.Join(kinds, ", "), strings.Join(updatingKinds(p), ", ")),
+				strings.Join(kinds, ", "), strings.Join(UpdatingKinds(p), ", ")),
 		})
 	}
 	etc := etcPaths(p)
@@ -88,7 +87,8 @@ func describeBooted(b Booted) string {
 	return fmt.Sprintf("booted from %s @ %s", b.Image, b.Digest)
 }
 
-func updatingKinds(p *plan.Plan) []string {
+// UpdatingKinds are the kinds of update the image schedules itself.
+func UpdatingKinds(p *plan.Plan) []string {
 	var out []string
 	for _, u := range p.Artifact.ScheduledUpdates {
 		out = append(out, u.Kind)
@@ -118,8 +118,9 @@ func first(list []string, n int) []string {
 	return list[:n]
 }
 
-// Runner runs the update. Tests supply their own.
-type Runner func(name string, args ...string) error
+// RunnerOutput runs the update and returns what the tool wrote, so the caller
+// decides whether a person needs to read it.
+type RunnerOutput func(name string, args ...string) ([]byte, error)
 
 // UpdateCommand is what an update runs: bootc upgrading the image this machine
 // follows. Scan is not part of it, and neither is anything that writes to a home.
@@ -131,28 +132,34 @@ func UpdateCommand(apply bool) (string, []string) {
 	return "bootc", args
 }
 
-// Update runs the update when the guard allows it, and writes what it does. It never
-// reconciles the machine: what it changes is the deployment the machine boots from.
-func Update(w io.Writer, conditions []Condition, run Runner, apply, dryRun bool) error {
+// Blocking returns the conditions that refuse an update. Everything else is
+// reported, and printing it is the caller's choice.
+func Blocking(conditions []Condition) []Condition {
+	var out []Condition
 	for _, c := range conditions {
 		if c.Blocks {
-			return fmt.Errorf("not updating: %s (%s)", c.Name, c.Detail)
+			out = append(out, c)
 		}
 	}
+	return out
+}
+
+// Update runs the update when the guard allows it and returns the tool's own
+// output. It writes nothing: a command that stages a deployment has one thing to
+// say ("reboot to apply it"), and mixing a summary with the tool's prose produced
+// a sentence that contradicted both.
+func Update(conditions []Condition, run RunnerOutput, apply bool) ([]byte, error) {
+	if blocked := Blocking(conditions); len(blocked) > 0 {
+		c := blocked[0]
+		return nil, fmt.Errorf("not updating: %s (%s)", c.Name, c.Detail)
+	}
 	name, args := UpdateCommand(apply)
-	if dryRun {
-		fmt.Fprintf(w, "would run: %s %s\n", name, strings.Join(args, " "))
-		return nil
-	}
-	fmt.Fprintf(w, "running: %s %s\n", name, strings.Join(args, " "))
 	if run == nil {
-		return fmt.Errorf("no runner")
+		return nil, fmt.Errorf("no runner")
 	}
-	if err := run(name, args...); err != nil {
-		return fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
+	out, err := run(name, args...)
+	if err != nil {
+		return out, fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
 	}
-	if !apply {
-		fmt.Fprintln(w, "staged. The machine applies it on the next reboot; use --apply to apply it now.")
-	}
-	return nil
+	return out, nil
 }

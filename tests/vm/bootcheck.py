@@ -40,6 +40,13 @@ OVMF_CANDIDATES = [
 # Pixel classes by luma: dark below DARK, lit from LIT (text, logos, spinner).
 DARK, LIT = 24, 60
 
+# A login that does not start is retried while the guest is still up. The keys
+# are lost for minutes at a time in some boots and land later (runs 42292630365,
+# 42317585720: nothing at 198 s, 418 s, then a working window past 500 s), so
+# the rounds cover the whole boot: eight attempts a minute apart.
+LOGIN_ROUNDS = 8
+LOGIN_RETRY_AFTER = 60.0
+
 
 class HarnessError(Exception):
     pass
@@ -187,7 +194,8 @@ def keysym(ch):
     return False, ord(ch)
 
 
-def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeout=15):
+def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeout=15,
+             snapshot=None, settle=5.0, retries=1):
     """Type `text` and Return into a QEMU VNC server on a Unix socket.
 
     The lock screen refuses remote-desktop portal input: Mutter tears the
@@ -212,7 +220,17 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
     83.4 s reads "Display output is not active"), and Shift alone wakes the
     panel without raising the curtain, so the password would be typed into a
     screen that is still waking. A pointer event wakes and raises it at once.
+
+    `snapshot` makes the typing checkable. When it is given, the caller passes a
+    callable that returns a digest of the screen; after each part the keyboard
+    waits `settle` seconds for that digest to change, because a keystroke that
+    lands always changes the pixels it lands in. If nothing changed, the part is
+    cleared and typed again, `retries` times. This is the difference between
+    "sent" and "landed": run 42215986390 typed the AD user at 136.7 s, the
+    greeter drew at 139.7 s, and the field stayed empty for the next 250 s while
+    the harness went on to type a password into nothing.
     """
+    typed_result = {"attempts": 0, "landed": True}
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     sock.settimeout(timeout)
     try:
@@ -248,7 +266,7 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
         def pointer(x, y, down):
             sock.sendall(struct.pack(">BBHH", 5, 1 if down else 0, x, y))
 
-        def type_part(part):
+        def type_chars(part):
             for ch in part:
                 shift, sym = keysym(ch)
                 if shift:
@@ -258,6 +276,8 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
                 if shift:
                     key(0xFFE1, False)
                 time.sleep(0.02)
+
+        def press_return():
             # The guest has to read the submit before the socket closes; a
             # close right after the write dropped it on the tested image.
             time.sleep(0.3)
@@ -266,7 +286,32 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
             key(0xFF0D, False)
             time.sleep(1.0)
 
+        def select_all():
+            key(0xFFE3, True)       # Control_L
+            key(ord("a"), True)
+            key(ord("a"), False)
+            key(0xFFE3, False)
+            time.sleep(0.1)
+
+        def changed(base, seconds):
+            """Whether the screen changed within `seconds`, given a digest."""
+            deadline = time.monotonic() + seconds
+            while time.monotonic() < deadline:
+                time.sleep(0.3)
+                now = snapshot()
+                if now and base and now != base:
+                    return True
+            return False
+
         parts = list(text) if isinstance(text, (list, tuple)) else [text]
+        if click:
+            # The greeter draws the username entry before it owns keyboard
+            # focus; a click gives it to the field. This was a documented
+            # parameter that nothing used, which is why a drawn field could
+            # swallow every key: runs 42292630365 and 42297834953.
+            pointer(click[0], click[1], True)
+            pointer(click[0], click[1], False)
+            time.sleep(0.5)
         if wake_click:
             # A pointer event wakes the panel and raises the curtain; Shift on a
             # dark screen only wakes it, and the typing is lost (run 42154612511,
@@ -283,20 +328,52 @@ def vnc_type(path, text, select_first=False, click=None, wake_click=False, timeo
             # focus; the ready marker comes from the shell process, not the
             # dialog. Give the dialog time to take the seat.
             time.sleep(5.0)
-            key(0xFFE3, True)       # Control_L
-            key(ord("a"), True)
-            key(ord("a"), False)
-            key(0xFFE3, False)
-            time.sleep(0.1)
+            select_all()
+        attempts = 0
+        landed = True
         for i, part in enumerate(parts):
-            type_part(part)
+            base = snapshot() if snapshot else None
+            type_chars(part)
+            press_return()
+            attempts += 1
+            landed = True
+            if snapshot:
+                landed = changed(base, settle)
+                retried = 0
+                while not landed and retried < retries:
+                    # The keys were sent while the greeter was still drawing and
+                    # nothing reached the field. Click the field again (the first
+                    # click landed before the field existed), clear what is
+                    # there, and type once more.
+                    pointer(640, 478, True)
+                    pointer(640, 478, False)
+                    time.sleep(1.0)
+                    select_all()
+                    base = snapshot()
+                    type_chars(part)
+                    press_return()
+                    attempts += 1
+                    retried += 1
+                    landed = changed(base, settle)
             if i + 1 < len(parts):
-                # The first directory lookup can take most of a minute; the
-                # password page follows it, not the Return. Measured on run
-                # 42147244438: username at 67 s, password page at 115.8 s.
-                time.sleep(60.0)
+                # The password page follows the directory lookup, not the Return,
+                # and the lookup takes 50 to 90 seconds with a disposable realm.
+                # A fixed sixty seconds typed the password 5 s before the page
+                # existed on run 42292630365 (round 3 landed, no session). Wait
+                # for the page to draw, and type anyway if it never does.
+                if snapshot:
+                    page = snapshot()
+                    deadline = time.monotonic() + 90
+                    while time.monotonic() < deadline and not changed(page, 2.0):
+                        pass
+                    time.sleep(0.5)
+                else:
+                    time.sleep(60.0)
+        typed_result["attempts"] = attempts
+        typed_result["landed"] = landed
     finally:
         sock.close()
+    return typed_result
 
 
 # ---------------------------------------------------------------- run
@@ -410,6 +487,7 @@ def run(args):
         last_digest, stable, graphical_at, splash_at, stable_digest = None, 0, None, None, None
         marker_at, ready_at, ready_failed = None, None, False
         keys_sent = set()
+        retry_login = []
 
         def serial_text():
             try:
@@ -444,6 +522,36 @@ def run(args):
             summary["frames"].append(entry)
             return entry
 
+        def band_digest():
+            """Digest of the middle of the screen, where a prompt draws.
+
+            The status bar carries a clock that changes once a minute and the
+            dock animates, so a whole-frame digest answers "did anything move",
+            not "did my text land". A typed character changes the middle rows.
+            """
+            ppm = os.path.join(out, "band.ppm")
+            try:
+                qmp.command("screendump", filename=ppm)
+                w, h, rgb = read_ppm(ppm)
+            except (HarnessError, OSError, ValueError):
+                return None
+            finally:
+                if os.path.exists(ppm):
+                    os.remove(ppm)
+            top, bottom = int(h * 0.30), int(h * 0.80)
+            return hashlib.sha256(rgb[top * w * 3:bottom * w * 3]).hexdigest()[:16]
+
+        def changed_in(base, seconds):
+            """Whether the middle of the screen moved within `seconds`."""
+            if base is None:
+                return False
+            deadline = time.monotonic() + seconds
+            while time.monotonic() < deadline:
+                time.sleep(0.25)
+                if band_digest() != base:
+                    return True
+            return False
+
         while time.monotonic() - t0 < args.boot_timeout:
             e = capture("boot")
             if e:
@@ -476,14 +584,70 @@ def run(args):
                     continue
                 try:
                     login = isinstance(keys, (list, tuple))
-                    vnc_type(vnc_path, keys, select_first=login,
-                             click=(640, 478) if login else None,
-                             wake_click=not login)
+                    if login:
+                        # The ready marker is the greeter's shell process; the
+                        # username field is drawn later (run 42269507235: typed at
+                        # 163.0 s, field drawn at 166.0 s). Wait up to ten seconds
+                        # for the screen to move before the first keystroke, then
+                        # type anyway: when the marker arrives after the field is
+                        # drawn, nothing moves and the extra wait would be waste.
+                        base = band_digest()
+                        deadline = time.monotonic() + 10
+                        while time.monotonic() < deadline and not changed_in(base, 1.0):
+                            pass
+                        time.sleep(1.5)
+                    typed = vnc_type(vnc_path, keys, select_first=login,
+                                     click=(640, 478) if login else None,
+                                     wake_click=not login, snapshot=band_digest)
                     summary.setdefault("keys_sent", []).append(
-                        {"marker": marker_text, "t": round(time.monotonic() - t0, 1)})
+                        {"marker": marker_text, "t": round(time.monotonic() - t0, 1),
+                         "attempts": typed.get("attempts"), "landed": typed.get("landed")})
+                    if login:
+                        # A login that did not start is the same problem one step
+                        # later: the keys landed nowhere, or the password went to a
+                        # page that was not there. Type the whole login again while
+                        # the guest keeps running, and record how many rounds it
+                        # took; the session report's first line is the signal.
+                        retry_login.append({
+                            "keys": keys,
+                            "next": time.monotonic() + LOGIN_RETRY_AFTER,
+                            "rounds": 1,
+                        })
                 except (HarnessError, OSError) as exc:
                     summary["failures"].append(f"typing on VNC after {marker_text!r}: {exc}")
                 keys_sent.add(i)
+
+            for pending in list(retry_login):
+                if b"session_type=" in serial_text():
+                    retry_login.remove(pending)
+                    continue
+                if time.monotonic() < pending["next"]:
+                    continue
+                if pending["rounds"] >= LOGIN_ROUNDS:
+                    retry_login.remove(pending)
+                    summary["failures"].append(
+                        f"no session after {pending['rounds']} login rounds: "
+                        "the guest never wrote a session report" + serial_hint(serial_text()))
+                    continue
+                try:
+                    typed = vnc_type(vnc_path, pending["keys"], select_first=True,
+                                     click=(640, 478), snapshot=band_digest)
+                    pending["rounds"] += 1
+                    pending["next"] = time.monotonic() + LOGIN_RETRY_AFTER
+                    summary.setdefault("login_rounds", []).append(
+                        {"round": pending["rounds"], "t": round(time.monotonic() - t0, 1),
+                         "attempts": typed.get("attempts"), "landed": typed.get("landed")})
+                except (HarnessError, OSError) as exc:
+                    # A broken pipe means QEMU closed the VNC client, which it
+                    # does when the display mode changes under it: the keys were
+                    # not delivered, so this is another round, not the end.
+                    # Measured on run 42309673200, round 2.
+                    pending["rounds"] += 1
+                    pending["next"] = time.monotonic() + LOGIN_RETRY_AFTER
+                    summary["failures"].append(f"login round {pending['rounds']}: {exc}")
+                    summary.setdefault("login_rounds", []).append(
+                        {"round": pending["rounds"], "t": round(time.monotonic() - t0, 1),
+                         "error": str(exc)})
             if marker and marker_seen():
                 marker_at = round(time.monotonic() - t0, 1)
                 capture("boot")

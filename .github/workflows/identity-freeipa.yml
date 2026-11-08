@@ -18,6 +18,9 @@ on:
       - tests/identity/*.py
       - tests/identity/resources/**
       - tests/identity/samba/**
+      - tests/identity/freeipa/**
+      - tests/vm/bootcheck.py
+      - tests/vm/test_bootcheck.py
       - tests/vm/sessioncheck.py
       - tests/vm/test_sessioncheck.py
 
@@ -37,7 +40,7 @@ env:
   # to AD: each check owns its workspace, image tag and disk.
   WORK: /mnt/deskos-ipa-work
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
-  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
+  FREEIPA_IMAGE: localhost/deskos-freeipa:ci
   WS: identity-client-centos-stream-10
   IMAGE: localhost/identity-client-ipa-centos-stream-10:ci
 
@@ -71,6 +74,12 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
           ls -l /dev/kvm
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
 
       - name: Start the disposable FreeIPA
         run: |
@@ -114,7 +123,7 @@ jobs:
             -v "$WORK/output:/output" \
             -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --config /config.toml --no-default-kernel-args \
+            "$BIB" build --type qcow2 --rootfs xfs --config /config.toml --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
@@ -168,7 +177,7 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session \
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
-            --join-domain lab.test --join-realm LAB.TEST --join-server ipa.lab.test \
+            --join-domain idm.example.com --join-realm IDM.EXAMPLE.COM --join-server idm1.idm.example.com \
             --join-principal admin --join-password "$FREEIPA_PASSWORD" --join-user qa \
             --join-dns 10.0.2.2 \
             --gdm-login --gdm-password "$FREEIPA_USER_PASSWORD"

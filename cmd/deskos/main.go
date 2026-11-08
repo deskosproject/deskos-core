@@ -43,12 +43,15 @@ const usageText = `deskos: run and inspect a machine built by deskosctl.
         Say what this machine is running: the image it follows, the booted
         deployment, anything staged, and the rollback.
 
-  deskos update [--apply] [--dry-run] [--flatpak] [--firmware] [--all]
+  deskos update [--apply] [--dry-run] [--flatpak] [--firmware] [--all] [--verbose]
         Update this machine's image with a guard: it refuses when a condition prevents
-        a safe update and reports the rest. It is not a reconciler, and it does not
-        touch what a user changed. --flatpak updates system Flatpak applications
-        before the image; --firmware lists firmware updates without applying them;
-        --all does the image, the Flatpak applications and the firmware check.
+        a safe update and reports the rest. It prints what the machine booted, what is
+        already staged, and one line saying whether anything changed and what to do
+        next; --verbose adds every condition and the tool's own output. It is not a
+        reconciler, and it does not touch what a user changed. --flatpak updates
+        system Flatpak applications before the image; --firmware lists firmware
+        updates without applying them; --all does the image, the Flatpak applications
+        and the firmware check.
 
   deskos rollback [--dry-run]
         Ask bootc to stage the previous deployment for the next boot. Nothing
@@ -159,6 +162,7 @@ func update(args []string, out, errOut io.Writer) int {
 	flatpak := fs.Bool("flatpak", false, "update system Flatpak applications before the image")
 	firmware := fs.Bool("firmware", false, "list firmware updates; do not apply them")
 	all := fs.Bool("all", false, "the image, the Flatpak applications and the firmware check")
+	verbose := fs.Bool("verbose", false, "print every condition and the tool's own output")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -175,27 +179,129 @@ func update(args []string, out, errOut io.Writer) int {
 		fmt.Fprintln(errOut, "deskos update: needs root to ask bootc to upgrade; run `sudo deskos update`")
 		return 1
 	}
+
 	conditions := evidence.Guard(sys)
 	conditions = append(conditions, evidence.ReportedConditions(p)...)
-	fmt.Fprint(out, "Before updating\n")
-	for _, c := range conditions {
-		mark := "ok"
-		if c.Blocks {
-			mark = "REFUSED"
+	// A refusal stops everything, including the extras: updating Flatpaks on a
+	// machine whose image cannot be updated is work in the wrong order.
+	if blocked := evidence.Blocking(conditions); len(blocked) > 0 {
+		fmt.Fprint(out, "Not updating\n")
+		for _, c := range blocked {
+			fmt.Fprintf(out, "  [refused] %s: %s\n", c.Name, c.Detail)
 		}
-		fmt.Fprintf(out, "  [%s] %s: %s\n", mark, c.Name, c.Detail)
+		return 1
 	}
-	// Extras run before the image: with --apply the image command reboots, and
-	// a Flatpak update queued after it would never run.
+	if *verbose {
+		fmt.Fprint(out, "Before updating\n")
+		for _, c := range conditions {
+			fmt.Fprintf(out, "  [ok] %s: %s\n", c.Name, c.Detail)
+		}
+	}
+
+	// What the machine is now, in three lines: what it booted, whether something is
+	// already waiting, and whether the image updates itself. The first two are read
+	// from bootc; the third from the plan.
+	before, err := sys.Host()
+	if err != nil {
+		fmt.Fprintf(errOut, "deskos update: %v\n", err)
+		return 1
+	}
+	fmt.Fprintf(out, "  booted   %s\n", deploymentLine(before.Booted))
+	fmt.Fprintf(out, "  staged   %s\n", stagedLine(before.Staged))
+	if kinds := evidence.UpdatingKinds(p); len(kinds) > 0 {
+		fmt.Fprintf(out, "  mode     the image also updates itself (%s); a manual update may find nothing to do\n",
+			strings.Join(kinds, ", "))
+	}
+
+	// Extras run before the image: with --apply the image command reboots, and a
+	// Flatpak update queued after it would never run.
 	if err := runExtras(out, systemRunner, updateExtras(*flatpak, *firmware, *all), *dryRun); err != nil {
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
-	if err := evidence.Update(out, conditions, systemRunner, *apply, *dryRun); err != nil {
+	if *dryRun {
+		name, args := evidence.UpdateCommand(*apply)
+		fmt.Fprintf(out, "  would run: %s %s\n", name, strings.Join(args, " "))
+		return 0
+	}
+
+	fmt.Fprint(out, "  checking bootc upgrade\n")
+	prose, err := evidence.Update(conditions, systemRunnerOutput, *apply)
+	if err != nil {
+		if len(prose) > 0 {
+			fmt.Fprintf(errOut, "%s", prose)
+		}
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
+	if *verbose && len(prose) > 0 {
+		fmt.Fprint(out, string(prose))
+	}
+	after, err := sys.Host()
+	if err != nil {
+		// The update already succeeded; the summary is what the machine said before.
+		after = before
+	}
+	fmt.Fprint(out, resultLine(before, after, *apply))
 	return 0
+}
+
+// stagedLine says whether a deployment is already waiting for a reboot. A staged
+// deployment is not a change this command made: it may have been there for days.
+func stagedLine(staged *bootcDeployment) string {
+	if staged == nil {
+		return "nothing"
+	}
+	return shortDeployment(staged) + ", waiting for a reboot"
+}
+
+// shortDeployment is a digest and a version: the reference is already on the booted
+// line, and a person comparing two deployments reads the digest.
+func shortDeployment(d *bootcDeployment) string {
+	if d == nil {
+		return "none"
+	}
+	digest := d.Image.ImageDigest
+	if strings.HasPrefix(digest, "sha256:") && len(digest) > 19 {
+		digest = digest[:19]
+	}
+	line := d.Image.Version
+	if digest != "" {
+		if line != "" {
+			line += " "
+		}
+		line += digest
+	}
+	if line == "" {
+		line = d.Image.Image.Image
+	}
+	return line
+}
+
+// resultLine is the one thing a person asked for: did anything change, and what do I
+// do now. It never repeats the tool's prose, which is what made the old output
+// contradict itself.
+func resultLine(before, after hostStatus, apply bool) string {
+	if apply {
+		return "Applied. The machine reboots to run the new deployment.\n"
+	}
+	changed := digestOf(after.Staged) != digestOf(before.Staged)
+	if changed && after.Staged != nil {
+		return fmt.Sprintf("Staged %s. Reboot to apply it, or run `deskos update --apply` now.\n",
+			shortDeployment(after.Staged))
+	}
+	if after.Staged != nil && digestOf(after.Staged) != digestOf(after.Booted) {
+		return fmt.Sprintf("Nothing to do: %s is already staged; reboot to apply it.\n",
+			shortDeployment(after.Staged))
+	}
+	return "Nothing to do: this machine already runs the newest image.\n"
+}
+
+func digestOf(d *bootcDeployment) string {
+	if d == nil {
+		return ""
+	}
+	return d.Image.ImageDigest
 }
 
 // updateExtras is the on-demand side of the same work the image's timers do.

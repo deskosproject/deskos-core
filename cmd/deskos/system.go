@@ -119,11 +119,20 @@ func (s system) DconfRead(key string) (string, error) {
 	return strings.TrimRight(string(out), "\n"), nil
 }
 
-// systemRunner runs the update command for real.
+// systemRunner runs a command for real and streams its output, for the extras whose
+// output a person asked for (Flatpak, fwupdmgr).
 func systemRunner(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	return cmd.Run()
+}
+
+// systemRunnerOutput runs the update and keeps what the tool wrote. The summary the
+// command prints is the answer; bootc's prose is shown with --verbose, or when the
+// command fails and its reason is the only thing worth reading.
+func systemRunnerOutput(name string, args ...string) ([]byte, error) {
+	out, err := exec.Command(name, args...).CombinedOutput()
+	return out, err
 }
 
 // loadPlan reads the plan the image carries, under root.

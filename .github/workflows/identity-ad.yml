@@ -5,7 +5,8 @@ name: identity-ad
 # as the directory user. It is not a pull-request gate: it builds a container and
 # a VM and it is slow.
 #
-# This proves the AD client path (`realm`/`adcli`/`sssd-ad`), not FreeIPA's. The
+# This proves the AD client path (`realm`, Samba's client, `sssd-ad`), not
+# FreeIPA's. The
 # DC is a test fixture built from `tests/identity/samba`, never a support claim,
 # and it says nothing about Windows-specific behaviour such as Group Policy.
 on:
@@ -27,6 +28,8 @@ on:
       - tests/identity/*.py
       - tests/identity/resources/**
       - tests/identity/samba/**
+      - tests/vm/bootcheck.py
+      - tests/vm/test_bootcheck.py
       - tests/vm/sessioncheck.py
       - tests/vm/test_sessioncheck.py
 
@@ -47,7 +50,7 @@ env:
   WORK: /mnt/deskos-ad-work
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
   AD_IMAGE: localhost/deskos-ad:ci
-  AD_SERVER_HOSTNAME: dc.ad.lab.test
+  AD_SERVER_HOSTNAME: dc1.ad.example.com
   WS: identity-client-centos-stream-10
   IMAGE: localhost/identity-client-ad-centos-stream-10:ci
 
@@ -170,7 +173,7 @@ jobs:
             -v "$WORK/output:/output" \
             -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --config /config.toml --no-default-kernel-args \
+            "$BIB" build --type qcow2 --rootfs xfs --config /config.toml --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
@@ -203,10 +206,10 @@ jobs:
           python3 tests/vm/sessioncheck.py --mode session \
             --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
             --out "$WORK/session" --boot-timeout 900 \
-            --join-kind ad --join-domain ad.lab.test --join-realm AD.LAB.TEST \
+            --join-kind ad --join-domain ad.example.com --join-realm AD.EXAMPLE.COM \
             --join-server "$AD_SERVER_HOSTNAME" --join-dns 10.0.2.2 \
             --join-principal Administrator --join-password "$ADMIN_PASSWORD" \
-            --join-user qa@ad.lab.test --gdm-login --gdm-password "$AD_USER_PASSWORD"
+            --join-user qa@ad.example.com --gdm-login --gdm-password "$AD_USER_PASSWORD"
 
       - name: Collect evidence
         if: always()
