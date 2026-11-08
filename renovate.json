@@ -59,6 +59,13 @@
       "addLabels": ["renovate", "pinned-input"]
     },
     {
+      "description": "Fedora publishes the next release number as the rawhide tag: registry.fedoraproject.org/fedora:46 is rawhide, not a release (the identity fixture is the Samba DC, which follows the released line). Major tag bumps are never proposed; digest moves on the current tag still are.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["registry.fedoraproject.org/fedora"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "The RHEL 10 base image needs a Red Hat subscription to list its tags and refuses anonymous reads; this repository carries no subscription credential, so that digest is a deliberate, hand-made move. Disabled here so the dashboard does not show a permanent lookup failure.",
       "matchPackageNames": ["registry.redhat.io/**"],
       "enabled": false
