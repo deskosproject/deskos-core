@@ -517,7 +517,12 @@ if [ "$dc_ready" != yes ]; then
   echo "the DC did not accept authentication for $JOIN_PRINCIPAL: $(tr '\\n' ' ' < /tmp/kinit.log | cut -c1-300)"
   exit 1
 fi
-if ! printf '%s\\n' "$JOIN_PASSWORD" | timeout 120 realm join --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN"; then
+# adcli creates the computer account and then sets its password over netlogon,
+# which Samba 4.23 refuses to unwrap from this client ("gensec_unwrap failed -
+# NT_STATUS_ACCESS_DENIED", runs 42428527872, 42430711881). Samba's own client
+# joins a Samba DC; realmd still configures SSSD, and the check is the session,
+# not which binary performed the join.
+if ! printf '%s\\n' "$JOIN_PASSWORD" | timeout 120 realm join --membership-software=samba --user="$JOIN_PRINCIPAL" "$REALM_DOMAIN"; then
   echo "realm join failed against $REALM_SERVER; the unit does not wait on a prompt"
   exit 1
 fi
