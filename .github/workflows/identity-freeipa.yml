@@ -123,7 +123,7 @@ jobs:
             -v "$WORK/output:/output" \
             -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
-            "$BIB" build --type qcow2 --config /config.toml --no-default-kernel-args \
+            "$BIB" build --type qcow2 --rootfs xfs --config /config.toml --no-default-kernel-args \
             --chown "$(id -u):$(id -g)" "$IMAGE"
           qemu-img check "$WORK/output/qcow2/disk.qcow2"
 
