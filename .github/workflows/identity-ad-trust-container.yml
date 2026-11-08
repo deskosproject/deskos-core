@@ -200,15 +200,25 @@ jobs:
       - name: Prove the trust ports reach both ways
         run: |
           set -euo pipefail
+          # Samba answers 53 and 88 before 389, so a single probe can see the
+          # DC half up: run 42496995767 failed on 389 with the other two open
+          # and passed on the retry. Wait up to 120 s per port.
           check() {
             local from=$1 to=$2; shift 2
             for port in "$@"; do
-              if sudo podman exec -i "$from" bash -c "timeout 2 bash -c 'echo >/dev/tcp/$to/$port'" 2>/dev/null; then
-                echo "$from -> $to:$port open"
-              else
-                echo "$from -> $to:$port blocked" >&2
+              local open=no
+              for _ in $(seq 1 60); do
+                if sudo podman exec -i "$from" bash -c "timeout 2 bash -c 'echo >/dev/tcp/$to/$port'" 2>/dev/null; then
+                  open=yes
+                  break
+                fi
+                sleep 2
+              done
+              if [ "$open" != yes ]; then
+                echo "$from -> $to:$port blocked after 120s" >&2
                 return 1
               fi
+              echo "$from -> $to:$port open"
             done
           }
           check deskos-freeipa "$AD_SERVER_IP" 53 88 389 445 464
