@@ -488,6 +488,12 @@ hostnamectl set-hostname "$ad_host"
 if ! grep -qE "[[:space:]]$ad_host([[:space:]]|$)" /etc/hosts; then
   printf '127.0.1.1 %s %s\n' "$ad_host" "${ad_host%%.*}" >> /etc/hosts
 fi
+# adcli negotiates RC4 for the machine-account password exchange, and the
+# DEFAULT crypto policy forbids it: "Encryption type [23] not permitted", then
+# "Cannot set computer password: gensec_unwrap failed - NT_STATUS_ACCESS_DENIED"
+# (run 42428527872). RHEL documents DEFAULT:AD-SUPPORT for exactly this, and the
+# policy is a property of joining AD, not of the image.
+update-crypto-policies --set DEFAULT:AD-SUPPORT >/dev/null 2>&1 || true
 realm discover "$REALM_DOMAIN"
 # Record what DNS answered. The realm's DNS is the source of truth for the DC's
 # address; overriding it with the published host breaks the join.
