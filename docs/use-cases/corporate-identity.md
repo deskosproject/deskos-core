@@ -17,9 +17,8 @@ user's, the audit trail names nobody, and the account outlives the employment
 that justified it.
 
 A desktop that starts from the company account gets the rest for free. The home
-belongs to the directory user, permissions follow the directory groups, and
-disabling the account in AD or FreeIPA is enough to keep that person off the
-machine.
+belongs to the directory user, permissions follow the directory groups, and the
+account that opens the session is the one the directory can suspend.
 
 ## Three ways to belong
 
