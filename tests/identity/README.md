@@ -77,6 +77,21 @@ model, BIOS and kernel if not a VM.
 
 ## Samba AD DC
 
+There are two images, and the difference is measured, not stylistic:
+
+- `samba/Dockerfile` (Debian) serves the **direct** join in `identity-ad.yml`.
+  With Fedora's Samba the computer account is created and then the password
+  exchange is refused (`gensec_unwrap failed - NT_STATUS_ACCESS_DENIED`), which
+  the Samba build does not do at the version Debian ships (runs 42428527872,
+  42430711881).
+- `samba/fedora.Dockerfile` (Fedora 45) serves the **trust** fixture. With the
+  Debian build the cross-realm service ticket is rejected at the authorization
+  data layer (`HANDLE_AUTHDATA`); with Fedora's it succeeds (run 42416547551).
+
+Both use the same `entrypoint.sh`, and both are built in the run, never
+published. A future Samba version may make one of them unnecessary; the runs
+above are the record to re-measure against.
+
 `tests/identity/samba/` builds a real AD implementation with Kerberos, LDAP, DNS
 and `samba-tool`, so the client path (`realm`, `adcli`, `sssd-ad`) runs without
 Windows. It is **equivalent to a Windows AD domain**: the same code path. It is
