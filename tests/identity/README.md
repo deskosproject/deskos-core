@@ -77,63 +77,17 @@ model, BIOS and kernel if not a VM.
 
 ## Samba AD DC
 
-There are two images, and the difference is measured, not stylistic:
+Samba on Fedora 45 (`samba/Dockerfile`), built in the run and never published.
+It is the only DC in the fixture: the Debian build was removed because a
+harness that tests Fedora and CentOS clients should not depend on a third
+distribution. Fedora's Samba completes the cross-realm service ticket the
+Debian build rejected (`HANDLE_AUTHDATA`, run 42386803763 against 42416547551).
 
-- `samba/Dockerfile` (Debian) serves the **direct** join in `identity-ad.yml`.
-  With Fedora's Samba the computer account is created and then the password
-  exchange is refused (`gensec_unwrap failed - NT_STATUS_ACCESS_DENIED`), which
-  the Samba build does not do at the version Debian ships (runs 42428527872,
-  42430711881).
-- `samba/fedora.Dockerfile` (Fedora 45) serves the **trust** fixture. With the
-  Debian build the cross-realm service ticket is rejected at the authorization
-  data layer (`HANDLE_AUTHDATA`); with Fedora's it succeeds (run 42416547551).
-
-Both use the same `entrypoint.sh`, and both are built in the run, never
-published. A future Samba version may make one of them unnecessary; the runs
-above are the record to re-measure against.
-
-`tests/identity/samba/` builds a real AD implementation with Kerberos, LDAP, DNS
-and `samba-tool`, so the client path (`realm`, `adcli`, `sssd-ad`) runs without
-Windows. It is **equivalent to a Windows AD domain**: the same code path. It is
-**not the same product**: no Group Policy, no replication, no support statement.
-
-```bash
-sudo podman build -t localhost/deskos-ad:test tests/identity/samba
-export AD_IMAGE=localhost/deskos-ad:test ADMIN_PASSWORD='a throwaway Administrator password'
-sudo -E tests/identity/samba-ad.sh start
-sudo tests/identity/samba-ad.sh status
-export AD_USER=qa AD_USER_PASSWORD='a throwaway user password'
-sudo -E tests/identity/samba-ad.sh user
-```
-
-Two dependencies: **run as root** (provisioning needs real ownership and
-`security.*` xattrs; rootless panics in `set_nt_acl`), and **the client must use
-the DC's DNS before it joins**, which `identity-ad.yml` does through `JOIN_DNS`.
-
-The domain uses `--use-rfc2307`, so `uidNumber`, `gidNumber`,
-`unixHomeDirectory` and `loginShell` live in the directory. Verified 2026-10-27:
-the daily check joins the VM, GDM logs in as `qa@ad.example.com`, and `oddjobd` is
-active.
-
-Four things easy to miss:
-- **The realm's DNS is the source of truth** for the DC's address; pointing the
-  DC elsewhere breaks the join with `Insufficient permissions`.
-- **`access_provider = ad` with no rule denies every account**, and `realm permit
-  --all` exits zero without writing one, so the fixture sets `permit`.
-- **sssd starts before the join points the guest at the realm DNS**: the check
-  restarts it and waits for the domain.
-- **A serving DC is not an authenticating one.** Samba answers the domain level
-  and its own SRV while it is still starting; a join that fails there asks for the
-  password a second time with stdin already drained, so the unit waits on a prompt
-  and reports nothing (#312). The fixture now requires two consecutive `status`
-  answers ten seconds apart, and the guest waits for a `kinit` that succeeds before
-  joining, with a deadline on the wait and on the join.
-
-**One machine, one realm.** A disk that joined FreeIPA keeps `krb5.conf`,
-`sssd.conf`, the keytab, the default realm and the `authselect` state; joining
-it to AD is a schema conflict. The checks never share a VM, disk, workspace or
-tag: `identity-freeipa.yml` uses `/mnt/deskos-ipa-work`, `identity-ad.yml`
-`/mnt/deskos-ad-work`.
+The direct join is exercised from the Fedora 45 client as well: with a Debian
+DC and a CentOS Stream 10 client it worked, with Fedora's Samba and the same
+client the machine-password exchange is refused (`gensec_unwrap failed -
+NT_STATUS_ACCESS_DENIED`, run 42430711881), so both sides are now the same
+family.
 
 ## The daily check
 

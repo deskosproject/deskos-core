@@ -86,12 +86,11 @@ jobs:
           sudo iptables -S FORWARD | head
 
       - name: Build the disposable AD DC image
-        # Fedora's Samba completes the cross-realm service-ticket exchange that a
-        # Debian build rejects at the PAC layer (run 42386803763 against
-        # 42416547551). The direct AD join keeps the Debian image; the README
-        # says why.
+        # Fedora 45's Samba completes the cross-realm service-ticket exchange
+        # that the Debian build rejected at the PAC layer (run 42386803763
+        # against 42416547551).
         timeout-minutes: 20
-        run: sudo podman build -f tests/identity/samba/fedora.Dockerfile -t "$AD_IMAGE" tests/identity/samba
+        run: sudo podman build -t "$AD_IMAGE" tests/identity/samba
 
       - name: Start the AD DC
         run: |
@@ -370,12 +369,11 @@ jobs:
           sudo iptables -S FORWARD | head
 
       - name: Build the disposable AD DC image
-        # Fedora's Samba completes the cross-realm service-ticket exchange that a
-        # Debian build rejects at the PAC layer (run 42386803763 against
-        # 42416547551). The direct AD join keeps the Debian image; the README
-        # says why.
+        # Fedora 45's Samba completes the cross-realm service-ticket exchange
+        # that the Debian build rejected at the PAC layer (run 42386803763
+        # against 42416547551).
         timeout-minutes: 20
-        run: sudo podman build -f tests/identity/samba/fedora.Dockerfile -t "$AD_IMAGE" tests/identity/samba
+        run: sudo podman build -t "$AD_IMAGE" tests/identity/samba
 
       - name: Start the AD DC
         run: |

@@ -50,8 +50,8 @@ env:
   BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
   AD_IMAGE: localhost/deskos-ad:ci
   AD_SERVER_HOSTNAME: dc1.ad.example.com
-  WS: identity-client-centos-stream-10
-  IMAGE: localhost/identity-client-ad-centos-stream-10:ci
+  WS: identity-client-fedora-45
+  IMAGE: localhost/identity-client-ad-fedora-45:ci
 
 jobs:
   identity-ad:

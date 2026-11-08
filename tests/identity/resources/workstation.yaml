@@ -14,3 +14,20 @@ spec:
     - deskos-reference-apps
     - firefox
     - deskos-dock
+---
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: identity-client-fedora-45
+spec:
+  displayName: Identity client (Fedora 45)
+  platformRef: fedora-45
+  profiles:
+    - deskos-core
+    - identity-client
+    - deskos-gnome
+    - fedora
+    - deskos-look
+    - deskos-reference-apps
+    - firefox
+    - deskos-dock
