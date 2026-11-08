@@ -40,9 +40,11 @@ Two workflows, one per realm, never one for both:
 | `identity-freeipa.yml` | FreeIPA (`idm.example.com`) | daily 04:23 UTC, dispatch, identity-only paths |
 | `identity-ad.yml` | Samba AD (`ad.example.com`) | daily 04:47 UTC, dispatch, identity-only paths |
 
-Neither is a pull-request check: each builds a container, a bootc image and a
-QCOW2, and boots a VM; a newer push cancels the run in flight. Each owns its
-workspace, image tag and disk (`/mnt/deskos-ipa-work`, `/mnt/deskos-ad-work`).
+Neither is a required pull-request check: each builds a container, a bootc image
+and a QCOW2, and boots a VM, so a newer push cancels the run in flight. Both run
+on pull requests whose paths touch the fixture, and on the daily schedule. Each
+owns its workspace, image tag and disk (`/mnt/deskos-ipa-work`,
+`/mnt/deskos-ad-work`).
 
 A disk that joined one realm keeps `krb5.conf`, `sssd.conf`, the machine keytab,
 the default realm and `authselect` state, so a second realm is a schema conflict;

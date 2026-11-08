@@ -5,7 +5,8 @@ name: identity-ad
 # as the directory user. It is not a pull-request gate: it builds a container and
 # a VM and it is slow.
 #
-# This proves the AD client path (`realm`/`adcli`/`sssd-ad`), not FreeIPA's. The
+# This proves the AD client path (`realm`, Samba's client, `sssd-ad`), not
+# FreeIPA's. The
 # DC is a test fixture built from `tests/identity/samba`, never a support claim,
 # and it says nothing about Windows-specific behaviour such as Group Policy.
 on:

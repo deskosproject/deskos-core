@@ -479,7 +479,7 @@ chmod 0644 /var/lib/deskos-qa/join.status
 
 JOIN_AD = """#!/bin/bash
 set -u
-# A real AD join: discovery through DNS, realmd/adcli, sssd-ad. The POSIX
+# A real AD join: discovery through DNS, realmd with Samba's client, sssd-ad. The POSIX
 # attributes live in the directory, so the Unix identity comes from the realm.
 #
 # realmd refuses a machine whose name is not a resolvable FQDN.
@@ -488,10 +488,10 @@ hostnamectl set-hostname "$ad_host"
 if ! grep -qE "[[:space:]]$ad_host([[:space:]]|$)" /etc/hosts; then
   printf '127.0.1.1 %s %s\n' "$ad_host" "${ad_host%%.*}" >> /etc/hosts
 fi
-# adcli negotiates RC4 for the machine-account password exchange, and the
-# DEFAULT crypto policy forbids it: "Encryption type [23] not permitted", then
-# "Cannot set computer password: gensec_unwrap failed - NT_STATUS_ACCESS_DENIED"
-# (run 42428527872). RHEL documents DEFAULT:AD-SUPPORT for exactly this, and the
+# The machine-account password exchange negotiates RC4, and the DEFAULT crypto
+# policy forbids it: "Encryption type [23] not permitted", then "Cannot set
+# computer password: gensec_unwrap failed - NT_STATUS_ACCESS_DENIED" (run
+# 42428527872). RHEL documents DEFAULT:AD-SUPPORT for exactly this, and the
 # policy is a property of joining AD, not of the image.
 update-crypto-policies --set DEFAULT:AD-SUPPORT >/dev/null 2>&1 || true
 realm discover "$REALM_DOMAIN"
@@ -2596,7 +2596,7 @@ def main():
     p.add_argument("--gdm-password",
                    help="password the interactive GDM login types; runtime only")
     p.add_argument("--join-kind", choices=("ipa", "ad"), default="ipa",
-                   help="which client to run: ipa-client-install or realm/adcli")
+                   help="which client to run: ipa-client-install or realm (Samba's client)")
     p.add_argument("--join-dns",
                    help="DNS server the guest must use before the join (the AD case)")
     p.add_argument("--seed-skel", action="store_true",
