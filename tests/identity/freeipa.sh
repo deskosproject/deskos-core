@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # A disposable FreeIPA server for the identity fixture. Not production.
 #
-#   FREEIPA_IMAGE=freeipa/freeipa-server@sha256:… \
+#   FREEIPA_IMAGE=localhost/deskos-freeipa:ci \
 #   FREEIPA_PASSWORD=… sudo -E tests/identity/freeipa.sh start
 #   sudo tests/identity/freeipa.sh status
 #   FREEIPA_USER=qa FREEIPA_USER_PASSWORD=… sudo -E tests/identity/freeipa.sh user
@@ -11,11 +11,11 @@ set -euo pipefail
 
 name=deskos-freeipa
 volume=deskos-freeipa-data
-# A single-label domain such as test is rejected by ipa-server-install; the
-# fixture uses a two-label domain that cannot collide with a real one.
-hostname=${IPA_SERVER_HOSTNAME:-ipa.lab.test}
-domain=${IPA_SERVER_DOMAIN:-lab.test}
-realm=${IPA_SERVER_REALM:-LAB.TEST}
+# A single-label domain is rejected by ipa-server-install; the fixture uses a
+# two-label domain under example.com, reserved for documentation.
+hostname=${IPA_SERVER_HOSTNAME:-idm1.idm.example.com}
+domain=${IPA_SERVER_DOMAIN:-idm.example.com}
+realm=${IPA_SERVER_REALM:-IDM.EXAMPLE.COM}
 
 usage() {
   sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
@@ -23,26 +23,22 @@ usage() {
 
 case "${1:-}" in
   start)
-    : "${FREEIPA_IMAGE:?set FREEIPA_IMAGE to a pinned server image}"
+    : "${FREEIPA_IMAGE:?set FREEIPA_IMAGE to the built server image}"
     : "${FREEIPA_PASSWORD:?set FREEIPA_PASSWORD for the throwaway Directory Manager}"
-    # -U is required: without it ipa-server-install prompts for the DNS and
-    # domain questions, reads EOF from a detached container and fails. The
-    # realm serves its own DNS, so the client discovers the server through SRV
-    # records instead of a host entry. No forwarders: the guest only needs this
-    # zone, and a forwarder would make the fixture depend on the runner's
-    # resolver. The log driver keeps the whole install log, the evidence when
-    # the install fails.
-    # The trust forwards adtrust.test to the DC's DNS. The disposable .test
-    # realms are not DNSSEC-signed, and validation rejects the forwarded SOA,
-    # which leaves trust-add without domain information (run 42109140793).
-    opts="-U -r $realm -n $domain --setup-dns --no-forwarders --no-ntp --skip-mem-check --no-dnssec-validation"
-    # The upstream image is documented for a plain (bridge) container, not for
-    # host networking or privileged mode: privileged setup is explicitly not
-    # supported. On the bridge the container resolves its own name to its own
-    # address rather than to loopback, which is what the installer expects. The
-    # guest reaches every published port through the host at 10.0.2.2, and the
-    # server certificate still names the host. IPA_BIND lets a second directory
-    # (the AD trust fixture) own the default loopback ports.
+    # CentOS Stream 10 server image, built from tests/identity/freeipa. The
+    # entrypoint installs the server on first boot inside systemd and writes
+    # /run/ipa-ready; the wait below asks for that file, so a failed install is
+    # reported rather than waited out.
+    #
+    # The realm serves its own DNS, so the client discovers the server through
+    # SRV records instead of a host entry. No forwarders: the guest only needs
+    # this zone, and a forwarder would make the fixture depend on the runner's
+    # resolver. The trust adds a conditional forward zone for the AD domain.
+    #
+    # The disposable example.com realms are not DNSSEC-signed; validation would
+    # reject the forwarded SOA and leave trust-add without domain information
+    # (run 42109140793). The trust step switches validation off in
+    # /etc/named/ipa-options-ext.conf before it adds the forward zone.
     bind=${IPA_BIND:-127.0.0.1}
     ports=(-p "$bind:53:53/udp" -p "$bind:53:53/tcp"
            -p "$bind:80:80" -p "$bind:443:443"
@@ -53,21 +49,31 @@ case "${1:-}" in
     ip=${IPA_IP:-}
     ip_args=()
     [ -n "$ip" ] && ip_args=(--ip "$ip")
-    podman run -d --name "$name" --hostname "$hostname" --systemd=always \
+    podman run -d --name "$name" --hostname "$hostname" \
+      --privileged --systemd=always --cgroupns=private \
+      --tmpfs /run:rw,nosuid,nodev,mode=0755 \
+      --tmpfs /run/lock:rw,nosuid,nodev,mode=0755 \
+      --tmpfs /tmp:rw,nosuid,nodev,mode=1777 \
+      --shm-size=256m --pids-limit=4096 --ulimit nofile=65536:65536 \
+      --stop-timeout=120 \
       --network "$network" "${ip_args[@]}" \
       --log-driver=k8s-file --log-opt=max-size=50mb \
       "${ports[@]}" \
-      -e PASSWORD="$FREEIPA_PASSWORD" \
-      -e IPA_SERVER_INSTALL_OPTS="$opts" \
-      -v "$volume:/data:Z" "$FREEIPA_IMAGE"
+      -e "IPA_SERVER_HOSTNAME=$hostname" \
+      -e "IPA_SERVER_DOMAIN=$domain" \
+      -e "IPA_SERVER_REALM=$realm" \
+      -e "IPA_SERVER_IP=$ip" \
+      -e "IPA_SERVER_PASSWORD=$FREEIPA_PASSWORD" \
+      "$FREEIPA_IMAGE"
     echo "started; wait for: sudo $0 status"
     ;;
   stop)
     podman rm -f "$name"
     ;;
   purge)
+    # The data lives in the container: the server is disposable, and an image
+    # that installs on first boot has no volume to carry between runs.
     podman rm -f "$name"
-    podman volume rm "$volume"
     ;;
   status)
     state=$(podman inspect --format '{{.State.Status}}' "$name" 2>/dev/null || echo missing)
@@ -75,6 +81,10 @@ case "${1:-}" in
       echo "container $name is $state" >&2
       exit 1
     fi
+    # The image installs the server on first boot; until the entrypoint writes
+    # /run/ipa-ready the services are being configured, and ipactl would fail
+    # for the wrong reason.
+    podman exec "$name" test -f /run/ipa-ready
     podman exec "$name" ipactl status
     # The realm's own DNS must answer, not the host resolver.
     podman exec "$name" host -t SRV "_ldap._tcp.$domain" "$hostname"
@@ -125,17 +135,16 @@ case "${1:-}" in
       'command -v ipa-adtrust-install >/dev/null || \
          dnf -y install ipa-server-trust-ad || \
          dnf -y install freeipa-server-trust-ad'
-    podman exec "$name" ipa-adtrust-install --unattended --netbios-name=LAB \
+    podman exec "$name" ipa-adtrust-install --unattended --netbios-name=IDM \
       -a "$FREEIPA_PASSWORD"
     # The installer restarts services; a ticket obtained before it can be stale
     # when the next command reaches the API.
     printf '%s\n' "$FREEIPA_PASSWORD" | podman exec -i "$name" kinit admin
     # The AD zone is not signed. Validation rejects the forwarded SOA and
-    # trust-add cannot read the domain. Red Hat documents the switch for
-    # RHEL 8.2+ in /etc/named/ipa-options-ext.conf (solution 1400113); this
-    # image is RHEL 9 with BIND 9.16, and `ipa dnsconfig-mod` has no
-    # --dnssec-validation (run 42116859715). Append or replace the directive
-    # after ipa-adtrust-install, then reload named.
+    # trust-add cannot read the domain. Red Hat documents the switch in
+    # /etc/named/ipa-options-ext.conf (solution 1400113), and `ipa dnsconfig-mod`
+    # has no --dnssec-validation (run 42116859715). Append or replace the
+    # directive after ipa-adtrust-install, then reload named.
     podman exec "$name" bash -lc '
       f=/etc/named/ipa-options-ext.conf
       touch "$f"
@@ -158,9 +167,12 @@ case "${1:-}" in
     # `--password` is a prompt, not an option with a value: passing
     # --password=... makes ipa exit with "--password option does not take a
     # value" (run 41742726895). Feed the prompt on stdin instead.
+    # Keep what trust-add says: it reports the cross-realm principals it
+    # created, and a trust that "succeeds" without them leaves clients with
+    # nothing to ask their KDC for (run 42396135847).
     printf '%s\n' "$AD_ADMIN_PASSWORD" | podman exec -i "$name" ipa trust-add "$AD_DOMAIN" --type=ad \
       --admin Administrator --password \
-      --range-type=ipa-ad-trust
+      --range-type=ipa-ad-trust 2>&1 | tee /tmp/trust-add.txt
     podman exec "$name" ipa trust-show "$AD_DOMAIN"
     podman exec "$name" ipa idrange-find
     # The IPA server's SSSD resolves the trusted user; wait for the domain to

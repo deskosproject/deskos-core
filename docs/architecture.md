@@ -222,11 +222,11 @@ designed ([session-e2e.md](design/session-e2e.md)).
 Failed system units: in AMD QEMU guests without `edac_mce_amd`, only
 `mcelog.service` fails. `deskos check` names anything else.
 
-The FreeIPA join check passes. The AD join is red on the 2026-11-03 CentOS base
-because `/var/home` does not carry its SELinux label, so `oddjob-mkhomedir` cannot
-create the directory user's home
-([#409](https://github.com/deskosproject/deskos-core/issues/409)). That is a
-platform gap, not a fixture failure.
+The FreeIPA join, the direct AD join and the AD login through a FreeIPA trust
+pass on the current base: the directory user's home is created by
+`oddjob-mkhomedir`, `/var/home` carries its SELinux label, and the GDM session
+belongs to the AD account. The design note names the runs and the assertions
+([identity validation](design/identity-validation.md)).
 
 Two gaps stay open: the remaining E2E scenarios, and bare-metal validation. A
 virtual machine is not a laptop.

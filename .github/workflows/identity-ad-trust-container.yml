@@ -4,9 +4,11 @@ name: identity-ad-trust-container
 # disposable FreeIPA server on one podman network, establish the cross-forest
 # trust, and prove both directions of DNS and a Kerberos login for the AD user.
 #
-# This is the container half of the case the two client checks do not cover.
-# It builds no image and boots no VM: the desktop login is a separate check,
-# and this one fails for trust, DNS or directory reasons only.
+# Two jobs, in order. `trust` is the container half: it fails for trust, DNS or
+# directory reasons only, and builds no image. `desktop` repeats the fixture,
+# then builds the identity client, boots it, joins it to FreeIPA overwriting
+# nothing, and logs in at GDM as the AD user through the trust: a client login
+# is where a trust that "exists" is still not enough.
 on:
   schedule:
     - cron: '43 5 * * *'
@@ -17,6 +19,12 @@ on:
       - tests/identity/samba-ad.sh
       - tests/identity/freeipa.sh
       - tests/identity/samba/**
+      - tests/identity/freeipa/**
+      - tests/identity/resources/**
+      - tests/vm/bootcheck.py
+      - tests/vm/test_bootcheck.py
+      - tests/vm/sessioncheck.py
+      - tests/vm/test_sessioncheck.py
 
 permissions:
   contents: read
@@ -35,15 +43,15 @@ env:
   IPA_IP: 10.89.0.3
   AD_BIND: 127.0.0.2
   IPA_BIND: 127.0.0.1
-  AD_SERVER_HOSTNAME: dc.adtrust.test
-  AD_REALM: ADTRUST.TEST
-  # The NetBIOS name for the DC; the trust step uses adtrust.test as the DNS
+  AD_SERVER_HOSTNAME: dc1.ad.example.com
+  AD_REALM: AD.EXAMPLE.COM
+  # The NetBIOS name for the DC; the trust step uses ad.example.com as the DNS
   # domain and both are different facts, not a typo.
-  AD_DOMAIN: ADTRUST
-  FREEIPA_IMAGE: freeipa/freeipa-server@sha256:208427caf7bb4b721b0d2858517be1ee4e8addfb625e7fcf48119c34e0cbeb58
-  IPA_SERVER_HOSTNAME: ipa.lab.test
-  IPA_SERVER_DOMAIN: lab.test
-  IPA_SERVER_REALM: LAB.TEST
+  AD_DOMAIN: AD
+  FREEIPA_IMAGE: localhost/deskos-freeipa:ci
+  IPA_SERVER_HOSTNAME: idm1.idm.example.com
+  IPA_SERVER_DOMAIN: idm.example.com
+  IPA_SERVER_REALM: IDM.EXAMPLE.COM
 
 jobs:
   trust:
@@ -78,6 +86,9 @@ jobs:
           sudo iptables -S FORWARD | head
 
       - name: Build the disposable AD DC image
+        # Fedora 45's Samba completes the cross-realm service-ticket exchange
+        # that the Debian build rejected at the PAC layer (run 42386803763
+        # against 42416547551).
         timeout-minutes: 20
         run: sudo podman build -t "$AD_IMAGE" tests/identity/samba
 
@@ -121,6 +132,12 @@ jobs:
           test "$ip" = "$AD_IP"
           echo "AD_SERVER_IP=$AD_IP" >> "$GITHUB_ENV"
           sudo podman exec deskos-ad host -t A "$AD_SERVER_HOSTNAME" 127.0.0.1
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
 
       - name: Start FreeIPA
         run: |
@@ -168,7 +185,7 @@ jobs:
           for _ in $(seq 1 30); do
             if sudo -E tests/identity/samba-ad.sh status &&
                sudo podman exec deskos-freeipa \
-                 dig +time=2 +tries=1 +short SOA adtrust.test "@$AD_SERVER_IP" >/dev/null; then
+                 dig +time=2 +tries=1 +short SOA ad.example.com "@$AD_SERVER_IP" >/dev/null; then
               break
             fi
             sleep 5
@@ -177,7 +194,7 @@ jobs:
           # direction needs the IPA conditional forward zone, which the trust
           # step adds before it asks AD for the trust; it is asserted there.
           sudo podman exec deskos-ad \
-            dig +short SRV "_kerberos._tcp.lab.test" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
+            dig +short SRV "_kerberos._tcp.idm.example.com" @127.0.0.1 | tee /tmp/ad-to-ipa.txt
           test -s /tmp/ad-to-ipa.txt
 
       - name: Prove the trust ports reach both ways
@@ -211,47 +228,75 @@ jobs:
       - name: Negative control before the trust
         run: |
           set -euo pipefail
-          if sudo podman exec deskos-freeipa getent passwd qa@adtrust.test; then
+          if sudo podman exec deskos-freeipa getent passwd qa@ad.example.com; then
             echo "::error::the AD user resolves before the trust exists"
             exit 1
           fi
           echo "the AD user does not resolve before the trust, as expected"
 
       - name: Establish the trust and prove lookup and Kerberos
+        # The order matters: ipa answers with the admin ticket that the trust
+        # step acquired, and the AD user's kinit below replaces it. Asking ipa
+        # after that kinit fails with "Invalid credentials" (run 42423554518),
+        # so every administrator query comes before the identity switch.
         timeout-minutes: 30
         run: |
           set -euo pipefail
-          export AD_DOMAIN=adtrust.test AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
+          export AD_DOMAIN=ad.example.com AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP
           sudo -E tests/identity/freeipa.sh trust
+          sudo podman exec deskos-freeipa ipa trust-show ad.example.com | tee /tmp/trust.txt
+          sudo podman exec deskos-freeipa ipa idrange-find | tee /tmp/idrange.txt
+          test -s /tmp/idrange.txt
           # Now that the conditional forward zone exists, prove the other
           # direction: the IPA server resolves the AD zone through it.
           sudo podman exec deskos-freeipa \
-            dig +short SRV "_ldap._tcp.adtrust.test" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
+            dig +short SRV "_ldap._tcp.ad.example.com" @127.0.0.1 | tee /tmp/ipa-to-ad.txt
           test -s /tmp/ipa-to-ad.txt
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test | tee /tmp/getent.txt
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com | tee /tmp/getent.txt
           test -s /tmp/getent.txt
+          # The guide's checklist (10.2) asks that the AD accounts have AES
+          # keys; setting the password again after the trust regenerates them.
+          sudo podman exec deskos-ad samba-tool user setpassword qa \
+            --newpassword="$AD_USER_PASSWORD" >/dev/null
+          # Section 9.6 of the guide, verbatim: the AD user's TGT, then a service
+          # ticket in the IPA realm, and the cross-realm TGT in klist.
           printf '%s\n' "$AD_USER_PASSWORD" |
-            sudo podman exec -i deskos-freeipa kinit qa@ADTRUST.TEST
+            sudo podman exec -i deskos-freeipa kinit qa@AD.EXAMPLE.COM
+          sudo podman exec deskos-freeipa kvno -S host idm1.idm.example.com | tee /tmp/kvno.txt
           sudo podman exec deskos-freeipa klist | tee /tmp/klist.txt
-          grep -q 'ADTRUST.TEST' /tmp/klist.txt
+          grep -q 'krbtgt/IDM.EXAMPLE.COM@AD.EXAMPLE.COM' /tmp/klist.txt
           # A name the trust does not know must not resolve.
-          if sudo podman exec deskos-freeipa getent passwd deskos-nobody@adtrust.test; then
+          if sudo podman exec deskos-freeipa getent passwd deskos-nobody@ad.example.com; then
             echo "::error::a name outside the trust resolved"
             exit 1
           fi
+
+      - name: The KDC's cross-realm principals
+        # A client asks its own KDC for krbtgt/<other realm>@<its own realm>.
+        # The names are case-sensitive: an uppercase realm with a lowercase
+        # principal is "not found in Kerberos database" to the client, which is
+        # what run 42386803763 hit from the guest.
+        run: |
+          set -euo pipefail
+          sudo podman exec deskos-freeipa bash -lc \
+            "kadmin.local -q 'listprincs' | grep -i 'krbtgt/.*@' | sort" \
+            | tee /tmp/krbtgt.txt
+          test -s /tmp/krbtgt.txt
 
       - name: Collect evidence
         if: always()
         run: |
           mkdir -p evidence
-          cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt /tmp/klist.txt evidence/ 2>/dev/null || true
+          cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
+          cp /tmp/kvno.txt /tmp/klist.txt /tmp/idrange.txt /tmp/trust.txt evidence/ 2>/dev/null || true
+          sudo cp /tmp/trust-add.txt evidence/ 2>/dev/null || true
+          sudo chown "$(id -u):$(id -g)" evidence/trust-add.txt 2>/dev/null || true
+          cp /tmp/ad-to-ipa.txt /tmp/ipa-to-ad.txt /tmp/getent.txt evidence/ 2>/dev/null || true
           sudo podman inspect deskos-freeipa --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/freeipa-state.txt 2>&1 || true
           sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
-          sudo podman exec deskos-freeipa ipa trust-show adtrust.test > evidence/trust.txt 2>&1 || true
-          sudo podman exec deskos-freeipa ipa idrange-find > evidence/idrange.txt 2>&1 || true
-          sudo podman exec deskos-freeipa getent passwd qa@adtrust.test > evidence/ad-user-on-ipa.txt 2>&1 || true
-          sudo podman exec deskos-freeipa sssctl domain-status adtrust.test > evidence/domain-status.txt 2>&1 || true
-          sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.adtrust.test @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com > evidence/ad-user-on-ipa.txt 2>&1 || true
+          sudo podman exec deskos-freeipa sssctl domain-status ad.example.com > evidence/domain-status.txt 2>&1 || true
+          sudo podman exec deskos-freeipa dig +short SRV _ldap._tcp.ad.example.com @127.0.0.1 > evidence/ad-srv.txt 2>&1 || true
           sudo podman inspect deskos-ad --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' > evidence/ad-state.txt 2>&1 || true
           sudo podman logs deskos-ad > evidence/ad-dc.log 2>&1 || true
           sudo podman exec deskos-ad samba-tool user show qa > evidence/ad-user-directory.txt 2>&1 || true
@@ -261,6 +306,253 @@ jobs:
         if: always()
         with:
           name: identity-ad-trust-container-evidence
+          path: evidence
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Stop the disposable directories
+        if: always()
+        run: |
+          sudo tests/identity/freeipa.sh purge || true
+          sudo tests/identity/samba-ad.sh purge || true
+
+  # The desktop half of the same case: a client enrolled in FreeIPA whose user
+  # lives in AD behind the trust, logging in at GDM. It repeats the fixture
+  # because a job owns its runner; sharing containers across jobs is not a thing
+  # GitHub Actions can do. It runs only when the container half is green, so a
+  # broken trust is not reported twice.
+  desktop:
+    needs: trust
+    if: needs.trust.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      WORK: /mnt/deskos-trust-work
+      BIB: quay.io/centos-bootc/bootc-image-builder@sha256:2b52843ea2bfda73b0a08d97e76b734393b1d3a804681b9fabb26723bd3a2f0b
+      WS: identity-client-centos-stream-10
+      IMAGE: localhost/identity-client-trust-centos-stream-10:ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      - name: Install podman, QEMU, OVMF, openssl and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            podman openssl jq qemu-system-x86 qemu-utils ovmf
+
+      - name: Put container storage and outputs on /mnt
+        run: |
+          df -h / /mnt
+          sudo mkdir -p /mnt/containers "$WORK" /var/lib/containers /etc/containers
+          sudo mount --bind /mnt/containers /var/lib/containers
+          printf '[storage]\ndriver = "overlay"\nrunroot = "/run/containers/storage"\ngraphroot = "/var/lib/containers/storage"\n' | sudo tee /etc/containers/storage.conf
+          sudo chown "$(id -u):$(id -g)" "$WORK"
+          sudo rm -f /etc/cni/net.d/87-podman-bridge.conflist
+
+      - name: Enable KVM for the runner user
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
+      - name: Create the identity network
+        run: |
+          set -euo pipefail
+          sudo podman network create --subnet 10.89.0.0/24 --gateway 10.89.0.1 \
+            --opt isolate=false "$AD_NETWORK" || true
+          subnet="$(sudo podman network inspect "$AD_NETWORK" | jq -r '.[0].subnets[0].subnet')"
+          sudo iptables -I FORWARD -s "$subnet" -d "$subnet" -j ACCEPT
+          sudo iptables -S FORWARD | head
+
+      - name: Build the disposable AD DC image
+        # Fedora 45's Samba completes the cross-realm service-ticket exchange
+        # that the Debian build rejected at the PAC layer (run 42386803763
+        # against 42416547551).
+        timeout-minutes: 20
+        run: sudo podman build -t "$AD_IMAGE" tests/identity/samba
+
+      - name: Start the AD DC
+        run: |
+          set -euo pipefail
+          password="A1a$(openssl rand -hex 20)"
+          echo "::add-mask::$password"
+          echo "ADMIN_PASSWORD=$password" >> "$GITHUB_ENV"
+          export ADMIN_PASSWORD="$password" AD_IMAGE AD_BIND AD_IP AD_NETWORK \
+            AD_SERVER_HOSTNAME AD_REALM AD_DOMAIN
+          sudo -E tests/identity/samba-ad.sh start
+
+      - name: Wait for the AD DC
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          ok=0
+          for _ in $(seq 1 60); do
+            if sudo -E tests/identity/samba-ad.sh status; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 2 ]; then
+                echo "the DC answered twice, ten seconds apart"
+                exit 0
+              fi
+              sleep 10
+              continue
+            fi
+            ok=0
+            sudo podman logs deskos-ad 2>&1 | tail -40 || true
+            sleep 5
+          done
+          echo "the DC did not answer twice within the timeout" >&2
+          exit 1
+
+      - name: Build the FreeIPA server image
+        # CentOS Stream 10, installed on first boot: the distribution the
+        # fixture is meant to exercise, not the Fedora-based upstream image.
+        timeout-minutes: 20
+        run: sudo podman build -t "$FREEIPA_IMAGE" tests/identity/freeipa
+
+      - name: Start FreeIPA
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "FREEIPA_PASSWORD=$password" >> "$GITHUB_ENV"
+          export FREEIPA_PASSWORD="$password" FREEIPA_IMAGE IPA_IP IPA_BIND IPA_NETWORK
+          sudo -E tests/identity/freeipa.sh start
+
+      - name: Wait for FreeIPA
+        timeout-minutes: 40
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            if sudo -E tests/identity/freeipa.sh status; then
+              echo "the realm answers after $((i * 10))s"
+              exit 0
+            fi
+            state=$(sudo podman inspect --format '{{.State.Status}}' deskos-freeipa 2>/dev/null || echo missing)
+            if [ "$state" != running ]; then
+              echo "container deskos-freeipa is $state, not running" >&2
+              sudo podman logs deskos-freeipa 2>&1 | tail -80 || true
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "the realm did not answer within 20 minutes" >&2
+          exit 1
+
+      - name: Point the DC at the IPA server's DNS
+        run: |
+          set -euo pipefail
+          export AD_DNS_FORWARDER="$IPA_IP"
+          sudo -E tests/identity/samba-ad.sh forwarder
+
+      - name: Wait for the restarted DC
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 30); do
+            if sudo -E tests/identity/samba-ad.sh status &&
+               sudo podman exec deskos-freeipa \
+                 dig +time=2 +tries=1 +short SOA ad.example.com "@$AD_IP" >/dev/null; then
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Create the AD user
+        run: |
+          set -euo pipefail
+          export AD_USER=qa
+          user_password="$(openssl rand -hex 16)"
+          echo "::add-mask::$user_password"
+          echo "AD_USER_PASSWORD=$user_password" >> "$GITHUB_ENV"
+          export AD_USER_PASSWORD="$user_password"
+          sudo -E tests/identity/samba-ad.sh user
+          sudo podman exec deskos-ad samba-tool user show qa
+
+      - name: Establish the trust
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          export AD_DOMAIN=ad.example.com AD_ADMIN_PASSWORD="$ADMIN_PASSWORD" AD_USER=qa AD_SERVER_IP="$AD_IP"
+          sudo -E tests/identity/freeipa.sh trust
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com
+          sudo podman exec deskos-freeipa bash -lc \
+            "kadmin.local -q 'listprincs' | grep -i 'krbtgt/.*@' | sort" | tee /tmp/krbtgt.txt
+          test -s /tmp/krbtgt.txt
+
+      - name: Render the identity image
+        run: |
+          go build -o bin/deskosctl ./cmd/deskosctl
+          ./bin/deskosctl render tests/identity/resources --workstation "$WS" --output ctx
+          sha256sum ctx/plan.json ctx/generated-manifest.json
+
+      - name: Pull the base and the builder
+        run: |
+          set -euo pipefail
+          base=$(grep -m1 '^FROM ' ctx/Containerfile | awk '{print $2}')
+          for ref in "$base" "$BIB"; do
+            ok=0
+            for i in 1 2 3 4 5; do
+              if sudo podman pull "$ref"; then ok=1; break; fi
+              echo "attempt $i failed pulling $ref; retrying in 20s" >&2
+              sleep 20
+            done
+            [ "$ok" = 1 ] || { echo "could not pull $ref" >&2; exit 1; }
+          done
+
+      - name: Build the identity image
+        timeout-minutes: 40
+        run: sudo podman build --pull=never -t "$IMAGE" ctx
+
+      - name: Build a QCOW2
+        timeout-minutes: 30
+        run: |
+          mkdir -p "$WORK/output"
+          sudo podman run --rm --privileged --pull=never \
+            --security-opt label=type:unconfined_t \
+            -v "$WORK/output:/output" \
+            -v "$PWD/tests/vm/config.toml:/config.toml:ro" \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            "$BIB" build --type qcow2 --rootfs xfs --config /config.toml --no-default-kernel-args \
+            --chown "$(id -u):$(id -g)" "$IMAGE"
+          qemu-img check "$WORK/output/qcow2/disk.qcow2"
+
+      - name: Join the identity VM and log in as the AD user
+        timeout-minutes: 30
+        run: |
+          # The guest resolves through the IPA server on the container network:
+          # it serves idm.example.com and forwards ad.example.com to the DC, so one
+          # resolver answers for both realms. The guest reaches 10.89.0.0/24
+          # through QEMU's user networking, which NATs to the host.
+          python3 tests/vm/sessioncheck.py --mode session \
+            --disk "$WORK/output/qcow2/disk.qcow2" --plan ctx/plan.json \
+            --out "$WORK/session" --boot-timeout 900 \
+            --join-domain idm.example.com --join-realm IDM.EXAMPLE.COM --join-server idm1.idm.example.com \
+            --join-principal admin --join-password "$FREEIPA_PASSWORD" \
+            --join-user qa@ad.example.com \
+            --join-dns "$IPA_IP" \
+            --gdm-login --gdm-password "$AD_USER_PASSWORD"
+
+      - name: Collect evidence
+        if: always()
+        run: |
+          mkdir -p evidence
+          cp -a "$WORK/session" evidence/ 2>/dev/null || true
+          cp ctx/plan.json ctx/generated-manifest.json evidence/ 2>/dev/null || true
+          cp /tmp/krbtgt.txt evidence/ 2>/dev/null || true
+          sudo podman exec deskos-freeipa getent passwd qa@ad.example.com > evidence/ad-user-on-ipa.txt 2>&1 || true
+          sudo podman exec deskos-freeipa ipa trust-show ad.example.com > evidence/trust.txt 2>&1 || true
+          sudo podman logs deskos-freeipa > evidence/freeipa.log 2>&1 || true
+          sudo podman logs deskos-ad > evidence/ad-dc.log 2>&1 || true
+          sudo chown -R "$(id -u):$(id -g)" evidence 2>/dev/null || true
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: identity-ad-trust-desktop-evidence
           path: evidence
           retention-days: 14
           if-no-files-found: warn

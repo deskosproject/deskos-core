@@ -37,12 +37,14 @@ Two workflows, one per realm, never one for both:
 
 | workflow | realm | cadence |
 |---|---|---|
-| `identity-freeipa.yml` | FreeIPA (`lab.test`) | daily 04:23 UTC, dispatch, identity-only paths |
-| `identity-ad.yml` | Samba AD (`ad.lab.test`) | daily 04:47 UTC, dispatch, identity-only paths |
+| `identity-freeipa.yml` | FreeIPA (`idm.example.com`) | daily 04:23 UTC, dispatch, identity-only paths |
+| `identity-ad.yml` | Samba AD (`ad.example.com`) | daily 04:47 UTC, dispatch, identity-only paths |
 
-Neither is a pull-request check: each builds a container, a bootc image and a
-QCOW2, and boots a VM; a newer push cancels the run in flight. Each owns its
-workspace, image tag and disk (`/mnt/deskos-ipa-work`, `/mnt/deskos-ad-work`).
+Neither is a required pull-request check: each builds a container, a bootc image
+and a QCOW2, and boots a VM, so a newer push cancels the run in flight. Both run
+on pull requests whose paths touch the fixture, and on the daily schedule. Each
+owns its workspace, image tag and disk (`/mnt/deskos-ipa-work`,
+`/mnt/deskos-ad-work`).
 
 A disk that joined one realm keeps `krb5.conf`, `sssd.conf`, the machine keytab,
 the default realm and `authselect` state, so a second realm is a schema conflict;
@@ -89,14 +91,14 @@ results and the journal to the serial port:
 - the typed password reaches PAM: this is the **auth** phase, not only the
   session phase;
 - `join_ok=yes`, `join_sssd=active`, and the user appears in `getent passwd`;
-- `session_user` **is the directory user**, for AD `qa@ad.lab.test`;
+- `session_user` **is the directory user**, for AD `qa@ad.example.com`;
 - the home did not exist before the login (`join_home_before=missing`) and is
   owned by the uid the directory resolved afterwards, through `oddjob-mkhomedir`;
 - `oddjobd` is active.
 
 FreeIPA run `41631837345` and AD run `41631837362` report exactly that, with a
 password typed at the greeter. The AD run also shows `sssctl domain-status`
-online with `dc.ad.lab.test` as domain controller and global catalog, and the
+online with `dc1.ad.example.com` as domain controller and global catalog, and the
 `DESKOS-QA$` and `host/DESKOS-QA` principals in the keytab.
 
 A watchdog timer writes the join status, the state of `gdm` and the join unit,
@@ -134,10 +136,15 @@ runner's resolver for the zone.
   organization's decision. FreeIPA fits Linux better because it models Unix
   identity, host-based access and `sudo` policy natively; AD is supported because
   organizations already have it.
-- **The trust is a separate fixture.** `identity-ad-trust-container.yml`
-  provisions the DC and the IPA server on one network, with DNS in both
-  directions and the trust, and fails if the user resolves before it. It does
-  not boot the client: the GDM login under the trust is the client workflow.
+- **The trust is a separate fixture.** `identity-ad-trust-container.yml` runs
+  two jobs. The first provisions the DC (Samba on Fedora 45) and the IPA server
+  (CentOS Stream 10) on one network, with DNS in both directions and the trust,
+  and fails if the user resolves before it; it also asserts the guide's own
+  check, `kinit qa@ad.example.com` then `kvno -S host
+  idm1.idm.example.com`, so the cross-realm ticket is a record and not a
+  guess. The second repeats the fixture, boots the identity client, joins it to
+  FreeIPA and logs in at GDM as `qa@ad.example.com`, the account that lives in
+  AD, through the trust.
 - **Not a real user's password.** The fixture generates one per run, and the
   disposable DC turns off its complexity rule so the keyboard path stays
   lowercase; it is a test credential, not a directory policy.
