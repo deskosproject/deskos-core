@@ -1,6 +1,6 @@
 {
   "owner": "rarguello",
-  "review": "2026-11-17",
+  "review": "2026-12-08",
   "base": {
     "image": "quay.io/centos-bootc/centos-bootc:stream10",
     "digest": "sha256:f09b8e566b64fbda9127cf2d5bb7ed712e3afa1c85949448d5ef8b75e2d30e78"
@@ -38,13 +38,13 @@
         {
           "package": "stdlib",
           "type": "go-module",
-          "version": "go1.26.5",
-          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/37/0c5a08e284ef3d20cdca63b91434de4bb07138c41636ef6b6b9bd973ead737.file"
         },
         {
           "package": "stdlib",
           "type": "go-module",
-          "version": "go1.26.5",
+          "version": "go1.26.7",
           "path": "/usr/bin/podman"
         }
       ]
@@ -58,7 +58,7 @@
           "package": "golang.org/x/net",
           "type": "go-module",
           "version": "v0.56.0",
-          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
+          "path": "/sysroot/ostree/repo/objects/14/d0bfa9e6b349106f17c4dfac357773c930fb91a48ce97a97ff592c1085d9df.file"
         },
         {
           "package": "golang.org/x/net",
@@ -70,7 +70,7 @@
           "package": "golang.org/x/net",
           "type": "go-module",
           "version": "v0.57.0",
-          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
+          "path": "/sysroot/ostree/repo/objects/37/0c5a08e284ef3d20cdca63b91434de4bb07138c41636ef6b6b9bd973ead737.file"
         },
         {
           "package": "golang.org/x/net",
@@ -117,32 +117,20 @@
         {
           "package": "stdlib",
           "type": "go-module",
-          "version": "go1.26.5",
-          "path": "/sysroot/ostree/repo/objects/55/bc950be6c60a0423101f924f91b6183da79b09fc0e0e4bbbf704fd2ee1dfc6.file"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.5",
-          "path": "/sysroot/ostree/repo/objects/f5/28c1a5c056029fd5d1ea1dfaa9d04b21aa07546747b97db60b7b08a26f6885.file"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.5",
-          "path": "/usr/bin/podman"
-        },
-        {
-          "package": "stdlib",
-          "type": "go-module",
-          "version": "go1.26.5",
-          "path": "/usr/bin/skopeo"
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/14/d0bfa9e6b349106f17c4dfac357773c930fb91a48ce97a97ff592c1085d9df.file"
         },
         {
           "package": "stdlib",
           "type": "go-module",
           "version": "go1.26.7",
           "path": "/sysroot/ostree/repo/objects/15/5e8ab3709d5fa0e0d3158e3c6509b5c87ae3cd0d557892fe72cea9ca6b59a0.file"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/sysroot/ostree/repo/objects/37/0c5a08e284ef3d20cdca63b91434de4bb07138c41636ef6b6b9bd973ead737.file"
         },
         {
           "package": "stdlib",
@@ -160,7 +148,19 @@
           "package": "stdlib",
           "type": "go-module",
           "version": "go1.26.7",
+          "path": "/usr/bin/podman"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
           "path": "/usr/bin/rhc"
+        },
+        {
+          "package": "stdlib",
+          "type": "go-module",
+          "version": "go1.26.7",
+          "path": "/usr/bin/skopeo"
         },
         {
           "package": "stdlib",
@@ -185,7 +185,7 @@
     {
       "id": "CVE-2026-114406",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Re-accepted by the owner on 2026-11-04 for the 2026-11-03 CentOS Stream 10 base. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base serves 2026.2.92_v9.0.319-100.3: its changelog removes emSign Root CA - C1 (100.0), AAA Certificate Services and emSign ECC Root CA - G3 (100.1), and emSign Root CS CA - G3 (100.2), and the extracted bundle has no eMudhra root. Grype still matches this CVE against 100.3 because its database has not caught up; this entry documents that false positive until it does. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when a scan stops reporting the CVE.",
+      "reason": "Re-accepted by the owner on 2026-11-04 for the 2026-11-06 CentOS Stream 10 base. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base serves 2026.2.92_v9.0.319-100.3: its changelog removes emSign Root CA - C1 (100.0), AAA Certificate Services and emSign ECC Root CA - G3 (100.1), and emSign Root CS CA - G3 (100.2), and the extracted bundle has no eMudhra root. Grype still matches this CVE against 100.3 because its database has not caught up; this entry documents that false positive until it does. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when a scan stops reporting the CVE.",
       "matches": [
         {
           "package": "ca-certificates",
@@ -198,7 +198,7 @@
     {
       "id": "CVE-2026-115905",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Accepted by the owner on 2026-11-04 for the 2026-11-03 CentOS Stream 10 base. Red Hat rates the CVE Critical (CVSS 3.1 8.1, draft), records RHEL 10 firefox as Affected and publishes no fixed build: the flaw is in the zip streaming extractor, the package is the vendor's, and DeskOS neither builds nor patches it. Blocking the fleet would not reduce the risk; the fix is Red Hat's rebuild in a later base. The tracked issue is #420, and the base bump that carries it closes the entry. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-04 for the 2026-11-06 CentOS Stream 10 base. Red Hat rates the CVE Critical (CVSS 3.1 8.1, draft), records RHEL 10 firefox as Affected and publishes no fixed build: the flaw is in the zip streaming extractor, the package is the vendor's, and DeskOS neither builds nor patches it. Blocking the fleet would not reduce the risk; the fix is Red Hat's rebuild in a later base. The tracked issue is #420, and the base bump that carries it closes the entry. This record makes the acceptance explicit and expires on the review date below.",
       "matches": [
         {
           "package": "firefox",
