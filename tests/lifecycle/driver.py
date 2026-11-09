@@ -88,18 +88,30 @@ def ovmf_paths(code=None, variables=None):
     raise HarnessError("no OVMF firmware found; pass --ovmf-code and --ovmf-vars")
 
 
-def qemu_argv(qemu, workdir, disk, ssh_port, ovmf_code, ovmf_vars):
-    """The QEMU command line: UEFI, virtio, user networking with SSH forwarded."""
+def qemu_argv(qemu, workdir, disk, ssh_port, ovmf_code, ovmf_vars, throttle=False):
+    """The QEMU command line: UEFI, virtio, user networking with SSH forwarded.
+
+    `throttle` caps the disk at 100 IOPS. The interrupt scenario uses it: the
+    composefs deployment is mostly metadata and hardlinks, so the cap widens
+    the write window from milliseconds to tens of seconds, and the host can
+    kill the machine while that write is still running.
+    """
     workdir = Path(workdir)
+    throttle_args = []
+    drive_throttle = ""
+    if throttle:
+        throttle_args = ["-object", "throttle-group,id=lifecycle,iops-total=100"]
+        drive_throttle = ",throttle-group=lifecycle"
     return [
         qemu,
         "-machine", "q35,accel=kvm",
         "-cpu", "host",
         "-m", "4096",
         "-smp", "4",
+    ] + throttle_args + [
         "-drive", f"if=pflash,format=raw,readonly=on,file={ovmf_code}",
         "-drive", f"if=pflash,format=raw,file={workdir / 'OVMF_VARS.fd'}",
-        "-drive", f"if=virtio,format=raw,file={disk}",
+        "-drive", f"if=virtio,format=raw,file={disk}{drive_throttle}",
         "-device", "virtio-vga",
         "-display", "none",
         "-nic", f"user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:{ssh_port}-:22",
@@ -361,13 +373,14 @@ class Driver:
             "--filesystem", "ext4", "--allow-missing-verity",
         )
 
-    def boot(self, expect_ssh=True):
+    def boot(self, expect_ssh=True, throttle=False):
         self.boots += 1
         self.say(f"boot {self.boots}")
         shutil.copy(self.ovmf_vars, self.work / "OVMF_VARS.fd")
         (self.work / "serial.log").write_text("")
         argv = qemu_argv(self.qemu, self.work, str(self.work / "disk.raw"),
-                         self.ssh_port, self.ovmf_code, self.ovmf_vars)
+                         self.ssh_port, self.ovmf_code, self.ovmf_vars,
+                         throttle=throttle)
         self.sh(*self.sudo, *argv)
         if expect_ssh:
             self.wait_ssh()
@@ -591,11 +604,42 @@ class Driver:
         if self.args.interrupt:
             # A third image: after the rollback, B is the rollback deployment,
             # and upgrading to the rollback image is not a real update.
-            self.say("interrupt an upgrade with a power loss")
+            self.say("interrupt an upgrade in the deployment write window")
             self.push_image("c", "c")
-            self.guest("setsid nohup bootc upgrade >/dev/null 2>&1 < /dev/null & true")
-            time.sleep(3)
+            # Reboot with the disk throttled. The sleep this replaces killed the
+            # upgrade during the download, so the deployment write was never
+            # interrupted; the installed disk uses the composefs backend, whose
+            # deployment state lives under /sysroot/state/deploy, not under
+            # /ostree/deploy. A guest watcher prints a marker when that state
+            # appears, and the capped IOPS keep the write running while the
+            # host reads the marker and kills QEMU.
             self.kill_qemu()
+            self.boot(throttle=True)
+            self.guest(
+                "before=\"$(ls -d /sysroot/state/deploy/* /ostree/deploy/*/deploy/* 2>/dev/null | sort)\"; "
+                "( while :; do "
+                "now=\"$(ls -d /sysroot/state/deploy/* /ostree/deploy/*/deploy/* 2>/dev/null | sort)\"; "
+                "if [ \"$now\" != \"$before\" ]; then echo LIFECYCLE-WRITE > /dev/ttyS0; break; fi; "
+                "sleep 0.05; "
+                "done ) >/dev/null 2>&1 &"
+            )
+            serial = self.work / "serial.log"
+            offset = serial.stat().st_size
+            self.guest("setsid nohup bootc upgrade >/dev/null 2>&1 < /dev/null & true")
+            deadline = time.time() + 300
+            seen = False
+            while time.time() < deadline:
+                with open(serial, "rb") as fh:
+                    fh.seek(offset)
+                    if b"LIFECYCLE-WRITE" in fh.read():
+                        seen = True
+                        break
+                time.sleep(0.02)
+            self.kill_qemu()
+            self.interrupt_write = seen
+            if not seen:
+                self.failure.append(
+                    "the upgrade never created deployment state: the power loss did not test the write window")
             self.boot()
             self.record("interrupt", write=self.marker_b)
             self.guest("bootc upgrade")
@@ -618,6 +662,7 @@ class Driver:
     def write_report(self, failures):
         report = {
             "sequence": [boot.step for boot in self.seq],
+            "interrupt_write_window": getattr(self, "interrupt_write", None),
             "blocks": self.blocks,
             "extra_blocks": self.extra_blocks,
             "boot_failure": self.failure,
