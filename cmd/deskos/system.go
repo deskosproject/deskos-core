@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -133,6 +134,31 @@ func systemRunner(name string, args ...string) error {
 func systemRunnerOutput(name string, args ...string) ([]byte, error) {
 	out, err := exec.Command(name, args...).CombinedOutput()
 	return out, err
+}
+
+// systemRunnerJSON keeps stderr out of stdout. A tool's JSON is the answer, and
+// a warning on stderr would otherwise corrupt the document being parsed. On
+// failure the stderr text is folded into the error, where the caller can show it.
+func systemRunnerJSON(name string, args ...string) ([]byte, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(name, args...)
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	if err != nil {
+		if text := strings.TrimSpace(stderr.String()); text != "" {
+			return stdout.Bytes(), fmt.Errorf("%w: %s", err, text)
+		}
+	}
+	return stdout.Bytes(), err
+}
+
+// firmwareRunner uses the JSON runner for fwupd's device state and the plain
+// combined runner for rpm, whose short version string does not need isolating.
+func firmwareRunner(name string, args ...string) ([]byte, error) {
+	if name == "fwupdmgr" {
+		return systemRunnerJSON(name, args...)
+	}
+	return systemRunnerOutput(name, args...)
 }
 
 // loadPlan reads the plan the image carries, under root.

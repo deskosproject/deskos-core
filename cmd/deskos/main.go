@@ -160,7 +160,7 @@ func update(args []string, out, errOut io.Writer) int {
 	apply := fs.Bool("apply", false, "apply now, instead of staging until the next reboot")
 	dryRun := fs.Bool("dry-run", false, "say what would run, and change nothing")
 	flatpak := fs.Bool("flatpak", false, "update system Flatpak applications before the image")
-	firmware := fs.Bool("firmware", false, "list firmware updates; do not apply them")
+	firmware := fs.Bool("firmware", false, "add the firmware update check; DeskOS does not apply firmware")
 	all := fs.Bool("all", false, "the image, the Flatpak applications and the firmware check")
 	verbose := fs.Bool("verbose", false, "print every condition and the tool's own output")
 	if err := fs.Parse(args); err != nil {
@@ -213,9 +213,20 @@ func update(args []string, out, errOut io.Writer) int {
 			strings.Join(kinds, ", "))
 	}
 
+	// Firmware is not another package upgrade: DeskOS never stages or flashes
+	// it. The warnings describe what would make a later manual installation
+	// fail, but they do not skip the listing: get-updates does not need a
+	// working loader, and the image update may be what carries the fix.
+	doFlatpak := *flatpak || *all
+	doFirmware := *firmware || *all
+	if doFirmware {
+		printFirmwareWarnings(out, firmwareWarnings(firmwareRunner, !*dryRun))
+	}
+
 	// Extras run before the image: with --apply the image command reboots, and a
 	// Flatpak update queued after it would never run.
-	if err := runExtras(out, systemRunner, updateExtras(*flatpak, *firmware, *all), *dryRun); err != nil {
+	firmwareFailed, err := runUpdateExtras(out, errOut, systemRunner, doFlatpak, doFirmware, *dryRun)
+	if err != nil {
 		fmt.Fprintf(errOut, "deskos update: %v\n", err)
 		return 1
 	}
@@ -243,6 +254,9 @@ func update(args []string, out, errOut io.Writer) int {
 		after = before
 	}
 	fmt.Fprint(out, resultLine(before, after, *apply))
+	if firmwareFailed {
+		return 1
+	}
 	return 0
 }
 
@@ -306,13 +320,17 @@ func digestOf(d *bootcDeployment) string {
 
 // updateExtras is the on-demand side of the same work the image's timers do.
 // It is not a new policy: an administrator asked for it on this machine.
-func updateExtras(flatpak, firmware, all bool) [][]string {
+func updateExtras(flatpak, firmware bool) [][]string {
 	var cmds [][]string
-	if flatpak || all {
+	if flatpak {
 		cmds = append(cmds, []string{"flatpak", "update", "--system", "--noninteractive", "--assumeyes"})
 	}
-	if firmware || all {
-		cmds = append(cmds, []string{"fwupdmgr", "get-updates"})
+	if firmware {
+		// get-updates only: DeskOS never stages or flashes firmware. The command
+		// runs without a TTY, so fwupd uses its metadata cache and skips the
+		// interactive metadata and report checks; --no-unreported-check makes
+		// the no-upload intent explicit.
+		cmds = append(cmds, []string{"fwupdmgr", "get-updates", "--no-unreported-check"})
 	}
 	return cmds
 }
@@ -336,6 +354,25 @@ func runExtras(out io.Writer, runner func(string, ...string) error, cmds [][]str
 		}
 	}
 	return nil
+}
+
+// runUpdateExtras runs Flatpak first, then the firmware listing. A Flatpak
+// failure stops the sequence, because the image should not be updated on a
+// half-updated system. A firmware failure is reported and remembered instead:
+// the image is where a fixed fwupd-efi arrives, so it still runs.
+func runUpdateExtras(out, errOut io.Writer, runner func(string, ...string) error, flatpak, firmware, dryRun bool) (firmwareFailed bool, err error) {
+	if flatpak {
+		if err := runExtras(out, runner, updateExtras(true, false), dryRun); err != nil {
+			return false, err
+		}
+	}
+	if firmware {
+		if err := runExtras(out, runner, updateExtras(false, true), dryRun); err != nil {
+			fmt.Fprintf(errOut, "deskos update: %v; continuing with the image\n", err)
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func status(args []string, out, errOut io.Writer) int {
