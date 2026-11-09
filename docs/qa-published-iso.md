@@ -54,11 +54,12 @@ disk and one CD-ROM, user-mode network. No physical hardware.
 
 ## Secure Boot
 
-The same ISO was installed again with UEFI Secure Boot enabled: the secboot
-OVMF firmware, q35 with SMM, and the pflash device marked secure. The firmware
-accepted the installer's signed chain, the install completed, GNOME Initial
-Setup and the session ran, and a disk-only boot with the same firmware reached
-the greeter and logged in.
+The same ISO was installed again in QEMU/OVMF with UEFI Secure Boot enabled:
+the secboot firmware, q35 with SMM, the pflash device marked secure, and the
+enrolled variable store (Ubuntu's `.ms.fd`, which carries the PK/KEK/db and
+`SecureBootEnable=1`). The firmware accepted the installer's signed chain, the
+install completed, GNOME Initial Setup and the session ran, and a disk-only boot
+with the same firmware reached the greeter and logged in.
 
 The chain is the vendor's: shim signed by Microsoft's UEFI CAs, GRUB and kernel
 by CentOS. The RHEL flavor builds downstream and was not tested in this mode.
