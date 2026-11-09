@@ -214,6 +214,12 @@ moves.
 | Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
 | RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [ADR 0014](adr/0014-platform-base-ownership.md) |
 
+Update and rollback are not inferred from unit tests. `lifecycle-test.yml`
+installs a CentOS Stream 10 disk, moves A to B and back, injects a power loss in
+the deployment write and again after the staged entry is active, and recovers a
+candidate that cannot boot. The run records deployment identities, `/var` and
+`/etc` state, and one journal per boot ([design](design/lifecycle.md)).
+
 The session check reads every dconf default, extension, favorite, wallpaper and
 binary the Plan declares. It also opens applications through AT-SPI, opens
 Settings and closes a file-manager window. A sidebar click and lock/unlock remain

@@ -8,10 +8,12 @@ request runs it.
 
 - `driver.py` installs a disk from a source image, boots it under QEMU, stages B
   from a local registry, reboots into it, rolls back to A, and can interrupt an
-  upgrade with a power loss. `--boot-failure` stages a candidate with no init,
-  verifies it cannot boot, recovers the previous GRUB entry from the host and boots
-  A. It writes a `/var` marker and edits a file under `/etc`, and B ships a
-  different `/etc` file, so the run reports what survives each transition. Output:
+  upgrade with a power loss in the deployment write window and again after the
+  staged entry is active. `--boot-failure` stages a candidate with no init,
+  verifies it cannot boot, recovers the previous GRUB entry from the host and
+  boots the deployment that was running before the candidate. It writes a
+  `/var` marker and edits a file under `/etc`, and B ships a different `/etc`
+  file, so the run reports what survives each transition. Output:
   `lifecycle.json` and `summary.md` in the work directory.
 - `lifecycle.py` holds the boot sequence, a parser for serial marker blocks, and a
   fail-closed evaluator: a missing block, a missing key, an unknown image, a lost

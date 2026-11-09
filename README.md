@@ -80,7 +80,7 @@ passes:
 | Boot | QEMU reaches a graphical screen and shuts down |
 | Session | dconf, extensions, favorites, wallpaper and binaries match the Plan; the desktop exposes its applications and opens one |
 | First boot | GNOME Initial Setup is the session and no account exists |
-| Update and rollback | a machine moves A to B and back, including a candidate that cannot boot |
+| Update and rollback | a real install moves A to B and back, survives a power loss during the deployment write and after the staged entry is active, and recovers a candidate that cannot boot |
 | Domain login | a throwaway FreeIPA realm and a Samba AD domain, joined at first boot |
 | Supply chain | installed SBOM, CVE scan, signature and provenance on the digest |
 
@@ -88,6 +88,13 @@ Results are keyed by digest at <https://evidence.deskos.org> and summarised at
 <https://deskos.org/evidence/>. Boot, session and first-boot checks also run on
 every merge to `main` that can change an image; screenshots are in
 [qa.md](docs/qa.md).
+
+Update and rollback are tested on a real installed disk, not inferred from unit
+tests: the lifecycle run stages B, boots it, rolls back to A, injects a power
+loss in the deployment write and again after the staged entry is active, and
+recovers a candidate that cannot boot. It keeps deployment identities, `/var`
+and `/etc` state, and per-boot journals. See
+[design/lifecycle.md](docs/design/lifecycle.md).
 
 ## Platforms
 
