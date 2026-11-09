@@ -1,18 +1,18 @@
-# One install of the published ISO
+# Installing the published ISO
 
-The installer the download page offers was installed once, from the bytes the
-page names, and the result is recorded here. It boots, installs and reaches
-GNOME Initial Setup; it also erases every disk it sees without asking, which
-the page did not say.
+The installer the download page offers was installed from the bytes the page
+names, and the result is here. Since v0.25.2 it asks for the language and the
+disk, installs, creates the first account at GNOME Initial Setup and boots the
+installed system on its own.
 
 ## The artifact
 
 | Field | Value |
 |---|---|
-| File | `deskos-centos-stream-10-20261108-60d055d1aafb.iso` |
-| SHA-256 | `bf01da7de75690248de121ddd7289a1fc55290b8f2bfcc0989095ae60ab96e7c` |
-| Image | `sha256:7e30c662b9798efc2ae3dc22d053724ca5f2d42adb5b6e28c4289a020aa2899a` |
-| OCI artifact | `sha256:60d055d1aafb892be5d3f2b9731dc5a842f4ad97ca8154e035520d815d2d63b7` |
+| File | `deskos-centos-stream-10-20261109-8b73cad52c91.iso` |
+| SHA-256 | `32051bc4efea42458a5c7bdea577c476f363548fd3e0af63bb162a49d2a6634e` |
+| Image | `sha256:65ff69215ce0dee70ec93664a71cd54cef4fc18c82d593d3824c73b4959fe3e3` |
+| OCI artifact | `sha256:8b73cad52c91fa222634bbe3312285adfeb51af11669f22fdc6e7a96db8abfa3` |
 
 Pulled on 2026-11-09 from
 `quay.io/deskos/deskos-core-centos-stream-10-installer`, the signed artifact
@@ -30,49 +30,45 @@ disk and one CD-ROM, user-mode network. No physical hardware.
 
 1. The GRUB menu boots `Install CentOS Stream 10`, whose command line carries
    `inst.ks=hd:LABEL=...:/osbuild.ks`.
-2. Anaconda goes straight to the installation progress screen, with no
-   language, disk or LUKS step. It deploys the embedded image.
-3. The machine reboots by itself and reaches GNOME Initial Setup.
-4. The setup asks for privacy controls, the account and a password. The account
-   is `DeskOS QA` with the user name `deskosqa`; no person is named.
-5. The desktop starts with that account.
-6. The machine powers off, the ISO is detached, and it boots from the disk
-   alone: the greeter lists `DeskOS QA`, the password opens the session.
+2. Anaconda asks for the language, then shows the summary. The keyboard, time
+   zone and installation destination start incomplete.
+3. The destination spoke lists the 40 GiB virtio disk, offers automatic or
+   custom partitioning and the encryption checkbox. The disk is only touched
+   after **Begin Installation**.
+4. The installer deploys the embedded image, reboots, and reaches GNOME Initial
+   Setup. The account is `DeskOS QA` with the user name `deskosqa`; no person is
+   named.
+5. The desktop starts with that account. The machine powers off, the ISO is
+   detached, and it boots from the disk alone: the greeter lists `DeskOS QA`,
+   the password opens the session.
 
 | Step | Capture |
 |---|---|
-| Installation progress | [installation-progress.png](images/qa/published-iso/installation-progress.png) |
-| First boot, Initial Setup | [initial-setup-welcome.png](images/qa/published-iso/initial-setup-welcome.png) |
-| Account creation | [initial-setup-account.png](images/qa/published-iso/initial-setup-account.png) |
-| Session after setup | [session.png](images/qa/published-iso/session.png) |
-| Greeter after a disk-only boot | [greeter-after-reboot.png](images/qa/published-iso/greeter-after-reboot.png) |
-| Session after the reboot | [session-after-reboot.png](images/qa/published-iso/session-after-reboot.png) |
+| Language | [installation-language.png](images/qa/published-iso/installation-language.png) |
+| Summary with an incomplete destination | [installation-summary.png](images/qa/published-iso/installation-summary.png) |
+| Destination and encryption | [installation-destination.png](images/qa/published-iso/installation-destination.png) |
+| Progress | [installation-progress-v0252.png](images/qa/published-iso/installation-progress-v0252.png) |
+| Initial Setup | [initial-setup-v0252.png](images/qa/published-iso/initial-setup-v0252.png) |
+| Session | [session-v0252.png](images/qa/published-iso/session-v0252.png) |
+| Greeter after a disk-only boot | [greeter-v0252.png](images/qa/published-iso/greeter-v0252.png) |
 
-## What it found
+## What the first install found
 
-The ISO carries bootc-image-builder's default kickstart, not the interactive
-one this repository documents:
+v0.25.1 carried bootc-image-builder's default kickstart, because
+`installer-build.yml` passed no `--config`. That kickstart ran
+`clearpart --all` and `autopart`, asked nothing and erased every disk the
+installer saw. The page and [installer-iso.md](installer-iso.md) described an
+interactive installer, so the install found a mismatch between the artifact and
+its documentation.
 
-```
-ostreecontainer --url=/run/install/repo/container
-rootpw --lock
-lang en_US.UTF-8
-keyboard us
-timezone UTC
-clearpart --all
-autopart --nohome --type=plain --fstype=xfs
-```
+v0.25.2 builds the ISO with [installer/config.toml](../installer/config.toml):
+`graphical`, `rootpw --lock`, `reboot`, and the Localization and Timezone
+modules. The published ISO's `/osbuild.ks` now carries those three lines and no
+storage answer, and the screens above are the result.
 
-`clearpart --all` erases every disk the installer sees. On the test machine
-that was one empty disk; on a laptop with a second drive, that drive goes too.
-The download page said the installation destination is editable, and
-[installer-iso.md](installer-iso.md) describes a shipped ISO that asks for the
-disk and LUKS. The published artifact does neither, because the build passes no
-`--config` to `bootc-image-builder`.
-
-Until the build passes the interactive configuration and a new ISO is
-published, the page must warn that the installer is unattended and
-destructive.
+The v0.25.1 captures stay as the record of the finding:
+[installation-progress.png](images/qa/published-iso/installation-progress.png)
+and [initial-setup-welcome.png](images/qa/published-iso/initial-setup-welcome.png).
 
 ## What it does not prove
 
