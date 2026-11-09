@@ -420,17 +420,23 @@ class Driver:
 
         An image upgrade replaces /usr and keeps /var, so a directory a package
         introduces in /var is absent on a machine that upgraded (libvirt's
-        /var/lib/libvirt/secrets, #407). The check asks the running deployment's
+        /var/lib/libvirt/secrets, #407). The probe asks the running deployment's
         rpm database and reports the paths that are not directories.
+
+        The fixture does not add a package across the upgrade, so this is a
+        guard on the class, not a reproduction of #407. A package can own a
+        directory that is optional at runtime, which would be a false positive;
+        the report names the paths so a reviewer can judge it.
         """
         script = (
-            r"rpm -qa --queryformat '[%{FILEMODES} %{FILENAMES}\n]' 2>/dev/null"
-            r" | awk 'int($1/16384)%2==1 && $2 ~ /^\/var\//'"
-            r" | awk '{print $2}' | sort -u"
-            r' | while read -r d; do [ -d "$d" ] || echo "$d"; done'
+            r"set -o pipefail; "
+            r"rpm -qa --queryformat '[%{FILEMODES}|%{FILENAMES}\n]' > /tmp/rpmdump"
+            r" && awk -F'|' 'int($1/4096)%16==4 && $2 ~ /^\/var\//' /tmp/rpmdump"
+            r" | awk -F'|' '{print $2}' | sort -u"
+            r' | while IFS= read -r d; do [ -d "$d" ] || echo "$d"; done'
         )
         missing = [line for line in self.guest(script).splitlines() if line.strip()]
-        self.var_dirs_missing = missing
+        self.var_dirs_missing = sorted(set(getattr(self, "var_dirs_missing", []) + missing))
         if missing:
             self.failure.append(
                 "package-owned /var directories are missing after the upgrade: "
@@ -672,7 +678,6 @@ class Driver:
             self.record("interrupt", write=self.marker_b)
             self.guest("bootc upgrade")
             self.record("retry")
-            self.check_var_dirs()
 
         if self.args.boot_failure:
             self.failure_scenario()
