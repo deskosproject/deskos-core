@@ -60,10 +60,15 @@ and markers. Each boot runs the same raw disk, so `/var` persists. The driver
 writes `/etc/deskos-lifecycle-local` and B ships
 `/etc/deskos-lifecycle-image`; the evaluator asserts both.
 
-**Interrupting an upgrade.** `bootc upgrade` is stopped
-(`systemctl kill`/`SIGTERM`) after the first journal progress line and the machine
-powers off; the next boot must be A and a fresh upgrade must stage. The retry uses
-a **third image C**, because upgrading to B after the rollback stages nothing.
+**Interrupting an upgrade.** The boot that runs `boot-a` starts with the disk
+capped at 100 IOPS, which widens the deployment write from milliseconds to tens
+of seconds. A guest watcher prints `LIFECYCLE-WRITE` on the serial port when new
+deployment state appears (`/sysroot/state/deploy` on the composefs backend, or
+`/ostree/deploy/*/deploy`), and the host kills QEMU as soon as it reads the
+marker. The report records `interrupt_write_window`; a run that never sees the
+marker fails instead of silently testing the download. The next boot must be A
+and a fresh upgrade must stage. The retry uses a **third image C**, because
+upgrading to B after the rollback stages nothing.
 
 ## What this does not test
 
@@ -138,9 +143,11 @@ Two image builds, one disk, five boots: roughly 45-60 minutes.
    ostree repo is needed.
 2. **`--target-imgref`: answered (2026-10-23).** Only `bootc install to-disk`
    has it; BIB's pinned build does not.
-3. **Where to stop the interrupt: answered for the first window (2026-10-23).**
-   A kill during the layer download is recovered; the ostree-write and
-   post-deployment windows are untested.
+3. **Where to stop the interrupt: two windows answered.** A kill during the
+   layer download is recovered (2026-10-23). The deployment-write window is
+   tested since 2026-11-09 (lifecycle-test run `42588368979`): the guest
+   recovered A, kept the `/var` marker and staged C on the retry. The
+   post-deployment window, after the new entry is active, is untested.
 4. **Time budget for a retry: no lock observed (2026-10-23).** If a future bootc
    introduces one, the assertion must read the reason, not sleep.
 5. **SELinux and the bootc install: answered for the host side (2026-10-23).**

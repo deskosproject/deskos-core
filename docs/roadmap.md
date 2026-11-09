@@ -69,9 +69,9 @@ Harness: [`tests/vm/`](../tests/vm/README.md). Design:
   whether the wizard came up and whether an account could log in.
 - **Tier C lifecycle:** `tests/lifecycle/driver.py` ran A → B → A on CS10,
   including power loss mid-upgrade and a candidate that cannot boot, recovered by
-  its composefs verity. `lifecycle-test.yml` ran the full path on GitHub-hosted runners
-  (2026-10-26, run `40305080925`), weekly rather than per pull request; the
-  ostree-write window is untested.
+  its composefs verity. `lifecycle-test.yml` runs the full path weekly, not per
+  pull request. The power loss now lands inside the deployment write (2026-11-09,
+  run `42588368979`); the post-deployment window is untested.
 - **Test ISO:** `tests/installer/` installs unattended in QEMU
   (`installer-test.yml`, dispatch only; last green 2026-10-26, run `40266578605`).
 - **Published ISO:** installed from the published bytes on 2026-11-09, with the
