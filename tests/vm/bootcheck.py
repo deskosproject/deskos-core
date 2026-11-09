@@ -37,12 +37,14 @@ OVMF_CANDIDATES = [
     ("/usr/share/OVMF/OVMF_CODE.fd", "/usr/share/OVMF/OVMF_VARS.fd"),
 ]
 
-# The Secure Boot firmware: the code file carries Microsoft's UEFI CAs in db,
-# and the image's vendor chain (shim, GRUB, kernel) validates against them.
+# The Secure Boot firmware. The code file holds the firmware; the variable store
+# holds the enrolled PK/KEK/db and SecureBootEnable. The plain .fd templates are
+# empty (setup mode, Secure Boot off), so only the enrolled stores are accepted:
+# Ubuntu's .ms.fd and Fedora's edk2 .secboot.fd. A host without one fails the
+# prerequisite instead of reporting a boot that proves nothing.
 SECBOOT_OVMF_CANDIDATES = [
-    ("/usr/share/OVMF/OVMF_CODE_4M.secboot.fd", "/usr/share/OVMF/OVMF_VARS_4M.fd"),
+    ("/usr/share/OVMF/OVMF_CODE_4M.secboot.fd", "/usr/share/OVMF/OVMF_VARS_4M.ms.fd"),
     ("/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd", "/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"),
-    ("/usr/share/OVMF/OVMF_CODE.secboot.fd", "/usr/share/OVMF/OVMF_VARS.secboot.fd"),
 ]
 
 # Pixel classes by luma: dark below DARK, lit from LIT (text, logos, spinner).
