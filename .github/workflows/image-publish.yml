@@ -358,6 +358,17 @@ jobs:
           python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
             --out "$WORK/bootcheck" "${splash[@]}" --hash-disk --keep-overlay --boot-timeout 420
 
+      - name: Boot check with Secure Boot enabled
+        id: secureboot
+        timeout-minutes: 20
+        run: |
+          # The vendor chain: the vendor's shim, GRUB and kernel validate against
+          # Microsoft's UEFI CAs in the firmware. No --expect-splash: the splash
+          # is asserted above, and this run is about the signature chain.
+          python3 tests/vm/bootcheck.py --disk "$WORK/${{ matrix.diskfile }}" \
+            --out "$WORK/bootcheck-secure" --secure-boot \
+            --boot-timeout 420 --shutdown-timeout 120
+
       - name: Journal of the failed boot (diagnostic boot of the kept overlay)
         if: failure() && steps.boot.outcome == 'failure'
         timeout-minutes: 15
