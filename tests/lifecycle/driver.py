@@ -415,6 +415,28 @@ class Driver:
               f"marker={marker} etc={local_etc} image_etc={'yes' if image_etc else 'no'}")
         return digest
 
+    def check_var_dirs(self):
+        """Every /var directory a package owns exists after the upgrade.
+
+        An image upgrade replaces /usr and keeps /var, so a directory a package
+        introduces in /var is absent on a machine that upgraded (libvirt's
+        /var/lib/libvirt/secrets, #407). The check asks the running deployment's
+        rpm database and reports the paths that are not directories.
+        """
+        script = (
+            r"rpm -qa --queryformat '[%{FILEMODES} %{FILENAMES}\n]' 2>/dev/null"
+            r" | awk 'int($1/16384)%2==1 && $2 ~ /^\/var\//'"
+            r" | awk '{print $2}' | sort -u"
+            r' | while read -r d; do [ -d "$d" ] || echo "$d"; done'
+        )
+        missing = [line for line in self.guest(script).splitlines() if line.strip()]
+        self.var_dirs_missing = missing
+        if missing:
+            self.failure.append(
+                "package-owned /var directories are missing after the upgrade: "
+                + ", ".join(missing[:10])
+                + (" ..." if len(missing) > 10 else ""))
+
     def save_journal(self, step):
         """Keep this boot's journal; the evaluator judges, a person reads."""
         try:
@@ -595,6 +617,7 @@ class Driver:
 
         self.say("boot B")
         self.record("boot-b")
+        self.check_var_dirs()
 
         self.say("roll back to A")
         self.guest("bootc rollback")
@@ -649,6 +672,7 @@ class Driver:
             self.record("interrupt", write=self.marker_b)
             self.guest("bootc upgrade")
             self.record("retry")
+            self.check_var_dirs()
 
         if self.args.boot_failure:
             self.failure_scenario()
@@ -668,6 +692,7 @@ class Driver:
         report = {
             "sequence": [boot.step for boot in self.seq],
             "interrupt_write_window": getattr(self, "interrupt_write", None),
+            "var_dirs_missing": getattr(self, "var_dirs_missing", None),
             "blocks": self.blocks,
             "extra_blocks": self.extra_blocks,
             "boot_failure": self.failure,
