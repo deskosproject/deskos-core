@@ -100,8 +100,9 @@ def qemu_argv(qemu, workdir, disk, ssh_port, ovmf_code, ovmf_vars, throttle=Fals
     throttle_args = []
     drive_throttle = ""
     if throttle:
-        throttle_args = ["-object", "throttle-group,id=lifecycle,x-iops-total=100"]
-        drive_throttle = ",throttle-group=lifecycle"
+        # The legacy per-drive limits work with a raw image; the throttle-group
+        # object needs a blockdev graph the driver does not have.
+        drive_throttle = ",iops=100"
     return [
         qemu,
         "-machine", "q35,accel=kvm",
