@@ -599,7 +599,13 @@ class Driver:
         self.say("roll back to A")
         self.guest("bootc rollback")
         self.record("rollback")
-        self.reboot()
+        # Boot A with the disk capped: the interrupt scenario runs on this boot,
+        # so the throttle is in place before the upgrade starts. Adding a boot
+        # here would shift the sequence; killing the idle rollback boot and
+        # starting boot 3 with the cap keeps it.
+        self.guest("sync")
+        self.kill_qemu()
+        self.boot(throttle=True)
         self.record("boot-a", write=self.marker_b)
 
         if self.args.interrupt:
@@ -607,15 +613,13 @@ class Driver:
             # and upgrading to the rollback image is not a real update.
             self.say("interrupt an upgrade in the deployment write window")
             self.push_image("c", "c")
-            # Reboot with the disk throttled. The sleep this replaces killed the
-            # upgrade during the download, so the deployment write was never
-            # interrupted; the installed disk uses the composefs backend, whose
-            # deployment state lives under /sysroot/state/deploy, not under
-            # /ostree/deploy. A guest watcher prints a marker when that state
-            # appears, and the capped IOPS keep the write running while the
-            # host reads the marker and kills QEMU.
-            self.kill_qemu()
-            self.boot(throttle=True)
+            # The sleep this replaces killed the upgrade during the download, so
+            # the deployment write was never interrupted. This boot is already
+            # capped at 100 IOPS; the installed disk uses the composefs backend,
+            # whose deployment state lives under /sysroot/state/deploy, not under
+            # /ostree/deploy. A guest watcher prints a marker when new state
+            # appears, and the cap keeps the write running while the host reads
+            # the marker and kills QEMU.
             self.guest(
                 "before=\"$(ls -d /sysroot/state/deploy/* /ostree/deploy/*/deploy/* 2>/dev/null | sort)\"; "
                 "( while :; do "
@@ -627,7 +631,7 @@ class Driver:
             serial = self.work / "serial.log"
             offset = serial.stat().st_size
             self.guest("setsid nohup bootc upgrade >/dev/null 2>&1 < /dev/null & true")
-            deadline = time.time() + 300
+            deadline = time.time() + 900
             seen = False
             while time.time() < deadline:
                 with open(serial, "rb") as fh:
