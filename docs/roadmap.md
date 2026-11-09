@@ -202,9 +202,11 @@ flavor.
 
 Coverage now exists: the image check runs a second boot of the same disk with
 Secure Boot enabled, on every image check and in the publish gate, for the three
-shipped flavors; the RHEL leg runs downstream. The installer in that mode is
-untested. An organization with its own key needs an owner, db or MOK enrolment,
-signed GRUB and kernel, and Microsoft signing for the default trust.
+shipped flavors; the RHEL leg runs downstream. The published installer was
+installed under Secure Boot once (2026-11-09,
+[qa-published-iso.md](qa-published-iso.md)), and the installed system booted and
+logged in with it. An organization with its own key needs an owner, db or MOK
+enrolment, signed GRUB and kernel, and Microsoft signing for the default trust.
 
 The installer, out-of-tree modules and two QEMU tests (a signed image boots, an
 unsigned kernel is refused) belong to the item. **Decision:** the vendor chain
