@@ -100,11 +100,12 @@ other hardware behavior (P1-07).
 - Shutdown splash: captured, not asserted, since the guest powers off in 0.4 s
   with one frame. A reboot splash needs a boot that reboots.
 - The image check boots the disk a second time with Secure Boot enabled and
-  requires the graphical screen, so the vendor chain is tested. Bare metal, BIOS
-  boot and non-x86_64 have no check, and the image build is not yet bit-for-bit
+  requires the graphical screen, so the vendor chain is tested. The published
+  installer was also installed under Secure Boot once, recorded in
+  [qa-published-iso.md](qa-published-iso.md). Bare metal, BIOS boot and
+  non-x86_64 have no check, and the image build is not yet bit-for-bit
   reproducible. The organization reported a Fedora 45 workstation booting on a
-  laptop with Secure Boot enabled (2026-11-08); that is a field report, not a
-  check.
+  laptop with Secure Boot enabled (2026-11-08); that is a field report.
 - One dated install of the **published** ISO is recorded in
   [qa-published-iso.md](qa-published-iso.md); it is a record, not a check. The
   test-only ISO has the `installer-test` job.
