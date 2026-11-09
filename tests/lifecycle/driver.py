@@ -100,7 +100,7 @@ def qemu_argv(qemu, workdir, disk, ssh_port, ovmf_code, ovmf_vars, throttle=Fals
     throttle_args = []
     drive_throttle = ""
     if throttle:
-        throttle_args = ["-object", "throttle-group,id=lifecycle,iops-total=100"]
+        throttle_args = ["-object", "throttle-group,id=lifecycle,x-iops-total=100"]
         drive_throttle = ",throttle-group=lifecycle"
     return [
         qemu,
