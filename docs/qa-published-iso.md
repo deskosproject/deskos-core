@@ -52,6 +52,23 @@ disk and one CD-ROM, user-mode network. No physical hardware.
 | Session | [session-v0252.png](images/qa/published-iso/session-v0252.png) |
 | Greeter after a disk-only boot | [greeter-v0252.png](images/qa/published-iso/greeter-v0252.png) |
 
+## Secure Boot
+
+The same ISO was installed again with UEFI Secure Boot enabled: the secboot
+OVMF firmware, q35 with SMM, and the pflash device marked secure. The firmware
+accepted the installer's signed chain, the install completed, GNOME Initial
+Setup and the session ran, and a disk-only boot with the same firmware reached
+the greeter and logged in.
+
+The chain is the vendor's: shim signed by Microsoft's UEFI CAs, GRUB and kernel
+by CentOS. The RHEL flavor builds downstream and was not tested in this mode.
+
+| Step | Capture |
+|---|---|
+| Language under Secure Boot | [secure-boot-language.png](images/qa/published-iso/secure-boot-language.png) |
+| Session under Secure Boot | [secure-boot-session.png](images/qa/published-iso/secure-boot-session.png) |
+| Greeter after a disk-only boot | [secure-boot-greeter.png](images/qa/published-iso/secure-boot-greeter.png) |
+
 ## What the first install found
 
 v0.25.1 carried bootc-image-builder's default kickstart, because
@@ -74,5 +91,4 @@ and [initial-setup-welcome.png](images/qa/published-iso/initial-setup-welcome.pn
 
 - LUKS, a second disk, or any physical machine.
 - The RHEL flavor, which builds downstream.
-- The installer with Secure Boot enabled.
 - An upgrade of the installed machine; this record ends at the first session.
