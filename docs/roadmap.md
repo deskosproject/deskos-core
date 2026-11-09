@@ -196,11 +196,11 @@ maintainer reported a DeskOS Fedora 45 workstation from the downstream organizat
 Boot enabled on a laptop, so the chain also works on real hardware for that
 flavor.
 
-What is missing is coverage: no CI check boots with Secure Boot on, and no
-CentOS Stream 10 or RHEL 10 image has been reported doing it. The installer in
-that mode is untested. An organization with its own key needs an owner, db or
-MOK enrolment, signed GRUB and kernel, and Microsoft signing for the default
-trust.
+Coverage now exists: the image check runs a second boot of the same disk with
+Secure Boot enabled, on every image check and in the publish gate, for the three
+shipped flavors; the RHEL leg runs downstream. The installer in that mode is
+untested. An organization with its own key needs an owner, db or MOK enrolment,
+signed GRUB and kernel, and Microsoft signing for the default trust.
 
 The installer, out-of-tree modules and two QEMU tests (a signed image boots, an
 unsigned kernel is refused) belong to the item. **Decision:** the vendor chain
