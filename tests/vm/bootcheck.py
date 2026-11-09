@@ -37,6 +37,14 @@ OVMF_CANDIDATES = [
     ("/usr/share/OVMF/OVMF_CODE.fd", "/usr/share/OVMF/OVMF_VARS.fd"),
 ]
 
+# The Secure Boot firmware: the code file carries Microsoft's UEFI CAs in db,
+# and the image's vendor chain (shim, GRUB, kernel) validates against them.
+SECBOOT_OVMF_CANDIDATES = [
+    ("/usr/share/OVMF/OVMF_CODE_4M.secboot.fd", "/usr/share/OVMF/OVMF_VARS_4M.fd"),
+    ("/usr/share/edk2/ovmf/OVMF_CODE.secboot.fd", "/usr/share/edk2/ovmf/OVMF_VARS.secboot.fd"),
+    ("/usr/share/OVMF/OVMF_CODE.secboot.fd", "/usr/share/OVMF/OVMF_VARS.secboot.fd"),
+]
+
 # Pixel classes by luma: dark below DARK, lit from LIT (text, logos, spinner).
 DARK, LIT = 24, 60
 
@@ -386,13 +394,25 @@ def find_qemu(explicit):
     raise HarnessError("no QEMU binary found; pass --qemu")
 
 
-def find_ovmf(code, vars_):
+def find_ovmf(code, vars_, secure=False):
     if code and vars_:
         return code, vars_
-    for c, v in OVMF_CANDIDATES:
+    candidates = SECBOOT_OVMF_CANDIDATES if secure else OVMF_CANDIDATES
+    for c, v in candidates:
         if os.path.exists(c) and os.path.exists(v):
             return c, v
-    raise HarnessError("no OVMF firmware found; pass --ovmf-code and --ovmf-vars")
+    what = "Secure Boot OVMF" if secure else "OVMF"
+    raise HarnessError(f"no {what} firmware found; pass --ovmf-code and --ovmf-vars")
+
+
+def machine_spec(secure=False):
+    """q35 with SMM, which the Secure Boot pflash device requires."""
+    return "q35,accel=kvm,smm=on" if secure else "q35,accel=kvm"
+
+
+def pflash_secure_args(secure=False):
+    """Mark the pflash devices secure, which is what enforces the signatures."""
+    return ["-global", "driver=cfi.pflash01,property=secure,value=on"] if secure else []
 
 
 def serial_hint(text, limit=400):
@@ -434,7 +454,8 @@ def run(args):
     frames = os.path.join(out, "frames")
     os.makedirs(frames)
     qemu = find_qemu(args.qemu)
-    code, vars_template = find_ovmf(args.ovmf_code, args.ovmf_vars)
+    secure = bool(getattr(args, "secure_boot", False))
+    code, vars_template = find_ovmf(args.ovmf_code, args.ovmf_vars, secure=secure)
     qemu_img = shutil.which("qemu-img")
     if not qemu_img:
         raise HarnessError("qemu-img not found")
@@ -455,10 +476,11 @@ def run(args):
     vnc_path = os.path.join(out, "vnc.sock")
 
     cmd = [
-        qemu, "-machine", "q35,accel=kvm", "-cpu", "host",
+        qemu, "-machine", machine_spec(secure), "-cpu", "host",
         "-m", str(args.memory), "-smp", str(args.cpus),
         "-drive", f"if=pflash,format=raw,unit=0,readonly=on,file={code}",
         "-drive", f"if=pflash,format=raw,unit=1,file={vars_copy}",
+    ] + pflash_secure_args(secure) + [
         "-drive", f"if=virtio,format=qcow2,file={overlay}",
         "-device", "virtio-vga", "-display", "none",
     ] + network_args(args) + [
@@ -472,7 +494,8 @@ def run(args):
     ready_timeout = getattr(args, "ready_timeout", None)
     summary = {
         "disk": disk, "disk_sha256": sha256(disk) if args.hash_disk else None,
-        "qemu": qemu, "ovmf_code": code, "memory_mib": args.memory, "cpus": args.cpus,
+        "qemu": qemu, "ovmf_code": code, "secure_boot": secure,
+        "memory_mib": args.memory, "cpus": args.cpus,
         "boot_timeout_s": args.boot_timeout, "shutdown_timeout_s": args.shutdown_timeout,
         "expect_splash": args.expect_splash, "until_serial": marker,
         "until_serial_ready": ready_marker, "ready_timeout_s": ready_timeout,
@@ -732,6 +755,7 @@ def write_summary(out, s):
     lines = [
         f"# Boot check: {s['result'].upper()}", "",
         f"- Disk: `{s['disk']}`" + (f" (sha256 `{s['disk_sha256']}`)" if s.get("disk_sha256") else ""),
+        f"- Secure Boot: {'on' if s.get('secure_boot') else 'off'}",
         f"- First splash frame: {s.get('splash_first_s')} s; first graphical frame: {s.get('graphical_first_s')} s",
         f"- Text frames between splash and graphical: {s.get('text_frames_between_splash_and_graphical')}",
         f"- Shutdown: {s.get('shutdown_s')} s; text frames during shutdown: {s.get('shutdown_text_frames')}",
@@ -750,6 +774,8 @@ def main():
     p.add_argument("--qemu")
     p.add_argument("--ovmf-code")
     p.add_argument("--ovmf-vars")
+    p.add_argument("--secure-boot", action="store_true",
+                   help="boot with UEFI Secure Boot enabled (the vendor chain must be signed)")
     p.add_argument("--memory", type=int, default=4096, help="MiB")
     p.add_argument("--cpus", type=int, default=4)
     p.add_argument("--boot-timeout", type=int, default=240, help="seconds")

@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+import unittest.mock
 
 import bootcheck
 
@@ -235,3 +236,24 @@ class VncTypeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class SecureBootTest(unittest.TestCase):
+    def test_machine_spec_adds_smm_only_for_secure_boot(self):
+        self.assertEqual(bootcheck.machine_spec(True), "q35,accel=kvm,smm=on")
+        self.assertEqual(bootcheck.machine_spec(False), "q35,accel=kvm")
+
+    def test_pflash_secure_args(self):
+        self.assertEqual(bootcheck.pflash_secure_args(False), [])
+        self.assertEqual(
+            bootcheck.pflash_secure_args(True),
+            ["-global", "driver=cfi.pflash01,property=secure,value=on"],
+        )
+
+    def test_find_ovmf_picks_the_secboot_pair(self):
+        secboot = bootcheck.SECBOOT_OVMF_CANDIDATES[0]
+        normal = bootcheck.OVMF_CANDIDATES[0]
+        present = {secboot[0], secboot[1], normal[0], normal[1]}
+        with unittest.mock.patch("os.path.exists", side_effect=lambda p: p in present):
+            self.assertEqual(bootcheck.find_ovmf(None, None, secure=True), secboot)
+            self.assertEqual(bootcheck.find_ovmf(None, None, secure=False), normal)
+
