@@ -83,6 +83,13 @@ jobs:
       COMMIT: ${{ inputs.commit }}
       ROOTFS: ${{ inputs.rootfs }}
     steps:
+      # A reusable workflow's job starts on a fresh runner: the caller's
+      # checkout is not inherited, and the build mounts installer/config.toml
+      # from this tree.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+
       - name: Check the inputs
         run: |
           set -euo pipefail
@@ -241,11 +248,16 @@ jobs:
           # passed only when the caller declares the filesystem.
           rootfs=()
           [ -n "$ROOTFS" ] && rootfs=(--rootfs "$ROOTFS")
+          # The shipped ISO asks for the language, the disk and LUKS. Without
+          # this configuration, bootc-image-builder writes its own kickstart,
+          # which runs clearpart --all and installs without asking.
           sudo podman run --rm --privileged --pull=never \
             --security-opt label=type:unconfined_t \
             -v "$WORK:/output" \
+            -v "$PWD/installer/config.toml:/config.toml:ro" \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             "$BIB" build --type anaconda-iso "${rootfs[@]}" \
+            --config /config.toml \
             --chown "$(id -u):$(id -g)" "$IMAGE@$DIGEST"
           ls -lh "$WORK/bootiso/install.iso"
           ( cd "$WORK/bootiso" && sha256sum install.iso ) | tee iso.sha256

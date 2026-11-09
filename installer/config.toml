@@ -1,0 +1,26 @@
+# The configuration the published installer ISO is built with.
+#
+# Without it, bootc-image-builder writes its own kickstart: it answers language,
+# keyboard and time zone, runs `clearpart --all` and `autopart`, and installs
+# without asking. That ISO erases every disk the installer sees.
+#
+# This configuration removes those answers. Anaconda asks for the language, the
+# keyboard, the time zone and the disk, and the person installing chooses the
+# partitioning and LUKS. `rootpw --lock` with no user line leaves the first
+# account to GNOME Initial Setup.
+#
+# The installer pages the summary needs beyond bootc-image-builder's default
+# (Network, Payloads, Storage) are Language/Keyboard and Time & Date.
+
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Localization",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+]
+
+[customizations.installer.kickstart]
+contents = """
+graphical
+rootpw --lock
+reboot
+"""

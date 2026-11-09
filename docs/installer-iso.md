@@ -97,8 +97,10 @@ the options DeskOS uses, and the ones to avoid:
 | Extra packages or files | `%post` | **avoid**: that is image content, and it belongs in the image; secrets in a kickstart are visible to anyone with the ISO |
 | Unattended install | `--non-interactive` | **avoid on RHEL 10**: measured abort at the progress screen (`User interaction required on standalone spoke ProgressSpoke`) |
 
-**Without a `config.toml`, bootc-image-builder writes its own kickstart, and that
-one is not interactive.** Its `osbuild-base.ks` and `osbuild.ks`, read from an ISO
+The published ISO is built with this repository's
+[`installer/config.toml`](../installer/config.toml), which carries the
+configuration above. **Without a `config.toml`, bootc-image-builder writes its
+own kickstart, and that one is not interactive.** Its `osbuild-base.ks` and `osbuild.ks`, read from an ISO
 built without a configuration on 2026-10-29, answer language, keyboard and time
 zone, lock root, run `clearpart --all` and `autopart --nohome --type=plain`, and
 finish with `reboot --eject`.
