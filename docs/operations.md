@@ -14,8 +14,8 @@ sudo deskos etc reset --all   # put /etc back to the image, with a backup
 
 Every Core image carries `/usr/bin/deskos` (ADR 0018), the runtime companion to
 `deskosctl`, with no controller (ADR 0001); `status` and `rollback` front `bootc`.
-`update` runs `bootc upgrade`, so it needs root; `report` and `check` are read-only. `--firmware` lists updates with
-`fwupdmgr get-updates` and never applies them; the pin is
+`update` runs `bootc upgrade`, so it needs root; `report` and `check` are read-only. `--firmware` adds a
+`fwupdmgr get-updates` check and never applies firmware; the pin is
 `resources/software/deskos.yaml`. `check` measures what the artifact declares and
 prints its scope on every run, and `report` says that enforcement by the running
 session is not its measurement.
@@ -91,6 +91,57 @@ active-session check exists, because the window is the contract.
 | download interrupted | no staged deployment is recorded; the running image is unchanged |
 | metered connection | not detected: the timer runs as on any other connection ([not supported](runtime.md#updates)) |
 | `deskos update` | stages the image only: no reboot, no Flatpaks, no firmware, no rollback, and no reconciliation of `/etc` |
+
+## Firmware updates
+
+Firmware is a separate, higher-risk operation. DeskOS installs no firmware
+update timer and never stages or flashes it: `deskos update --firmware` only
+runs `fwupdmgr get-updates --no-unreported-check`, and `--all` adds the same
+check. The command runs without a TTY, so fwupd uses its metadata cache; run
+`sudo fwupdmgr refresh --force` before a manual installation if you want the
+newest metadata. Fedora's own `fwupd-refresh.timer`, where enabled, refreshes
+metadata; it does not install firmware. Installing a capsule is a manual
+`sudo fwupdmgr update` with its own confirmation and reboot. DeskOS does not
+ask fwupd to change BIOS settings, Secure Boot keys or the boot order. A query
+is not a guarantee of zero EFI activity: fwupd is D-Bus activatable, and its
+startup can process a previous result and clean up updater files or variables.
+
+Before the listing, `deskos update` prints warnings about a later manual
+installation:
+
+- **fwupd-efi.** Fedora's 1.9-3 `.fc` build passes `-Dpkgnote`, which places a
+  `.pkgnote` section inside the PE headers. Shim and the firmware reject that
+  executable, so a staged capsule is not applied (fwupd-efi#225, Fedora bug
+  2566576). 1.9-4 removes the flag
+  ([Fedora update](https://bodhi.fedoraproject.org/updates/FEDORA-2026-ddb0105487)).
+  The warning is limited to Fedora builds; EL10's 1.8 never had the section.
+  An unreadable or malformed version is reported as "could not assess".
+- **The EFI System Partition.** DeskOS mounts its ESP at `/boot/efi`; the
+  warning says when that is not a mounted read-write vfat partition. fwupd can
+  also use `/boot` or `/efi`, so this describes the DeskOS layout, not a
+  universal requirement. Space is left to fwupd, which calculates what the
+  capsule needs.
+- **A previous failure.** `deskos update` reads the structured
+  `fwupdmgr get-devices --json` state. A device still reporting `boot entry
+  missing` or the missing `Linux Firmware Updater` entry gets a warning. The
+  "Boot Order Lock" sentence in that error is a conditional hint; fwupd does
+  not read the BIOS setting. A remembered error can outlive its cause.
+
+The warnings never skip the listing. `get-updates` does not need a working
+loader or a writable ESP, and it may name updates for devices that never use the
+affected path. If the listing itself fails, `deskos update` reports it and
+still updates the image, which is where a fixed `fwupd-efi` arrives.
+
+On a 1.9-3 system, update the image to a build with `fwupd-efi` 1.9-4 or later
+and boot it before trying the firmware again. The rejected updater never runs,
+so the capsule is not applied and the previous firmware stays in place. Do not
+repeat the flash, reset the BIOS or change Secure Boot to work around it. Before
+a manual installation, `sudo fwupdmgr refresh --force` updates the metadata
+cache; `deskos update --firmware` deliberately stays on the cache and does not
+start a network refresh. Read `fwupdmgr get-devices` for the reported state. The
+bad executable explains the rejection; that it also removed the `Boot####`
+entry on one laptop is consistent with the report but not proven from the image
+alone.
 
 ## Inspect
 
