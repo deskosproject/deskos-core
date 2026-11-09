@@ -97,6 +97,7 @@ const sidebars = {
     ]),
     group('Project', 'Where DeskOS is going and how decisions are made.', [
       { type: 'doc', id: 'qa', label: 'Automated QA and screenshots' },
+      { type: 'doc', id: 'qa-published-iso', label: 'One install of the published ISO' },
       'roadmap',
       'governance',
       group('Decisions (ADRs)', 'One decision per record, with its context and consequences.', ids('adr')),
