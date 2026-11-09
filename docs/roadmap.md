@@ -5,9 +5,9 @@ configuration management is outside every milestone.
 
 | Today | State |
 |---|---|
-| Compiler | `v0.25.1` (2026-11-08): the CentOS Stream 10 base moved to the 2026-11-06 build |
+| Compiler | `v0.25.2` (2026-11-09): the published ISO is built with the interactive installer configuration |
 | Bases | CentOS Stream 10 `f09b8e56` (2026-11-06, kernel `6.12.0-281`), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`, RHEL 10 `80485ddb` (2026-11-05, kernel `211.74.1`, the CVE-2026-98432 fix) |
-| Open | Satellite content source (#466), `fstrim` on `/sysroot` (#419), libvirt secrets (#407), GNOME coverage (#448, #446), firefox CVE-2026-115905 (#420), an installed run of the published ISO (#294), and the registry prune tracked in the organization repository |
+| Open | Satellite content source (#466), `fstrim` on `/sysroot` (#419), libvirt secrets (#407), GNOME coverage (#448, #446), firefox CVE-2026-115905 (#420), and the registry prune tracked in the organization repository |
 
 ## Milestone 0: resource model (done)
 
@@ -74,14 +74,18 @@ Harness: [`tests/vm/`](../tests/vm/README.md). Design:
   ostree-write window is untested.
 - **Test ISO:** `tests/installer/` installs unattended in QEMU
   (`installer-test.yml`, dispatch only; last green 2026-10-26, run `40266578605`).
-  Nothing installs the **published** ISO: its storage is interactive (#294).
+- **Published ISO:** installed from the published bytes on 2026-11-09, with the
+  captures in [qa-published-iso.md](qa-published-iso.md). The first install found
+  v0.25.1 unattended and destructive; v0.25.2 builds it with
+  `installer/config.toml`, and the record shows the language, destination and
+  encryption screens.
 - **Installer payload pinning:** decided 2026-10-26
   ([installer-payload.md](design/installer-payload.md)); the installed system is
   the pinned digest.
 
 **Remaining:** reboot and shutdown splash (recorded, not asserted: the guest
-powers off in 0.4 s with one frame), reference matching (not planned), an
-installed run of the published ISO (#294), and RHEL's checks downstream.
+powers off in 0.4 s with one frame), reference matching (not planned), and
+RHEL's checks downstream.
 
 ## Milestone 4: workstation E2E
 
@@ -324,7 +328,6 @@ input to the compiler.
   environments; one organization (private, the same maintainer) is not it.
 - **An outside reader on the walkthrough.** Unproven until one does it.
 - **Renovate outside Core.** `deskos-infrastructure` has no pins that move yet.
-- **Installed run of the published ISO** (#294), by a person, recorded.
 - **The desktop as a package list** (spike, 2026-10-30): measured the EL10 group at
   845 packages and compared the three options in
   [design/gnome-desktop-package-set.md](design/gnome-desktop-package-set.md). The

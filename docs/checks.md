@@ -105,8 +105,9 @@ other hardware behavior (P1-07).
   reproducible. The organization reported a Fedora 45 workstation booting on a
   laptop with Secure Boot enabled (2026-11-08); that is a field report, not a
   check.
-- No check installs the **published** ISO; its storage is interactive, so only a
-  person completes it. The test-only ISO has the `installer-test` job.
+- One dated install of the **published** ISO is recorded in
+  [qa-published-iso.md](qa-published-iso.md); it is a record, not a check. The
+  test-only ISO has the `installer-test` job.
 - The lifecycle check recovers a failed candidate through the previous GRUB entry
   from the host, not by a person; rollback after userspace is still manual.
 - RHEL composition and rendering are tested here; the entitled build and boot
