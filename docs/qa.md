@@ -44,12 +44,19 @@ Each leg:
 | Extensions | The declared GNOME Shell extensions are enabled. |
 | Offline | CentOS Stream 10 logs in with no NIC and keeps no default route. |
 | First boot | The wizard runs and an account can log in on an unmodified disk. |
+| Update and rollback | A real installed disk moves A → B → A, survives power loss in the deployment write and after the staged entry is active, and recovers a candidate that cannot boot. |
 
 The harness classifies frames (blank, text, splash, graphical); it does not
 compare them with a reference library. A screenshot is a record of what the
 guest drew, not a pixel-perfect visual regression test. The session check is
 instrumented: it provisions a test user by SMBIOS and logs in automatically, so
 it proves the stack and the defaults, not a human install.
+
+Update and rollback run in `lifecycle-test.yml`, separately from the bootcheck
+workflow: that run installs a disk, changes deployments and injects power loss,
+so it takes about 45–60 minutes. Its evidence is the `lifecycle.json`,
+`summary.md`, per-boot journals and the `/var` and `/etc` markers, uploaded with
+the run ([design](design/lifecycle.md)).
 
 ## Fedora 45 Core
 

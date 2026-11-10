@@ -10,7 +10,7 @@ name: lifecycle-test
 # pull-request gate: it is too slow for every change, and the weekly run on main
 # is where a change that only a real install, update and rollback reveals shows
 # up. The weekly run does the full path, power loss and failed candidate
-# included; a dispatch can turn either part off.
+# included; a dispatch can turn either part off and may target a branch.
 on:
   schedule:
     # Monday 04:17 UTC. One run a week is enough to catch drift.
@@ -41,7 +41,6 @@ env:
 
 jobs:
   lifecycle:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -114,6 +113,7 @@ jobs:
             ${{ env.WORK }}/run/summary.md
             ${{ env.WORK }}/run/serial.log
             ${{ env.WORK }}/run/serial-failed.log
+            ${{ env.WORK }}/run/serial-finalize.log
             ${{ env.WORK }}/run/journal-*.log
           if-no-files-found: warn
           retention-days: 14

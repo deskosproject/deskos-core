@@ -70,8 +70,9 @@ Harness: [`tests/vm/`](../tests/vm/README.md). Design:
 - **Tier C lifecycle:** `tests/lifecycle/driver.py` ran A → B → A on CS10,
   including power loss mid-upgrade and a candidate that cannot boot, recovered by
   its composefs verity. `lifecycle-test.yml` runs the full path weekly, not per
-  pull request. The power loss now lands inside the deployment write (2026-11-09,
-  run `42588368979`); the post-deployment window is untested.
+  pull request. Both interrupt windows are covered: the deployment write
+  (2026-11-09, run `42588368979`) and the post-deployment window after the
+  staged entry is active (2026-11-09, run `42710320711`).
 - **Test ISO:** `tests/installer/` installs unattended in QEMU
   (`installer-test.yml`, dispatch only; last green 2026-10-26, run `40266578605`).
 - **Published ISO:** installed from the published bytes on 2026-11-09, with the
@@ -173,7 +174,7 @@ Every item of the [2026-10-20 review](future-backlog.md), with what closes it.
 | Item | Status | Records |
 |---|---|---|
 | P0-01 actionable check failures | closed | attempt-suffixed artifacts (14 days) beside the retry; `identity.json`; failed-boot journal kept |
-| P0-02 upgrade, rollback, state | closed, one residual | `lifecycle-test.yml` green 2026-10-26 (run `40305080925`); ostree-write interruption untested |
+| P0-02 upgrade, rollback, state | closed | `lifecycle-test.yml` A → B → A, deployment-write and post-deployment power loss, failed candidate; run `42710320711` (2026-11-09) |
 | P0-03 consumer-side enforcement | closed by decision | keyless signature, manual verification; an organization enforcing keeps key-based signing |
 | P0-04 bound build authority, rehearse incidents | closed | incident exercise ran 2026-10-28 ([threat-model.md](threat-model.md)) and produced `PUBLISH_FREEZE`; one-person residual recorded |
 | P0-05 digest-indexed records | closed | `evidence.deskos.org`; `promotion.yml` refuses unverified records; SLSA v1 provenance |
