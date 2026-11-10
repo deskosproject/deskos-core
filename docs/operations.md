@@ -92,6 +92,14 @@ active-session check exists, because the window is the contract.
 | metered connection | not detected: the timer runs as on any other connection ([not supported](runtime.md#updates)) |
 | `deskos update` | stages the image only: no reboot, no Flatpaks, no firmware, no rollback, and no reconciliation of `/etc` |
 
+> **Tested on a real install, not only in unit tests.** The lifecycle run installs
+> a CentOS Stream 10 disk, stages B, boots it, rolls back to A, and injects a
+> power loss both during the deployment write and after the staged entry is
+> active. It also stages a candidate that cannot boot and recovers the previous
+> boot entry. The report keeps deployment identities, the `/var` marker, the
+> local `/etc` edit and one journal per boot
+> ([design](design/lifecycle.md#shape)).
+
 ## Firmware updates
 
 Firmware is a separate, higher-risk operation. DeskOS installs no firmware

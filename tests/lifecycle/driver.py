@@ -11,6 +11,8 @@ that cannot boot and recovers the previous GRUB entry from the host.
 The test image is a fixture, never a resource: it carries a throwaway SSH key
 for root, enables sshd and marks 10.0.2.2:5000 as an insecure registry. B adds
 one marker file, so the two deployments differ without adding a package.
+`--interrupt` also kills a staged update in the deployment write window and
+again after the new entry is active; the next boot must recover or apply it.
 
 Exit codes: 0 the sequence held, 1 a check failed, 2 the harness could not run.
 """
@@ -249,6 +251,8 @@ class Driver:
         self.marker_a = "A1"
         self.marker_b = "A2"
         self.failure = []
+        self.post_deploy = None
+        self.finalize_seen = None
         self.seq = lifecycle.SEQUENCE if args.interrupt else SHORT_SEQUENCE
 
     def sh(self, *cmd, **kw):
@@ -519,6 +523,62 @@ class Driver:
         finally:
             self.sh(*self.sudo, "qemu-nbd", "-d", nbd, check=False)
 
+    def post_deploy_scenario(self):
+        """Let the real shutdown finalize C, then kill before the reboot.
+
+        The write-window scenario stops the upgrade while the deployment is
+        being written. This one lets ``bootc upgrade`` finish, adds a test-only
+        ``ExecStopPost`` marker to the finalize service, starts a real reboot,
+        and kills QEMU once that marker says the staged entry is active. The
+        next boot is the only evidence: it must come up on C with the same
+        /var and local /etc state, not fall back to A or a half-written
+        deployment.
+        """
+        self.say("finalize the staged entry on shutdown, then kill before the reboot")
+        status = self.status()
+        if not staged_digest(status):
+            self.failure.append(
+                "post-deployment window: bootc has no staged deployment to boot")
+            return
+        dropin = (
+            "[Service]\n"
+            "ExecStopPost=/bin/sh -c 'sync; echo LIFECYCLE-FINALIZED > /dev/ttyS0'\n"
+        )
+        self.guest(
+            "for unit in bootc-finalize-staged ostree-finalize-staged; do "
+            "mkdir -p /etc/systemd/system/$unit.service.d; "
+            f"printf '%s' {shlex.quote(dropin)} > /etc/systemd/system/$unit.service.d/99-lifecycle.conf; "
+            "done; systemctl daemon-reload"
+        )
+        serial = self.work / "serial.log"
+        offset = serial.stat().st_size
+        self.guest("systemctl reboot", check=False)
+        deadline = time.time() + 180
+        seen = False
+        while time.time() < deadline:
+            with open(serial, "rb") as fh:
+                fh.seek(offset)
+                if b"LIFECYCLE-FINALIZED" in fh.read():
+                    seen = True
+                    break
+            time.sleep(0.02)
+        self.finalize_seen = seen
+        if not seen:
+            self.failure.append(
+                "post-deployment window: the finalize service never ran")
+        (self.work / "serial-finalize.log").write_text(serial.read_text())
+        self.kill_qemu()
+        self.boot()
+        digest = self.record("post-deploy", collect=False)
+        self.post_deploy = digest == self.images.get("c")
+        if not self.post_deploy:
+            self.failure.append(
+                f"post-deployment boot ran {digest}, expected C {self.images.get('c')}")
+        if self.extra_blocks[-1]["marker"] != self.marker_b:
+            self.failure.append("post-deployment boot lost the /var marker")
+        if self.extra_blocks[-1]["etc"] != "local":
+            self.failure.append("post-deployment boot lost the local /etc edit")
+
     def failure_scenario(self):
         """Stage a candidate with no init, fail to boot it, recover the old entry."""
         self.say("build and stage a candidate that cannot boot")
@@ -533,6 +593,7 @@ class Driver:
         self.say("boot the failed candidate")
         status = self.status()
         installed_verity = booted_verity(status)
+        expected_digest = booted_digest(status)
         if not installed_verity:
             self.failure.append("booted deployment has no composefs verity")
             return
@@ -557,9 +618,9 @@ class Driver:
             return
         self.boot()
         digest = self.record("recover-a", collect=False)
-        if digest != self.images.get("a"):
+        if digest != expected_digest:
             self.failure.append(
-                f"recovery booted {digest}, expected A {self.images.get('a')}")
+                f"recovery booted {digest}, expected {expected_digest}")
         if self.extra_blocks[-1]["marker"] != self.marker_b:
             self.failure.append("recovery lost the /var marker")
 
@@ -649,6 +710,7 @@ class Driver:
             self.record("interrupt", write=self.marker_b)
             self.guest("bootc upgrade")
             self.record("retry")
+            self.post_deploy_scenario()
 
         if self.args.boot_failure:
             self.failure_scenario()
@@ -668,6 +730,8 @@ class Driver:
         report = {
             "sequence": [boot.step for boot in self.seq],
             "interrupt_write_window": getattr(self, "interrupt_write", None),
+            "post_deploy_window": self.post_deploy,
+            "finalize_seen": self.finalize_seen,
             "blocks": self.blocks,
             "extra_blocks": self.extra_blocks,
             "boot_failure": self.failure,

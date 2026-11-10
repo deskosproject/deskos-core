@@ -4,7 +4,9 @@
 (2026-10-24; boot-failure recovery 2026-10-25; full workflow green 2026-10-26).
 Run `40305080925` (2026-10-26, first **scheduled**) took the full path in 7
 steps; no pull request runs it. A staged update and a manual rollback were
-validated once on a CS10 VM; the weekly workflow repeats them.
+validated once on a CS10 VM; the weekly workflow repeats them. Run
+`42710320711` (2026-11-09) added the post-deployment power-loss window and
+passed A → B → A, both interrupt windows and the failed-candidate recovery.
 
 ## What the spike proved (2026-10-23)
 
@@ -41,7 +43,8 @@ reboot, and `bootc rollback` swaps back.
 | 2 | A | `bootc upgrade` stages B, then reboot | a staged B exists and is not booted |
 | 3 | B | plain reboot | the running deployment is B; the `/var` marker and the local `/etc` edit from step 1 survive; the `/etc` file B ships is present |
 | 4 | B | `bootc rollback` (queues the previous deployment), reboot | the running deployment is A again; the `/var` marker and the local `/etc` edit survive; the `/etc` file B ships is gone |
-| 5 | A | start an upgrade, interrupt it, reboot | the machine still boots A and a retry can stage B |
+| 5 | A | start an upgrade, interrupt it, reboot | the machine still boots A and a retry can stage C |
+| 6 | A | start a real reboot, wait for the finalize service marker, kill QEMU, boot | the next boot runs C; the `/var` marker and local `/etc` edit survive |
 
 B differs from A in one resource value, the workstation's `displayName`, so the
 digest changes; a test-only layer is a fixture, never a resource kind.
@@ -77,7 +80,10 @@ upgrading to B after the rollback stages nothing.
   a non-booting candidate by setting the previous GRUB entry from the host.
 - **Application data.** `/var` and local `/etc` edits survive a rollback because
   neither is snapshotted. An upgrade that rewrites `/var` is not undone by
-  rolling back; the operator restores from their own backup.
+  rolling back; the operator restores from their own backup. Flatpak
+  applications live under `/var/lib/flatpak`, so an image rollback neither
+  removes nor downgrades them. This run records `/var`, not a Flatpak install;
+  the Flatpak path has its own checks.
 
 ## Candidate that does not boot: accepted host-side recovery
 
@@ -87,7 +93,8 @@ D and reboot; the machine must never reach SSH.
 **Recovery.** The BLS entries share one title and the timeout is one second, so
 blind key injection through QMP is unsafe. The driver attaches the disk with
 `qemu-nbd`, finds the installed entry by its composefs verity in the BLS options,
-sets that index in `/boot/grub2/grubenv`, boots again, and verifies A.
+sets that index in `/boot/grub2/grubenv`, boots again, and verifies the
+deployment that was running before the candidate.
 
 **Evidence.** `serial-failed.log`, the staged and recovered blocks in
 `lifecycle.json`, the recovered `bootc status`, and the `/var` marker; a
@@ -130,12 +137,14 @@ The harness fails closed on a missing block, key or transition.
 
 Per run: one directory per boot (serial log, markers, frames, `summary.json`,
 `journal-boot-N-<step>.log`), the A and B `plan.json` and `image-info.json`, the
-logs, and a top-level `lifecycle.json` naming both digests, each boot's observed
-image, and the `/var` and `/etc` state.
+logs, the finalize serial log, and a top-level `lifecycle.json` naming both
+digests, each boot's observed image, the `/var` and `/etc` state, and whether
+each interrupt window was reached.
 
 ## Cost and placement
 
-Two image builds, one disk, five boots: roughly 45-60 minutes.
+Three test images and five boots for the update path; the optional failed
+candidate adds a fourth image and two more boots. Roughly 45-60 minutes.
 
 ## Open questions
 
@@ -143,11 +152,13 @@ Two image builds, one disk, five boots: roughly 45-60 minutes.
    ostree repo is needed.
 2. **`--target-imgref`: answered (2026-10-23).** Only `bootc install to-disk`
    has it; BIB's pinned build does not.
-3. **Where to stop the interrupt: two windows answered.** A kill during the
+3. **Where to stop the interrupt: two windows tested.** A kill during the
    layer download is recovered (2026-10-23). The deployment-write window is
    tested since 2026-11-09 (lifecycle-test run `42588368979`): the guest
    recovered A, kept the `/var` marker and staged C on the retry. The
-   post-deployment window, after the new entry is active, is untested.
+   post-deployment window starts a real reboot, waits for the finalize service
+   marker, kills QEMU after the staged entry is active and asserts that the next
+   boot runs C with the `/var` marker and local `/etc` edit.
 4. **Time budget for a retry: no lock observed (2026-10-23).** If a future bootc
    introduces one, the assertion must read the reason, not sleep.
 5. **SELinux and the bootc install: answered for the host side (2026-10-23).**
