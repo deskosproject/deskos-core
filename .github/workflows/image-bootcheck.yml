@@ -11,9 +11,9 @@ name: image-bootcheck
 # builds and boots an image with four declared RpmRepository sources enabled and
 # the requested packages installed, not which source each package came from.
 #
-# AlmaLinux 10 and Fedora 45 are shipped platforms, but this workflow boots only
-# the CentOS Stream 10 legs; their images are built, scanned and booted by the
-# publish pipeline, and their roots still validate in checks.yml.
+# AlmaLinux 10 and Fedora 45 are shipped platforms. This workflow boots the
+# CentOS Stream 10 legs and the Fedora 45 leg; AlmaLinux is built, scanned and
+# booted by the publish pipeline, and every root validates in checks.yml.
 #
 # Runs on pull requests that can change an image, and on main. It is a check: the QCOW2 and
 # the raw disk are test input and are not uploaded; the only publish path is

@@ -111,11 +111,13 @@ jobs:
           DIGEST_INPUT: ${{ inputs.digest }}
           CONFIRM: ${{ inputs.confirm }}
           REASON: ${{ inputs.reason }}
+          APPROVER_INPUT: ${{ inputs.approver }}
+          STATION: ${{ matrix.station }}
           EVENT: ${{ github.event_name }}
           TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
-          station="${{ matrix.station }}"
+          station="$STATION"
 
           if [ "$EVENT" = "workflow_run" ]; then
             # The gate published this station in this run; the digest is read
@@ -134,9 +136,15 @@ jobs:
             [ "$DIGEST_INPUT" = "$CONFIRM" ] \
               || { echo "::error::confirm must repeat the digest exactly"; exit 1; }
             test -n "$REASON" || { echo "::error::a promotion needs a reason"; exit 1; }
-            approve="${{ inputs.approver }}"
+            approve="$APPROVER_INPUT"
             [ -n "$approve" ] || approve="$GITHUB_ACTOR"
           fi
+          case "$station" in
+            ''|*[!a-z0-9-]*) echo "::error::invalid station"; exit 1 ;;
+          esac
+          case "$REASON$approve" in
+            *$'\n'*|*$'\r'*) echo "::error::reason and approver must be single-line"; exit 1 ;;
+          esac
           {
             echo "DIGEST=$DIGEST_INPUT"
             echo "REPO=$REGISTRY/$station"

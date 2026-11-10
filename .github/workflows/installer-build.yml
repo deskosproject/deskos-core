@@ -74,7 +74,7 @@ jobs:
   build:
     # The same switch as the gate: an installer built while publication is frozen
     # would be an artifact nobody may promote.
-    if: vars.PUBLISH_FREEZE == ''
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
@@ -276,7 +276,6 @@ jobs:
               --annotation "org.deskos.image.digest=$DIGEST" \
               "$ISO_REPO:$COMMIT" \
               "install.iso:application/x-iso9660-image" )
-          oras tag "$ISO_REPO:$COMMIT" candidate
           # Promotion knows the image digest, not the commit: tag the artifact by
           # the digest it was built from so it can be found without a lookup.
           oras tag "$ISO_REPO:$COMMIT" "sha256-${DIGEST#sha256:}"
@@ -293,6 +292,7 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/installer-build.yml@refs/heads/main' \
             | tee iso-cosign-verify.txt
+          oras tag "$ISO_REPO:$COMMIT" candidate
 
           # The ISO channel follows the image channel for this digest, whichever
           # happened first: a promotion can run before the installer exists, and

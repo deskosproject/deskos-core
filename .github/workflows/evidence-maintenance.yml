@@ -83,15 +83,19 @@ jobs:
           EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL }}
           EVIDENCE_S3_ACCESS_KEY_ID: ${{ secrets.EVIDENCE_S3_ACCESS_KEY_ID }}
           EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
+          ARTIFACT_INPUT: ${{ inputs.artifact }}
+          DIGEST_INPUT: ${{ inputs.digest }}
+          NAMESPACE: ${{ inputs.namespace }}
+          REPOSITORY: ${{ inputs.repository }}
         run: |
           set -euo pipefail
-          test -n "${{ inputs.artifact }}"
+          test -n "$ARTIFACT_INPUT"
           digest="$(tr -d '\r\n' < durable/digest.txt)"
           test -n "$digest"
           # The artifact names its own digest; a mismatch means the wrong run.
-          test "$digest" = "${{ inputs.digest }}"
-          namespace="${{ inputs.namespace }}"
-          repository="${{ inputs.repository }}"
+          test "$digest" = "$DIGEST_INPUT"
+          namespace="$NAMESPACE"
+          repository="$REPOSITORY"
           python3 tests/evidence/upload.py --dir durable --digest "$digest" \
             --namespace "$namespace" --repository "$repository" --public
           base="${EVIDENCE_PUBLIC_BASE_URL%/}/$namespace/$repository/sha256/${digest#sha256:}"
@@ -112,14 +116,19 @@ jobs:
           EVIDENCE_S3_BUCKET: ${{ vars.EVIDENCE_S3_BUCKET }}
           EVIDENCE_S3_ACCESS_KEY_ID: ${{ secrets.EVIDENCE_S3_ACCESS_KEY_ID }}
           EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
+          DIGEST_INPUT: ${{ inputs.digest }}
+          NAMESPACE: ${{ inputs.namespace }}
+          REPOSITORY: ${{ inputs.repository }}
+          APPLY: ${{ inputs.apply }}
+          FORCE: ${{ inputs.force }}
         run: |
           set -euo pipefail
-          digest="${{ inputs.digest }}"
-          namespace="${{ inputs.namespace }}"
-          repository="${{ inputs.repository }}"
+          digest="$DIGEST_INPUT"
+          namespace="$NAMESPACE"
+          repository="$REPOSITORY"
           prefix="$namespace/$repository/sha256/${digest#sha256:}"
           args=(--namespace "$namespace" --repository "$repository"
                 --digest "$digest" --confirm "$prefix")
-          if [ "${{ inputs.apply }}" = "true" ]; then args+=(--apply); fi
-          if [ "${{ inputs.force }}" = "true" ]; then args+=(--force); fi
+          if [ "$APPLY" = "true" ]; then args+=(--apply); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
           python3 tests/evidence/prune.py "${args[@]}"

@@ -33,7 +33,7 @@ jobs:
     # The robot token is an organisation credential, so this runs only from
     # main, like supply-chain's publish job. The repository must already exist
     # and grant the robot write: a copy cannot create a Quay repository.
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -50,6 +50,14 @@ jobs:
           QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
         run: |
           set -euo pipefail
+          case "$SOURCE" in
+            quay.io/fedora/*:*) ;;
+            *) echo "::error::source must be under quay.io/fedora/ and carry a tag"; exit 1 ;;
+          esac
+          case "$DEST" in
+            quay.io/deskos/fedora-silverblue) ;;
+            *) echo "::error::destination must be quay.io/deskos/fedora-silverblue"; exit 1 ;;
+          esac
           printf '%s' "$QUAY_ROBOT_TOKEN" |
             sudo podman login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
           trap 'sudo podman logout quay.io || true' EXIT
@@ -91,13 +99,16 @@ jobs:
           done
 
       - name: Summary
+        env:
+          SOURCE: ${{ inputs.source }}
+          DEST: ${{ inputs.destination }}
         run: |
           {
             echo "### Fedora base mirrored"
             echo
-            echo "Source: \`${{ inputs.source }}\`"
-            echo "Destination: \`${{ inputs.destination }}\` \`${{ inputs.source }}\` tag and the vendor version tag"
+            echo "Source: \`$SOURCE\`"
+            echo "Destination: \`$DEST\` \`$SOURCE\` tag and the vendor version tag"
             echo
-            echo "Pin \`${{ inputs.destination }}:45\` at the digest printed above, then"
+            echo "Pin \`$DEST:45\` at the digest printed above, then"
             echo "update the Fedora platform pin in a pull request."
           } >> "$GITHUB_STEP_SUMMARY"
