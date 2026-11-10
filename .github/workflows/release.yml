@@ -235,7 +235,7 @@ jobs:
           cosign sign --yes "$ref"
           cosign verify "$ref" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-            --certificate-identity-regexp '^https://github\.com/deskosproject/deskos-core/' | tee cosign-verify.txt
+            --certificate-identity "https://github.com/deskosproject/deskos-core/.github/workflows/release.yml@refs/tags/$TAG" | tee cosign-verify.txt
           if [ "$PRERELEASE" = "false" ]; then
             # :latest is the newest stable release; a prerelease must not move
             # it, the same way GitHub's own "latest release" excludes them.
