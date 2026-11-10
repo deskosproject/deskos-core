@@ -161,7 +161,9 @@ func validateApply(a *ApplyPolicy) []string {
 		}
 	}
 	if a.Timezone != "" {
-		if _, err := time.LoadLocation(a.Timezone); err != nil {
+		if a.Timezone == "Local" {
+			errs = append(errs, `apply.timezone "Local" is not an IANA time zone; use UTC or a zone such as America/New_York`)
+		} else if _, err := time.LoadLocation(a.Timezone); err != nil {
 			errs = append(errs, fmt.Sprintf("apply.timezone: unknown time zone %q", a.Timezone))
 		}
 	}

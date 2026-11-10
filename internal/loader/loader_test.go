@@ -119,6 +119,25 @@ func TestSkipsHiddenAndNonYAML(t *testing.T) {
 	}
 }
 
+func TestSymlinkedResourceRoot(t *testing.T) {
+	base := t.TempDir()
+	write(t, base, "real/one.yaml", strings.ReplaceAll(pkgSet, "%s", "one"))
+	link := filepath.Join(base, "link")
+	if err := os.Symlink("real", link); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Load([]string{link})
+	if err != nil || len(res) != 1 {
+		t.Fatalf("symlinked root: %d resources, %v", len(res), err)
+	}
+}
+
+func TestEmptyResourceRootIsAnError(t *testing.T) {
+	if _, err := Load([]string{t.TempDir()}); err == nil || !strings.Contains(err.Error(), "no resources found") {
+		t.Fatalf("empty root error = %v", err)
+	}
+}
+
 func TestSymlinkedResourceFiles(t *testing.T) {
 	base := t.TempDir()
 	root := filepath.Join(base, "root")

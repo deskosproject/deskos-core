@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/fs"
+	"sort"
 	"strings"
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
@@ -102,6 +103,7 @@ func describe(err error) string {
 		}
 	}
 	walk(ve)
+	sort.Strings(lines)
 	return strings.Join(lines, "\n")
 }
 

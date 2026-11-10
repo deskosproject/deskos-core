@@ -145,6 +145,7 @@ func (w *walker) include(from *model.Resource, ref model.ObjectRef, via string) 
 		return nil
 	}
 	w.visited[key] = true
+	defer delete(w.visited, key)
 
 	prov, _ := w.reg.Lookup(gvk)
 	c, ok := prov.(Contributor)

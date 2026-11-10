@@ -1,7 +1,6 @@
 package model
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,13 +10,14 @@ import (
 // of them. Rendering is sorted so output is deterministic.
 type ErrorList []error
 
-// Add appends err, flattening nested ErrorLists. Nil is ignored.
+// Add appends err, flattening a direct ErrorList. A wrapped list keeps its
+// wrapper: a caller that prefixes a workstation or resource name must not lose
+// it when the inner list is flattened.
 func (l *ErrorList) Add(err error) {
 	if err == nil {
 		return
 	}
-	var nested ErrorList
-	if errors.As(err, &nested) {
+	if nested, ok := err.(ErrorList); ok {
 		*l = append(*l, nested...)
 		return
 	}

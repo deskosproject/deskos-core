@@ -615,7 +615,7 @@ func (profileProvider) Decode(res *model.Resource) error {
 			errs.Add(model.Errorf(res, "invalid resource reference %s", r))
 			continue
 		}
-		key := strings.ToLower(r.APIVersion + "/" + r.String())
+		key := strings.ToLower(r.Kind + "/" + r.Name)
 		if seen[key] {
 			errs.Add(model.Errorf(res, "resource %s is listed twice", r))
 		}

@@ -70,6 +70,7 @@ func TestUpdatePolicyValidation(t *testing.T) {
 		"unknown field":    {`{"flatpak":{"automatic":true,"script":"x"}}`, "unknown field"},
 		"empty spec":       {`{}`, "set at least one of image or flatpak"},
 		"empty area":       {`{"flatpak":{}}`, "flatpak: set at least one of automatic, schedule or requireACPower"},
+		"local timezone":   {`{"image":{"automatic":true,"apply":{"enabled":true,"days":["mon"],"at":"03:00","timezone":"Local"}}}`, `apply.timezone "Local"`},
 	} {
 		t.Run(name+" typed", func(t *testing.T) {
 			res := rawResource("system.deskos.org/v1alpha1", "UpdatePolicy", "x", tc.spec)
