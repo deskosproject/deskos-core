@@ -383,10 +383,18 @@ func TestProfileResourceOrderIndependence(t *testing.T) {
 func TestUnusedProfileReferenceIsRejected(t *testing.T) {
 	dir := base.with(fixture{
 		"unused.yaml": profile("unused", "organization", "PackageSet/nope"),
-		"ws.yaml":     workstation("ws"),
+		"core.yaml":   profile("core", "foundation"),
+		"ws.yaml":     workstation("ws", "core"),
 	}).dir(t)
-	_, err := planOf(t, "ws", dir)
-	mustFail(t, err, "PackageSet/nope", "not defined")
+	c := newCompiler(t)
+	cat, err := c.Load([]string{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustFail(t, c.ValidateReferences(cat), "PackageSet/nope", "not defined")
+	if _, err := planOf(t, "ws", dir); err != nil {
+		t.Fatalf("an unused profile blocked plan: %v", err)
+	}
 }
 
 func TestProfileRejectsTheSameResourceTwice(t *testing.T) {

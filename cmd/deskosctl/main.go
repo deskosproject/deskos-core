@@ -276,6 +276,7 @@ func cmdValidate(args []string, stdout, stderr io.Writer) error {
 	if cat == nil {
 		return errs.Err()
 	}
+	errs.Add(c.ValidateReferences(cat))
 	names := compiler.Workstations(cat)
 	var warnings []string
 	for _, ws := range names {
