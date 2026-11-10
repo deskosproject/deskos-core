@@ -58,7 +58,7 @@ is what CI uses.
 | Binary artifacts | `BinaryArtifact` resources | Renovate proposes a version; a person fills the SHA-256 | resolver downloads and hashes; the build verifies |
 | Runtime companion | `resources/software/deskos.yaml` | hand, from a released asset | checksum, release version, image build |
 | ISO builder | installer workflows | hand, by digest | image build, boot check, ISO install test |
-| Syft and Grype | the publish workflow | Renovate proposes the installer tag | pinned installer, checked in the same run |
+| Syft and Grype | the publish workflow | moved by hand | pinned release archive, checked against the release checksums in the same run |
 | Flatpak remotes and apps | `FlatpakRemote`, `FlatpakSet` | hand, on the vendor's release | build and first-boot preinstall |
 
 Known gaps: the RHEL base cannot be checked anonymously, Flatpak remotes have no
