@@ -51,7 +51,8 @@ that does not exist.
   reference without the project.
 - **Reviews stop.** Pull requests wait; branch protection does not expire.
 - **Recovery needs credentials that are not here**: the GitHub organisation, the
-  quay robot, the R2 tokens, the `evidence-write` environment and DNS. The maintainer holds
+  quay robot in the `registry-write` environment, the R2 tokens and the
+  `evidence-write` environment, and DNS. The maintainer holds
   them in a password manager, and **no backup custodian exists**. That is the real
   continuity risk.
 

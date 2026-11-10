@@ -39,11 +39,32 @@ rebuild. The weekly build scans and boots an image and moves `:candidate` and
 - A `prepare` job reads the successful `publish (…)` jobs of the triggering run
   and a matrix promotes each station; a dispatch names one. A failed leg is not
   in the matrix, so it cannot hold back a station that published.
+- Three jobs hold one credential each: `approve` and `record` run in the
+  `evidence-write` environment with the bucket key, `promote` runs in
+  `registry-write` with the Quay robot token. Neither can read the other's
+  secret.
 - Machines follow the reference they were installed from; `:latest` is mutable, a
   digest is not. `deskos update` stages whatever that reference now serves.
 - Publication does not wait for a person: the weekly build publishes and
   promotion follows, with no second reviewer or environment approval by default
   (P0-04).
+
+## Jobs and credentials
+
+| Job | Environment | Holds | Does |
+|---|---|---|---|
+| `prepare` | none | `GITHUB_TOKEN` | reads the successful `publish (…)` legs of the triggering run |
+| `approve` | `evidence-write` | the bucket key | resolves the digest, verifies the signature and the evidence, writes the approval record |
+| `promote` | `registry-write` | the Quay robot token | moves `:stable` and the ISO channel, re-checking the digest and the signature |
+| `record` | `evidence-write` | the bucket key | writes the release record from the approval and the state `promote` kept |
+
+The approval is written **before** the tag moves, so a move that cannot be
+recorded does not happen. `promote` receives the approved digest, source,
+previous stable and timestamp in a workflow artifact: it never reads the bucket
+and cannot write a record. Both environments restrict deployment to `main`;
+`registry-write` also allows `v*` tags because `release.yml` publishes the tool
+image from a tag. The registry reads in `approve` are anonymous, which is why it
+can verify a public digest without the robot token.
 
 ## Model
 

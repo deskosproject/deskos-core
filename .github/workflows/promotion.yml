@@ -13,6 +13,15 @@ name: promotion
 # the `publish` job (the image's gate, signature and evidence), not for the whole
 # workflow. A red installer leaves the ISO channel where it was, and the installer
 # follows whenever it succeeds.
+#
+# Three jobs, two environments, one credential each:
+#   approve  (evidence-write) resolves the digest, verifies the signature and the
+#            stored evidence, and writes the approval record *before* anything
+#            moves. Its registry reads are anonymous; it holds no robot token.
+#   promote  (registry-write) holds the robot token and only moves tags. It cannot
+#            write an approval or a release record.
+#   record   (evidence-write) writes the release record from the approval and the
+#            state `promote` kept, so neither job can use the other's secret.
 on:
   workflow_run:
     workflows: ["image-publish"]
@@ -91,12 +100,16 @@ jobs:
           echo "stations=$stations" >> "$GITHUB_OUTPUT"
           echo "promoting: $stations"
 
-  promote:
+  # Evidence-write only: everything that must be true before a tag may move, and
+  # the approval record that says so. The Quay reads here are anonymous, so the
+  # job never holds the robot token. The approval is written first on purpose: a
+  # move that cannot be recorded does not happen.
+  approve:
     needs: prepare
     if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == '' && needs.prepare.outputs.stations != '[]'
     runs-on: ubuntu-24.04
     environment: evidence-write
-    timeout-minutes: 30
+    timeout-minutes: 25
     strategy:
       # One station failing must not hide another; they are independent moves.
       fail-fast: false
@@ -115,6 +128,7 @@ jobs:
           STATION: ${{ matrix.station }}
           EVENT: ${{ github.event_name }}
           TRIGGER_RUN: ${{ github.event.workflow_run.id }}
+          SOURCE_INPUT: ${{ inputs.from_channel || 'candidate' }}
         run: |
           set -euo pipefail
           station="$STATION"
@@ -145,6 +159,11 @@ jobs:
           case "$REASON$approve" in
             *$'\n'*|*$'\r'*) echo "::error::reason and approver must be single-line"; exit 1 ;;
           esac
+          source="$SOURCE_INPUT"
+          case "$source" in
+            candidate|latest|stable) ;;
+            *) echo "::error::from_channel must be candidate, latest or stable"; exit 1 ;;
+          esac
           {
             echo "DIGEST=$DIGEST_INPUT"
             echo "REPO=$REGISTRY/$station"
@@ -152,41 +171,18 @@ jobs:
             echo "STATION=$station"
             echo "REASON=$REASON"
             echo "APPROVER=$approve"
+            echo "SOURCE=$source"
           } >> "$GITHUB_ENV"
 
-      - name: Install skopeo, oras and jq
-        env:
-          ORAS_VERSION: v1.3.5
+      - name: Install skopeo and jq
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends skopeo jq
-          # The installer is an OCI artifact, and skopeo refuses to inspect one;
-          # oras is the client that understands it (same pin as the publish step).
-          tmp="$(mktemp -d)"
-          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
-          base="https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}"
-          curl -fsSL -o "$tmp/$tgz" "$base/$tgz"
-          curl -fsSL -o "$tmp/oras_checksums.txt" "$base/oras_${ORAS_VERSION#v}_checksums.txt"
-          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
-          tar -xzf "$tmp/$tgz" -C "$tmp" oras
-          sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
-          oras version
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
         with:
           cosign-release: 'v3.1.3'
-
-      - name: Log in to the registry
-        env:
-          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
-          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
-        run: |
-          printf '%s' "$QUAY_ROBOT_TOKEN" \
-            | skopeo login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
-          # oras keeps its own credential file; the ISO step uses it.
-          printf '%s' "$QUAY_ROBOT_TOKEN" \
-            | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
 
       - name: Resolve the digest and skip when stable already serves it
         # A previous step or an earlier run may have set SKIP: there is no REPO
@@ -196,7 +192,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${DIGEST:-}" ]; then
-            DIGEST="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:candidate")"
+            DIGEST="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:$SOURCE")"
             echo "DIGEST=$DIGEST" >> "$GITHUB_ENV"
           fi
           stable="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:stable" 2>/dev/null || true)"
@@ -207,8 +203,6 @@ jobs:
 
       - name: The channel serves this digest and it is signed
         if: env.SKIP != 'yes'
-        env:
-          SOURCE: ${{ inputs.from_channel || 'candidate' }}
         run: |
           set -euo pipefail
           source_digest="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:$SOURCE")"
@@ -223,7 +217,7 @@ jobs:
       - name: The durable evidence is complete
         if: env.SKIP != 'yes'
         env:
-          EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL }}
+          EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL || 'https://evidence.deskos.org' }}
           EVENT: ${{ github.event_name }}
           TRIGGER_RUN: ${{ github.event.workflow_run.id }}
         run: |
@@ -250,9 +244,8 @@ jobs:
               exit 1
             }
           fi
-          echo "EVIDENCE=$evidence" >> "$GITHUB_ENV"
 
-      - name: Record the approval
+      - name: Write the approval record
         if: env.SKIP != 'yes'
         env:
           EVIDENCE_S3_ENDPOINT: ${{ vars.EVIDENCE_S3_ENDPOINT }}
@@ -260,12 +253,13 @@ jobs:
           EVIDENCE_S3_BUCKET: ${{ vars.EVIDENCE_S3_BUCKET }}
           EVIDENCE_S3_ACCESS_KEY_ID: ${{ secrets.EVIDENCE_S3_ACCESS_KEY_ID }}
           EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
-          SOURCE: ${{ inputs.from_channel || 'candidate' }}
         run: |
           set -euo pipefail
           previous="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:stable" 2>/dev/null || true)"
           stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-          python3 tests/evidence/approvals.py --dir "$EVIDENCE" \
+          # The record is stored before the tag moves. If this write fails there
+          # is no approval, and a move without an approval does not happen.
+          python3 tests/evidence/approvals.py --dir "$RUNNER_TEMP/evidence" \
             --repository "$STATION" --image "$REPO" --digest "$DIGEST" \
             --from "$SOURCE" --to stable --previous "$previous" \
             --actor "$GITHUB_ACTOR" --approver "$APPROVER" --reason "$REASON" \
@@ -275,6 +269,151 @@ jobs:
             echo "PREVIOUS=${previous:-none}"
             echo "STAMP=$stamp"
           } >> "$GITHUB_ENV"
+
+      - name: Write the plan the registry job executes
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg station "$STATION" \
+            --arg digest "${DIGEST:-}" \
+            --arg repo "$REPO" \
+            --arg iso_repo "$ISO_REPO" \
+            --arg source "${SOURCE:-candidate}" \
+            --arg previous "${PREVIOUS:-none}" \
+            --arg stamp "${STAMP:-}" \
+            --arg reason "$REASON" \
+            --arg approver "$APPROVER" \
+            --arg skip "${SKIP:-no}" \
+            '{station:$station, digest:$digest, repo:$repo, iso_repo:$iso_repo, source:$source, previous:$previous, stamp:$stamp, reason:$reason, approver:$approver, skip:($skip == "yes")}' \
+            > "$RUNNER_TEMP/promotion-plan.json"
+          cat "$RUNNER_TEMP/promotion-plan.json"
+
+      - name: Keep the plan and the approval with the run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/promotion-plan.json
+            approval.json
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Promotion approval"
+            echo "- station: \`${STATION:-unknown}\`"
+            echo "- previous stable: ${PREVIOUS:-unknown}"
+            echo "- digest: ${DIGEST:-unknown}"
+            echo "- skipped: ${SKIP:-no}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Registry-write only: the robot token lives here and nowhere else in this
+  # workflow. It executes the plan the evidence job approved; it never re-reads
+  # the bucket and never writes a record.
+  promote:
+    needs: [prepare, approve]
+    if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == '' && needs.prepare.outputs.stations != '[]'
+    runs-on: ubuntu-24.04
+    environment: registry-write
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        station: ${{ fromJSON(needs.prepare.outputs.stations) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Download the approved plan
+        # `approve` always writes it, including when it decides there is nothing
+        # to move; a missing artifact is therefore a broken handoff, not a no-op.
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/promotion-plan
+
+      - name: Load the plan
+        env:
+          STATION: ${{ matrix.station }}
+        run: |
+          set -euo pipefail
+          plan="$RUNNER_TEMP/promotion-plan/promotion-plan.json"
+          test -f "$plan" || { echo "::error::$plan is missing"; exit 1; }
+          station="$(jq -r .station "$plan")"
+          [ "$station" = "$STATION" ] \
+            || { echo "::error::the plan is for $station, not $STATION"; exit 1; }
+          if [ "$(jq -r .skip "$plan")" = "true" ]; then
+            echo "stable already serves the approved digest; nothing to move"
+            echo "SKIP=yes" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          {
+            echo "STATION=$STATION"
+            echo "DIGEST=$(jq -r .digest "$plan")"
+            echo "REPO=$(jq -r .repo "$plan")"
+            echo "ISO_REPO=$(jq -r .iso_repo "$plan")"
+            echo "SOURCE=$(jq -r .source "$plan")"
+            echo "PREVIOUS=$(jq -r .previous "$plan")"
+            echo "STAMP=$(jq -r .stamp "$plan")"
+            echo "REASON=$(jq -r .reason "$plan")"
+            echo "APPROVER=$(jq -r .approver "$plan")"
+          } >> "$GITHUB_ENV"
+          digest="$(jq -r .digest "$plan")"
+          case "$digest" in
+            sha256:*) ;;
+            *) echo "::error::the plan has no digest"; exit 1 ;;
+          esac
+
+      - name: Install skopeo, oras and jq
+        if: env.SKIP != 'yes'
+        env:
+          ORAS_VERSION: v1.3.5
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends skopeo jq
+          # The installer is an OCI artifact, and skopeo refuses to inspect one;
+          # oras is the client that understands it (same pin as the publish step).
+          tmp="$(mktemp -d)"
+          tgz="oras_${ORAS_VERSION#v}_linux_amd64.tar.gz"
+          base="https://github.com/oras-project/oras/releases/download/${ORAS_VERSION}"
+          curl -fsSL -o "$tmp/$tgz" "$base/$tgz"
+          curl -fsSL -o "$tmp/oras_checksums.txt" "$base/oras_${ORAS_VERSION#v}_checksums.txt"
+          ( cd "$tmp" && grep " $tgz\$" oras_checksums.txt | sha256sum --check --strict --quiet - )
+          tar -xzf "$tmp/$tgz" -C "$tmp" oras
+          sudo install -m 0755 "$tmp/oras" /usr/local/bin/oras
+          oras version
+
+      - name: Install cosign
+        if: env.SKIP != 'yes'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: 'v3.1.3'
+
+      - name: Log in to the registry
+        if: env.SKIP != 'yes'
+        env:
+          QUAY_ROBOT_USERNAME: ${{ secrets.QUAY_ROBOT_USERNAME }}
+          QUAY_ROBOT_TOKEN: ${{ secrets.QUAY_ROBOT_TOKEN }}
+        run: |
+          printf '%s' "$QUAY_ROBOT_TOKEN" \
+            | skopeo login quay.io --username "$QUAY_ROBOT_USERNAME" --password-stdin
+          # oras keeps its own credential file; the ISO step uses it.
+          printf '%s' "$QUAY_ROBOT_TOKEN" \
+            | oras login quay.io -u "$QUAY_ROBOT_USERNAME" --password-stdin
+
+      - name: The digest is the approved one and it is still signed
+        if: env.SKIP != 'yes'
+        run: |
+          set -euo pipefail
+          # Re-read the source after logging in: the plan was approved against
+          # the tag a moment ago, and the tag is what a consumer would fetch.
+          source_digest="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:$SOURCE")"
+          [ "$source_digest" = "$DIGEST" ] \
+            || { echo "::error::$SOURCE now serves $source_digest, not the approved $DIGEST"; exit 1; }
+          cosign verify "$REPO@$DIGEST" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity 'https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main'
 
       - name: Move stable by digest
         if: env.SKIP != 'yes'
@@ -339,8 +478,127 @@ jobs:
           [ "$moved" = "$iso" ] || { echo "::error::ISO stable is $moved, not $iso"; exit 1; }
           echo "ISO_DIGEST=$iso" >> "$GITHUB_ENV"
 
-      - name: Write the release record
+      - name: Write the state for the release record
         if: env.SKIP != 'yes'
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg station "$STATION" \
+            --arg digest "$DIGEST" \
+            --arg repo "$REPO" \
+            --arg iso_repo "$ISO_REPO" \
+            --arg iso_digest "${ISO_DIGEST:-}" \
+            --arg previous "${PREVIOUS:-none}" \
+            --arg reason "$REASON" \
+            --arg approver "$APPROVER" \
+            --arg stamp "$STAMP" \
+            --arg source "${SOURCE:-candidate}" \
+            '{station:$station, digest:$digest, repo:$repo, iso_repo:$iso_repo, iso_digest:$iso_digest, previous:$previous, reason:$reason, approver:$approver, stamp:$stamp, source:$source}' \
+            > "$RUNNER_TEMP/promotion-state.json"
+
+      - name: Keep the promotion state with the run
+        if: env.SKIP != 'yes'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: promotion-state-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/promotion-state.json
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Promotion move"
+            echo "- station: \`${STATION:-unknown}\`"
+            echo "- previous stable: ${PREVIOUS:-unknown}"
+            echo "- digest: ${DIGEST:-unknown}"
+            echo "- ISO digest: ${ISO_DIGEST:-none}"
+            echo "- skipped: ${SKIP:-no}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of the registry
+        if: always()
+        run: |
+          skopeo logout quay.io || true
+          oras logout quay.io || true
+
+  # Evidence-write only again: it reads the approval `approve` wrote and the state
+  # `promote` kept, and records the release. The robot token and the moved tag are
+  # out of reach here.
+  record:
+    needs: [prepare, promote]
+    if: github.ref == 'refs/heads/main' && needs.prepare.outputs.stations != '[]'
+    runs-on: ubuntu-24.04
+    environment: evidence-write
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        station: ${{ fromJSON(needs.prepare.outputs.stations) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Download the approved plan
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/promotion-plan
+
+      - name: Download the promotion state
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: promotion-state-${{ matrix.station }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/promotion-state
+
+      - name: Decide whether anything moved
+        env:
+          STATION: ${{ matrix.station }}
+        run: |
+          set -euo pipefail
+          plan="$RUNNER_TEMP/promotion-plan/promotion-plan.json"
+          test -f "$plan" || { echo "::error::$plan is missing"; exit 1; }
+          echo "STATION=$STATION" >> "$GITHUB_ENV"
+          if [ "$(jq -r .skip "$plan")" = "true" ]; then
+            echo "stable already served the digest; there is no release to record"
+            echo "NOTHING=yes" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          state="$RUNNER_TEMP/promotion-state/promotion-state.json"
+          test -f "$state" || {
+            echo "::error::the promotion ran but kept no state; the release record cannot be written"
+            exit 1
+          }
+
+      - name: The durable evidence is still the approved one
+        if: env.NOTHING != 'yes'
+        env:
+          EVIDENCE_PUBLIC_BASE_URL: ${{ vars.EVIDENCE_PUBLIC_BASE_URL || 'https://evidence.deskos.org' }}
+        run: |
+          set -euo pipefail
+          digest="$(jq -r .digest "$RUNNER_TEMP/promotion-state/promotion-state.json")"
+          base="${EVIDENCE_PUBLIC_BASE_URL%/}/deskos/$STATION/sha256/${digest#sha256:}"
+          evidence="$RUNNER_TEMP/evidence"
+          mkdir -p "$evidence"
+          curl -fsS "$base/index.json" -o "$evidence/index.json"
+          jq -r '.objects[].name' "$evidence/index.json" | while read -r name; do
+            mkdir -p "$evidence/$(dirname "$name")"
+            curl -fsS "$base/$name" -o "$evidence/$name"
+          done
+          python3 tests/evidence/verify.py --index "$evidence/index.json" \
+            --dir "$evidence" --digest "$digest"
+          # The approval named the index it approved; a changed index is not the
+          # document the approval was about.
+          approved="$(jq -r .evidence_index_sha256 "$RUNNER_TEMP/promotion-plan/approval.json")"
+          actual="$(sha256sum "$evidence/index.json" | cut -d' ' -f1)"
+          [ "$approved" = "$actual" ] || {
+            echo "::error::the evidence index is $actual, the approval names $approved"
+            exit 1
+          }
+
+      - name: Write the release record
+        if: env.NOTHING != 'yes'
         env:
           EVIDENCE_S3_ENDPOINT: ${{ vars.EVIDENCE_S3_ENDPOINT }}
           EVIDENCE_S3_REGION: ${{ vars.EVIDENCE_S3_REGION }}
@@ -349,26 +607,43 @@ jobs:
           EVIDENCE_S3_SECRET_ACCESS_KEY: ${{ secrets.EVIDENCE_S3_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
-          python3 tests/evidence/release.py --dir "$EVIDENCE" \
-            --approval approval.json --iso "${ISO_DIGEST:-}" \
+          state="$RUNNER_TEMP/promotion-state/promotion-state.json"
+          digest="$(jq -r .digest "$state")"
+          iso_digest="$(jq -r .iso_digest "$state")"
+          stamp="$(jq -r .stamp "$state")"
+          approval="$RUNNER_TEMP/promotion-plan/approval.json"
+          test -f "$approval" || { echo "::error::$approval is missing"; exit 1; }
+          [ "$(jq -r .digest "$approval")" = "$digest" ] || {
+            echo "::error::the approval is for another digest"
+            exit 1
+          }
+          cp "$approval" approval.json
+          python3 tests/evidence/release.py --dir "$RUNNER_TEMP/evidence" \
+            --approval approval.json --iso "${iso_digest:-}" \
             --signature-scheme keyless \
             --signature-identity "https://github.com/deskosproject/deskos-core/.github/workflows/image-publish.yml@refs/heads/main" \
-            --stamp "$STAMP" --output release.json
+            --stamp "$stamp" --output release.json
 
       - name: Summary
         if: always()
         run: |
           {
-            echo "### Promotion"
+            echo "### Promotion record"
+            echo "- station: \`${STATION:-unknown}\`"
+            if [ "${NOTHING:-}" = "yes" ]; then
+              echo "- moved: no"
+            else
+              echo "- moved: yes"
+            fi
             echo '```json'
             cat approval.json 2>/dev/null || echo '{}'
             echo '```'
-            echo "- previous stable: ${PREVIOUS:-unknown}"
-            echo "- digest: ${DIGEST:-unknown}"
+            echo '```json'
+            cat release.json 2>/dev/null || echo '{}'
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Keep the approval record with the run
-        if: always()
+      - name: Keep the approval and release records with the run
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: promotion-record-${{ matrix.station }}-attempt-${{ github.run_attempt }}
@@ -377,9 +652,3 @@ jobs:
             release.json
           retention-days: 14
           if-no-files-found: warn
-
-      - name: Log out of the registry
-        if: always()
-        run: |
-          skopeo logout quay.io || true
-          oras logout quay.io || true

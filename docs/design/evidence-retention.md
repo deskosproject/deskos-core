@@ -71,8 +71,10 @@ and duplicate names, and hashes every named object.
 
 ## CI configuration
 
-The publish job uses the GitHub environment `evidence-write`. Non-sensitive
-configuration is environment variables; only the credential is a secret.
+The publish job and the promotion record jobs (`approve` and `record` in
+`promotion.yml`) use the GitHub environment `evidence-write`. Non-sensitive
+configuration is environment variables; only the credential is a secret. The
+Quay robot token is not in that environment: `promote` runs in `registry-write`.
 
 **Variables**
 

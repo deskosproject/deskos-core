@@ -152,6 +152,9 @@ jobs:
     # Core the image builds.
     needs: [tag, ci, companion]
     runs-on: ubuntu-24.04
+    # The robot token lives in `registry-write`. The deployment policy allows
+    # `main` and `v*` tags, and a release job only runs on a tag.
+    environment: registry-write
     permissions:
       contents: read
       # Keyless cosign: the workflow's OIDC identity.
