@@ -46,7 +46,7 @@ registries or branch protection needs its own approval (AGENTS.md).
 | Workflow tokens default to read | verified in the workflow files | `permissions: contents: read`; `id-token: write` only where keyless signing runs |
 | Third-party actions pinned by commit | verified for cosign and Renovate | `uses: …@<40-char sha> # version` |
 | First-party actions pinned by commit | Core pinned; an organization still uses tags | `actions/checkout@<sha> # v7` and the same for setup/upload/download in Core; an organization is the remaining gap |
-| Tools downloaded with a checksum or a digest | verified where recorded | BIB by digest; Syft/Grype installer commit + release checksums; cosign checksums |
+| Tools downloaded with a checksum or a digest | verified where recorded | BIB by digest; Syft/Grype release archives checked against the release checksums; cosign checksums |
 | Signing | Core keyless OIDC with manual verification and no enforcement; an organization's key outside the repo, no transparency log, enforcing on update | `image-publish.yml`, an organization's `docs/supply-chain.md`, [authenticity](design/authenticity.md) |
 | Automatic publication is bounded | verified 2026-10-28 | the schedule publishes, but `promotion.yml` moves only the digest its triggering run published (`run_id` in the record), after the keyless signature and every record verifies, and records `automatic (gate)` with the run. See [promotion.md](design/promotion.md) |
 | A second human approval before publish | **decided: one person** (2026-10-28) | an environment approval on `evidence-write` would stop the weekly automatic promotion; the bounds above stand in for it. Revisit with a second maintainer or an SLA. See [promotion.md](design/promotion.md) |

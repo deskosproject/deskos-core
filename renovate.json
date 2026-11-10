@@ -4,7 +4,8 @@
   "ignorePaths": ["internal/compiler/testdata/golden/**"],
   "description": [
     "Pins DeskOS keeps by hand: the platform bootc base image (tag + digest),",
-    "the binary artifacts of the example, and the scanner installer tags.",
+    "the binary artifacts of the example. The scanner and action pins in the",
+    "workflows move by hand too, because the token cannot write there.",
     "The Dockerfile/actions managers from config:recommended cover the rest.",
     "NOTE: a binary artifact has a sha256 that Renovate cannot compute, so its",
     "PR bumps the version only and the checksum must be filled before merge;",
@@ -73,6 +74,12 @@
     {
       "description": "Action versions are bumped by hand: RENOVATE_TOKEN deliberately lacks the workflows permission, so Renovate could not commit a change under .github/workflows, and a token that can edit a workflow can run arbitrary code beside this repository's registry credentials. Disabled so the dashboard shows no error.",
       "matchManagers": ["github-actions"],
+      "enabled": false
+    },
+    {
+      "description": "The Syft and Grype tags in image-publish.yml are moved by hand for the same reason: a change under .github/workflows is a change the token cannot push. The custom managers stay for the day the token gains the scope, but they are disabled so the dashboard shows no permanent error.",
+      "matchManagers": ["custom.regex"],
+      "matchFileNames": [".github/workflows/image-publish.yml"],
       "enabled": false
     }
   ]
