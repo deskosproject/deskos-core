@@ -105,7 +105,7 @@ func (c *Compiler) ValidateReferences(cat *compose.Catalog) error {
 				continue
 			}
 			if cat.Get(gvk, target.Name) == nil {
-				errs.Add(model.Errorf(res, "%s references %s, which is not defined", target.Kind, target))
+				errs.Add(model.Errorf(res, "references %s, which is not defined", target))
 			}
 		}
 	}
