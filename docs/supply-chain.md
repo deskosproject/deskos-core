@@ -75,8 +75,8 @@ configuration from it, fails at `critical`, compares the two bills with
 `tests/supply-chain/compare.py`, and uploads everything.
 
 Both scan passes use `tests/supply-chain/grype-raw.yaml` (`ignore: []`), so
-`grype.txt` and `cves.json` show everything. Only the promotion check applies the
-exceptions.
+`grype.txt` and `cves.json` show everything. The publish and promotion checks
+apply the exceptions; the raw scans do not.
 
 A scheduled run has no inputs, so it uses the explicit `FAIL_ON` fallback of
 `critical`. The weekly run cannot silently weaken it.
@@ -279,5 +279,6 @@ python3 tests/supply-chain/check_exceptions.py \
 
 grype --from containers-storage "$ref" \
   --config gate.grype.yaml \
+  --vex tests/supply-chain/vex.openvex.json \
   --fail-on critical
 ```

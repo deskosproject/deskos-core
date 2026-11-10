@@ -19,8 +19,8 @@ on CentOS Stream 10 and RHEL 10, the example organization.
 - The entitled build of `example-devops-rhel-10` (`0e65bf4b`) passed lint, the
   scans found no build-host identity, and both VM checks passed on its QCOW2 in
   the factory VM. That host was retired; RHEL now builds downstream, this
-  repository builds CentOS Stream 10 only, and Ubuntu has its own repository
-  ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
+  repository builds and publishes the public platforms, and Ubuntu has its own
+  repository ([ADR 0020](adr/0020-ubuntu-lives-in-its-own-repository.md)).
 - RHEL's Flatpak 1.16 reads `/usr/share/flatpak/preinstall.d`, checked with a
   private workstation that declares Flathub apps.
 

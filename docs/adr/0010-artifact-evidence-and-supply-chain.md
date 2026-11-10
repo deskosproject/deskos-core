@@ -38,7 +38,7 @@ The how-to for stages 1-3 is [docs/supply-chain.md](../supply-chain.md).
 ## Consequences
 
 - The compiler stays deterministic, offline and model-free; records are additive and optional for it.
-- Scanning needs a **built image**: CentOS Stream 10 runs in CI (`vm-bootcheck` style); RHEL runs in a downstream
+- Scanning needs a **built image**: CentOS Stream 10 runs in CI (`image-bootcheck.yml` and the publish pipeline); RHEL runs in a downstream
   organization's pipeline, which owns the entitled build host and holds the results.
 - The tooling is vendor-neutral (CycloneDX, Syft/Grype/cosign), so the plan survives a change of pipeline.
 - This is a **publication check**, not a controller: it decides which digest moves forward, not what a running machine

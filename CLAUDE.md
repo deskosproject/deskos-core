@@ -87,9 +87,11 @@ context without credentials must stay possible. RHEL evidence is exactly what
 `docs/architecture.md` ("Validation status") records: composition and rendering
 are tested here; the entitled 10.2 build (`0e65bf4b`) and its VM checks are
 historical, and that validation now runs in a downstream organization's
-repository. There is no RHEL job here and no E2E test. Do not claim more until a
-build shows it, and do not weaken the architecture because this machine cannot
-run an authenticated build.
+repository. There is no RHEL job here. The workstation E2E is partial: the
+session check exercises four AT-SPI scenarios on CentOS Stream 10 and Fedora 45;
+the remaining scenarios and bare-metal validation are open. Do not claim more
+until a build shows it, and do not weaken the architecture because this machine
+cannot run an authenticated build.
 
 ## Scope discipline
 
@@ -143,7 +145,8 @@ the next milestone.
 
 ## Repository map
 
-- `cmd/deskosctl`: the factory CLI; `cmd/deskos`: the runtime companion.
+- `cmd/deskosctl`: the factory CLI; `cmd/deskos`: the runtime companion;
+  `cmd/deskos-theme`: the theme tool.
 - `internal/model`: envelope, GVK, layers, provenance.
 - `internal/loader`: YAML roots to resources, no kind knowledge.
 - `internal/schema`: embedded JSON Schema validation (`schemas/`).
@@ -156,10 +159,15 @@ the next milestone.
 - `internal/backends/containerfile`: Plan to build context.
 - `internal/sbom`: declared CycloneDX SBOM ([supply-chain.md](docs/supply-chain.md)).
 - `internal/textplan`: the text form of `deskosctl plan`.
+- `internal/evidence`: the `deskos check` evidence model.
+- `internal/theme`: theme assets and lowering.
+- `internal/corefs`: the embedded Core tree.
 - `internal/compiler`: pipeline wiring and the architecture, golden and
   composition tests. Refresh goldens with `go test ./internal/compiler -update`
   and review the diff.
 - `tests/vm`: QEMU boot and instrumented session checks
   (`python3 -m unittest discover -s tests/vm` for their unit tests).
-- `.github/workflows`: `checks.yml`, `image-bootcheck.yml`, `image-publish.yml`,
-  `promotion.yml`, `installer-build.yml` and `release.yml`.
+- `.github/workflows`: all workflows, including `checks.yml`,
+  `image-bootcheck.yml`, `image-publish.yml`, `promotion.yml`,
+  `installer-build.yml`, `lifecycle-test.yml`, `docs-deploy.yml` and
+  `release.yml`; [checks.md](docs/checks.md) is the table.

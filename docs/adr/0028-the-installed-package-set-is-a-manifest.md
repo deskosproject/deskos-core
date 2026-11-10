@@ -60,7 +60,7 @@ review is the diff.
 - The manifest is per platform and per base digest. CentOS Stream 10 and Fedora 45
   have one now, and AlmaLinux 10 does too; RHEL 10's comes from the organization's
   entitled build, because this repository cannot resolve RHEL repositories.
-- The manifest travels in the Plan and the SBOM, so `deskos report` can say what the
-  image was expected to carry, not only what it carries.
+- The manifest travels in the Plan, not in the SBOM: the build's diff is the
+  check, and `deskos report` describes the image, not the expected package set.
 - A platform that declares no manifest gets no check, and that is visible in the
   resource rather than implied.

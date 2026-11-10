@@ -53,4 +53,5 @@ error, and below it a masked-setting warning.
 - This is artifact content, not a controller: DeskOS does not observe or enforce the result, and `/etc` may be
   unmasked by an administrator or configuration management.
 - A workstation without `UpdatePolicy` image intent keeps the platform behavior, including the stock rebooting timer;
-  with `requireACPower`, a run on battery is skipped until the next scheduled time.
+  with `requireACPower`, a run on battery is skipped; a udev rule starts the staging service when AC returns, and the
+  service still checks `ConditionACPower`.

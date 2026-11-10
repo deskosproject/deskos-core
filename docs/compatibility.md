@@ -21,11 +21,15 @@ The project is pre-1.0: this policy makes breaks deliberate and documented.
   exit code.
 - **Minor** releases may break pre-1.0 only with a migration note, a reviewed
   golden diff, and a fixture covering the old and new form.
-- A schema break bumps `apiVersion`; a Plan-shape change bumps `format` and needs
-  the matching companion. The compiler rejects an old input and does not guess a
-  migration.
+- A break that cannot be migrated bumps `apiVersion`; a Plan-shape change bumps
+  `format` and needs the matching companion. The compiler rejects an old input
+  and does not guess a migration. Two field removals have shipped under
+  `v1alpha1`: `Platform.spec.relabelDirs` in v0.22.0 and
+  `appearance.lockShield` in v0.23.0, both with a migration note and a rejected
+  old form.
 - A deprecation is announced here and in the release notes one minor before
-  removal. None has happened yet.
+  removal. `Platform.spec.relabelDirs` and `appearance.lockShield` are the two
+  that have happened; see [migrations.md](migrations.md).
 - Nothing promotes itself: a tag, a `stable` alias and a release are human
   decisions.
 
