@@ -257,6 +257,11 @@ jobs:
           set -euo pipefail
           previous="$(skopeo inspect --format '{{.Digest}}' "docker://$REPO:stable" 2>/dev/null || true)"
           stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          # One directory for the handoff: the workflow artifact keeps its files
+          # at the root only when the upload paths share a parent, so the plan
+          # and the approval are written here and uploaded together.
+          handoff="$RUNNER_TEMP/promotion-handoff"
+          mkdir -p "$handoff"
           # The record is stored before the tag moves. If this write fails there
           # is no approval, and a move without an approval does not happen.
           python3 tests/evidence/approvals.py --dir "$RUNNER_TEMP/evidence" \
@@ -264,7 +269,7 @@ jobs:
             --from "$SOURCE" --to stable --previous "$previous" \
             --actor "$GITHUB_ACTOR" --approver "$APPROVER" --reason "$REASON" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-            --stamp "$stamp" --output approval.json
+            --stamp "$stamp" --output "$handoff/approval.json"
           {
             echo "PREVIOUS=${previous:-none}"
             echo "STAMP=$stamp"
@@ -273,6 +278,8 @@ jobs:
       - name: Write the plan the registry job executes
         run: |
           set -euo pipefail
+          handoff="$RUNNER_TEMP/promotion-handoff"
+          mkdir -p "$handoff"
           jq -n \
             --arg station "$STATION" \
             --arg digest "${DIGEST:-}" \
@@ -285,16 +292,14 @@ jobs:
             --arg approver "$APPROVER" \
             --arg skip "${SKIP:-no}" \
             '{station:$station, digest:$digest, repo:$repo, iso_repo:$iso_repo, source:$source, previous:$previous, stamp:$stamp, reason:$reason, approver:$approver, skip:($skip == "yes")}' \
-            > "$RUNNER_TEMP/promotion-plan.json"
-          cat "$RUNNER_TEMP/promotion-plan.json"
+            > "$handoff/promotion-plan.json"
+          cat "$handoff/promotion-plan.json"
 
       - name: Keep the plan and the approval with the run
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
-          path: |
-            ${{ runner.temp }}/promotion-plan.json
-            approval.json
+          path: ${{ runner.temp }}/promotion-handoff
           retention-days: 14
           if-no-files-found: error
 
@@ -331,14 +336,14 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/promotion-plan
+          path: ${{ runner.temp }}/promotion-handoff
 
       - name: Load the plan
         env:
           STATION: ${{ matrix.station }}
         run: |
           set -euo pipefail
-          plan="$RUNNER_TEMP/promotion-plan/promotion-plan.json"
+          plan="$RUNNER_TEMP/promotion-handoff/promotion-plan.json"
           test -f "$plan" || { echo "::error::$plan is missing"; exit 1; }
           station="$(jq -r .station "$plan")"
           [ "$station" = "$STATION" ] \
@@ -543,7 +548,7 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: promotion-plan-${{ matrix.station }}-attempt-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/promotion-plan
+          path: ${{ runner.temp }}/promotion-handoff
 
       - name: Download the promotion state
         continue-on-error: true
@@ -557,7 +562,7 @@ jobs:
           STATION: ${{ matrix.station }}
         run: |
           set -euo pipefail
-          plan="$RUNNER_TEMP/promotion-plan/promotion-plan.json"
+          plan="$RUNNER_TEMP/promotion-handoff/promotion-plan.json"
           test -f "$plan" || { echo "::error::$plan is missing"; exit 1; }
           echo "STATION=$STATION" >> "$GITHUB_ENV"
           if [ "$(jq -r .skip "$plan")" = "true" ]; then
@@ -590,7 +595,7 @@ jobs:
             --dir "$evidence" --digest "$digest"
           # The approval named the index it approved; a changed index is not the
           # document the approval was about.
-          approved="$(jq -r .evidence_index_sha256 "$RUNNER_TEMP/promotion-plan/approval.json")"
+          approved="$(jq -r .evidence_index_sha256 "$RUNNER_TEMP/promotion-handoff/approval.json")"
           actual="$(sha256sum "$evidence/index.json" | cut -d' ' -f1)"
           [ "$approved" = "$actual" ] || {
             echo "::error::the evidence index is $actual, the approval names $approved"
@@ -611,7 +616,7 @@ jobs:
           digest="$(jq -r .digest "$state")"
           iso_digest="$(jq -r .iso_digest "$state")"
           stamp="$(jq -r .stamp "$state")"
-          approval="$RUNNER_TEMP/promotion-plan/approval.json"
+          approval="$RUNNER_TEMP/promotion-handoff/approval.json"
           test -f "$approval" || { echo "::error::$approval is missing"; exit 1; }
           [ "$(jq -r .digest "$approval")" = "$digest" ] || {
             echo "::error::the approval is for another digest"
