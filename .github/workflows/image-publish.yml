@@ -89,6 +89,10 @@ jobs:
     # four workflows during an incident (tabletop, 2026-10-28).
     if: vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
+    # The robot token lives in the `registry-write` environment, whose deployment
+    # policy allows `main` and `v*` tags only: a dispatch from a branch cannot
+    # reach it even though this job would still run.
+    environment: registry-write
     outputs:
       # The ISO workflow builds from the digest this job published.
       digest: ${{ steps.publish_image.outputs.digest }}

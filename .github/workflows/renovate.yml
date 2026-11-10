@@ -42,6 +42,9 @@ concurrency:
 
 jobs:
   renovate:
+    # The token opens pull requests, so the job runs from `main` only: a dispatch
+    # would otherwise run a branch's copy of this workflow with the same token.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

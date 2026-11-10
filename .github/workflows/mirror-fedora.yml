@@ -35,6 +35,8 @@ jobs:
     # and grant the robot write: a copy cannot create a Quay repository.
     if: github.ref == 'refs/heads/main' && vars.PUBLISH_FREEZE == ''
     runs-on: ubuntu-24.04
+    # The robot token lives in `registry-write` (main and `v*` tags only).
+    environment: registry-write
     timeout-minutes: 60
     steps:
       - name: Install skopeo
