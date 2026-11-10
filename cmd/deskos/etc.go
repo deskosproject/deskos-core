@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -397,7 +398,10 @@ func etcSame(cur, base string) (bool, error) {
 		}
 		return ta == tb, nil
 	case a.Mode().IsRegular():
-		if a.Mode().Perm() != b.Mode().Perm() {
+		if a.Mode() != b.Mode() {
+			return false, nil
+		}
+		if !sameEtcOwner(a, b) {
 			return false, nil
 		}
 		ha, err := etcHash(cur)
@@ -409,9 +413,24 @@ func etcSame(cur, base string) (bool, error) {
 			return false, err
 		}
 		return ha == hb, nil
+	case a.IsDir():
+		if a.Mode() != b.Mode() || !sameEtcOwner(a, b) {
+			return false, nil
+		}
+		return true, nil
 	default:
 		return true, nil
 	}
+}
+
+// sameEtcOwner compares the uid and gid an etc reset must restore.
+func sameEtcOwner(a, b os.FileInfo) bool {
+	as, aok := a.Sys().(*syscall.Stat_t)
+	bs, bok := b.Sys().(*syscall.Stat_t)
+	if !aok || !bok {
+		return true
+	}
+	return as.Uid == bs.Uid && as.Gid == bs.Gid
 }
 
 func etcHash(p string) (string, error) {
@@ -459,6 +478,7 @@ func etcCopy(src, dst string) error {
 	if err != nil {
 		return err
 	}
+	uid, gid, hasOwner := etcOwner(info)
 	switch {
 	case info.Mode()&os.ModeSymlink != 0:
 		target, err := os.Readlink(src)
@@ -468,9 +488,28 @@ func etcCopy(src, dst string) error {
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			return err
 		}
-		return os.Symlink(target, dst)
+		if err := os.Symlink(target, dst); err != nil {
+			return err
+		}
+		if hasOwner {
+			if err := os.Lchown(dst, uid, gid); err != nil {
+				return err
+			}
+		}
+		return nil
 	case info.IsDir():
 		if err := os.MkdirAll(dst, info.Mode().Perm()); err != nil {
+			return err
+		}
+		if hasOwner {
+			if err := os.Chown(dst, uid, gid); err != nil {
+				return err
+			}
+		}
+		if err := os.Chmod(dst, info.Mode()); err != nil {
+			return err
+		}
+		if err := etcCopyXattr(src, dst); err != nil {
 			return err
 		}
 		entries, err := os.ReadDir(src)
@@ -484,7 +523,8 @@ func etcCopy(src, dst string) error {
 		}
 		return nil
 	case info.Mode().IsRegular():
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		dir := filepath.Dir(dst)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}
 		in, err := os.Open(src)
@@ -492,10 +532,14 @@ func etcCopy(src, dst string) error {
 			return err
 		}
 		defer in.Close()
-		out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode().Perm())
+		// Write beside the destination and rename, so a failed reset does not
+		// leave a half-written file under /etc.
+		out, err := os.CreateTemp(dir, ".deskos-etc-*")
 		if err != nil {
 			return err
 		}
+		tmp := out.Name()
+		defer os.Remove(tmp)
 		if _, err := io.Copy(out, in); err != nil {
 			out.Close()
 			return err
@@ -503,10 +547,51 @@ func etcCopy(src, dst string) error {
 		if err := out.Close(); err != nil {
 			return err
 		}
-		return os.Chmod(dst, info.Mode().Perm())
+		if hasOwner {
+			if err := os.Chown(tmp, uid, gid); err != nil {
+				return err
+			}
+		}
+		if err := os.Chmod(tmp, info.Mode()); err != nil {
+			return err
+		}
+		if err := etcCopyXattr(src, tmp); err != nil {
+			return err
+		}
+		return os.Rename(tmp, dst)
 	default:
 		return fmt.Errorf("%s: unsupported file type", src)
 	}
+}
+
+// etcOwner returns the uid and gid to restore.
+func etcOwner(info os.FileInfo) (int, int, bool) {
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, 0, false
+	}
+	return int(st.Uid), int(st.Gid), true
+}
+
+// etcCopyXattr preserves the SELinux label where the filesystem carries one.
+// A missing xattr, or a filesystem that does not support it, is not a failure.
+func etcCopyXattr(src, dst string) error {
+	size, err := syscall.Getxattr(src, "security.selinux", nil)
+	if err != nil || size == 0 {
+		return nil
+	}
+	buf := make([]byte, size)
+	n, err := syscall.Getxattr(src, "security.selinux", buf)
+	if err != nil {
+		return nil
+	}
+	if err := syscall.Setxattr(dst, "security.selinux", buf[:n], 0); err != nil {
+		if errors.Is(err, syscall.ENOTSUP) || errors.Is(err, syscall.EPERM) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func etcBackupDir(root string) (string, error) {
