@@ -362,7 +362,7 @@ func cmdRender(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	static, err := systemFiles(allRoots[0], allRoots[1:])
+	static, err := systemFiles(allRoots)
 	if err != nil {
 		return err
 	}
@@ -415,13 +415,13 @@ func cmdSBOM(args []string, stdout io.Writer) error {
 	return nil
 }
 
-// systemFiles loads the reviewed static base files from the Core root. An
-// organization root cannot add them: ADR 0030 makes this Core's reviewed tree,
-// not a general file or script facility. The files are returned to
-// containerfile.Render so they reach the generated manifest and a second render
-// into the same directory sees them.
-func systemFiles(coreRoot string, otherRoots []string) ([]containerfile.File, error) {
-	for _, root := range otherRoots {
+// systemFiles loads the reviewed static base files. Exactly one resource root
+// may carry the tree; with the embedded Core that is the materialized Core
+// root, and a second root that also has one is rejected. With --no-core the
+// caller passes the Core tree itself, so the tree may be in either argument.
+func systemFiles(roots []string) ([]containerfile.File, error) {
+	var candidates []string
+	for _, root := range roots {
 		info, err := os.Stat(root)
 		if err != nil {
 			return nil, err
@@ -429,23 +429,25 @@ func systemFiles(coreRoot string, otherRoots []string) ([]containerfile.File, er
 		if !info.IsDir() {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(root, "system_files")); err == nil {
-			return nil, fmt.Errorf("system_files is only read from the Core root; %s also has one", root)
+		dir := filepath.Join(root, "system_files")
+		if _, err := os.Stat(dir); err == nil {
+			if _, err := os.Stat(filepath.Join(root, "profiles/deskos-core.yaml")); err != nil {
+				return nil, fmt.Errorf("system_files is only allowed in the Core root, not %s", root)
+			}
+			candidates = append(candidates, dir)
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
 	}
-	dir := filepath.Join(coreRoot, "system_files")
-	if coreInfo, err := os.Stat(coreRoot); err != nil {
-		return nil, err
-	} else if !coreInfo.IsDir() {
+	if len(candidates) > 1 {
+		return nil, fmt.Errorf("system_files is defined in more than one resource root; keep it in the Core root only")
+	}
+	if len(candidates) == 0 {
 		return nil, nil
 	}
+	dir := candidates[0]
 	info, err := os.Stat(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
 	if !info.IsDir() {

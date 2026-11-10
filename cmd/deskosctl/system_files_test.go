@@ -9,6 +9,13 @@ import (
 
 func writeSystemFile(t *testing.T, root, rel, content string) {
 	t.Helper()
+	marker := filepath.Join(root, "profiles/deskos-core.yaml")
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(marker, []byte("apiVersion: core.deskos.org/v1alpha1\nkind: Profile\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	p := filepath.Join(root, "system_files", filepath.FromSlash(rel))
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		t.Fatal(err)
@@ -23,7 +30,7 @@ func TestSystemFiles(t *testing.T) {
 	writeSystemFile(t, root, "usr/lib/tmpfiles.d/zz-deskos-relabel.conf", "d /var/home 0755 root root -\n")
 	writeSystemFile(t, root, "usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf",
 		"[Service]\nExecStart=\nExecStart=/usr/sbin/fstrim --listed-in /proc/self/mountinfo\n")
-	files, err := systemFiles(root, nil)
+	files, err := systemFiles([]string{root})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,13 +44,13 @@ func TestSystemFiles(t *testing.T) {
 	}
 }
 
-func TestSystemFilesRejectsOrganizationRoots(t *testing.T) {
+func TestSystemFilesRejectsMoreThanOneRoot(t *testing.T) {
 	core := t.TempDir()
 	org := t.TempDir()
-	writeSystemFile(t, org, "usr/lib/systemd/system/gdm.service.d/50-org.conf",
-		"[Service]\nExecStartPre=/bin/sh -c true\n")
-	if _, err := systemFiles(core, []string{org}); err == nil {
-		t.Fatal("an organization system_files tree was accepted")
+	writeSystemFile(t, core, "usr/lib/tmpfiles.d/core.conf", "d /var/home 0755 root root -\n")
+	writeSystemFile(t, org, "usr/lib/tmpfiles.d/org.conf", "d /var/home 0755 root root -\n")
+	if _, err := systemFiles([]string{core, org}); err == nil {
+		t.Fatal("two system_files roots were accepted")
 	}
 }
 
@@ -55,7 +62,7 @@ func TestSystemFilesRejectsAnythingElse(t *testing.T) {
 	} {
 		root := t.TempDir()
 		writeSystemFile(t, root, rel, "x")
-		if _, err := systemFiles(root, nil); err == nil {
+		if _, err := systemFiles([]string{root}); err == nil {
 			t.Errorf("%s was accepted", rel)
 		}
 	}
@@ -63,6 +70,13 @@ func TestSystemFilesRejectsAnythingElse(t *testing.T) {
 
 func TestSystemFilesRejectsSymlinks(t *testing.T) {
 	root := t.TempDir()
+	marker := filepath.Join(root, "profiles/deskos-core.yaml")
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(marker, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	dir := filepath.Join(root, "system_files", "usr/lib/tmpfiles.d")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -74,7 +88,7 @@ func TestSystemFilesRejectsSymlinks(t *testing.T) {
 	if err := os.Symlink(target, filepath.Join(dir, "link.conf")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := systemFiles(root, nil); err == nil {
+	if _, err := systemFiles([]string{root}); err == nil {
 		t.Error("a symlink was accepted")
 	}
 }
@@ -89,7 +103,7 @@ func TestSystemFilesRejectsUnsafeTmpfilesTypes(t *testing.T) {
 	} {
 		root := t.TempDir()
 		writeSystemFile(t, root, "usr/lib/tmpfiles.d/evil.conf", line)
-		if _, err := systemFiles(root, nil); err == nil {
+		if _, err := systemFiles([]string{root}); err == nil {
 			t.Errorf("tmpfiles line %q was accepted", line)
 		}
 	}
@@ -107,7 +121,7 @@ func TestSystemFilesRejectsUnsafeDropinKeys(t *testing.T) {
 	} {
 		root := t.TempDir()
 		writeSystemFile(t, root, "usr/lib/systemd/system/gdm.service.d/50-org.conf", "[Service]\n"+line+"\n")
-		if _, err := systemFiles(root, nil); err == nil {
+		if _, err := systemFiles([]string{root}); err == nil {
 			t.Errorf("drop-in key %q was accepted", line)
 		}
 	}
@@ -117,7 +131,7 @@ func TestSystemFilesAllowExecStartReplacement(t *testing.T) {
 	root := t.TempDir()
 	writeSystemFile(t, root, "usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf",
 		"[Service]\nExecStart=\nExecStart=/usr/sbin/fstrim --listed-in /proc/self/mountinfo\n")
-	if _, err := systemFiles(root, nil); err != nil {
+	if _, err := systemFiles([]string{root}); err != nil {
 		t.Fatal(err)
 	}
 }
