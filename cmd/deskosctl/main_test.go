@@ -91,10 +91,21 @@ func TestRender(t *testing.T) {
 	if code != exitOK {
 		t.Fatalf("exit %d: %s", code, errOut)
 	}
-	for _, f := range []string{"Containerfile", "plan.json", "generated-manifest.json", "rootfs/etc/dconf/db/distro.d/50-deskos"} {
+	for _, f := range []string{"Containerfile", "plan.json", "generated-manifest.json", "rootfs/etc/dconf/db/distro.d/50-deskos", "rootfs/usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf"} {
 		if _, err := os.Stat(filepath.Join(out, f)); err != nil {
 			t.Errorf("missing %s", f)
 		}
+	}
+	manifest, err := os.ReadFile(filepath.Join(out, "generated-manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(manifest, []byte(`"path": "rootfs/usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf"`)) {
+		t.Errorf("generated manifest does not list the system_files tree:\n%s", manifest)
+	}
+	// A second render into the same directory must see the same files.
+	if code, _, errOut := runCLI("render", "--workstation", "deskos-core-centos-stream-10", "--backend", "containerfile", "--output", out); code != exitOK {
+		t.Fatalf("second render: exit %d: %s", code, errOut)
 	}
 	code, _, errOut = runCLI("render", "--workstation", "deskos-core-centos-stream-10", "--backend", "other", "--output", out)
 	if code != exitUsage {

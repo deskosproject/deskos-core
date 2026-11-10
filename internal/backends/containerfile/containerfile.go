@@ -65,8 +65,11 @@ type File struct {
 	Data []byte
 }
 
-// Render produces the complete build context in canonical order.
-func Render(p *plan.Plan) ([]File, error) {
+// Render produces the complete build context in canonical order. Extra files
+// are static build-context inputs, such as the reviewed system_files tree; they
+// are added before the manifest is generated so a second render into the same
+// directory recognises them.
+func Render(p *plan.Plan, extra ...File) ([]File, error) {
 	mgr, err := managerFacts(p.Platform.PackageManager)
 	if err != nil {
 		return nil, err
@@ -219,6 +222,13 @@ func Render(p *plan.Plan) ([]File, error) {
 
 	r.add(ContainerfilePath, 0o644, containerfile(p, r.hasRepos, r.hasRootfs, mgr))
 
+	for _, f := range extra {
+		if strings.HasPrefix(f.Path, rootfsDir+"/") {
+			r.hasRootfs = true
+		}
+		r.files = append(r.files, f)
+	}
+
 	sort.Slice(r.files, func(i, j int) bool { return r.files[i].Path < r.files[j].Path })
 	for i := 1; i < len(r.files); i++ {
 		if r.files[i].Path == r.files[i-1].Path {
@@ -274,6 +284,31 @@ func parseMode(s string) fs.FileMode {
 		return 0o644
 	}
 	return fs.FileMode(m)
+}
+
+// labelValue quotes a LABEL value without letting the Dockerfile expand $VARS
+// or mangle non-ASCII text.
+func labelValue(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '"':
+			b.WriteString(`\"`)
+		case '$':
+			b.WriteString(`\$`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 func manifestFile(p *plan.Plan, files []File) ([]byte, error) {
@@ -1169,7 +1204,7 @@ func containerfile(p *plan.Plan, hasRepos, hasRootfs bool, mgr pkgManager) []byt
 		if i == 0 {
 			sep = ""
 		}
-		w("%s %s=%s", sep, l.Name, strconv.Quote(l.Value))
+		w("%s %s=%s", sep, l.Name, labelValue(l.Value))
 	}
 	w("\n")
 	return []byte(b.String())

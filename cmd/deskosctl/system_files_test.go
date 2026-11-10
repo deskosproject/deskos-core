@@ -5,25 +5,25 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/deskosproject/deskos-core/internal/backends/containerfile"
 )
 
-func TestAppendSystemFiles(t *testing.T) {
-	root := t.TempDir()
-	for _, rel := range []string{
-		"usr/lib/tmpfiles.d/zz-deskos-relabel.conf",
-		"usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf",
-	} {
-		p := filepath.Join(root, "system_files", filepath.FromSlash(rel))
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, []byte(rel+"\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
+func writeSystemFile(t *testing.T, root, rel, content string) {
+	t.Helper()
+	p := filepath.Join(root, "system_files", filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+		t.Fatal(err)
 	}
-	files, err := appendSystemFiles(nil, []string{root})
+	if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSystemFiles(t *testing.T) {
+	root := t.TempDir()
+	writeSystemFile(t, root, "usr/lib/tmpfiles.d/zz-deskos-relabel.conf", "d /var/home 0755 root root -\n")
+	writeSystemFile(t, root, "usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf",
+		"[Service]\nExecStart=\nExecStart=/usr/sbin/fstrim --listed-in /proc/self/mountinfo\n")
+	files, err := systemFiles(root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,49 +37,87 @@ func TestAppendSystemFiles(t *testing.T) {
 	}
 }
 
-func TestAppendSystemFilesRejectsAnythingElse(t *testing.T) {
+func TestSystemFilesRejectsOrganizationRoots(t *testing.T) {
+	core := t.TempDir()
+	org := t.TempDir()
+	writeSystemFile(t, org, "usr/lib/systemd/system/gdm.service.d/50-org.conf",
+		"[Service]\nExecStartPre=/bin/sh -c true\n")
+	if _, err := systemFiles(core, []string{org}); err == nil {
+		t.Fatal("an organization system_files tree was accepted")
+	}
+}
+
+func TestSystemFilesRejectsAnythingElse(t *testing.T) {
 	for _, rel := range []string{
 		"usr/lib/systemd/system/evil.service",
 		"usr/bin/evil",
 		"usr/lib/tmpfiles.d/nested/evil.conf",
 	} {
 		root := t.TempDir()
-		p := filepath.Join(root, "system_files", filepath.FromSlash(rel))
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := appendSystemFiles(nil, []string{root}); err == nil {
+		writeSystemFile(t, root, rel, "x")
+		if _, err := systemFiles(root, nil); err == nil {
 			t.Errorf("%s was accepted", rel)
 		}
 	}
 }
 
-func TestAppendSystemFilesRejectsSymlinksAndDuplicates(t *testing.T) {
+func TestSystemFilesRejectsSymlinks(t *testing.T) {
 	root := t.TempDir()
 	dir := filepath.Join(root, "system_files", "usr/lib/tmpfiles.d")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	target := filepath.Join(root, "target.conf")
-	if err := os.WriteFile(target, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(target, []byte("d /tmp 0755 root root -\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(target, filepath.Join(dir, "link.conf")); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := appendSystemFiles(nil, []string{root}); err == nil {
+	if _, err := systemFiles(root, nil); err == nil {
 		t.Error("a symlink was accepted")
 	}
-	if err := os.Remove(filepath.Join(dir, "link.conf")); err != nil {
-		t.Fatal(err)
+}
+
+func TestSystemFilesRejectsUnsafeTmpfilesTypes(t *testing.T) {
+	for _, line := range []string{
+		"f /etc/motd 0644 root root - hello\n",
+		"w /etc/motd - - - - hello\n",
+		"L /etc/motd - - - - /tmp/x\n",
+		"C /etc/motd 0644 root root - /tmp/x\n",
+		"c /dev/x 0600 root root - 1 3\n",
+	} {
+		root := t.TempDir()
+		writeSystemFile(t, root, "usr/lib/tmpfiles.d/evil.conf", line)
+		if _, err := systemFiles(root, nil); err == nil {
+			t.Errorf("tmpfiles line %q was accepted", line)
+		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "dup.conf"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
+}
+
+func TestSystemFilesRejectsUnsafeDropinKeys(t *testing.T) {
+	for _, line := range []string{
+		"ExecStartPre=/bin/sh -c true",
+		"ExecStopPost=/bin/sh -c true",
+		"Environment=LD_PRELOAD=/tmp/x.so",
+		"EnvironmentFile=/tmp/env",
+		"StandardInput=file:/tmp/x",
+		"User=root",
+		"LoadCredential=x:/tmp/x",
+	} {
+		root := t.TempDir()
+		writeSystemFile(t, root, "usr/lib/systemd/system/gdm.service.d/50-org.conf", "[Service]\n"+line+"\n")
+		if _, err := systemFiles(root, nil); err == nil {
+			t.Errorf("drop-in key %q was accepted", line)
+		}
 	}
-	if _, err := appendSystemFiles([]containerfile.File{{Path: "rootfs/usr/lib/tmpfiles.d/dup.conf"}}, []string{root}); err == nil {
-		t.Error("a duplicate destination was accepted")
+}
+
+func TestSystemFilesAllowExecStartReplacement(t *testing.T) {
+	root := t.TempDir()
+	writeSystemFile(t, root, "usr/lib/systemd/system/fstrim.service.d/10-sysroot.conf",
+		"[Service]\nExecStart=\nExecStart=/usr/sbin/fstrim --listed-in /proc/self/mountinfo\n")
+	if _, err := systemFiles(root, nil); err != nil {
+		t.Fatal(err)
 	}
 }
