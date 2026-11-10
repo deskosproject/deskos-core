@@ -17,7 +17,10 @@ are reported, not compared.
 The declared SBOM is CycloneDX 1.5 from the same Plan as `plan` and `render`. It
 carries no timestamp and no `serialNumber`, so identical resources give
 byte-identical output. It lists the base image, RPM package names, RPM files,
-verified binaries, system Flatpaks and trust anchors.
+verified binaries, system Flatpaks and trust anchors. It does not expand the
+platform's package-group closure or list Flatpak remotes: the installed SBOM and
+the comparison cover the actual package closure, and a remote is configuration,
+not a component.
 
 ```bash
 deskosctl sbom ./examples/layers \

@@ -424,8 +424,8 @@ The [review's](future-backlog.md) P2 items, with what exists and what is missing
 ## Release contract
 
 Core and the downstream organization already share the shape: build one digest,
-scan it with a reviewed exception record, boot it, sign it, publish it under an
-immutable `:<commit>`, move `:candidate`, and promote `:stable` by digest with an
+scan it with a reviewed exception record, boot it, sign it, publish it under a
+`:<commit>` tag, move `:candidate`, and promote `:stable` by digest with an
 approval record. The installers follow the image digest.
 
 - **Done 2026-11-05:** the installer repository ends in `-installer`, the same
