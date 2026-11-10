@@ -212,17 +212,15 @@ jobs:
 
       - name: Install Syft and Grype (pinned)
         env:
-          # The release tag, and the commit install.sh is fetched at: a moved
-          # tag cannot change the installer, and the installer verifies the
-          # release checksums of the binaries it downloads.
+          # The release tag. The archive it published is checked against the
+          # release's own checksum file, so nothing from the network is executed
+          # as a script.
           SYFT_VERSION: v1.55.0
-          SYFT_INSTALL: b254e6d92f28c3868a755f62fb3ca8f26e9fee76
           GRYPE_VERSION: v0.120.1
-          GRYPE_INSTALL: 6f8d854af29d3a3086b11a84afa51554a2a245fe
         run: |
           set -euo pipefail
           # GitHub's release CDN answers 504 under load; a release must not fail
-          # because a tool download did. Retry the installer, not the gate.
+          # because a tool download did. Retry the download, not the gate.
           retry() {
             local n=0
             until "$@"; do
@@ -232,15 +230,25 @@ jobs:
               sleep $((n * 15))
             done
           }
-          install_syft() {
-            curl -sSfL "https://raw.githubusercontent.com/anchore/syft/$SYFT_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$SYFT_VERSION"
+          install_tool() {
+            local name="$1" version="$2" v="${2#v}"
+            local dir base archive
+            dir="$(mktemp -d)"
+            base="https://github.com/anchore/$name/releases/download/$version"
+            archive="${name}_${v}_linux_amd64.tar.gz"
+            retry curl -sSfL -o "$dir/$archive" "$base/$archive"
+            retry curl -sSfL -o "$dir/checksums.txt" "$base/${name}_${v}_checksums.txt"
+            ( cd "$dir" && grep " $archive\$" checksums.txt \
+                | sha256sum --check --strict --quiet - )
+            tar -xzf "$dir/$archive" -C "$dir" "$name"
+            install -m 0755 "$dir/$name" "$HOME/.local/bin/$name"
           }
-          install_grype() {
-            curl -sSfL "https://raw.githubusercontent.com/anchore/grype/$GRYPE_INSTALL/install.sh" | sh -s -- -b "$HOME/.local/bin" "$GRYPE_VERSION"
-          }
-          retry install_syft
-          retry install_grype
+          mkdir -p "$HOME/.local/bin"
+          install_tool syft "$SYFT_VERSION"
+          install_tool grype "$GRYPE_VERSION"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          syft version
+          grype version
 
       - name: Installed SBOM (Syft)
         env:
