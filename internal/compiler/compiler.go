@@ -77,6 +77,28 @@ func (c *Compiler) Load(roots []string) (*compose.Catalog, error) {
 	}
 	cat, err := compose.NewCatalog(valid)
 	errs.Add(err)
+	if cat != nil {
+		for _, res := range cat.AllResources() {
+			p, lookupErr := c.Registry.Lookup(res.GVK())
+			if lookupErr != nil {
+				continue
+			}
+			ref, ok := p.(registry.Referencer)
+			if !ok {
+				continue
+			}
+			for _, target := range ref.References(res) {
+				gvk, resolveErr := c.Registry.ResolveRef(target)
+				if resolveErr != nil {
+					errs.Add(model.Errorf(res, "%s: %v", target, resolveErr))
+					continue
+				}
+				if cat.Get(gvk, target.Name) == nil {
+					errs.Add(model.Errorf(res, "%s references %s, which is not defined", res.ID(), target))
+				}
+			}
+		}
+	}
 	return cat, errs.Err()
 }
 

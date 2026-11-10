@@ -380,6 +380,15 @@ func TestProfileResourceOrderIndependence(t *testing.T) {
 	}
 }
 
+func TestUnusedProfileReferenceIsRejected(t *testing.T) {
+	dir := base.with(fixture{
+		"unused.yaml": profile("unused", "organization", "PackageSet/nope"),
+		"ws.yaml":     workstation("ws"),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "PackageSet/nope", "not defined")
+}
+
 func TestProfileRejectsTheSameResourceTwice(t *testing.T) {
 	core := `apiVersion: core.deskos.org/v1alpha1
 kind: Profile
@@ -1262,6 +1271,7 @@ func TestBootWatermark(t *testing.T) {
 		"core.yaml":     profile("core", "foundation", "BootProfile/core"),
 		"b-core.yaml":   boot("core", "  splash: graphical\n  watermark: core.png\n"),
 		"org.yaml":      profile("org", "organization", "BootProfile/org"),
+		"b-org.yaml":    boot("org", "  splash: graphical\n  watermark: org.png\n"),
 	}
 	installed := func(p *plan.Plan) string {
 		var out []string

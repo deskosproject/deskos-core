@@ -53,6 +53,24 @@ func (c *Catalog) All(gvk model.GVK) []*model.Resource {
 	return out
 }
 
+// All returns every resource sorted by GVK and name.
+func (c *Catalog) AllResources() []*model.Resource {
+	var out []*model.Resource
+	for _, m := range c.byGVK {
+		for _, r := range m {
+			out = append(out, r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		a, b := out[i], out[j]
+		if a.GVK() != b.GVK() {
+			return a.GVK().String() < b.GVK().String()
+		}
+		return a.Metadata.Name < b.Metadata.Name
+	})
+	return out
+}
+
 // ProfileUse is a profile selected by the workstation.
 type ProfileUse struct {
 	Name   string
