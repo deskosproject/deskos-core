@@ -1,6 +1,7 @@
 package system
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -118,10 +119,13 @@ func certificateSubject(data []byte) (string, error) {
 		var block *pem.Block
 		block, rest = pem.Decode(rest)
 		if block == nil {
+			if len(bytes.TrimSpace(rest)) > 0 {
+				return "", fmt.Errorf("must contain only PEM CERTIFICATE blocks; found data that is not a PEM block")
+			}
 			break
 		}
 		if block.Type != "CERTIFICATE" {
-			continue
+			return "", fmt.Errorf("contains a %q block; only PEM CERTIFICATE blocks are allowed", block.Type)
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {

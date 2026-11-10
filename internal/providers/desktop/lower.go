@@ -907,9 +907,33 @@ func (l *lowering) installAsset(a Asset, prov []model.Provenance) string {
 	return "file://" + dest
 }
 
-// gvString renders a GVariant text-format string.
+// gvString renders a GVariant text-format string. A literal newline inside the
+// quotes makes dconf compile fail, so control characters are escaped.
 func gvString(s string) string {
-	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(s) + "'"
+	var b strings.Builder
+	b.WriteByte('\'')
+	for _, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '\'':
+			b.WriteString(`\'`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		default:
+			if r < 0x20 || r == 0x7f {
+				fmt.Fprintf(&b, `\u%04x`, r)
+			} else {
+				b.WriteRune(r)
+			}
+		}
+	}
+	b.WriteByte('\'')
+	return b.String()
 }
 
 func gvStrings(list []string) string {
