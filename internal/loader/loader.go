@@ -32,6 +32,9 @@ func Load(roots []string) ([]*model.Resource, error) {
 	for _, root := range roots {
 		res, err := loadRoot(root)
 		errs.Add(err)
+		if err == nil && len(res) == 0 {
+			errs.Add(fmt.Errorf("resource root %s: no resources found", root))
+		}
 		out = append(out, res...)
 	}
 	sort.SliceStable(out, func(i, j int) bool {
@@ -51,6 +54,10 @@ func loadRoot(root string) ([]*model.Resource, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		return nil, err
+	}
+	abs, err = filepath.EvalSymlinks(abs)
+	if err != nil {
+		return nil, fmt.Errorf("resource root %s: %w", root, err)
 	}
 	info, err := os.Stat(abs)
 	if err != nil {

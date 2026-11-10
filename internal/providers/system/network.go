@@ -264,12 +264,12 @@ func networkKeyfile(np NetworkProfile) string {
 	fmt.Fprintf(&b, "autoconnect-priority=%d\n", np.Priority)
 	if np.Type == "wifi" {
 		b.WriteString("\n[wifi]\n")
-		fmt.Fprintf(&b, "ssid=%s\n", np.SSID)
+		fmt.Fprintf(&b, "ssid=%s\n", keyfileEscape(np.SSID))
 	}
 	b.WriteString("\n[802-1x]\n")
 	fmt.Fprintf(&b, "eap=%s;\n", np.EAP)
 	if np.Identity != "" {
-		fmt.Fprintf(&b, "identity=%s\n", np.Identity)
+		fmt.Fprintf(&b, "identity=%s\n", keyfileEscape(np.Identity))
 	}
 	if np.Phase2 != "" {
 		fmt.Fprintf(&b, "phase2-auth=%s\n", np.Phase2)
@@ -289,8 +289,36 @@ func networkKeyfile(np NetworkProfile) string {
 		b.WriteString("system-ca-certs=true\n")
 	}
 	if np.ServerName != "" {
-		fmt.Fprintf(&b, "domain-suffix-match=%s\n", np.ServerName)
+		fmt.Fprintf(&b, "domain-suffix-match=%s\n", keyfileEscape(np.ServerName))
 	}
 	b.WriteString("\n[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n")
+	return b.String()
+}
+
+// keyfileEscape renders a value for a GLib key file. A backslash, a newline or
+// a leading space would otherwise change the value or break the file; PEAP
+// identities such as DOMAIN\user are common.
+func keyfileEscape(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		switch r {
+		case '\\':
+			b.WriteString(`\\`)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '\t':
+			b.WriteString(`\t`)
+		case ' ':
+			if i == 0 {
+				b.WriteString(`\s`)
+			} else {
+				b.WriteRune(r)
+			}
+		default:
+			b.WriteRune(r)
+		}
+	}
 	return b.String()
 }

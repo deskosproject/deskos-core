@@ -39,8 +39,10 @@ and this file is wrong.
     yet bit-for-bit reproducible. RHEL composition and rendering are covered by
     tests; the entitled RHEL build and boot were validated once on the retired
     factory host, and that validation now runs in a downstream organization's
-    repository. The workstation E2E is partial: one AT-SPI step on CS10
-    (`docs/architecture.md`, "Validation status").
+    repository. The workstation E2E is partial: the session check exercises four
+    AT-SPI scenarios on CentOS Stream 10 and Fedora 45, and the remaining
+    scenarios and bare-metal validation are open (`docs/architecture.md`,
+    "Validation status").
 11. **AI is not part of compiler semantics.** Compilation works with no model, no
     network and no SaaS API, and identical inputs keep producing identical plans
     and contexts. No kind, provider, Plan IR or backend may depend on a model

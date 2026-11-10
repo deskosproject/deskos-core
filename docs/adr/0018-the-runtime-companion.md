@@ -39,6 +39,12 @@ make three different promises.
 **What it does not have:** no recipe catalog, nothing that writes to a user's home, no layer crossing, no
 reconciliation against the plan, no network beyond `bootc`, and no dependence on a model.
 
+**Amended 2026-11-10.** The command set has grown beyond three: `report`, `check`, `status`,
+`update`, `rollback`, `etc` and `window`. `update --flatpak` runs `flatpak update --system`, and
+the firmware check runs `fwupdmgr get-updates`; the network boundary is therefore wider than
+`bootc`. The promises above still hold: the companion does not reconcile, does not write a home and
+does not depend on a model.
+
 ### How it gets onto a machine
 
 `deskos` is a **pinned `BinaryArtifact` in Core's foundation**: every Core image

@@ -68,10 +68,10 @@ equivalents); with `automatic: false` the service exists but no timer does, so
 `deskos update` runs it on demand ([system.md](resources/system.md#updatepolicy)).
 
 With `image.requireACPower`, a udev rule starts the staging service when AC
-comes online, and the service still checks `ConditionACPower`. The service first
-runs `deskos window`, which checks the local weekday and `at`/window (and
+comes online, and the service still checks `ConditionACPower`. The apply service
+first runs `deskos window`, which checks the local weekday and `at`/window (and
 optional IANA timezone), so a timer that fires after suspend outside the
-interval does nothing.
+interval does nothing. The staging service does not check the window.
 
 An exact `at` allows five minutes of grace, a `window` its full duration; no
 active-session check exists, because the window is the contract.
@@ -81,7 +81,7 @@ active-session check exists, because the window is the contract.
 | Situation | Result |
 |---|---|
 | automatic on, on AC power, at the daily run | stages the next image; the running session is untouched |
-| automatic on, on battery when the timer fires | `ConditionACPower` skips the service; nothing is staged. There is no catch-up when AC power returns: the next timer run does it |
+| automatic on, on battery when the timer fires | `ConditionACPower` skips the service; nothing is staged. A udev rule starts the staging service when AC comes online; the next timer run would also retry |
 | automatic off | no timer is installed; `deskos update` or `systemctl start deskos-image-update.service` stages on demand |
 | staged, `image.apply` off or not configured | the image waits; it applies at the next reboot, whenever the person chooses |
 | `image.apply` on, staged, inside the declared window | `deskos window` passes, the service runs `bootc upgrade --apply` and reboots |

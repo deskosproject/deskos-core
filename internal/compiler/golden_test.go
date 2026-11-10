@@ -139,10 +139,15 @@ func TestGoldenDebianSynthetic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	found := false
 	for _, f := range files {
 		if f.Path == containerfile.ContainerfilePath {
+			found = true
 			golden(t, "debian-synthetic.Containerfile", f.Data)
 		}
+	}
+	if !found {
+		t.Fatal("render produced no Containerfile")
 	}
 }
 
@@ -175,10 +180,15 @@ func TestGoldenContainerfiles(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		found := false
 		for _, f := range files {
 			if f.Path == containerfile.ContainerfilePath {
+				found = true
 				golden(t, tc.ws+".Containerfile", f.Data)
 			}
+		}
+		if !found {
+			t.Fatalf("%s: render produced no Containerfile", tc.ws)
 		}
 	}
 }

@@ -33,7 +33,7 @@ reboot, and `bootc rollback` swaps back.
 2. a rollback that boots the wrong deployment, or loses the one to keep;
 3. machine state under `/var` that does not survive either transition;
 4. an interrupted upgrade that leaves a machine unable to boot or retry;
-5. `deskos check`/`report` describing the wrong image after a transition.
+5. the booted deployment identity after a transition, read from `bootc status`.
 
 ## Shape
 
@@ -78,6 +78,9 @@ upgrading to B after the rollback stages nothing.
 - **Automatic recovery.** Step 4 recovers with `bootc rollback`; bootc keeps the
   previous deployment but does not switch to it on its own. The driver recovers
   a non-booting candidate by setting the previous GRUB entry from the host.
+- **Torn writes.** The post-deployment marker runs `sync` before it signals, so
+  the test models a guest-RAM loss after the finalize has reached the disk. It
+  does not prove that a write torn before the flush is recoverable.
 - **Application data.** `/var` and local `/etc` edits survive a rollback because
   neither is snapshotted. An upgrade that rewrites `/var` is not undone by
   rolling back; the operator restores from their own backup. Flatpak

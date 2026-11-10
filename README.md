@@ -70,7 +70,7 @@ toolchain needed. Every kind, with an example, is in
 
 ## What the build checks
 
-Every weekly build runs this sequence and publishes nothing unless all of it
+Every weekly publish runs this sequence and publishes nothing unless all of it
 passes:
 
 | Check | What it proves |
@@ -80,9 +80,14 @@ passes:
 | Boot | QEMU reaches a graphical screen and shuts down |
 | Session | dconf, extensions, favorites, wallpaper and binaries match the Plan; the desktop exposes its applications and opens one |
 | First boot | GNOME Initial Setup is the session and no account exists |
+| Supply chain | installed SBOM, CVE scan, signature and provenance on the digest |
+
+These run on their own schedules and do **not** gate a publish:
+
+| Check | What it proves |
+|---|---|
 | Update and rollback | a real install moves A to B and back, survives a power loss during the deployment write and after the staged entry is active, and recovers a candidate that cannot boot |
 | Domain login | a throwaway FreeIPA realm and a Samba AD domain, joined at first boot |
-| Supply chain | installed SBOM, CVE scan, signature and provenance on the digest |
 
 Results are keyed by digest at <https://evidence.deskos.org> and summarised at
 <https://deskos.org/evidence/>. Boot, session and first-boot checks also run on
@@ -92,15 +97,16 @@ every merge to `main` that can change an image; screenshots are in
 Update and rollback are tested on a real installed disk, not inferred from unit
 tests: the lifecycle run stages B, boots it, rolls back to A, injects a power
 loss in the deployment write and again after the staged entry is active, and
-recovers a candidate that cannot boot. It keeps deployment identities, `/var`
-and `/etc` state, and per-boot journals. See
+recovers a candidate that cannot boot. Recovery is host-side, not automatic:
+the driver edits the previous GRUB entry. The run keeps deployment identities,
+`/var` and `/etc` state, and per-boot journals. See
 [design/lifecycle.md](docs/design/lifecycle.md).
 
 ## Platforms
 
 | Platform | Today |
 |---|---|
-| CentOS Stream 10 | published image, installer ISO, all checks on every weekly build |
+| CentOS Stream 10 | published image, installer ISO; boot, session and first-boot checks gate publication; update/rollback and domain login run separately |
 | RHEL 10 | composes and renders here; the entitled build runs in the organization that owns the subscription and is never published |
 | AlmaLinux 10 | published image; Core publishes no installer |
 | Fedora 45 | published image; Core publishes no installer, a downstream organization does |

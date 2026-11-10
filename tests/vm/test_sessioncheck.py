@@ -805,10 +805,10 @@ class PlanFontsTest(unittest.TestCase):
         self.assertTrue(self.family_check(values, "Noto Sans")["pass"])
 
     def test_a_list_that_could_not_be_read_is_not_a_difference(self):
-        # No read is not a family that differs: the checker reports the read that
-        # did not happen and does not attribute a missing font to the image.
+        # No read is not a family that differs: it is reported, and the run does
+        # not get a pass from a read that never happened.
         c = self.family_check(GOOD, "Noto Sans")
-        self.assertTrue(c["pass"])
+        self.assertFalse(c["pass"])
         self.assertTrue(c["skipped"])
         self.assertIn("could not be read here", c["detail"])
         self.assertEqual(c["unread"], ["the family list"])
@@ -872,9 +872,9 @@ class PlanNetworkProfilesTest(unittest.TestCase):
         self.assertFalse(c["pass"])
         self.assertIn("not among the 1 connections", c["detail"])
 
-    def test_a_list_that_could_not_be_read_is_not_a_difference(self):
+    def test_a_list_that_could_not_be_read_fails_the_gate(self):
         c = self.profile_check(GOOD)
-        self.assertTrue(c["pass"])
+        self.assertFalse(c["pass"])
         self.assertTrue(c["skipped"])
         self.assertEqual(c["unread"], ["the connection list"])
 

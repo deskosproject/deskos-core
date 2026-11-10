@@ -59,6 +59,23 @@ class GalleryTest(unittest.TestCase):
             self.assertTrue((out / "fedora-45-session.png").is_file())
             self.assertTrue((out / "manifest.json").is_file())
 
+    def test_frame_path_escape_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "artifacts"
+            root.mkdir()
+            frames = [
+                {"phase": "boot", "class": "splash", "file": "frames/splash.png"},
+                {"phase": "boot", "class": "graphical", "file": "frames/session.png"},
+            ]
+            path = artifact(root, "vm-evidence-core-fedora-45", 1, frames)
+            outside = root / "outside.png"
+            outside.write_bytes(b"png")
+            summary = json.loads((path / "session" / "summary.json").read_text())
+            summary["frames"][0]["file"] = "../../outside.png"
+            (path / "session" / "summary.json").write_text(json.dumps(summary))
+            with self.assertRaises(SystemExit):
+                gallery.build(root, Path(tmp) / "out")
+
     def test_missing_platforms_do_not_write_a_manifest_entry(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "artifacts"

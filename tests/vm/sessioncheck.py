@@ -2365,7 +2365,7 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         for f in families:
             name = f"font family {f['family']} is installed"
             if raw is None:
-                check(name, True, "the families the image carries could not be read here",
+                check(name, False, "the families the image carries could not be read here",
                       skipped=True, unread=["the family list"])
             elif f["family"].lower() in carried:
                 check(name, True,
@@ -2383,7 +2383,7 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         listed = {p.strip() for p in (raw or "").split("|") if p.strip()}
         check_name = f"network profile {name} is loaded by NetworkManager"
         if raw is None:
-            check(check_name, True, "the connections NetworkManager lists could not be read here",
+            check(check_name, False, "the connections NetworkManager lists could not be read here",
                   skipped=True, unread=["the connection list"])
         elif name in listed:
             check(check_name, True,
@@ -2477,7 +2477,7 @@ def evaluate(values, plan, journal="", skel_rels=(), offline=False, join_user=No
         # it is a download this run did not wait out.
         still_running = any(s in (values.get("flatpak_preinstall") or "")
                             for s in ("active", "activating"))
-        check("declared system Flatpaks are installed", not missing or still_running,
+        check("declared system Flatpaks are installed", not missing,
               f"missing={','.join(missing) or 'none'}; preinstall={values.get('flatpak_preinstall')}",
               skipped=bool(missing) and still_running,
               unread=["the Flatpak list"] if missing and still_running else None)

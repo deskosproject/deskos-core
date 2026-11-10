@@ -152,12 +152,7 @@ honest split, and the ADR does not hide it behind "the fleet supplies it".
 
 ## Open questions
 
-1. **Identity**: leave it to the fleet (this ADR), or allow a machine-account
-   identity that the fleet overrides? The first is honest, the second is
-   convenient, and only one of them keeps the image free of identity.
-2. **EAP-TLS**: a client certificate and its private key are per machine. The
-   profile can name paths; whether the image may place the certificate (public)
-   and refuse the key is the same question as identity.
-3. **Scope of the first slice**: ethernet and Wi-Fi 802.1X only, or also a plain
-   Wi-Fi PSK profile, which is a secret by definition and would have to be
-   agent-owned too.
+**Resolved 2026-11-10.** Identity stays with the fleet; the image carries no
+machine account. EAP-TLS names certificate and key paths, and the image refuses
+the private key. The first slice is 802.1X ethernet and Wi-Fi; a plain Wi-Fi PSK
+is a secret by definition and stays agent-owned.

@@ -7,13 +7,15 @@ Required status checks are a GitHub setting outside the repository.
 | Workflow | Trigger | Proves | Keeps |
 |---|---|---|---|
 | `checks.yml` | pull request, `main`, called by release | resources validate and render deterministically | job log |
+| `docs-deploy.yml` | docs/website changes; `workflow_run` of a main push; dispatch | the docs site builds, the sidebar has no dead entries, and the QA gallery refreshes from a main `image-bootcheck` push | Pages artifact, run log |
+| `identity-ad-trust-container.yml` | daily 05:43 UTC; dispatch; identity fixture changes | a Samba AD trust with FreeIPA resolves in both directions and an AD user logs in at GDM | summary, frames |
 | `artifacts.yml` | pull request, `main`, dispatch | declared URLs resolve and bytes match their checksums; repositories look like repositories | job log and summary |
-| `image-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
+| `image-bootcheck.yml` | pull request/`main` when resources, examples, code, schemas or the harness change; dispatch | the CentOS Stream 10 and Fedora 45 workstations build into QCOW2 and pass boot, session and first-boot checks | `bootcheck`, `session`, `firstboot`, failed-boot journal, frames, serial |
 | `image-publish.yml` | Mondays 06:17 UTC; dispatch with `platform=all` or one platform | a platform builds, scans, compares declared and installed SBOMs, boots, and on the schedule (or a `publish=true` dispatch from `main`) pushes, signs and attests one digest | SBOMs, Grype report, digest, cosign verification, provenance, Plan, records directory |
 | `installer-build.yml` | called by the weekly build; dispatch | the installer for a published digest is built, signed and tagged `sha256-<image digest>`; nothing is built from `main` | artifact digest, `iso.sha256`, cosign verification |
 | `promotion.yml` | the weekly build's success (`workflow_run`); dispatch | `:stable` moves only to a digest whose signature and every stored record verify, with an approval record | approval record, job log |
 | `release-watchdog.yml` | daily 09:17 UTC; dispatch | `:stable` is not older than eight days, and the weekly build is dispatched when it is | job log |
-| `lifecycle-test.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt a download and retry, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
+| `lifecycle-test.yml` | Mondays 04:17 UTC; dispatch | install, stage B, boot B, roll back to A, interrupt the deployment write and the post-deployment window, fail a candidate and recover the previous entry | `lifecycle.json`, summary, serial logs, one journal per boot |
 | `installer-test.yml` | dispatch | the test-only ISO installs unattended and writes its completion marker | serial log, frames, summary |
 | `release.yml` | tag `v*` | CI, release binaries, checksums and the `deskosctl` tool image | GitHub Release, signatures |
 | `tool-image.yml` | `Containerfile` or compiler paths; dispatch | the `deskosctl` container builds and runs | job log |

@@ -47,3 +47,14 @@ to `resources/system_files/usr/lib/systemd/system/fstrim.service.d/10-sysroot.co
   does not.
 - The `home_root_label` assertion in the identity check stays; it verifies the
   effect, not how the file got there.
+
+**Amendment 2026-11-10.** Exactly one resource root may carry the tree, and it
+must be the Core root (the root that carries `profiles/deskos-core.yaml`).
+With the embedded Core that is the materialized Core root; with `--no-core` the
+caller passes the Core tree, so the tree may be in either argument. A second
+root that also has one is rejected. The files are included in
+`generated-manifest.json` and listed in the build context, but they remain
+static build-context inputs, not Plan or SBOM components: they are reviewed as
+files, not computed as intent. The validator allows only safe `tmpfiles.d` line
+types and rejects `Exec*` keys other than the reviewed `ExecStart=` replacement
+in the fstrim drop-in.

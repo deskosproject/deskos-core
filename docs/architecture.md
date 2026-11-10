@@ -176,8 +176,9 @@ The render rejects an `RpmRepository` with id `redhat`.
 `bootc container lint` passes with three warnings, all from distribution
 scriptlets: content in `/run` (cockpit, cups), users without sysusers.d entries
 (libstoragemgmt, wsdd; on RHEL also avahi and libvirtdbus), and `/var` content
-without tmpfiles.d entries. They are accepted, the lint stays in report mode,
-and a warning from a DeskOS RUN step blocks.
+without tmpfiles.d entries. They are accepted and the lint stays in report mode:
+the build does not parse lint warnings, so a new warning is visible in the log
+but does not fail the build.
 
 Re-run each release.
 
@@ -212,7 +213,7 @@ moves.
 | CentOS Stream 10 | built, booted and session-checked on the 2026-11-03 base (run `41766072582`) | `image-bootcheck.yml`, `tests/vm` |
 | AlmaLinux 10 | published by the weekly build; boot and session checks run in the publish leg | `image-publish.yml` |
 | Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
-| RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [ADR 0014](adr/0014-platform-base-ownership.md) |
+| RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [roadmap](roadmap.md), [ADR 0014](adr/0014-platform-base-ownership.md) |
 
 Update and rollback are not inferred from unit tests. `lifecycle-test.yml`
 installs a CentOS Stream 10 disk, moves A to B and back, injects a power loss in

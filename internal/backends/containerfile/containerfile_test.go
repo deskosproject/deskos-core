@@ -529,3 +529,10 @@ func TestFlatpakPreinstallUnitVerifiesTheApps(t *testing.T) {
 		}
 	}
 }
+
+func TestLabelValueDoesNotExpandVariables(t *testing.T) {
+	got := labelValue(`$USER ` + "café")
+	if got != `"\$USER café"` {
+		t.Fatalf("labelValue = %s", got)
+	}
+}

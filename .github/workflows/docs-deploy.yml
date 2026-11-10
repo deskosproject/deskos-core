@@ -46,7 +46,11 @@ jobs:
     runs-on: ubuntu-24.04
     # A failed image boot check has no frames worth showing; leave the site as
     # it is and let the next good run or a docs change deploy.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: >
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -81,7 +85,7 @@ jobs:
         run: |
           set -euo pipefail
           id="$(gh run list --repo "$GITHUB_REPOSITORY" \
-            --workflow image-bootcheck.yml --branch main --status success \
+            --workflow image-bootcheck.yml --branch main --event push --status success \
             --limit 1 --json databaseId --jq '.[0].databaseId // ""' || true)"
           echo "run-id=$id" >> "$GITHUB_OUTPUT"
 

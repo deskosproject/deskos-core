@@ -17,7 +17,10 @@ are reported, not compared.
 The declared SBOM is CycloneDX 1.5 from the same Plan as `plan` and `render`. It
 carries no timestamp and no `serialNumber`, so identical resources give
 byte-identical output. It lists the base image, RPM package names, RPM files,
-verified binaries, system Flatpaks and trust anchors.
+verified binaries, system Flatpaks and trust anchors. It does not expand the
+platform's package-group closure or list Flatpak remotes: the installed SBOM and
+the comparison cover the actual package closure, and a remote is configuration,
+not a component.
 
 ```bash
 deskosctl sbom ./examples/layers \
@@ -75,8 +78,8 @@ configuration from it, fails at `critical`, compares the two bills with
 `tests/supply-chain/compare.py`, and uploads everything.
 
 Both scan passes use `tests/supply-chain/grype-raw.yaml` (`ignore: []`), so
-`grype.txt` and `cves.json` show everything. Only the promotion check applies the
-exceptions.
+`grype.txt` and `cves.json` show everything. The publish and promotion checks
+apply the exceptions; the raw scans do not.
 
 A scheduled run has no inputs, so it uses the explicit `FAIL_ON` fallback of
 `critical`. The weekly run cannot silently weaken it.
@@ -279,5 +282,6 @@ python3 tests/supply-chain/check_exceptions.py \
 
 grype --from containers-storage "$ref" \
   --config gate.grype.yaml \
+  --vex tests/supply-chain/vex.openvex.json \
   --fail-on critical
 ```

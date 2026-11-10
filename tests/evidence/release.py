@@ -100,7 +100,7 @@ def main(argv=None):
     parser.add_argument("--output", type=Path,
                         help="also keep the record here, for the workflow artifact")
     parser.add_argument("--private", action="store_true",
-                        help="upload without the public-read ACL (DayTwo's bucket)")
+                        help="upload without the public-read ACL (a private organization's bucket)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 

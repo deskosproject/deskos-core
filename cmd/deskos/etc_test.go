@@ -88,6 +88,28 @@ func TestEtcResetOnePathKeepsABackup(t *testing.T) {
 	}
 }
 
+func TestEtcResetPreservesMode(t *testing.T) {
+	root := etcTree(t)
+	base := filepath.Join(root, "usr/etc/modified")
+	if err := os.Chmod(base, 0o755|os.ModeSetuid); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, errOut := runCLI(t, "etc", "reset", "--root", root, "/etc/modified"); code != 0 {
+		t.Fatalf("exit %d: %s", code, errOut)
+	}
+	info, err := os.Stat(filepath.Join(root, "etc/modified"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode()&os.ModeSetuid == 0 {
+		t.Errorf("reset lost the setuid bit: %s", info.Mode())
+	}
+	_, out, _ := runCLI(t, "etc", "--root", root)
+	if strings.Contains(out, "/etc/modified") {
+		t.Errorf("etc diff still reports the reset file:\n%s", out)
+	}
+}
+
 func TestEtcResetAllRestoresTheImageAndLeavesIgnoredPaths(t *testing.T) {
 	root := etcTree(t)
 	code, _, errOut := runCLI(t, "etc", "reset", "--all", "--root", root)

@@ -51,8 +51,12 @@ jobs:
           fi
 
           # Do not stack runs: a queued or running gate will move :stable itself.
+          # `gh run list` keeps only the last --status, so ask twice.
           running="$(gh run list --workflow image-publish.yml --status in_progress \
-            --status queued --json databaseId --jq 'length')"
+            --json databaseId --jq 'length')"
+          queued="$(gh run list --workflow image-publish.yml --status queued \
+            --json databaseId --jq 'length')"
+          running=$((running + queued))
           if [ "$running" -gt 0 ]; then
             echo "a gate run is already queued or running; nothing to add"
             exit 0

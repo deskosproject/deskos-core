@@ -340,6 +340,83 @@ func TestProfileOrderIndependence(t *testing.T) {
 	}
 }
 
+func TestProfileResourceOrderIndependence(t *testing.T) {
+	files := fixture{
+		"a.yaml":              packageSet("a", "git") + "  repositories: [r]\n",
+		"b.yaml":              packageSet("b", "zsh") + "  repositories: [r]\n",
+		"r.yaml":              repo("r", "r", "https://example.invalid/repo"),
+		"assets/repo-key.asc": testArmoredKey(),
+	}
+	orders := [][]string{{"a", "b"}, {"b", "a"}}
+	var first []byte
+	for _, order := range orders {
+		core := profile("core", "foundation", "PackageSet/"+order[0], "PackageSet/"+order[1])
+		dir := base.with(files).with(fixture{
+			"core.yaml": core,
+			"ws.yaml":   workstation("ws", "core"),
+		}).dir(t)
+		p := mustPlan(t, "ws", dir)
+		b, err := p.JSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if first == nil {
+			first = b
+			if len(p.Artifact.RpmRepositories) != 1 {
+				t.Fatalf("got %d repositories, want 1", len(p.Artifact.RpmRepositories))
+			}
+			vias := map[string]bool{}
+			for _, prov := range p.Artifact.RpmRepositories[0].Provenance {
+				vias[prov.Via] = true
+			}
+			for _, want := range []string{"PackageSet/a", "PackageSet/b"} {
+				if !vias[want] {
+					t.Errorf("repository provenance lacks %q: %+v", want, p.Artifact.RpmRepositories[0].Provenance)
+				}
+			}
+		} else if string(b) != string(first) {
+			t.Fatalf("plan depends on profile resource order %v", order)
+		}
+	}
+}
+
+func TestUnusedProfileReferenceIsRejected(t *testing.T) {
+	dir := base.with(fixture{
+		"unused.yaml": profile("unused", "organization", "PackageSet/nope"),
+		"core.yaml":   profile("core", "foundation"),
+		"ws.yaml":     workstation("ws", "core"),
+	}).dir(t)
+	c := newCompiler(t)
+	cat, err := c.Load([]string{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustFail(t, c.ValidateReferences(cat), "PackageSet/nope", "not defined")
+	if _, err := planOf(t, "ws", dir); err != nil {
+		t.Fatalf("an unused profile blocked plan: %v", err)
+	}
+}
+
+func TestProfileRejectsTheSameResourceTwice(t *testing.T) {
+	core := `apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: core
+spec:
+  layer: foundation
+  resources:
+    - {apiVersion: software.deskos.org/v1alpha1, kind: PackageSet, name: a}
+    - {kind: PackageSet, name: a}
+`
+	dir := base.with(fixture{
+		"core.yaml": core,
+		"a.yaml":    packageSet("a", "git"),
+		"ws.yaml":   workstation("ws", "core"),
+	}).dir(t)
+	_, err := planOf(t, "ws", dir)
+	mustFail(t, err, "listed twice")
+}
+
 func TestRpmRepositoryKeyed(t *testing.T) {
 	ws := fixture{
 		"ws.yaml": workstation("ws", "a", "b"),
@@ -1202,6 +1279,7 @@ func TestBootWatermark(t *testing.T) {
 		"core.yaml":     profile("core", "foundation", "BootProfile/core"),
 		"b-core.yaml":   boot("core", "  splash: graphical\n  watermark: core.png\n"),
 		"org.yaml":      profile("org", "organization", "BootProfile/org"),
+		"b-org.yaml":    boot("org", "  splash: graphical\n  watermark: org.png\n"),
 	}
 	installed := func(p *plan.Plan) string {
 		var out []string

@@ -33,7 +33,7 @@ Usage:
   deskosctl plan [--no-core] ROOT... --workstation NAME [--format text|json]
   deskosctl render [--no-core] ROOT... --workstation NAME --backend containerfile --output DIR
   deskosctl sbom [--no-core] ROOT... --workstation NAME [--output FILE]
-  deskosctl track [--fresh] [--write] [--rules FILE] [--token TOKEN] ROOT...
+  deskosctl track [--fresh] [--write] [--rules FILE] ROOT...
   deskosctl core export DIR
   deskosctl version
 
@@ -111,7 +111,7 @@ func cmdTrack(args []string, stdout io.Writer) error {
 	fresh := fs.Bool("fresh", false, "also ask GitHub whether a newer release exists")
 	write := fs.Bool("write", false, "move the pins that resolve to a newer release")
 	rulesPath := fs.String("rules", "track.yaml", "curated tag-to-version rules")
-	token := fs.String("token", os.Getenv("GITHUB_TOKEN"), "token for the GitHub API (default $GITHUB_TOKEN)")
+	token := os.Getenv("GITHUB_TOKEN")
 	roots, err := parse(fs, args)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func cmdTrack(args []string, stdout io.Writer) error {
 			return usageError{"--write needs " + *rulesPath}
 		}
 	}
-	results, err := track.Check(roots, track.Options{Fresh: *fresh, Token: *token, Rules: rules})
+	results, err := track.Check(roots, track.Options{Fresh: *fresh, Token: token, Rules: rules})
 	if err != nil {
 		return err
 	}
@@ -276,6 +276,7 @@ func cmdValidate(args []string, stdout, stderr io.Writer) error {
 	if cat == nil {
 		return errs.Err()
 	}
+	errs.Add(c.ValidateReferences(cat))
 	names := compiler.Workstations(cat)
 	var warnings []string
 	for _, ws := range names {
@@ -362,11 +363,11 @@ func cmdRender(args []string, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	files, err := containerfile.Render(p)
+	static, err := systemFiles(allRoots)
 	if err != nil {
 		return err
 	}
-	files, err = appendSystemFiles(files, allRoots)
+	files, err := containerfile.Render(p, static...)
 	if err != nil {
 		return err
 	}
@@ -415,63 +416,135 @@ func cmdSBOM(args []string, stdout io.Writer) error {
 	return nil
 }
 
-// appendSystemFiles adds the reviewed static base files to the build context.
-// The tree is resources/system_files/ in each root; only systemd drop-ins for
-// existing units and tmpfiles.d entries are accepted, so the tree cannot carry
-// a new service, a script or an executable. The Containerfile copies rootfs/,
-// so the destination is rootfs/<path>.
-func appendSystemFiles(files []containerfile.File, roots []string) ([]containerfile.File, error) {
-	seen := map[string]bool{}
-	for _, f := range files {
-		seen[f.Path] = true
-	}
+// systemFiles loads the reviewed static base files. Exactly one resource root
+// may carry the tree; with the embedded Core that is the materialized Core
+// root, and a second root that also has one is rejected. With --no-core the
+// caller passes the Core tree itself, so the tree may be in either argument.
+func systemFiles(roots []string) ([]containerfile.File, error) {
+	var candidates []string
 	for _, root := range roots {
-		dir := filepath.Join(root, "system_files")
-		info, err := os.Stat(dir)
+		info, err := os.Stat(root)
 		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
 			return nil, err
 		}
 		if !info.IsDir() {
-			return nil, fmt.Errorf("%s is not a directory", dir)
+			continue
 		}
-		err = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
+		dir := filepath.Join(root, "system_files")
+		if _, err := os.Stat(dir); err == nil {
+			if _, err := os.Stat(filepath.Join(root, "profiles/deskos-core.yaml")); err != nil {
+				return nil, fmt.Errorf("system_files is only allowed in the Core root, not %s", root)
 			}
-			if d.IsDir() {
-				return nil
-			}
-			rel, err := filepath.Rel(dir, p)
-			if err != nil {
-				return err
-			}
-			rel = filepath.ToSlash(rel)
-			if !allowedSystemFile(rel) {
-				return fmt.Errorf("system_files/%s: only systemd drop-ins and tmpfiles.d entries are allowed", rel)
-			}
-			if !d.Type().IsRegular() {
-				return fmt.Errorf("system_files/%s is not a regular file", rel)
-			}
-			data, err := os.ReadFile(p)
-			if err != nil {
-				return err
-			}
-			dest := path.Join("rootfs", rel)
-			if seen[dest] {
-				return fmt.Errorf("system_files/%s is defined more than once", rel)
-			}
-			seen[dest] = true
-			files = append(files, containerfile.File{Path: dest, Mode: 0o644, Data: data})
-			return nil
-		})
-		if err != nil {
+			candidates = append(candidates, dir)
+		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
 	}
+	if len(candidates) > 1 {
+		return nil, fmt.Errorf("system_files is defined in more than one resource root; keep it in the Core root only")
+	}
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+	dir := candidates[0]
+	info, err := os.Stat(dir)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("%s is not a directory", dir)
+	}
+	var files []containerfile.File
+	err = filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, p)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if !allowedSystemFile(rel) {
+			return fmt.Errorf("system_files/%s: only systemd drop-ins and tmpfiles.d entries are allowed", rel)
+		}
+		if !d.Type().IsRegular() {
+			return fmt.Errorf("system_files/%s is not a regular file", rel)
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(rel, "/tmpfiles.d/") {
+			if err := validateTmpfiles(rel, data); err != nil {
+				return err
+			}
+		} else if err := validateDropin(rel, data); err != nil {
+			return err
+		}
+		files = append(files, containerfile.File{
+			Path: path.Join("rootfs", rel), Mode: 0o644, Data: data,
+		})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
 	return files, nil
+}
+
+// validateTmpfiles allows only the line types that create, remove or relabel a
+// path. f, w, L and C write content; c, b and p create devices or FIFOs; e
+// adjusts an existing path. None belongs in a reviewed static tree.
+func validateTmpfiles(rel string, data []byte) error {
+	safe := map[string]bool{"d": true, "D": true, "z": true, "Z": true, "v": true, "q": true, "Q": true}
+	for number, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if !safe[fields[0]] {
+			return fmt.Errorf("system_files/%s:%d: tmpfiles type %q is not allowed", rel, number+1, fields[0])
+		}
+	}
+	return nil
+}
+
+// validateDropin rejects the keys that turn a drop-in into a command or an
+// environment override. ExecStart= is allowed because the reviewed fstrim
+// drop-in has to replace the base unit's command; every other Exec* key is a
+// new command and belongs in a package or a typed Plan field.
+func validateDropin(rel string, data []byte) error {
+	dangerous := map[string]bool{
+		"Environment": true, "EnvironmentFile": true, "PassEnvironment": true,
+		"StandardInput": true, "StandardOutput": true, "StandardError": true,
+		"User": true, "Group": true, "RootDirectory": true, "WorkingDirectory": true,
+		"LoadCredential": true, "SetCredential": true, "PAMName": true,
+		"BindPaths": true, "BindReadOnlyPaths": true, "TemporaryFileSystem": true,
+		"RootImage": true, "ExtensionImages": true,
+	}
+	for number, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "[") {
+			continue
+		}
+		key, _, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key = strings.TrimSpace(key)
+		if key == "ExecStart" {
+			continue
+		}
+		if strings.HasPrefix(key, "Exec") || strings.HasPrefix(key, "Environment") ||
+			strings.Contains(key, "Command") || dangerous[key] {
+			return fmt.Errorf("system_files/%s:%d: key %q is not allowed in a static drop-in", rel, number+1, key)
+		}
+	}
+	return nil
 }
 
 // allowedSystemFile is the closed set the system_files tree may carry. A unit

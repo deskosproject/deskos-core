@@ -15,12 +15,12 @@ named. `deskosctl track` answers two questions without deciding anything:
   latest release tag. Any other URL has no answer, which is not an error.
 
 ```
-deskosctl track [--fresh] [--token TOKEN] ROOT...
+deskosctl track [--fresh] [--write] [--rules FILE] ROOT...
 ```
 
 It prints one line per pin and exits non-zero when a hash does not match or
-`--fresh` finds a newer release. `--token` defaults to `$GITHUB_TOKEN`, for the
-API rate limit.
+`--fresh` finds a newer release. The GitHub token comes from `$GITHUB_TOKEN`; it
+is not a flag, so it does not appear in a process list.
 
 ## Why it lives beside the command
 
@@ -62,6 +62,7 @@ of their own. Nothing is published and nothing is merged.
 Two things a reviewer should know:
 
 - a bundle opened with `GITHUB_TOKEN` does not trigger other workflows, so its
-  checks run only when a person re-runs or pushes to it;
+  checks run only when a person re-runs or pushes to it. Do not merge it without
+  a green `make check` or a re-run `validate`;
 - if a candidate asset is missing or has no hash, the pin is reported and left
   alone rather than moved on an assumption.

@@ -71,7 +71,13 @@ def build(root: Path, out: Path) -> dict:
         for name, frame in zip(("splash", "session"), choose(summary)):
             if frame is None:
                 continue
-            source = session_dir / frame["file"]
+            source = (session_dir / frame["file"]).resolve()
+            try:
+                source.relative_to(session_dir.resolve())
+            except ValueError:
+                raise SystemExit(f"frame path escapes the artifact: {frame['file']}")
+            if source.suffix != ".png" or not source.is_file():
+                raise SystemExit(f"frame is not a PNG file: {frame['file']}")
             target = out / f"{platform}-{name}.png"
             shutil.copyfile(source, target)
             record["frames"][name] = {

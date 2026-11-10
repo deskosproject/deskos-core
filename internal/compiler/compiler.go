@@ -80,6 +80,38 @@ func (c *Compiler) Load(roots []string) (*compose.Catalog, error) {
 	return cat, errs.Err()
 }
 
+// ValidateReferences resolves every reference in the catalog, including
+// resources that no selected Workstation uses. It is a validate-only check:
+// plan and render must still compile a library that references resources from
+// another team's root.
+func (c *Compiler) ValidateReferences(cat *compose.Catalog) error {
+	if cat == nil {
+		return nil
+	}
+	var errs model.ErrorList
+	for _, res := range cat.AllResources() {
+		p, err := c.Registry.Lookup(res.GVK())
+		if err != nil {
+			continue
+		}
+		ref, ok := p.(registry.Referencer)
+		if !ok {
+			continue
+		}
+		for _, target := range ref.References(res) {
+			gvk, err := c.Registry.ResolveRef(target)
+			if err != nil {
+				errs.Add(model.Errorf(res, "%s: %v", target, err))
+				continue
+			}
+			if cat.Get(gvk, target.Name) == nil {
+				errs.Add(model.Errorf(res, "references %s, which is not defined", target))
+			}
+		}
+	}
+	return errs.Err()
+}
+
 // Workstations lists the workstation names in a catalog.
 func Workstations(cat *compose.Catalog) []string {
 	var out []string
