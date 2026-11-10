@@ -5,7 +5,7 @@ configuration management is outside every milestone.
 
 | Today | State |
 |---|---|
-| Compiler | `v0.25.2` (2026-11-09): the published ISO is built with the interactive installer configuration |
+| Compiler | `v0.26.0` (2026-11-10): the firmware prerequisite check, the post-deployment power loss in the lifecycle run, and the registry/evidence credential split |
 | Bases | CentOS Stream 10 `f09b8e56` (2026-11-06, kernel `6.12.0-281`), AlmaLinux 10 `5ef1b06e`, Fedora 45 `45.20261103.0`, RHEL 10 `80485ddb` (2026-11-05, kernel `211.74.1`, the CVE-2026-98432 fix) |
 | Open | Satellite content source (#466), GNOME coverage (#448, #446), firefox CVE-2026-115905 (#420), and the registry prune tracked in the organization repository |
 
