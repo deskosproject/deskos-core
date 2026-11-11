@@ -7,7 +7,7 @@ spec:
   # Stream 10 AppStream; the office suite itself is not, and is a Flatpak below.
   # The serif families make a document look like a document on every platform.
   packages:
-    - papers
     - gnome-calculator
     - google-noto-serif-fonts
     - liberation-serif-fonts
+    - papers
