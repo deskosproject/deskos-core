@@ -7,9 +7,9 @@ spec:
   # password. sssd and realmd are already in the workstation group on EL10;
   # these are the pieces a FreeIPA or AD join adds on top.
   packages:
-    - ipa-client
     - adcli
-    - sssd-ad
-    - samba-common-tools
+    - ipa-client
     - krb5-workstation
     - oddjob-mkhomedir
+    - samba-common-tools
+    - sssd-ad

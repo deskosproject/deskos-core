@@ -4,9 +4,9 @@ metadata:
   name: example-containers
 spec:
   packages:
+    - buildah
     - git
     - podman
-    - buildah
     - skopeo
     - toolbox
 ---
@@ -16,12 +16,12 @@ metadata:
   name: example-virtualization
 spec:
   packages:
-    - qemu-kvm
-    - libvirt
-    - virt-install
-    - virt-viewer
     - cockpit
     - cockpit-machines
+    - libvirt
+    - qemu-kvm
+    - virt-install
+    - virt-viewer
   enableUnits:
     - cockpit.socket
 ---
@@ -40,8 +40,8 @@ spec:
   # that carries it or a BinaryArtifact destination outside /usr/local/bin, which
   # is a decision this example does not make on its own.
   packages:
-    - redhat-mono-fonts
     - google-droid-sans-mono-fonts
+    - redhat-mono-fonts
 ---
 apiVersion: software.deskos.org/v1alpha1
 kind: PackageSet
@@ -49,12 +49,12 @@ metadata:
   name: example-platform-tools
 spec:
   packages:
-    - terraform
-    - kubectl
     - code
     - google-chrome-stable
+    - kubectl
+    - terraform
   repositories:
+    - google-chrome
     - hashicorp
     - kubernetes
     - vscode
-    - google-chrome

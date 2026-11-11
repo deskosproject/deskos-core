@@ -7,11 +7,11 @@ spec:
   # The command line every workstation already has (tmux, the editor, completion)
   # comes from deskos-tools; this adds the compiler and the container toolchain.
   packages:
-    - git
-    - make
-    - gcc
-    - golang
-    - podman
     - buildah
+    - gcc
+    - git
+    - golang
+    - make
+    - podman
     - skopeo
     - toolbox

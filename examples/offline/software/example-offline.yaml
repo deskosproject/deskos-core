@@ -9,6 +9,6 @@ spec:
   # machine with no route cannot fetch one, and preinstalling from a remote
   # during the build would make the image depend on one.
   packages:
-    - papers
-    - gnome-text-editor
     - gnome-calculator
+    - gnome-text-editor
+    - papers
