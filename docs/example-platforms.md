@@ -17,6 +17,7 @@ does not copy a platform or promise support for one.
 | [`centos-stream-10/`](../examples/centos-stream-10/) | the minimal Core composition on the public platform |
 | [`rhel-10/`](../examples/rhel-10/) | the same on RHEL 10, which is never published |
 | [`vanilla-gnome/`](../examples/vanilla-gnome/) | the desktop axis: Core without the dock |
+| [`deskos-blue/`](../examples/deskos-blue/) | a Flatpak-first Fedora desktop |
 | [`layers/`](../examples/layers/) | the composition axis: an organization baseline and a role |
 | [`developer/`](../examples/developer/) | a role with the compiler and container toolchain |
 | [`office/`](../examples/office/) | a role with documents, a PDF viewer and the serif families |
