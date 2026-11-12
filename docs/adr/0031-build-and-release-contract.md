@@ -38,8 +38,9 @@ tag vocabulary.
 | 5 | `installer-test.yml` | Install unattended in QEMU, on demand | none |
 
 - **Names.** Workflows are `<stage>[-<platform>].yml`, without an organization
-  prefix. Jobs are `prepare`, `build`, `verify`, `scan`, `publish`, `iso` and
-  `promote`. Repository names stay `<project>-<variant>-<platform>`.
+  prefix. Jobs are `prepare`, `build`, `verify`, `scan`, `publish`, `installer` and
+  `promote`; the installer workflow's own job is `iso`. Repository names
+  stay `<project>-<variant>-<platform>`.
 - **Steps.** The boot checks are named “Boot check”, “Session check” and
   “First-boot check”; the scan step is “Scan (Grype)”; the signing step is
   “Publish, sign and attest”; the installer steps are “Build the installer ISO”
