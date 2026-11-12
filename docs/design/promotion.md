@@ -144,14 +144,16 @@ no controller).
 ## Decisions (2026-10-26)
 
 - Channels exist per platform repository: `candidate` and `stable`. `:latest`
-  stays the **fast lane**, not a second stable; retiring it is not planned.
+  stays the **fast lane**, not a second stable; retiring it is not planned. The
+  installer follows the image's `:latest` for the same digest.
 - A move is authorized by the weekly build's success (2026-10-28) through the
   `publish` job, or by a dispatch. Both write the same record; the automatic path
   names the run, the dispatch the actor.
 - The ISO channel moves with the image: `promotion.yml` finds the ISO tagged
-  `sha256-<image digest>`, verifies it and moves the ISO `:stable`. A platform
-  with no ISO leaves that channel alone; `installer-build.yml` tags the ISO `:stable` when
-  the installer appears after the promotion.
+  `sha256-<image digest>`, verifies it and moves the ISO `:stable`.
+  `installer-build.yml` moves the ISO `:latest` when the image is already latest,
+  and `:stable` when the installer appears after the promotion. A platform with
+  no ISO leaves both channels alone.
 - **One person approves, deliberately (2026-10-28).** An environment approval on
   `evidence-write` would pause every weekly promotion. The automatic path moves
   only the digest its triggering run published (the records name that `run_id`),
