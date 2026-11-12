@@ -54,7 +54,7 @@ jobs:
           # Examples are validated, not planned or rendered: a change to one
           # cannot slow the pipeline, and the compiler fixtures are reference
           # workstations rather than example roots.
-          for ex in layers developer office kiosk identity offline centos-stream-10 rhel-10 vanilla-gnome; do
+          for ex in layers developer office kiosk identity offline corporate centos-stream-10 rhel-10 vanilla-gnome deskos-blue; do
             ./bin/deskosctl validate "./examples/$ex"
           done
       - name: validate the Core tree

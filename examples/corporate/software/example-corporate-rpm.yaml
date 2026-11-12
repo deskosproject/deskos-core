@@ -1,0 +1,26 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-corporate-browser
+spec:
+  # Chrome is a vendor RPM, not a Flatpak: Google does not ship it on Flathub.
+  # The organization that builds the image accepts Google's terms; Core neither
+  # builds nor publishes the result.
+  packages:
+    - google-chrome-stable
+  repositories:
+    - google-chrome
+---
+apiVersion: software.deskos.org/v1alpha1
+kind: PackageSet
+metadata:
+  name: example-corporate-vpn
+spec:
+  # The corporate VPN through NetworkManager. OpenConnect replaces the
+  # unmaintained NetworkManager-fortisslvpn plugin and speaks the Fortinet SSL
+  # VPN protocol; Fedora 45 carries the plugin and its GNOME front end. The
+  # gateway, the profile and the credentials are runtime state, not image
+  # content.
+  packages:
+    - NetworkManager-openconnect
+    - NetworkManager-openconnect-gnome

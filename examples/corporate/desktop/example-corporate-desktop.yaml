@@ -1,0 +1,16 @@
+apiVersion: desktop.deskos.org/v1alpha1
+kind: GnomeProfile
+metadata:
+  name: example-corporate-desktop
+spec:
+  defaults:
+    applications:
+      browser: google-chrome.desktop
+      pdfViewer: org.gnome.Papers.desktop
+    shell:
+      favorites:
+        - google-chrome.desktop
+        - us.zoom.Zoom.desktop
+        - com.slack.Slack.desktop
+        - com.onepassword.OnePassword.desktop
+        - org.gnome.Nautilus.desktop

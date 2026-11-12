@@ -1,0 +1,16 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Profile
+metadata:
+  name: example-corporate
+spec:
+  layer: organization
+  description: A corporate baseline; the browser, meetings, chat, passwords and VPN an office expects.
+  resources:
+    - kind: PackageSet
+      name: example-corporate-browser
+    - kind: PackageSet
+      name: example-corporate-vpn
+    - kind: FlatpakSet
+      name: example-corporate-apps
+    - kind: GnomeProfile
+      name: example-corporate-desktop

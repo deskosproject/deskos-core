@@ -1,0 +1,14 @@
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-corporate
+spec:
+  displayName: Example corporate workstation (Fedora 45)
+  platformRef: fedora-45
+  profiles:
+    - deskos-core
+    - deskos-gnome
+    - fedora
+    - deskos-look
+    - deskos-dock
+    - example-corporate

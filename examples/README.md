@@ -8,12 +8,14 @@ case**. They are not shipped platform support, and CI does not build them.
 | [`centos-stream-10/`](centos-stream-10/) | the minimal Core composition on the public, redistributable platform |
 | [`rhel-10/`](rhel-10/) | the same on RHEL 10, which is **never** published (`redistributable: false`, ADR 0004) |
 | [`vanilla-gnome/`](vanilla-gnome/) | the **desktop axis**: the Core desktop with GNOME's own dash and no `deskos-dock` |
+| [`deskos-blue/`](deskos-blue/) | a Flatpak-first Fedora desktop, inspired by Bluefin |
 | [`layers/`](layers/) | the **composition axis**: an organization baseline and a role, on two platforms |
 | [`developer/`](developer/) | a role with the compiler and container toolchain |
 | [`office/`](office/) | a role with documents, a PDF viewer and the serif families |
 | [`kiosk/`](kiosk/) | a locked-down public session, and what the image cannot lock |
 | [`identity/`](identity/) | the image-level half of a domain join |
 | [`offline/`](offline/) | a site with no network and no automatic updates |
+| [`corporate/`](corporate/) | a vendor browser, meetings, chat, passwords and a VPN |
 
 ## How the names work
 

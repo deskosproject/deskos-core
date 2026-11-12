@@ -1,0 +1,14 @@
+# The vendor RPM repository, as the vendor documents it. The signing key is a
+# local asset, pinned by this repository's commit, so a build never trusts a
+# key fetched from the network.
+apiVersion: software.deskos.org/v1alpha1
+kind: RpmRepository
+metadata:
+  name: google-chrome
+spec:
+  # https://www.google.com/linuxrepositories/
+  id: google-chrome
+  displayName: google-chrome
+  baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
+  gpgKeyFiles:
+    - ../assets/rpm-keys/google-chrome.pub

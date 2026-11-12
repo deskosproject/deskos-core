@@ -46,7 +46,7 @@ style:
 
 validate: build
 	$(BIN) validate --no-core ./resources
-	@for ex in layers developer office kiosk identity offline centos-stream-10 rhel-10 vanilla-gnome; do \
+	@for ex in layers developer office kiosk identity offline corporate centos-stream-10 rhel-10 vanilla-gnome deskos-blue; do \
 		$(BIN) validate "./examples/$$ex" || exit 1; \
 	done
 	# The identity fixture is not an example: it is the client-side FreeIPA test.

@@ -1,0 +1,13 @@
+apiVersion: software.deskos.org/v1alpha1
+kind: FlatpakSet
+metadata:
+  name: example-corporate-apps
+spec:
+  remote: flathub
+  applications:
+    - id: us.zoom.Zoom
+      branch: stable
+    - id: com.slack.Slack
+      branch: stable
+    - id: com.onepassword.OnePassword
+      branch: stable
