@@ -16,11 +16,12 @@ kind: PackageSet
 metadata:
   name: example-corporate-vpn
 spec:
-  # Tailscale is the example VPN: a public repository and a system daemon.
-  # Replace the repository and package with your vendor's; the shape stays.
+  # The corporate VPN through NetworkManager: OpenConnect speaks the Fortinet
+  # SSL VPN protocol, and EPEL 10 carries the plugin and its GNOME front end.
+  # The gateway, the profile and the credentials are runtime state, not image
+  # content.
   packages:
-    - tailscale
+    - NetworkManager-openconnect
+    - NetworkManager-openconnect-gnome
   repositories:
-    - tailscale-stable
-  enableUnits:
-    - tailscaled.service
+    - epel-10

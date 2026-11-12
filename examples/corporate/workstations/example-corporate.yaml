@@ -3,12 +3,13 @@ kind: Workstation
 metadata:
   name: example-corporate
 spec:
-  displayName: Example corporate workstation (Fedora 45)
-  platformRef: fedora-45
+  displayName: Example corporate workstation (CentOS Stream 10)
+  platformRef: centos-stream-10
   profiles:
+    - deskos-adwaita
     - deskos-core
-    - deskos-gnome
-    - fedora
-    - deskos-look
     - deskos-dock
+    - deskos-gnome
+    - deskos-look
     - example-corporate
+    - rhel-family
