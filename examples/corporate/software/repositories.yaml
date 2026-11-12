@@ -1,5 +1,5 @@
-# Vendor RPM repositories, as the vendors document them. The signing keys are
-# local assets, pinned by this repository's commit, so a build never trusts a
+# The vendor RPM repository, as the vendor documents it. The signing key is a
+# local asset, pinned by this repository's commit, so a build never trusts a
 # key fetched from the network.
 apiVersion: software.deskos.org/v1alpha1
 kind: RpmRepository
@@ -12,15 +12,3 @@ spec:
   baseURL: https://dl.google.com/linux/chrome/rpm/stable/x86_64
   gpgKeyFiles:
     - ../assets/rpm-keys/google-chrome.pub
----
-apiVersion: software.deskos.org/v1alpha1
-kind: RpmRepository
-metadata:
-  name: epel-10
-spec:
-  # https://docs.fedoraproject.org/en-US/epel/
-  id: epel
-  displayName: Extra Packages for Enterprise Linux 10
-  baseURL: https://dl.fedoraproject.org/pub/epel/10/Everything/$basearch/
-  gpgKeyFiles:
-    - ../assets/rpm-keys/epel-10.pub

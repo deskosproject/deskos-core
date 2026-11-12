@@ -1,8 +1,8 @@
 # Example: a corporate workstation
 
-An **organization** baseline for an office on CentOS Stream 10: Chrome from
-Google's repository, Zoom, Slack and 1Password from Flathub, and the corporate
-VPN through NetworkManager OpenConnect.
+An **organization** baseline for an office on Fedora 45: Chrome from Google's
+repository, Zoom, Slack and 1Password from Flathub, and the corporate VPN
+through NetworkManager OpenConnect.
 
 ```bash
 deskosctl validate ./examples/corporate
@@ -15,7 +15,7 @@ deskosctl render ./examples/corporate \
 |---|---|
 | `example-corporate` (organization) | the browser, VPN, Flatpaks and desktop defaults |
 | `example-corporate-browser` (PackageSet) | `google-chrome-stable` from Google's RPM repository |
-| `example-corporate-vpn` (PackageSet) | `NetworkManager-openconnect` and its GNOME front end, from EPEL 10 |
+| `example-corporate-vpn` (PackageSet) | `NetworkManager-openconnect` and its GNOME front end, from Fedora |
 | `example-corporate-apps` (FlatpakSet) | Zoom, Slack and 1Password from Flathub |
 | `example-corporate-desktop` | Chrome as the browser, Papers for PDFs, and the corporate favorites |
 
@@ -23,8 +23,9 @@ deskosctl render ./examples/corporate \
 
 - **A vendor RPM repository with a local signing key.** Chrome is not a Flatpak;
   the organization that builds the image accepts Google's terms.
-- **A VPN through NetworkManager.** OpenConnect speaks the Fortinet SSL VPN
-  protocol; EPEL 10 carries the plugin and its GNOME front end.
+- **A VPN through NetworkManager.** OpenConnect replaces the unmaintained
+  `NetworkManager-fortisslvpn` plugin and speaks the Fortinet SSL VPN protocol;
+  Fedora 45 carries the plugin and its GNOME front end.
 - **Userland applications as Flatpaks.** Zoom, Slack and 1Password arrive from
   Flathub at first boot, the way a managed desktop installs its apps.
 - **A desktop default, not a lock.** The browser, the PDF viewer and the

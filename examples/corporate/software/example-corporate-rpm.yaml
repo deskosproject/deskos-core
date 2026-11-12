@@ -16,12 +16,11 @@ kind: PackageSet
 metadata:
   name: example-corporate-vpn
 spec:
-  # The corporate VPN through NetworkManager: OpenConnect speaks the Fortinet
-  # SSL VPN protocol, and EPEL 10 carries the plugin and its GNOME front end.
-  # The gateway, the profile and the credentials are runtime state, not image
+  # The corporate VPN through NetworkManager. OpenConnect replaces the
+  # unmaintained NetworkManager-fortisslvpn plugin and speaks the Fortinet SSL
+  # VPN protocol; Fedora 45 carries the plugin and its GNOME front end. The
+  # gateway, the profile and the credentials are runtime state, not image
   # content.
   packages:
     - NetworkManager-openconnect
     - NetworkManager-openconnect-gnome
-  repositories:
-    - epel-10
