@@ -39,3 +39,4 @@ kind" while the API now has **fifteen**; the count is in
 | [0028: The installed package set is a manifest the build verifies](0028-the-installed-package-set-is-a-manifest.md) | accepted |
 | [0029: A platform names the directories its base can leave unlabeled](0029-platforms-name-unlabeled-directories.md) | superseded by 0030 |
 | [0030: Base fixes ship as a reviewed `system_files` tree](0030-base-fixes-are-a-reviewed-tree.md) | accepted |
+| [0031: One build and release contract for Core and an organization](0031-build-and-release-contract.md) | accepted |

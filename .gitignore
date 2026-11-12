@@ -21,6 +21,9 @@ __pycache__/
 # Contexts a local render leaves in the repository root. Renovate used to bump
 # their Containerfile pins, which changed nothing that ships.
 /.tmp-ctx*/
+# Evidence scratch trees from a VM run; the harness writes them next to the
+# repository, and a `git add -A` once captured one.
+/.tmp-ev-*/
 
 # Go toolchain telemetry and build cache, written by the container used for tests.
 .config/

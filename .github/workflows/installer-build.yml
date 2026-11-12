@@ -296,6 +296,20 @@ jobs:
             | tee iso-cosign-verify.txt
           oras tag "$ISO_REPO:$COMMIT" candidate
 
+          # The image's fast lane is :latest. The ISO follows it for this
+          # digest too, so a fetch can use :latest for the fast lane and
+          # :stable for the promoted one.
+          latest="$(oras manifest fetch --descriptor "$IMAGE:latest" 2>/dev/null | jq -r .digest || true)"
+          if [ "$latest" = "$DIGEST" ]; then
+            oras tag "$ISO_REPO@$iso_digest" latest
+            moved_latest="$(oras manifest fetch --descriptor "$ISO_REPO:latest" | jq -r .digest)"
+            [ "$moved_latest" = "$iso_digest" ] \
+              || { echo "::error::ISO latest is $moved_latest, not $iso_digest"; exit 1; }
+            echo "the image is latest; the ISO :latest follows"
+          else
+            echo "the image is not latest ($latest); the ISO waits at :candidate"
+          fi
+
           # The ISO channel follows the image channel for this digest, whichever
           # happened first: a promotion can run before the installer exists, and
           # a retried installer can run after the image is already stable.
