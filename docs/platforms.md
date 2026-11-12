@@ -31,7 +31,8 @@ project owns one, and its build, boot and publication live in
 
 AlmaLinux 10 and Fedora 45 joined the matrix on 2026-10-30. AlmaLinux's base
 is still labelled experimental by its vendor. All three publish an image with
-`:latest`, `:candidate` and `:stable`; only CentOS Stream 10 has a Core installer.
+`:latest`, `:candidate` and `:stable`; only CentOS Stream 10 has a Core installer,
+and its ISO follows the image's `:latest` and `:stable`.
 Their pins live in `resources/platforms/`, and Fedora's mirror is described in
 [fedora.md](fedora.md). The desktop is the same on every flavor;
 [desktop parity](desktop-parity.md) lists what each platform adds.
