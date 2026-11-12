@@ -155,14 +155,14 @@ RUN set -eu; \
     install -D -m 0644 "$tmp/download" '/usr/local/share/fonts/AdwaitaSans-Italic.ttf'; \
     rm -rf "$tmp"
 
-# Binary artifact deskos 0.24.0 (sha256-verified)
+# Binary artifact deskos 0.26.0 (sha256-verified)
 RUN set -eu; \
     tmp="$(mktemp -d)"; \
     curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
         --retry 3 --retry-delay 2 --retry-connrefused --retry-max-time 90 \
         --connect-timeout 30 --speed-limit 1000 --speed-time 60 \
-        -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.24.0/deskos-v0.24.0-linux-amd64'; \
-    echo 'bbb45f8fe00be9884a09cc62ba96136ce1e15c0e5e287db2baa182c29cba40f8  '"$tmp/download" | sha256sum --check --strict --quiet -; \
+        -o "$tmp/download" 'https://github.com/deskosproject/deskos-core/releases/download/v0.26.0/deskos-v0.26.0-linux-amd64'; \
+    echo '723fc0e1aede805010f7fdf7b60213c662945f5aca3f6718c7ce73bfe0274b5c  '"$tmp/download" | sha256sum --check --strict --quiet -; \
     mkdir -p "$(readlink -m "$(dirname '/usr/bin/deskos')")"; \
     install -D -m 0755 "$tmp/download" '/usr/bin/deskos'; \
     rm -rf "$tmp"
