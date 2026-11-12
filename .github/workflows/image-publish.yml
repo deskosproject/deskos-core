@@ -769,7 +769,7 @@ jobs:
   # downstream organization builds the installer from that image. The digest
   # always comes from the job above, so a wrong repository fails at the pull
   # instead of shipping the wrong ISO.
-  iso:
+  installer:
     needs: publish
     # Each leg resolves its own image: a platform whose publish leg failed has no
     # image, so its installer skips. Without `always()` a failed publish leg
