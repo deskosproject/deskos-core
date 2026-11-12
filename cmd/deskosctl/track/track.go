@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // scalar is where a pinned value lives and how it was written, so a moved pin

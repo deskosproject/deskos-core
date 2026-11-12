@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // Rule says how to read a version out of an upstream release tag for one
