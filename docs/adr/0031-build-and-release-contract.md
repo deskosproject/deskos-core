@@ -34,7 +34,7 @@ tag vocabulary.
 | 1 | `image-publish[-<platform>].yml` | Build; declared and installed SBOMs; compare; boot, session and first-boot checks; push the immutable commit; sign it | `:edge` |
 | 2 | `image-scan[-<platform>].yml` | Grype and the reviewed exceptions against the published digest | `:candidate`, `:latest` |
 | 3 | `promotion.yml` | Verify signature, evidence and approval record | `:stable` |
-| 4 | `installer-build.yml` | Build the ISO from the published digest and sign it | `:candidate`; follows `:stable` |
+| 4 | `installer-build.yml` | Build the ISO from the published digest and sign it | `:candidate`, `:latest`; follows `:stable` |
 | 5 | `installer-test.yml` | Install unattended in QEMU, on demand | none |
 
 - **Names.** Workflows are `<stage>[-<platform>].yml`, without an organization
@@ -45,9 +45,9 @@ tag vocabulary.
   “Publish, sign and attest”; the installer steps are “Build the installer ISO”
   and “Publish and sign the installer”.
 - **Tags.** `:edge` is image only and means “the build boot-checked and signed
-  this digest, before the scan”. `:latest` means “the scan passed”. `:stable`
-  means “the evidence and the approval were verified”. `:candidate` is the
-  source a promotion checks.
+  this digest, before the scan”. `:latest` means “the scan passed”; the
+  installer follows it for the same digest. `:stable` means “the evidence and
+  the approval were verified”. `:candidate` is the source a promotion checks.
 - **Failure rules.**
   - A failed scan leaves `:latest` and `:stable` where they were; `:edge` does
     not move back.
