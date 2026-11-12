@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":dependencyDashboard"],
-  "ignorePaths": ["internal/compiler/testdata/golden/**"],
+  "ignorePaths": ["internal/compiler/testdata/golden/**", "tests/identity/samba/Dockerfile"],
   "description": [
     "Pins DeskOS keeps by hand: the platform bootc base image (tag + digest),",
     "the binary artifacts of the example. The scanner and action pins in the",
@@ -10,7 +10,9 @@
     "NOTE: a binary artifact has a sha256 that Renovate cannot compute, so its",
     "PR bumps the version only and the checksum must be filled before merge;",
     "the CentOS Stream 10 base-image digest IS updated automatically, while the",
-    "RHEL 10 one is moved by hand (see the packageRules below). Action versions",
+    "RHEL 10 one is moved by hand (see the packageRules below). The Samba DC",
+    "fixture is ignored: it installs Samba from Fedora at build time, so its base",
+    "digest is a disposable test input, bumped by hand. Action versions",
     "are bumped by hand too, for the same reason the token has no workflows",
     "permission (see the last packageRule)."
   ],
