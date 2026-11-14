@@ -14,8 +14,8 @@ spec:
   # CentOS Stream 10 AppStream carries firefox-140.17.0-1.el10, and its Workstation
   # environment already installs it through the Internet Browser group; AlmaLinux
   # 10 AppStream carries firefox-153.5.0-1.el10_2, while its Internet Browser group
-  # ships only redhat-flatpak-preinstall-firefox; RHEL 10 AppStream carries the RPM
-  # (firefox-140.16.0-1.el10 on the RHEL 10.2 build in docs/adr/0012), so the
+  # ships only redhat-flatpak-preinstall-firefox; RHEL 10.3 AppStream carries
+  # firefox-153.7.0-1.el10_3 (measured 2026-11-14 in the factory build), so the
   # subscription that builds the image is the only entitlement it needs. Naming it
   # is a no-op where a group or base already installed it, and it is the browser
   # on a base that does not.

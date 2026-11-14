@@ -213,7 +213,7 @@ moves.
 | CentOS Stream 10 | built, booted and session-checked on the 2026-11-03 base (run `41766072582`) | `image-bootcheck.yml`, `tests/vm` |
 | AlmaLinux 10 | published by the weekly build; boot and session checks run in the publish leg | `image-publish.yml` |
 | Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
-| RHEL 10 | built and booted on the retired factory (historical); composition and rendering stay tested here | [roadmap](roadmap.md), [ADR 0014](adr/0014-platform-base-ownership.md) |
+| RHEL 10 | composition, boot, first boot and session checks pass on 10.3 (2026-11-14, a downstream organization's factory build) | [platforms](platforms.md), [ADR 0014](adr/0014-platform-base-ownership.md) |
 
 Update and rollback are not inferred from unit tests. `lifecycle-test.yml`
 installs a CentOS Stream 10 disk, moves A to B and back, injects a power loss in

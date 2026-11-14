@@ -10,10 +10,12 @@ spec:
   packageManager: rpm
   bootc:
     image: registry.redhat.io/rhel10/rhel-bootc:10.3
-    # x86_64 manifest, created 2026-11-05; kernel 6.12.0-264.14.1.el10_3,
-    # bootc 1.17.1 and systemd 257-33, measured 2026-11-13 on the tagged
-    # digest. The 10.2 pin carried the CVE-2026-98432 fix (RHSA-2026:93413);
-    # the scan on a 10.3 build is what proves the newer kernel keeps it.
+    # x86_64 manifest, created 2026-11-05; the tag carries kernel
+    # 6.12.0-264.14.1.el10_3, bootc 1.17.1 and systemd 257-33 (measured
+    # 2026-11-13). The compose moves them on: the factory build of 2026-11-14
+    # installed kernel 6.12.0-264.16.1.el10_3 and podman 6.1.1-1.el10_3. The
+    # 10.2 pin carried the CVE-2026-98432 fix (RHSA-2026:93413); the scan on a
+    # 10.3 build is what proves the newer kernel keeps it.
     digest: sha256:47408136693bfe3aa58dad2a1f971c024fefd0802edf467a8de14de8e20bb910
   distribution:
     # rhel-bootc and images derived from it are covered by the RHEL EULA and
@@ -33,12 +35,12 @@ spec:
   # (docs/adr/0022). The names are a no-op on a base or group that does not ship
   # them, which is why the same declaration is safe across the EL10 family.
   removePackages: [gnome-software, gnome-software-rpm-ostree]
-  # Firefox and Thunderbird stay in AppStream and Red Hat supports them for the
-  # life of RHEL 10 (10.2 release notes, 2026-07-30): measured 2026-10-31 on the
-  # EL10 compose, firefox 140.17.0-1.el10 and thunderbird 140.17.0-1.el10 in
-  # appstream. The browser is PackageSet/firefox, the vendor RPM; the environment's
-  # redhat-flatpak-preinstall-firefox stays excluded above because its OCI
-  # authenticator needs a session bus.
+  # Firefox stays in AppStream and Red Hat supports it for the life of RHEL 10
+  # (10.2 release notes, 2026-07-30). 10.3 carries firefox 153.7.0-1.el10_3,
+  # measured 2026-11-14 in the factory build; Thunderbird is not installed by
+  # this fleet and was not measured. The browser is PackageSet/firefox, the
+  # vendor RPM; the environment's redhat-flatpak-preinstall-firefox stays
+  # excluded above because its OCI authenticator needs a session bus.
   unavailablePackages:
     - name: virt-manager
       reason: RHEL 10 moved it to the CodeReady Linux Builder repository, whose packages Red Hat does not support
@@ -77,7 +79,9 @@ spec:
           version: "66"
           url: https://github.com/ubuntu/gnome-shell-extension-appindicator/releases/download/v66/appindicatorsupport%40rgcjonas.gmail.com.zip
           sha256: f2b17c7c5590f729853cd353f20a9e59b6e0c32e9c0a561976e09f5a97487730
-    # No appFolders: gnome-shell 49.4 replaces dconf-default app folders at first login (fixed in 49.5).
+    # 10.3 ships gnome-shell 49.5-13.el10, which carries the fix that stopped
+    # 49.4 from overwriting dconf-default app folders at first login.
+    appFolders: true
     # Starts an application by desktop file id (keyboard shortcuts).
     appLauncher:
       package: gtk3
