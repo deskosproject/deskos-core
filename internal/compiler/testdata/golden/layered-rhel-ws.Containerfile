@@ -7,7 +7,7 @@
 # Building requires an entitled build host; credentials are supplied by
 # the build environment and are never part of this build context.
 
-FROM registry.redhat.io/rhel10/rhel-bootc:10.2@sha256:80485ddb9025df594891c36e23f865c63910739c10d37f41ae7247b0c64c2884
+FROM registry.redhat.io/rhel10/rhel-bootc:10.3@sha256:47408136693bfe3aa58dad2a1f971c024fefd0802edf467a8de14de8e20bb910
 
 # Package groups
 RUN --mount=type=tmpfs,target=/var/lib/rhsm \
