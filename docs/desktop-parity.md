@@ -42,36 +42,37 @@ from the base on Fedora (ADR 0026).
 Measured 2026-11-01 with `dnf repoquery` on the digests then pinned: CentOS
 Stream 10 `0af0dc39`, AlmaLinux 10 `0a036afe`, Fedora 45 `900e1adf`. The CentOS
 pin moved to `f43c24c5` on 2026-11-03; re-measure before relying on a version
-tie.
+tie. The RHEL column is the installed stack of the 10.3 factory build
+(2026-11-14), not a repoquery; AlmaLinux 10.3 is not published yet.
 
-| | CentOS Stream 10 | AlmaLinux 10 | Fedora 45 | RHEL 10.2 |
+| | CentOS Stream 10 | AlmaLinux 10 | Fedora 45 | RHEL 10.3 |
 |---|---|---|---|---|
-| GNOME Shell | 49.5-18 | 49.4-9 | **51.1-1** | 49.4-9* |
-| GDM | 47.0-32 | 47.0-24 | **51.0-1** | 47.0* |
-| Ptyxis | 47.13-1 | 47.13-1 | **50.1-6** | 47.13* |
-| Flatpak | **1.18.0-2** | 1.16.0-9 | 1.18.4 | 1.16.0-9† |
-| Mesa | 26.1.1-2 | 25.2.7-4 | 26.2.3-1 | 25.2.7* |
-| PipeWire | 1.6.9-1 | 1.4.11-1 | 1.6.9-1 | 1.4.11* |
-| Firefox | 140.17.0-1 | 153.5.0-1 | **159.0-1** | 140.16.0-1† |
+| GNOME Shell | 49.5-18 | 49.4-9 | **51.1-1** | 49.5-13 |
+| GDM | 47.0-32 | 47.0-24 | **51.0-1** | 47.0-32 |
+| Ptyxis | 47.13-1 | 47.13-1 | **50.1-6** | 47.13-1 |
+| Flatpak | **1.18.0-2** | 1.16.0-9 | 1.18.4 | 1.18.0-1 |
+| Mesa | 26.1.1-2 | 25.2.7-4 | 26.2.3-1 | 26.1.1-2 |
+| PipeWire | 1.6.9-1 | 1.4.11-1 | 1.6.9-1 | 1.4.11-1.1.1 |
+| Firefox | 140.17.0-1 | 153.5.0-1 | **159.0-1** | 153.7.0-1 |
 
-`*` RHEL 10.2 publishes the version AlmaLinux rebuilds: the `el10_2` NEVRA without
-the `.alma` suffix. `†` recorded in this repository
-([ADR 0012](adr/0012-vulnerability-severity-and-vex-policy.md), the RHEL 10.2
-scans in [research notes](research-notes.md)). Fedora's Flatpak package reports
+RHEL 10.3 values are the installed packages of the factory build (2026-11-14);
+their release suffixes are `el10` and `el10_3`. The other columns are `dnf
+repoquery` results on the pinned digests. Fedora's Flatpak package reports
 `1.19.0^really1.18.4`; the table shows the upstream release it carries.
 
 ## What the numbers say
 
-- **CentOS Stream 10 is the branch RHEL 10.3 is cut from**, and it is ahead of
-  RHEL 10.2 on the stack: GNOME 49.5 against 49.4, Flatpak 1.18 against 1.16, Mesa
-  26.1 against 25.2, PipeWire 1.6 against 1.4. "Abandoned" is the wrong reading.
+- **CentOS Stream 10 is the branch RHEL 10.3 is cut from**, and 10.3 has caught
+  up with it on GNOME (49.5), Flatpak (1.18) and Mesa (26.1). PipeWire stays one
+  branch behind (1.4 against 1.6). "Abandoned" is the wrong reading.
 - **AlmaLinux 10.2 is RHEL 10.2 with its own branding**, plus its own choices: CRB
   is enabled by default, and Firefox and Thunderbird are rebased to the latest
-  upstream release (153.5) instead of the ESR 140 that RHEL and CentOS Stream ship.
-  That is a support model, not a polish level: features sooner, no ESR window and no
-  vendor validation against the desktop.
+  upstream release (153.5). RHEL 10.3 has since rebased its own Firefox to 153.7,
+  so the older contrast with an ESR 140 no longer holds; AlmaLinux 10.3 is not
+  published yet.
 - **Fedora 45 is the newest stack** (GNOME 51, GDM 51, Ptyxis 50) and publishes the
-  newest Firefox (159.0) because it tracks the release, not the ESR.
+  newest Firefox (159.0) because it tracks the release rather than a vendor's
+  cadence.
 
 ## What this page is not
 
