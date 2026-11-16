@@ -7,6 +7,12 @@ it verifies the digest and its records, stores an approval record and
 moves `:stable` and the ISO channel by digest. A dispatch still promotes a digest
 built earlier.
 
+This page describes Core's own pipeline, which builds and promotes weekly and
+reacts to the build's success. The contract in
+[ADR 0031](../adr/0031-build-and-release-contract.md) leaves the cadence to the
+pipeline: an organization may build daily and call `promotion.yml` weekly from
+`:candidate`, which is what DayTwo does.
+
 Every move names a digest, its records and who approved it: `automatic (gate)`
 with the run that produced it. The first promotion of all was a dispatch on
 2026-10-26 and moved `sha256:96fe80d3…` to `:stable` from `:latest` (run
