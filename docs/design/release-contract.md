@@ -24,12 +24,14 @@ it.
 |---|---|---|
 | Build | the image digest | the registry, `:<commit>` |
 | Gate | scan, boot, session and first-boot results, SBOMs | the evidence index |
-| Publish | `:latest` and `:candidate` | the registry |
+| Publish | `:edge` | the registry |
+| Scan | `:candidate` and `:latest` | the registry |
 | Approval | the approval record | `approvals/<repository>/stable/` |
 | Release | this record, then `:stable` | `releases/<repository>/stable/` |
 
-The record is written after the approval and after the installer move, so the
-`iso` field can name the installer digest that was actually promoted.
+The record is written at promotion; `iso` names the installer digest when one
+already exists for that image, and is `null` when the weekly installer has not
+built it yet.
 
 ## Schema
 
@@ -53,8 +55,9 @@ The record is written after the approval and after the installer move, so the
 - **digest** is the image the release is about; every other digest refers to it.
 - **channel.previous** is the stable digest the move replaced, or `null` for the
   first move.
-- **iso** is `null` for a platform that publishes no installer. A platform whose
-  installer repository does not exist is not a failed promotion.
+- **iso** is `null` when the platform publishes no installer, or when the weekly
+  installer has not built the digest yet. A platform whose installer repository
+  does not exist is not a failed promotion.
 - **signature.scheme** is `keyless` for the public Core images and `key-based`
   for the private organization; the scheme is a property of the audience, not a
   stage.

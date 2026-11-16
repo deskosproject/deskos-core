@@ -33,22 +33,28 @@ tag vocabulary.
 |---|---|---|---|
 | 1 | `image-publish[-<platform>].yml` | Build; declared and installed SBOMs; compare; boot, session and first-boot checks; push the immutable commit; sign it | `:edge` |
 | 2 | `image-scan[-<platform>].yml` | Grype and the reviewed exceptions against the published digest | `:candidate`, `:latest` |
-| 3 | `promotion.yml` | Verify signature, evidence and approval record | `:stable` |
-| 4 | `installer-build.yml` | Build the ISO from the published digest and sign it | `:candidate`, `:latest`; follows `:stable` |
+| 3 | `promotion.yml` | Verify signature, evidence and approval record; `promotion-weekly.yml` calls it once per flavor | `:stable` |
+| 4 | `installer-build.yml` | Build the ISO from the published digest and sign it; `installer-weekly.yml` calls it from `:stable`, a manual publish calls it with the image | `:candidate`, `:stable` |
 | 5 | `installer-test.yml` | Install unattended in QEMU, on demand | none |
 
+- **Cadence.** The contract fixes the stages and the meaning of each tag, not
+  how often a pipeline runs them. Core builds and promotes weekly; an
+  organization may build daily and promote weekly, which is what DayTwo does.
 - **Names.** Workflows are `<stage>[-<platform>].yml`, without an organization
-  prefix. Jobs are `prepare`, `build`, `verify`, `scan`, `publish`, `installer` and
-  `promote`; the installer workflow's own job is `iso`. Repository names
-  stay `<project>-<variant>-<platform>`.
+  prefix. Jobs are `resolve`, `build`, `verify`, `scan`, `publish`, `approve`,
+  `installer`, `stable` and `iso`. Two wrappers carry the cadence:
+  `promotion-weekly.yml` and `installer-weekly.yml`. Repository names stay
+  `<project>-<variant>-<platform>`.
 - **Steps.** The boot checks are named “Boot check”, “Session check” and
   “First-boot check”; the scan step is “Scan (Grype)”; the signing step is
   “Publish, sign and attest”; the installer steps are “Build the installer ISO”
   and “Publish and sign the installer”.
 - **Tags.** `:edge` is image only and means “the build boot-checked and signed
-  this digest, before the scan”. `:latest` means “the scan passed”; the
-  installer follows it for the same digest. `:stable` means “the evidence and
-  the approval were verified”. `:candidate` is the source a promotion checks.
+  this digest, before the scan”. `:latest` means “the scan passed”. `:stable`
+  means “the evidence and the approval were verified”; it is promoted weekly
+  from `:candidate`, and the installer is built weekly from it, so the
+  installer's `:latest` trails the image's. `:candidate` is the source a
+  promotion checks.
 - **Failure rules.**
   - A failed scan leaves `:latest` and `:stable` where they were; `:edge` does
     not move back.
@@ -68,14 +74,16 @@ commit and `:edge` become visible. The channels that a machine follows do not
 change: `:latest` and `:stable` still require the scan and the promotion.
 
 An organization must extract the ISO from its image job into `installer-build`,
-rename the workflows, and let a failed ISO stop only the installer. Its scan and
-promotion already match stages 2 and 3.
+rename the workflows, and let a failed ISO stop only the installer. Its scan
+matches stage 2; its promotion is called weekly from `:candidate` by
+`promotion-weekly.yml`, and `installer-weekly.yml` builds the ISO from `:stable`.
 
 Neither repository tests the published ISO’s install path today. Core’s
 `installer-test` builds a test-only ISO; an organization has no installer test.
 Until stage 5 exercises the published ISO, both advertise an installer whose
 install path is unverified. That gap is named here rather than hidden.
 
-The migration is staged: the names and the ISO split first, the Core scan split
-next, and the installer smoke test last. Existing release records and tags stay
+The migration is staged: the names and the ISO split first, the cadence split
+next (daily build, weekly promotion and ISO), then the Core scan split, and the
+installer smoke test last. Existing release records and tags stay
 readable; no digest is rebuilt to satisfy the contract.
