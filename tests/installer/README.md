@@ -21,12 +21,17 @@ ISO built here: `clearpart --all` erases every disk the installer sees.
 On a Linux host with rootful Podman:
 
 ```bash
-tests/installer/build.sh quay.io/deskos/deskos-core-centos-stream-10:latest
+# CentOS Stream 10 (xfs)
+tests/installer/build.sh quay.io/deskos/deskos-core-centos-stream-10:latest xfs
+
+# Fedora 45 (btrfs)
+tests/installer/build.sh quay.io/deskos/deskos-core-fedora-45:latest btrfs
 ```
 
-The ISO is `tests/installer/output/bootiso/install.iso`. Use an image reference
-the test does not need to update from; unlike the published ISO, this one is
-not pinned to an update source.
+The second argument is the image's root filesystem; pass it when the builder
+cannot infer it. The ISO is `tests/installer/output/bootiso/install.iso`. Use an
+image reference the test does not need to update from; unlike the published ISO,
+this one is not pinned to an update source.
 
 ## Run
 

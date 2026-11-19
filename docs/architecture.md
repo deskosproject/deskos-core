@@ -212,7 +212,7 @@ moves.
 |---|---|---|
 | CentOS Stream 10 | built, booted and session-checked on the 2026-11-03 base (run `41766072582`) | `image-bootcheck.yml`, `tests/vm` |
 | AlmaLinux 10 | published by the weekly build; boot and session checks run in the publish leg | `image-publish.yml` |
-| Fedora 45 | same run, on `45.20261103.0` | `image-bootcheck.yml` |
+| Fedora 45 | same run, on `45.20261103.0`; installer ISO built, signed and published from that image (run `44449040926`) | `image-bootcheck.yml`, `installer-build.yml` |
 | RHEL 10 | composition, boot, first boot and session checks pass on 10.3 (2026-11-14, a downstream organization's factory build) | [platforms](platforms.md), [ADR 0014](adr/0014-platform-base-ownership.md) |
 
 Update and rollback are not inferred from unit tests. `lifecycle-test.yml`
