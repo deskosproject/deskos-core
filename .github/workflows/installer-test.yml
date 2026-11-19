@@ -62,9 +62,23 @@ jobs:
           ls -l /dev/kvm
 
       - name: Install QEMU and OVMF
+        # The Ubuntu mirrors answered 503 for several minutes on 2026-11-19 and
+        # failed the job before QEMU ran. apt has its own retries, but they were
+        # not enough at the index and pool level; retry the whole transaction.
+        timeout-minutes: 20
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends qemu-system-x86 qemu-utils ovmf
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            if sudo apt-get update -o Acquire::Retries=5 \
+              && sudo apt-get install -y --no-install-recommends -o Acquire::Retries=5 \
+                   qemu-system-x86 qemu-utils ovmf; then
+              exit 0
+            fi
+            echo "apt failed (attempt $i); retrying in $((i * 15))s" >&2
+            sleep $((i * 15))
+          done
+          echo "::error::apt could not install QEMU after 5 attempts" >&2
+          exit 1
 
       - name: Pull the published image, with retries
         run: |
