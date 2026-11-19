@@ -49,6 +49,13 @@ published image is at <https://download.deskos.org/> (check its checksum); for a
 QCOW2 or Anaconda ISO use `bootc-image-builder`:
 [install.md](install.md#option-1-install-the-published-image).
 
+### Fedora 45: pull the image, then install
+
+The same channels at `quay.io/deskos/deskos-core-fedora-45`, with its installer
+at `quay.io/deskos/deskos-core-fedora-45-installer`: an OCI artifact tagged by the
+image digest it was built from, with `:latest` and `:stable` following the image.
+The image's root is btrfs.
+
 ### RHEL 10: build privately, never publish
 
 An organization with RHEL subscriptions builds its own from the entitled base

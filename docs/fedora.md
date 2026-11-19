@@ -90,7 +90,7 @@ already ships, so the desktop is drawn in the same families as CentOS Stream 10.
 | Image built | CI, pull requests that change the platform, its Core resources or the workflow |
 | Booted and checked | CI: GNOME, session check |
 | Published image | **published** (`quay.io/deskos/deskos-core-fedora-45`) |
-| Installer ISO | **published** (`quay.io/deskos/deskos-core-fedora-45-installer`), built from the image with its btrfs root |
+| Installer ISO | **published** (`quay.io/deskos/deskos-core-fedora-45-installer`), built from the image with its btrfs root (run `44449040926`, ISO `sha256:601c163e…`) |
 | System Flatpak | preinstall |
 
 The package manifest (ADR 0028) is `manifests/fedora-45.txt`, measured on this

@@ -178,6 +178,14 @@ and booted in KVM: DeskOS splash, then GNOME Initial Setup over the DeskOS
 wallpaper. It is an installer built from a published image, not from the current
 `main`; verify its published checksum.
 
+The Fedora 45 installer was built, signed and published from its published
+image on 2026-11-19 (run `44449040926`): 4.41 GiB, ISO
+`sha256:601c163ebf3d9f7de3a209a000548eb336167285820994fb1c926b084df760a0`,
+annotated with image
+`sha256:18abd3a4e7e73938d2ab6b90ad6d55c3b7d29304e0b63fb23c66e2fee4a34345`. The
+unattended install test runs the test-only ISO from the same image and root
+filesystem.
+
 **Not tested here:** bare metal, BIOS boot, RHEL ISOs (downstream), and updates
 through the `bootc switch` reference.
 
