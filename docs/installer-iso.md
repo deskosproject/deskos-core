@@ -183,8 +183,10 @@ image on 2026-11-19 (run `44449040926`): 4.41 GiB, ISO
 `sha256:601c163ebf3d9f7de3a209a000548eb336167285820994fb1c926b084df760a0`,
 annotated with image
 `sha256:18abd3a4e7e73938d2ab6b90ad6d55c3b7d29304e0b63fb23c66e2fee4a34345`. The
-unattended install test runs the test-only ISO from the same image and root
-filesystem.
+test-only ISO built from the same image and root filesystem was installed
+unattended in QEMU and reached the installed system (run `44525734237`, marker
+`Install finished`). The published interactive ISO was not hand-installed: it
+asks for the disk and LUKS, so a person has to complete it.
 
 **Not tested here:** bare metal, BIOS boot, RHEL ISOs (downstream), and updates
 through the `bootc switch` reference.
