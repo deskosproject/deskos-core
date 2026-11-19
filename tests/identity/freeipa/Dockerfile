@@ -1,4 +1,4 @@
-FROM quay.io/centos/centos:stream10@sha256:5eaff839eea6ca355f8122044dcfaefbac5ac991940f223b668dcf80478e3166
+FROM quay.io/centos/centos:stream10@sha256:a266f7ae08c4b3f5d0eaaa8a500201d40d260ecdfa81e49991fe8d27699d69e9
 
 ENV container=podman LANG=C.UTF-8
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
