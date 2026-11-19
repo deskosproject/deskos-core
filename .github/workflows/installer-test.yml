@@ -11,6 +11,19 @@ name: installer-test
 
 on:
   workflow_dispatch:
+    inputs:
+      image:
+        description: Published image to install
+        type: choice
+        options:
+          - quay.io/deskos/deskos-core-centos-stream-10:latest
+          - quay.io/deskos/deskos-core-fedora-45:latest
+        default: quay.io/deskos/deskos-core-centos-stream-10:latest
+      rootfs:
+        description: Root filesystem of the image
+        type: choice
+        options: [xfs, btrfs]
+        default: xfs
 
 permissions:
   contents: read
@@ -20,7 +33,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  IMAGE: quay.io/deskos/deskos-core-centos-stream-10:latest
+  IMAGE: ${{ inputs.image || 'quay.io/deskos/deskos-core-centos-stream-10:latest' }}
+  ROOTFS: ${{ inputs.rootfs || 'xfs' }}
   ISO_WORK: /mnt/installer-work
 
 jobs:
@@ -76,7 +90,7 @@ jobs:
 
       - name: Build the test-only ISO
         timeout-minutes: 60
-        run: tests/installer/build.sh "$IMAGE"
+        run: tests/installer/build.sh "$IMAGE" "$ROOTFS"
 
       - name: Install unattended and require the completion marker
         timeout-minutes: 45

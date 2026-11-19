@@ -1,0 +1,12 @@
+[
+  {
+    "platform": "centos-stream-10",
+    "image": "quay.io/deskos/deskos-core-centos-stream-10",
+    "rootfs": "xfs"
+  },
+  {
+    "platform": "fedora-45",
+    "image": "quay.io/deskos/deskos-core-fedora-45",
+    "rootfs": "btrfs"
+  }
+]

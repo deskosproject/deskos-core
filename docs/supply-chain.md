@@ -97,8 +97,8 @@ weekly build, the installer, the promotion and the mirror then do nothing, and
 ### Installer
 
 `.github/workflows/installer-build.yml` is separate so an image that passed its
-checks is published whether or not its installer built. Only CentOS Stream 10
-publishes a Core installer.
+checks is published whether or not its installer built. CentOS Stream 10 and
+Fedora 45 publish a Core installer; AlmaLinux does not.
 
 The job verifies the image's keyless signature, builds with the image's own root
 filesystem, signs the ISO with the workflow identity, and tags `sha256-<image

@@ -31,8 +31,8 @@ project owns one, and its build, boot and publication live in
 
 AlmaLinux 10 and Fedora 45 joined the matrix on 2026-10-30. AlmaLinux's base
 is still labelled experimental by its vendor. All three publish an image with
-`:latest`, `:candidate` and `:stable`; only CentOS Stream 10 has a Core installer,
-and its ISO follows the image's `:latest` and `:stable`.
+`:latest`, `:candidate` and `:stable`; CentOS Stream 10 and Fedora 45 have a
+Core installer, and each ISO follows its image's `:latest` and `:stable`.
 Their pins live in `resources/platforms/`, and Fedora's mirror is described in
 [fedora.md](fedora.md). The desktop is the same on every flavor;
 [desktop parity](desktop-parity.md) lists what each platform adds.
@@ -85,7 +85,8 @@ The matrix above is the support statement. It is **not an LTS promise**, and a
 vendor's lifecycle dates do not become DeskOS dates.
 
 - **Maintained artifacts today:** CentOS Stream 10, AlmaLinux 10 and Fedora 45,
-  each published as a Core image (only CentOS has a Core installer); RHEL 10,
+  each published as a Core image (CentOS Stream 10 and Fedora 45 have a Core
+  installer); RHEL 10,
   built privately under an entitlement; Ubuntu 26.04, in its own repo. Only
   `examples/layers/` is built in CI, to exercise its repositories; the other
   examples validate and are not supported.

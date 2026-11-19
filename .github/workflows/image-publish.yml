@@ -65,6 +65,9 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      # Which installers this run builds: the platforms in
+      # .github/matrices/installers.json that match the requested platform.
+      installers: ${{ steps.matrix.outputs.installers }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Select the platforms this run builds
@@ -80,6 +83,12 @@ jobs:
           ' .github/matrices/image-publish.json > matrix.json
           test "$(jq 'length' matrix.json)" -gt 0
           echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"
+          jq -c --arg platform "$PLATFORM" '
+            if $platform == "all" then .
+            else map(select(.platform == $platform))
+            end
+          ' .github/matrices/installers.json > installers.json
+          echo "installers=$(cat installers.json)" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: prepare
@@ -764,25 +773,25 @@ jobs:
   # there costs one ISO build and a dispatch, not a two-hour rebuild of an image
   # that already passed this gate, and the image's evidence is unaffected.
   #
-  # One entry per platform that publishes an installer in Core. Only CentOS
-  # Stream 10 does: Fedora publishes an image and no installer, and its
-  # downstream organization builds the installer from that image. The digest
+  # One entry per platform that publishes an installer in Core: CentOS Stream 10
+  # and Fedora 45. AlmaLinux publishes an image and no installer. The digest
   # always comes from the job above, so a wrong repository fails at the pull
   # instead of shipping the wrong ISO.
   installer:
-    needs: publish
+    needs: [prepare, publish]
     # Each leg resolves its own image: a platform whose publish leg failed has no
     # image, so its installer skips. Without `always()` a failed publish leg
-    # would cancel the installer.
-    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.platform == 'all' || inputs.platform == 'centos-stream-10')
+    # would cancel the installer. The matrix is filtered in `prepare`, so a
+    # single-platform dispatch runs only that platform's installer, and a
+    # platform without an installer (AlmaLinux) produces an empty matrix and
+    # skips.
+    if: always() && (github.event_name == 'schedule' || inputs.publish) && github.ref == 'refs/heads/main' && needs.prepare.outputs.installers != '[]'
     strategy:
       # Keep a future leg from hiding another; one failing installer is a
       # failure of its own leg.
       fail-fast: false
       matrix:
-        include:
-          - image: quay.io/deskos/deskos-core-centos-stream-10
-            rootfs: xfs
+        include: ${{ fromJSON(needs.prepare.outputs.installers) }}
     uses: ./.github/workflows/installer-build.yml
     with:
       image: ${{ matrix.image }}
