@@ -24,7 +24,7 @@ image with a fork and one workflow.
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/deskos-flow-dark.svg">
-    <img alt="Resource roots pass through validation, composition and a typed plan, become a build context, and build into one bootc image per platform: CentOS Stream 10, AlmaLinux 10 and Fedora 45 are published, RHEL 10 is built privately, and only CentOS Stream 10 also has an installer ISO" src="docs/images/deskos-flow-light.svg" width="900">
+    <img alt="Resource roots pass through validation, composition and a typed plan, become a build context, and build into one bootc image per platform: CentOS Stream 10, AlmaLinux 10 and Fedora 45 are published, RHEL 10 is built privately, and CentOS Stream 10 and Fedora 45 also have an installer ISO" src="docs/images/deskos-flow-light.svg" width="900">
   </picture>
 </p>
 
@@ -109,7 +109,7 @@ the driver edits the previous GRUB entry. The run keeps deployment identities,
 | CentOS Stream 10 | published image, installer ISO; boot, session and first-boot checks gate publication; update/rollback and domain login run separately |
 | RHEL 10 | composes and renders here; the entitled build runs in the organization that owns the subscription and is never published |
 | AlmaLinux 10 | published image; Core publishes no installer |
-| Fedora 45 | published image; Core publishes no installer, a downstream organization does |
+| Fedora 45 | published image, installer ISO; boot, session and first-boot checks gate publication |
 
 The full matrix, with what is and is not verified, is
 [platforms.md](docs/platforms.md).

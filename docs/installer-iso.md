@@ -17,6 +17,9 @@ reference is where installed machines update from.
   `quay.io/deskos/deskos-core-centos-stream-10:latest`, or the image you built
   locally. [architecture.md](architecture.md#validation-status) carries the digest
   `:stable` serves.
+- For the Fedora 45 image: use `quay.io/deskos/deskos-core-fedora-45:latest` and
+  pass `--rootfs btrfs`, because Silverblue's root is btrfs. Its installer is
+  published at `quay.io/deskos/deskos-core-fedora-45-installer`.
 - For your own image, tag it with the reference they will update from and push it
   before handing out the ISO; a `localhost/` tag leaves them without an update
   source:

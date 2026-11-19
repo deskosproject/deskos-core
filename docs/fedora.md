@@ -89,7 +89,8 @@ already ships, so the desktop is drawn in the same families as CentOS Stream 10.
 | Composes and renders | validated by the compiler tests and `checks.yml` |
 | Image built | CI, pull requests that change the platform, its Core resources or the workflow |
 | Booted and checked | CI: GNOME, session check |
-| Published image | **published** (`quay.io/deskos/deskos-core-fedora-45`); Core publishes no installer for it |
+| Published image | **published** (`quay.io/deskos/deskos-core-fedora-45`) |
+| Installer ISO | **published** (`quay.io/deskos/deskos-core-fedora-45-installer`), built from the image with its btrfs root |
 | System Flatpak | preinstall |
 
 The package manifest (ADR 0028) is `manifests/fedora-45.txt`, measured on this

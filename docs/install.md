@@ -115,7 +115,9 @@ its kickstart runs `clearpart --all` and erases every disk it sees.
 > installed machine follows it for every later `bootc upgrade`. The kickstarts are
 > in [installer-iso.md](installer-iso.md).
 An installer ISO is at <https://download.deskos.org/>; verify its `SHA256SUMS`
-before booting.
+before booting. The Fedora 45 flow is the same with
+`quay.io/deskos/deskos-core-fedora-45` and `--rootfs btrfs`; its published
+installer is `quay.io/deskos/deskos-core-fedora-45-installer`.
 
 ### 4. Boot it
 
