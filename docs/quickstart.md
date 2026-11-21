@@ -1,13 +1,21 @@
 # Quick start
 
-The shortest path to a running DeskOS machine: take an image the pipeline
-already built, scanned and booted, write a disk from it, and boot the disk. No
-resources, no compiler, no build.
+Two ways to a running DeskOS machine.
 
-**You need:** Linux x86_64 with rootful Podman and QEMU, about 20 GB free, and
-KVM for the virtual machine.
+**Download** an image the pipeline already built, scanned and booted. Nothing to
+compile and no resources to write: pull it, write a disk, boot it.
 
-## 1. Pick the image
+**Compile** your own from YAML with the compiler in this repository, then build
+and boot it the same way.
+
+Start with the download: it is the fastest way to see the desktop. Compile when
+the published layers are not the ones you need.
+
+**You need:** Linux x86_64, rootful Podman, QEMU with KVM, and about 20 GB free.
+
+## Path A: download a published image
+
+### 1. Pick the image
 
 | Platform | Image |
 |---|---|
@@ -20,7 +28,7 @@ lane with the newest digest the weekly build passed; `:candidate` is that same
 digest before promotion. The table uses `:stable`; pin the digest you verified
 for production ([install.md](install.md#option-1-install-the-published-image)).
 
-## 2. Write a QCOW2
+### 2. Write a QCOW2
 
 ```bash
 mkdir -p output
@@ -45,7 +53,7 @@ The disk lands at `output/qcow2/disk.qcow2`. Fedora's root filesystem is
 ([Fedora 45](fedora.md)). CentOS Stream 10 and AlmaLinux 10 use `xfs`, which is
 what the command already asks for.
 
-## 3. Boot it
+### 3. Boot it
 
 ```bash
 sudo qemu-system-x86_64 \
@@ -65,11 +73,62 @@ user account**: the wizard creates the first one, and that account is the
 administrator. The desktop is the DeskOS one: the dock, the tray and the
 applications the workstation declares.
 
+## Path B: compile your own from YAML
+
+The compiler is `deskosctl`, in the checkout under `bin/`. It validates every
+resource, merges the layers into a typed Plan and writes one build context. It
+does not use the network.
+
+### 1. Read the workstation
+
+The shipped example is one file,
+`examples/centos-stream-10/workstations/example-centos-stream-10.yaml`:
+
+```yaml
+apiVersion: core.deskos.org/v1alpha1
+kind: Workstation
+metadata:
+  name: example-centos-stream-10
+spec:
+  displayName: DeskOS Core (CentOS Stream 10)
+  platformRef: centos-stream-10
+  profiles:
+    - deskos-core
+    - deskos-dock
+    - deskos-gnome
+    - deskos-look
+    - deskos-reference-apps
+    - firefox
+    - rhel-family
+```
+
+A workstation is one platform plus the profiles it is made of. Each profile
+names resources; every kind and its fields are in [resources.md](resources.md).
+
+### 2. Render and build
+
+```bash
+./bin/deskosctl validate ./examples/centos-stream-10
+./bin/deskosctl render ./examples/centos-stream-10 \
+    --workstation example-centos-stream-10 \
+    --output ./dist/centos
+sudo podman build -t localhost/deskos-centos:test ./dist/centos
+```
+
+`render` writes `dist/centos/Containerfile` and the files it copies. Read it and
+diff it before you build: it is the whole output of the compiler.
+
+### 3. Write the disk
+
+Run the command in step A2 with `localhost/deskos-centos:test` as the last
+argument. A `localhost/` tag is a lab artifact, not an update source: push the
+image to a registry the machine can reach before you rely on updates
+([install.md](install.md#option-2-build-your-own-then-install-it)).
+
 ## Where to go next
 
-- **Install on a machine**, or build an ISO from the same image:
+- **Install on a machine**, or build an ISO from an image:
   [install.md](install.md) and [installer-iso.md](installer-iso.md).
-- **Build your own image** from resources instead of taking ours:
-  [development.md](development.md).
-- **Understand what you booted**: [architecture.md](architecture.md) and the
-  [resource reference](resources.md).
+- **Author your own layers** instead of the example:
+  [development.md](development.md) and [resources.md](resources.md).
+- **Understand what you booted**: [architecture.md](architecture.md).
