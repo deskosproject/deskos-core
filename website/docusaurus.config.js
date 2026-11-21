@@ -92,6 +92,16 @@ const config = {
             label: 'Documentation',
           },
           {
+            href: 'https://deskos.org/',
+            label: 'Website',
+            position: 'right',
+          },
+          {
+            href: 'https://download.deskos.org/',
+            label: 'Download',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/deskosproject/deskos-core',
             label: 'GitHub',
             position: 'right',

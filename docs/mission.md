@@ -9,9 +9,8 @@ DeskOS builds a Linux workstation as an operating-system image. You describe the
 machine in YAML, DeskOS compiles it, and the machine runs that image.
 
 The image is bootc: an OCI image that boots. An update deploys a new image beside
-the running one; a reboot switches to it, a rollback switches back. The
-description is declarative: resources list packages, desktop settings, branding
-and update policy. Compilation is deterministic, with no model and no network.
+the running one; a reboot switches to it, a rollback switches back. The machine
+is described in YAML and compiled, not scripted in place.
 
 | DeskOS is | DeskOS is not |
 |---|---|
@@ -23,6 +22,24 @@ and update policy. Compilation is deterministic, with no model and no network.
 The supported platforms are CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora
 45 ([Platforms](platforms.md)). Core never publishes RHEL images: an organization
 builds them with its own subscription.
+
+## How it works
+
+1. **Declare.** Write YAML in four layers: `foundation`, `organization`, `role`
+   and `workstation`. A layer names resources: packages, desktop defaults,
+   repositories, trust anchors, update policy. There is no shell and no hook.
+2. **Compile.** Run `deskosctl render` offline. It validates every resource,
+   merges the layers into a typed Plan and emits a deterministic
+   `Containerfile`.
+3. **Build.** Build the bootable OCI image with `podman`, on the vendor's bootc
+   base pinned by digest.
+4. **Boot.** Write the image to a disk with `bootc-image-builder`, or boot a
+   published installer, and start it.
+
+```bash
+deskosctl render --workstation deskos-core-centos-stream-10 --output ./dist
+sudo podman build -t registry.example.com/deskos/core:stable ./dist
+```
 
 ## Start here
 
