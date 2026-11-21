@@ -12,12 +12,14 @@ The image is bootc: an OCI image that boots. An update deploys a new image besid
 the running one; a reboot switches to it, a rollback switches back. The machine
 is described in YAML and compiled, not scripted in place.
 
-| DeskOS is | DeskOS is not |
-|---|---|
-| an image compiler: YAML to Plan to image | a distribution; it starts from the vendor's official base, pinned by digest |
-| declarative, deterministic, offline | a controller, agent or reconciliation loop |
-| one definition for a team, an organization or one person | a fleet manager, a policy server or a home-directory manager |
-| evidence bound to a digest | a support contract or a hardware promise |
+DeskOS is an image compiler, not a distribution. Each platform keeps its
+vendor's bootc base and DeskOS adds layers without forking it. One definition
+can serve one person, a team or an organization, and the result is evidence
+bound to a digest.
+
+No part of DeskOS runs as a service on the machine: no agent, no controller, no
+reconciliation loop. It is not a fleet manager, a policy server or a support
+contract.
 
 The supported platforms are CentOS Stream 10, RHEL 10, AlmaLinux 10 and Fedora
 45 ([Platforms](platforms.md)). Core never publishes RHEL images: an organization
