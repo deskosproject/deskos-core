@@ -26,10 +26,15 @@ spec:
     - name: workstation
       rpmGroups: [workstation-product-environment]
       graphical: true
-      # It preinstalls the Red Hat Firefox Flatpak, whose OCI authenticator needs a
-      # session bus and fails the system preinstall of every declared Flatpak. The
-      # browser is PackageSet/firefox, the RPM from AppStream (Profile/firefox).
-      excludePackages: [redhat-flatpak-preinstall-firefox]
+      # setroubleshoot is mandatory in workstation-product; its first-login AVC
+      # notification is not wanted on a workstation, and on image mode the fix it
+      # suggests is a local policy module that an image update can invalidate
+      # (docs/troubleshooting.md).
+      # It also preinstalls the Red Hat Firefox Flatpak, whose OCI authenticator
+      # needs a session bus and fails the system preinstall of every declared
+      # Flatpak. The browser is PackageSet/firefox, the RPM from AppStream
+      # (Profile/firefox).
+      excludePackages: [setroubleshoot, setroubleshoot-plugins, setroubleshoot-server, redhat-flatpak-preinstall-firefox]
   # Bazaar is the workstation's application store; GNOME Software is not. The
   # build removes it after the package transaction and proves it is absent
   # (docs/adr/0022). The names are a no-op on a base or group that does not ship

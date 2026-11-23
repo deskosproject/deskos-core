@@ -68,7 +68,10 @@
           "workstation-product-environment"
         ],
         "excludePackages": [
-          "redhat-flatpak-preinstall-firefox"
+          "redhat-flatpak-preinstall-firefox",
+          "setroubleshoot",
+          "setroubleshoot-plugins",
+          "setroubleshoot-server"
         ],
         "provenance": [
           {
