@@ -489,8 +489,24 @@ session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
   - `bootupd_t` (`lsblk` reading `/etc/group` and `/run/mount`),
     permissive. Known: RHEL-174888 and RHEL-219156 (selinux-policy,
     Release Pending).
-  - `tuned_t` (`chcon`, capability `mac_admin`), denied. No existing
-    report found (Red Hat Jira, 2026-09-29).
+  - `tuned_t` (`chcon`, capability `mac_admin`), denied. The caller is
+    TuneD: its bootloader plugin runs `bootc loader-entries
+    set-options-for-source` when it applies a profile, and bootc first
+    probes whether it can write an SELinux label by running `chcon -t
+    invalid_bootcinstall_testlabel_t` on a temporary file
+    ([`lsm.rs`](https://github.com/bootc-dev/bootc/blob/main/crates/lib/src/lsm.rs)).
+    `tuned_t` has no transition to `install_t`, so the probe is denied and
+    bootc carries on without the capability. Harmless, and it repeats on
+    every profile apply. Public reports: bootc-dev/bootc#1434 (open,
+    2025-07-21) tracks replacing the probe; ublue-os/cayo#121 (open,
+    2025-07-22) documents the same message from `bootc status`;
+    projectbluefin/utah#1198 (closed 2026-11-16) fixed two denials per boot
+    by running `bootc` from another domain; sparewall/sparewall#110 (closed
+    2026-10-19) documents the same pair from helper-run `bootc`;
+    redhat-performance/tuned#895 (open, 2026-09-26) covers tuned calling
+    `bootc` on non-bootc systems. Reported on RHEL 10.3 with tuned 2.28.0,
+    bootc 1.17.1 and selinux-policy-targeted 42.1.27 (DayTwo machine,
+    2026-11-23).
   - None came from the test instrumentation.
 
 ### mcelog on AMD: kvm3 host vs CS10 guest (2026-09-29)
