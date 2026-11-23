@@ -133,6 +133,33 @@ Three things cause it, in this order:
    sssctl domain-status ad.example.com   # "Online status: Online"
    ```
 
+## An SELinux alert says chcon needs mac_admin
+
+The alert names `chcon`, the domain `tuned_t` and the capability `mac_admin`.
+The machine is not compromised and nothing failed.
+
+`tuned` calls `bootc loader-entries set-options-for-source` when it applies a
+profile. Before writing kernel arguments, `bootc` tests whether it can set a
+SELinux label, with `chcon -t invalid_bootcinstall_testlabel_t` on a temporary
+file. `tuned_t` has no transition to `install_t`, so the test is denied and
+`bootc` continues without the capability. The failure is expected: bootc asks,
+learns it cannot, and goes on.
+
+Do not build a local policy module, and do not grant `mac_admin` to `tuned_t`.
+Upstream tracks the probe in
+[bootc-dev/bootc#1434](https://github.com/bootc-dev/bootc/issues/1434) and the
+call from tuned in
+[redhat-performance/tuned#895](https://github.com/redhat-performance/tuned/issues/895).
+The probe runs on every `bootc` invocation, so the count grows with profile
+switches and boots; two per switch is normal.
+
+A service that runs `bootc` itself can avoid the probe by running it in a domain
+with the transition:
+
+```bash
+systemd-run -p SELinuxContext=system_u:system_r:install_t:s0 /usr/bin/bootc status
+```
+
 ## What to send
 
 ```bash
