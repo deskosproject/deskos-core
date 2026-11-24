@@ -533,7 +533,6 @@ gpgme
 gpgmepp
 graphene
 graphite2
-graphviz-libs
 grep
 groff-base
 grub2-common
@@ -631,6 +630,7 @@ ibus-libs
 ibus-m17n
 ibus-setup
 ibus-typing-booster
+icu-tzdata
 igvm-libs
 iio-sensor-proxy
 ilbc

@@ -10,6 +10,13 @@ name: mirror-fedora
 # pin bump that follows it is a pull request. This job never touches a DeskOS
 # image repository, never signs and never publishes an artifact of our own.
 on:
+  # Fedora's :45 tag moves daily and stops serving old digests within days, so
+  # a pin only keeps resolving if its bytes were copied. The schedule keeps a
+  # recent copy in DeskOS's namespace; it never moves the pin, because the pin
+  # bump is a pull request and a base change is reviewed. Monday, before the
+  # image publish at 06:17 UTC.
+  schedule:
+    - cron: '43 5 * * 1'
   workflow_dispatch:
     inputs:
       source:
