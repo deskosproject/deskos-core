@@ -1141,6 +1141,7 @@ redhat-mono-vf-fonts
 redhat-text-vf-fonts
 rest
 rhc
+rhc-selinux
 rit-meera-new-fonts
 rit-rachana-fonts
 rootfiles
