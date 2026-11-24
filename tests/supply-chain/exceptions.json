@@ -9,7 +9,7 @@
     {
       "id": "GO-2026-6604",
       "kind": "accepted-risk-upstream-binary",
-      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below. Matches re-read from the 2026-11-13 base scan on 2026-11-24; the acceptance stands.",
       "matches": [
         {
           "package": "stdlib",
@@ -52,7 +52,7 @@
     {
       "id": "GO-2026-6612",
       "kind": "accepted-risk-upstream-binary",
-      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-10-17. Not a false positive: the vulnerable Go module and stdlib are compiled into binaries the base installs (podman, skopeo, toolbox, ipp-usb), and DeskOS neither builds nor patches them, so the fix is the distribution's rebuild. A newer base was checked first: the current CentOS Stream 10 base still carries them, so the rebuild has not happened yet. This record makes the acceptance explicit and expires on the review date below. Matches re-read from the 2026-11-13 base scan on 2026-11-24; the acceptance stands.",
       "matches": [
         {
           "package": "golang.org/x/net",
@@ -124,7 +124,7 @@
           "package": "stdlib",
           "type": "go-module",
           "version": "go1.26.7",
-          "path": "/sysroot/ostree/repo/objects/15/5e8ab3709d5fa0e0d3158e3c6509b5c87ae3cd0d557892fe72cea9ca6b59a0.file"
+          "path": "/sysroot/ostree/repo/objects/25/7e83a36ba1b4e9a43d22f679773c5efa00a4a5813a190283145cb6207b6b16.file"
         },
         {
           "package": "stdlib",
@@ -136,13 +136,13 @@
           "package": "stdlib",
           "type": "go-module",
           "version": "go1.26.7",
-          "path": "/sysroot/ostree/repo/objects/4c/bbb724b74515a8b087f4ea2cd8efcf748e3f821db8d5808e0206061aabe324.file"
+          "path": "/sysroot/ostree/repo/objects/c4/dcdfb035c5ba5541547dd3eeac5f0834451c02be79ff8b9df2602ad10ad4af.file"
         },
         {
           "package": "stdlib",
           "type": "go-module",
           "version": "go1.26.7",
-          "path": "/sysroot/ostree/repo/objects/a8/67099f02f90be25f502c69a27cf59d0ffbd2052d2f49e0dfa24f4334aa31a2.file"
+          "path": "/sysroot/ostree/repo/objects/d7/b48306a54d679b38699cf0148fc2522fc49b3fab2ae94d28db418fdd67aecb.file"
         },
         {
           "package": "stdlib",
@@ -185,7 +185,7 @@
     {
       "id": "CVE-2026-114406",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Re-accepted by the owner on 2026-11-04 for the 2026-11-06 CentOS Stream 10 base. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base serves 2026.2.92_v9.0.319-100.3: its changelog removes emSign Root CA - C1 (100.0), AAA Certificate Services and emSign ECC Root CA - G3 (100.1), and emSign Root CS CA - G3 (100.2), and the extracted bundle has no eMudhra root. Grype still matches this CVE against 100.3 because its database has not caught up; this entry documents that false positive until it does. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when a scan stops reporting the CVE.",
+      "reason": "Re-accepted by the owner on 2026-11-04 for the 2026-11-13 CentOS Stream 10 base. Red Hat's tracker for removing the compromised eMudhra roots (RHSB-2026-012) from ca-certificates. The base serves 2026.2.92_v9.0.319-100.3: its changelog removes emSign Root CA - C1 (100.0), AAA Certificate Services and emSign ECC Root CA - G3 (100.1), and emSign Root CS CA - G3 (100.2), and the extracted bundle has no eMudhra root. Grype still matches this CVE against 100.3 because its database has not caught up; this entry documents that false positive until it does. Scope: the system trust store. Browsers keep their own store, which the root programs already fixed. Drop this entry when a scan stops reporting the CVE. Matches re-read from the 2026-11-13 base scan on 2026-11-24; the acceptance stands.",
       "matches": [
         {
           "package": "ca-certificates",
@@ -198,12 +198,86 @@
     {
       "id": "CVE-2026-115905",
       "kind": "accepted-risk-upstream-package",
-      "reason": "Accepted by the owner on 2026-11-04 for the 2026-11-06 CentOS Stream 10 base. Red Hat rates the CVE Critical (CVSS 3.1 8.1, draft), records RHEL 10 firefox as Affected and publishes no fixed build: the flaw is in the zip streaming extractor, the package is the vendor's, and DeskOS neither builds nor patches it. Blocking the fleet would not reduce the risk; the fix is Red Hat's rebuild in a later base. The tracked issue is #420, and the base bump that carries it closes the entry. This record makes the acceptance explicit and expires on the review date below.",
+      "reason": "Accepted by the owner on 2026-11-04 for the 2026-11-13 CentOS Stream 10 base. Red Hat rates the CVE Critical (CVSS 3.1 8.1, draft), records RHEL 10 firefox as Affected and publishes no fixed build: the flaw is in the zip streaming extractor, the package is the vendor's, and DeskOS neither builds nor patches it. Blocking the fleet would not reduce the risk; the fix is Red Hat's rebuild in a later base. The tracked issue is #420, and the base bump that carries it closes the entry. This record makes the acceptance explicit and expires on the review date below. Matches re-read from the 2026-11-13 base scan on 2026-11-24; the acceptance stands.",
       "matches": [
         {
           "package": "firefox",
           "type": "rpm",
-          "version": "153.5.0-1.el10",
+          "version": "153.7.0-1.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-91949",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-11-24 for the 2026-11-13 CentOS Stream 10 base. freerdp-libs and libwinpr 3.32.2-1.el10 are the newest the CentOS Stream 10 repositories serve, and DeskOS neither builds nor patches them: the fix is the distribution's rebuild. Re-check on the review date below and drop the entry once the rebuild lands.",
+      "matches": [
+        {
+          "package": "freerdp-libs",
+          "type": "rpm",
+          "version": "2:3.32.2-1.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "libwinpr",
+          "type": "rpm",
+          "version": "2:3.32.2-1.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        }
+      ]
+    },
+    {
+      "id": "CVE-2026-99362",
+      "kind": "accepted-risk-upstream-package",
+      "reason": "Accepted by the owner on 2026-11-24 for the 2026-11-13 CentOS Stream 10 base. kernel 6.12.0-284.el10 is the newest base the stream10 tag serves; the previous pin carried 281 and the bump moved it, but no build with the fix exists yet. The kernel is the distribution's; DeskOS does not patch it. Re-check on the review date below and drop the entry once stream10 carries a fixed kernel.",
+      "matches": [
+        {
+          "package": "kernel",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-core",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-core",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-modules-extra",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "kernel-tools-libs",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
+          "path": "/usr/share/rpm/rpmdb.sqlite"
+        },
+        {
+          "package": "python3-perf",
+          "type": "rpm",
+          "version": "6.12.0-284.el10",
           "path": "/usr/share/rpm/rpmdb.sqlite"
         }
       ]
