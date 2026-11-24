@@ -202,7 +202,10 @@ jobs:
           done
 
       - name: Build the image
-        timeout-minutes: 40
+        # 40 minutes was enough for the 2026-11-06 base; the 2026-11-13 build
+        # reached the initramfs step at minute 35 and was cut there (run
+        # 45333191934). The step still has to pass; only the ceiling moved.
+        timeout-minutes: 60
         run: sudo podman build --pull=never -t "$IMAGE" ctx
 
       - name: Record the tested image identity
