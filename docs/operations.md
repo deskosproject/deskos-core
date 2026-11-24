@@ -122,8 +122,10 @@ installation:
   executable, so a staged capsule is not applied (fwupd-efi#225, Fedora bug
   2566576). 1.9-4 removes the flag
   ([Fedora update](https://bodhi.fedoraproject.org/updates/FEDORA-2026-ddb0105487)).
-  The warning is limited to Fedora builds; EL10's 1.8 never had the section.
-  An unreadable or malformed version is reported as "could not assess".
+  The Fedora 45 base of 2026-11-24 carries 1.9-4, so an image built from it
+  passes this check; the warning remains for images built before that base.
+  EL10's 1.8 never had the section. An unreadable or malformed version is
+  reported as "could not assess".
 - **The EFI System Partition.** DeskOS mounts its ESP at `/boot/efi`; the
   warning says when that is not a mounted read-write vfat partition. fwupd can
   also use `/boot` or `/efi`, so this describes the DeskOS layout, not a
