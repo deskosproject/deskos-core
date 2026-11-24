@@ -505,8 +505,8 @@ session boot of Core CS10 (`tests/vm/sessioncheck.py`, 2026-09-29):
     2026-10-19) documents the same pair from helper-run `bootc`;
     redhat-performance/tuned#895 (open, 2026-09-26) covers tuned calling
     `bootc` on non-bootc systems. Reported on RHEL 10.3 with tuned 2.28.0,
-    bootc 1.17.1 and selinux-policy-targeted 42.1.27 (DayTwo machine,
-    2026-11-23).
+    bootc 1.17.1 and selinux-policy-targeted 42.1.27 (a downstream
+    organization's machine, 2026-11-23).
   - None came from the test instrumentation.
 
 ### mcelog on AMD: kvm3 host vs CS10 guest (2026-09-29)

@@ -39,7 +39,7 @@ tag vocabulary.
 
 - **Cadence.** The contract fixes the stages and the meaning of each tag, not
   how often a pipeline runs them. Core builds and promotes weekly; an
-  organization may build daily and promote weekly, which is what DayTwo does.
+  organization may build daily and promote weekly, which is what one of them does.
 - **Names.** Workflows are `<stage>[-<platform>].yml`, without an organization
   prefix. Jobs are `resolve`, `build`, `verify`, `scan`, `publish`, `approve`,
   `installer`, `stable` and `iso`. Two wrappers carry the cadence:
