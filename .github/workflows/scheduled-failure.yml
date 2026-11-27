@@ -1,0 +1,113 @@
+name: scheduled-failure
+
+# A scheduled workflow that fails is not a run that went red: it is a check that
+# stopped happening, and nobody reads a dashboard of green ticks every morning.
+#
+# From 2026-11-20 to 2026-11-27 the daily identity checks failed every day
+# because CentOS stopped serving the pinned stream10 digest. The fix had been
+# open since 2026-11-19 as a dependency pull request. Nobody noticed the week of
+# red, and nothing would have noticed a month of it.
+#
+# This turns a failed scheduled run into an issue, and the next green scheduled
+# run closes that issue. It reports; it never retries, because a retry of a
+# broken pin is the same failure with an hour of runner time attached.
+on:
+  workflow_run:
+    workflows:
+      - identity-ad-trust-container
+      - identity-ad
+      - identity-freeipa
+      - image-publish
+      - lifecycle-test
+      - mirror-fedora
+      - release-watchdog
+      - renovate
+      - track
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  report:
+    if: github.event.workflow_run.event == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Turn the failure into an issue, and the recovery into a close
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          STARTED: ${{ github.event.workflow_run.created_at }}
+        run: |
+          set -euo pipefail
+          title="Scheduled workflow failed: ${WORKFLOW}"
+
+          existing="$(curl -fsS -G \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            --data-urlencode "q=repo:${GITHUB_REPOSITORY} is:issue is:open in:title \"${title}\"" \
+            "https://api.github.com/search/issues" \
+            | jq -r '.items[0].number // empty')"
+
+          if [ "$CONCLUSION" = "success" ]; then
+            if [ -n "$existing" ]; then
+              curl -fsS -X POST \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${existing}/comments" \
+                -d "$(jq -n --arg b "Green again: the scheduled run of ${STARTED} succeeded (${RUN_URL})." '{body: $b}')" > /dev/null
+              curl -fsS -X PATCH \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${existing}" \
+                -d '{"state":"closed"}' > /dev/null
+              echo "closed #${existing}: the schedule is green again"
+            fi
+            exit 0
+          fi
+
+          [ "$CONCLUSION" = "failure" ] || { echo "nothing to report: ${CONCLUSION}"; exit 0; }
+
+          jobs="$(curl -fsS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?per_page=50" \
+            | jq -r '[.jobs[] | select(.conclusion == "failure")
+                     | "- `\(.name)`"
+                       + (([.steps[]? | select(.conclusion == "failure") | .name]) as $s
+                          | if ($s | length) > 0 then ": " + ($s | join(", ")) else "" end)]
+                    | if length > 0 then .[] else "- no job reported a failure" end')"
+
+          comment="$(cat <<EOF
+          The scheduled run of ${STARTED} failed: ${RUN_URL}
+
+          ${jobs}
+
+          This is the schedule, not a pull request: whatever it checked has not
+          been checked since the last green run. Rebasing the dependency pull
+          request that touches the same pin is usually the fix.
+          EOF
+          )"
+
+          if [ -n "$existing" ]; then
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${existing}/comments" \
+              -d "$(jq -n --arg b "$comment" '{body: $b}')" > /dev/null
+            echo "commented on #${existing}: another failed scheduled run"
+          else
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues" \
+              -d "$(jq -n --arg t "$title" --arg b "$comment" \
+                    '{title: $t, body: $b}')" > /dev/null
+            echo "opened: ${title}"
+          fi
